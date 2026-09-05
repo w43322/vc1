@@ -1,0 +1,14 @@
+# Local reference material and derived Ghidra databases
+/Virtual-City_Win_EN_Full/
+/Virtual-City_Win_EN_Full.zip
+/ghidra/
+/vendor/
+/build/
+/analysis/*.log
+/analysis/comp_id.txt
+*.fidb
+*.fidbf
+*.gpr
+*.rep/
+__pycache__/
+.venv/

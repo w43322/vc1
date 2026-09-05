@@ -1,0 +1,10 @@
+{
+  "name": "Squirrel",
+  "version": "2.2.3 stable",
+  "url": "https://downloads.sourceforge.net/project/squirrel/squirrel2/squirrel%202.2.3%20stable/squirrel_2.2.3_stable.tar.gz?download=1",
+  "archive": "vendor/squirrel_2.2.3_stable.tar.gz",
+  "extracted_root": "vendor/SQUIRREL2",
+  "size": 419005,
+  "sha256": "a822def76b177024e45a013017df43e390cbbc7fac970a131b50855b54eded37",
+  "note": "Locally computed pin of the downloaded official archive; not an independent signature. Source remains unmodified and outside Git."
+}
