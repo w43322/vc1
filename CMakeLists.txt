@@ -27,6 +27,10 @@ include(cmake/squirrel223.cmake)
 add_executable(vc1_recompiled
   src/host/main.cpp
   src/bindings/value_types.cpp
+  src/bindings/color.cpp
+  src/bindings/vector2.cpp
+  src/bindings/vector3.cpp
+  src/bindings/vector4.cpp
   src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES})

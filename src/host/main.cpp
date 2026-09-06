@@ -40,11 +40,15 @@ int main()
     vc1::Vector3 vec3n;
     volatile vc1::Vector3* keepVec3N = vec3.GetNormalized(&vec3n);
     vc1::Vector4 vec4;
-    vec4.x = 0.0f;
-    vec4.y = 0.0f;
-    vec4.z = 0.0f;
-    vec4.w = 0.0f;
+    vec4.x = 1.0f;
+    vec4.y = 2.0f;
+    vec4.z = 2.0f;
+    vec4.w = 4.0f;
     volatile SQInteger keepVec4Cmp = vec4.Cmp(&vec4);
+    volatile SQFloat keepVec4Sq = vec4.GetSquareMagnitude();
+    volatile SQFloat keepVec4Mag = vec4.GetMagnitude();
+    vc1::Vector4 vec4n;
+    volatile vc1::Vector4* keepVec4N = vec4.GetNormalized(&vec4n);
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -69,6 +73,9 @@ int main()
     (void)keepVec3Mag;
     (void)keepVec3N;
     (void)keepVec4Cmp;
+    (void)keepVec4Sq;
+    (void)keepVec4Mag;
+    (void)keepVec4N;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,
