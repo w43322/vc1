@@ -1,4 +1,9 @@
 address|type|name|symbol
+0x0042f456|library|___tmainCRTStartup|___tmainCRTStartup
+0x0042f5d4|library|WinMainCRTStartup|_WinMainCRTStartup
+0x0042f5de|library|free|_free
+0x0043006d|library|srand|_srand
+0x004352c1|library|___security_init_cookie|___security_init_cookie
 0x00498010|library|sq_pushstring|_sq_pushstring
 0x00485f40|library|sq_base_register|?sq_base_register@@YAXPAUSQVM@@@Z
 0x0047ef70|library|SQLexer::LexBlockComment|?LexBlockComment@SQLexer@@QAEXXZ
