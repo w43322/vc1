@@ -1,0 +1,5 @@
+project: "@PROJECT_SOURCE_DIR@"
+targets:
+  VC1:
+    path: "@CMAKE_RUNTIME_OUTPUT_DIRECTORY@/VirtualCity.Unwrapped.exe"
+    pdb: "@CMAKE_RUNTIME_OUTPUT_DIRECTORY@/VirtualCity.Unwrapped.pdb"

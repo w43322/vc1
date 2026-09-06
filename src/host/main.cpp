@@ -1,0 +1,20 @@
+#include "bindings/value_types.h"
+#include "memory/fixed_pool.h"
+
+// Reccmp harness entry; not the original WinMain.
+// Address-takes keep recovered callbacks in the LTCG image. Not tests.
+int main()
+{
+    vc1::InitSizeClassPools();
+    volatile SQFUNCTION keep[] = {
+        vc1::Color::Constructor,
+        vc1::Color::TypeOf,
+        vc1::Vector2::Constructor,
+        vc1::Vector2::TypeOf,
+        vc1::Vector3::TypeOf,
+        vc1::Vector4::TypeOf
+    };
+    (void)keep;
+    vc1::DestroySizeClassPools();
+    return 0;
+}

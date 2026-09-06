@@ -1,0 +1,12 @@
+targets:
+  VC1:
+    filename: VirtualCity.Unwrapped.exe
+    source-root:
+      - src
+      - third_party/squirrel223
+    report:
+      ignore-functions: [mainCRTStartup, sq_pushstring, sq_base_register]
+    hash:
+      sha256: bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695
+    data-sources:
+      - config/verified.csv

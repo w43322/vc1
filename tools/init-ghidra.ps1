@@ -9,6 +9,6 @@ if (Test-Path (Join-Path $projectDir 'VirtualCity.gpr')) {
 if (!(Test-Path $exePath)) { throw "Missing input: $exePath" }
 New-Item -ItemType Directory -Force $projectDir, (Join-Path $repoRoot 'analysis') | Out-Null
 & (Join-Path $GhidraHome 'support\analyzeHeadless.bat') $projectDir VirtualCity `
-    -import $exePath -scriptPath $PSScriptRoot -postScript SeedVirtualCity.java `
+    -import $exePath -scriptPath $PSScriptRoot -postScript ReplayAnalysis.java `
     -log (Join-Path $repoRoot 'analysis\ghidra-import.log')
 if ($LASTEXITCODE -ne 0) { throw "Ghidra import failed: $LASTEXITCODE" }

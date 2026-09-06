@@ -4,3 +4,7 @@
 *.json text eol=lf
 *.ps1 text eol=crlf
 *.java text eol=lf
+*.cmd text eol=crlf
+# Preserve the selected upstream source files byte-for-byte, including CRLF.
+third_party/squirrel223/** -text
+third_party/squirrel223/PROVENANCE.md text eol=lf

@@ -5,10 +5,8 @@
 /vendor/
 /build/
 /analysis/*.log
-/analysis/comp_id.txt
-*.fidb
-*.fidbf
 *.gpr
 *.rep/
 __pycache__/
 .venv/
+/reccmp-user.yml
