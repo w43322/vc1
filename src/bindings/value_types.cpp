@@ -147,4 +147,171 @@ SQInteger Vector4::TypeOf(HSQUIRRELVM vm)
     return 1;
 }
 
+static SQFloat NumericFloat(HSQUIRRELVM vm, SQInteger idx)
+{
+    SQFloat value = 0.0f;
+    const SQObjectType type = sq_gettype(vm, idx);
+    if (type == OT_INTEGER || type == OT_FLOAT) {
+        sq_getfloat(vm, idx, &value);
+    }
+    return value;
+}
+
+static SQInteger NumericInt(HSQUIRRELVM vm, SQInteger idx)
+{
+    SQInteger value = 0;
+    const SQObjectType type = sq_gettype(vm, idx);
+    if (type == OT_INTEGER || type == OT_FLOAT) {
+        sq_getinteger(vm, idx, &value);
+    }
+    return value;
+}
+
+static SQUnsignedInteger ColorByte(SQInteger value)
+{
+    return static_cast<SQUnsignedInteger>(value) & 0xff;
+}
+
+// Registered from 0x0041e780 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
+// extra = gettop-1; jump table 0x004be9c0. Error string 0x004d6a38.
+// FUNCTION: VC1 0x004be6c0
+SQInteger Vector4::ConstructArgs(HSQUIRRELVM vm)
+{
+    g_sizeClassHeap.allocatedBytes += sizeof(Vector4);
+    Vector4* const vector = static_cast<Vector4*>(
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector4))]->Allocate());
+    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
+    if (extra > 4) {
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector4))]->Release(vector);
+        g_sizeClassHeap.releasedBytes += sizeof(Vector4);
+        return sq_throwerror(vm, "constructVector4: invalid arguments");
+    }
+    if (vector) {
+        vector->x = 0.0f;
+        vector->y = 0.0f;
+        vector->z = 0.0f;
+        vector->w = 0.0f;
+        if (extra == 1) {
+            const SQFloat scalar = NumericFloat(vm, 2);
+            vector->x = scalar;
+            vector->y = scalar;
+            vector->z = scalar;
+            vector->w = scalar;
+        }
+        else if (extra >= 2) {
+            vector->x = NumericFloat(vm, 2);
+            vector->y = NumericFloat(vm, 3);
+            if (extra >= 3) {
+                vector->z = NumericFloat(vm, 4);
+            }
+            if (extra >= 4) {
+                vector->w = NumericFloat(vm, 5);
+            }
+        }
+    }
+    return BindNativeInstance(vm, vector, Vector4::ReleaseHook);
+}
+
+// Registered from 0x0041e620 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
+// extra = gettop-1. Error string 0x004d6a14.
+// FUNCTION: VC1 0x004be9e0
+SQInteger Vector2::ConstructArgs(HSQUIRRELVM vm)
+{
+    g_sizeClassHeap.allocatedBytes += sizeof(Vector2);
+    Vector2* const vector = static_cast<Vector2*>(
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector2))]->Allocate());
+    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
+    if (extra > 2) {
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector2))]->Release(vector);
+        g_sizeClassHeap.releasedBytes += sizeof(Vector2);
+        return sq_throwerror(vm, "constructVector2: invalid arguments");
+    }
+    if (vector) {
+        vector->x = 0.0f;
+        vector->y = 0.0f;
+        if (extra == 1) {
+            const SQFloat scalar = NumericFloat(vm, 2);
+            vector->x = scalar;
+            vector->y = scalar;
+        }
+        else if (extra == 2) {
+            vector->x = NumericFloat(vm, 2);
+            vector->y = NumericFloat(vm, 3);
+        }
+    }
+    return BindNativeInstance(vm, vector, Vector2::ReleaseHook);
+}
+
+// Registered from 0x0041e4c0 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
+// extra = gettop-1; jump table 0x004bed64. Error string 0x004d69f0.
+// FUNCTION: VC1 0x004beb40
+SQInteger Vector3::ConstructArgs(HSQUIRRELVM vm)
+{
+    g_sizeClassHeap.allocatedBytes += sizeof(Vector3);
+    Vector3* const vector = static_cast<Vector3*>(
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector3))]->Allocate());
+    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
+    if (extra > 3) {
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Vector3))]->Release(vector);
+        g_sizeClassHeap.releasedBytes += sizeof(Vector3);
+        return sq_throwerror(vm, "constructVector3: invalid arguments");
+    }
+    if (vector) {
+        vector->x = 0.0f;
+        vector->y = 0.0f;
+        vector->z = 0.0f;
+        if (extra == 1) {
+            const SQFloat scalar = NumericFloat(vm, 2);
+            vector->x = scalar;
+            vector->y = scalar;
+            vector->z = scalar;
+        }
+        else if (extra >= 2) {
+            vector->x = NumericFloat(vm, 2);
+            vector->y = NumericFloat(vm, 3);
+            if (extra >= 3) {
+                vector->z = NumericFloat(vm, 4);
+            }
+        }
+    }
+    return BindNativeInstance(vm, vector, Vector3::ReleaseHook);
+}
+
+// Registered from 0x0041e440 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
+// extra = gettop-1; jump table 0x004bf058. extra==2 is invalid. Error string 0x004d69cc.
+// FUNCTION: VC1 0x004bed80
+SQInteger Color::ConstructArgs(HSQUIRRELVM vm)
+{
+    g_sizeClassHeap.allocatedBytes += sizeof(Color);
+    Color* const color = static_cast<Color*>(
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Color))]->Allocate());
+    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
+    if (extra == 2 || extra > 4) {
+        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Color))]->Release(color);
+        g_sizeClassHeap.releasedBytes += sizeof(Color);
+        return sq_throwerror(vm, "constructColor: invalid arguments");
+    }
+    if (color) {
+        if (extra == 1) {
+            color->argb = static_cast<SQUnsignedInteger>(NumericInt(vm, 2));
+        }
+        else if (extra == 3) {
+            color->argb = 0xff000000
+                | (ColorByte(NumericInt(vm, 2)) << 16)
+                | (ColorByte(NumericInt(vm, 3)) << 8)
+                | ColorByte(NumericInt(vm, 4));
+        }
+        else if (extra == 4) {
+            color->argb = (ColorByte(NumericInt(vm, 2)) << 24)
+                | (ColorByte(NumericInt(vm, 3)) << 16)
+                | (ColorByte(NumericInt(vm, 4)) << 8)
+                | ColorByte(NumericInt(vm, 5));
+        }
+        else {
+            color->argb = 0xff000000;
+        }
+    }
+    return BindNativeInstance(vm, color, Color::ReleaseHook);
+}
+
 }

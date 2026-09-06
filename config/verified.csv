@@ -24,6 +24,7 @@ address|type|name|symbol
 0x00497de0|library|sq_setparamscheck|_sq_setparamscheck
 0x00499040|library|sq_newclass|_sq_newclass
 0x0048fee0|library|sq_pop|_sq_pop
+0x004977d0|library|sq_throwerror|_sq_throwerror
 0x004d7580|string||
 0x004d7588|string||
 0x004cfb44|string||

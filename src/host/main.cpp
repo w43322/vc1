@@ -8,12 +8,16 @@ int main()
     vc1::InitSizeClassPools();
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
+        vc1::Color::ConstructArgs,
         vc1::Color::TypeOf,
         vc1::Vector2::Constructor,
+        vc1::Vector2::ConstructArgs,
         vc1::Vector2::TypeOf,
         vc1::Vector3::Constructor,
+        vc1::Vector3::ConstructArgs,
         vc1::Vector3::TypeOf,
         vc1::Vector4::Constructor,
+        vc1::Vector4::ConstructArgs,
         vc1::Vector4::TypeOf
     };
     (void)keep;

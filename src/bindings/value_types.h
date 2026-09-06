@@ -11,6 +11,7 @@ struct Color
     SQUnsignedInteger argb; // 0xff000000 default in 0x0041fe10
 
     static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
@@ -21,6 +22,7 @@ struct Vector2
     SQFloat y;
 
     static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
@@ -32,6 +34,7 @@ struct Vector3
     SQFloat z;
 
     static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
@@ -44,6 +47,7 @@ struct Vector4
     SQFloat w;
 
     static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
