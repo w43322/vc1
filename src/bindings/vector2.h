@@ -11,6 +11,7 @@ struct Vector2
     SQFloat y;
 
     SQInteger Cmp(const Vector2* other); // thiscall RET 4; bound as "_cmp"
+    Vector2* Unm(Vector2* out); // thiscall RET 4; bound as "_unm"
     SQFloat GetSquareMagnitude();
     SQFloat GetMagnitude();
     Vector2* GetNormalized(Vector2* out); // thiscall RET 4

@@ -98,6 +98,16 @@ SQInteger Vector2::Cmp(const Vector2* other)
     return MemCompare(this, other, sizeof(Vector2));
 }
 
+// Bound as "_unm" (0x004d36d0) via 0x00420c70 from 0x004c07f3.
+// Writes -this into out=[esp+4]. this in ECX; RET 4.
+// FUNCTION: VC1 0x004288b0
+Vector2* Vector2::Unm(Vector2* out)
+{
+    out->x = -x;
+    out->y = -y;
+    return out;
+}
+
 // Registered from 0x0041e620 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
 // extra = gettop-1. Error string 0x004d6a14.
 // FUNCTION: VC1 0x004be9e0

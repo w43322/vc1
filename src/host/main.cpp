@@ -30,6 +30,8 @@ int main()
     volatile SQFloat keepVec2Mag = vec2.GetMagnitude();
     vc1::Vector2 vec2n;
     volatile vc1::Vector2* keepVec2N = vec2.GetNormalized(&vec2n);
+    vc1::Vector2 vec2u;
+    volatile vc1::Vector2* keepVec2U = vec2.Unm(&vec2u);
     vc1::Vector3 vec3;
     vec3.x = 1.0f;
     vec3.y = 2.0f;
@@ -39,6 +41,8 @@ int main()
     volatile SQFloat keepVec3Mag = vec3.GetMagnitude();
     vc1::Vector3 vec3n;
     volatile vc1::Vector3* keepVec3N = vec3.GetNormalized(&vec3n);
+    vc1::Vector3 vec3u;
+    volatile vc1::Vector3* keepVec3U = vec3.Unm(&vec3u);
     vc1::Vector4 vec4;
     vec4.x = 1.0f;
     vec4.y = 2.0f;
@@ -49,6 +53,8 @@ int main()
     volatile SQFloat keepVec4Mag = vec4.GetMagnitude();
     vc1::Vector4 vec4n;
     volatile vc1::Vector4* keepVec4N = vec4.GetNormalized(&vec4n);
+    vc1::Vector4 vec4u;
+    volatile vc1::Vector4* keepVec4U = vec4.Unm(&vec4u);
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -68,14 +74,17 @@ int main()
     (void)keepVec2Sq;
     (void)keepVec2Mag;
     (void)keepVec2N;
+    (void)keepVec2U;
     (void)keepVec3Cmp;
     (void)keepVec3Sq;
     (void)keepVec3Mag;
     (void)keepVec3N;
+    (void)keepVec3U;
     (void)keepVec4Cmp;
     (void)keepVec4Sq;
     (void)keepVec4Mag;
     (void)keepVec4N;
+    (void)keepVec4U;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,
