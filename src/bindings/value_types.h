@@ -27,13 +27,29 @@ struct Vector2
 
 struct Vector3
 {
+    SQFloat x;
+    SQFloat y;
+    SQFloat z;
+
+    static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
 
 struct Vector4
 {
+    SQFloat x;
+    SQFloat y;
+    SQFloat z;
+    SQFloat w;
+
+    static SQInteger Constructor(HSQUIRRELVM vm);
+    static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
 };
+
+typedef char Vc1Vector3SizeCheck[sizeof(Vector3) == 12 ? 1 : -1];
+typedef char Vc1Vector4SizeCheck[sizeof(Vector4) == 16 ? 1 : -1];
 
 // 0x0041e3b0; original ABI: vm=EAX, nativeObject=[esp+4], releaseHook=ESI.
 SQInteger BindNativeInstance(HSQUIRRELVM vm, SQUserPointer nativeObject,
