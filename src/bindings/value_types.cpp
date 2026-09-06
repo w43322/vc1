@@ -36,6 +36,103 @@ SQInteger BindNativeInstance(HSQUIRRELVM vm, SQUserPointer nativeObject,
     return 1;
 }
 
+struct NativeTypeInfo
+{
+    const void* spec;
+    void* unused1;
+    const SQChar* typeName;
+    void* unused2;
+    int extra;
+};
+
+static NativeTypeInfo g_colorType;
+static NativeTypeInfo g_vector2Type;
+static NativeTypeInfo g_vector3Type;
+static NativeTypeInfo g_vector4Type;
+static unsigned g_colorTypeReady;
+static unsigned g_vector2TypeReady;
+static unsigned g_vector3TypeReady;
+static unsigned g_vector4TypeReady;
+static const int kColorTypeSpec = 0;
+static const int kVector2TypeSpec = 0;
+static const int kVector3TypeSpec = 0;
+static const int kVector4TypeSpec = 0;
+
+static void EnsureTypeInfo(NativeTypeInfo* type, unsigned* ready,
+    const void* spec, const SQChar* typeName)
+{
+    if ((*ready & 1) == 0) {
+        *ready |= 1;
+        type->unused1 = 0;
+        type->unused2 = 0;
+        type->extra = -1;
+        type->spec = spec;
+        type->typeName = typeName;
+    }
+}
+
+static void BindNamedMethod(SquirrelObject* classObject, const SQChar* name,
+    SQFUNCTION fn)
+{
+    SquirrelObject slot;
+    sq_pushobject(g_vm, classObject->obj);
+    RegisterNativeSlot(&slot, name, fn, 0);
+    sq_pop(g_vm, 1);
+    sq_release(g_vm, &slot.obj);
+}
+
+static SquirrelObject* RegisterValueClass(SquirrelObject* out, HSQUIRRELVM vm,
+    const SQChar* className, NativeTypeInfo* type, unsigned* ready,
+    const void* spec, const SQChar* typeName, SQFUNCTION ctor, SQFUNCTION typeOf)
+{
+    const SQInteger savedTop = sq_gettop(vm);
+    InitSquirrelObject(out);
+    EnsureTypeInfo(type, ready, spec, typeName);
+    if (CreateNativeClass(vm, out, type, className)) {
+        BindNamedMethod(out, "constructor", ctor);
+        BindNamedMethod(out, "_typeof", typeOf);
+    }
+    sq_settop(vm, savedTop);
+    return out;
+}
+
+// Creates Color class, binds Constructor (null typemask) and TypeOf. Once-flag 0x004ee3ec,
+// type info 0x004ee214, spec 0x004d74b8, name 0x004d7580. Helper 0x004c3240.
+// FUNCTION: VC1 0x0041eff0
+SquirrelObject* Color::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    const SQChar* className)
+{
+    return RegisterValueClass(out, vm, className, &g_colorType, &g_colorTypeReady,
+        &kColorTypeSpec, "Color", Color::Constructor, Color::TypeOf);
+}
+
+// Once-flag 0x004ee3e0, type info 0x004ee1d8, spec 0x004d75b8, name 0x004d7588.
+// FUNCTION: VC1 0x0041f150
+SquirrelObject* Vector3::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    const SQChar* className)
+{
+    return RegisterValueClass(out, vm, className, &g_vector3Type, &g_vector3TypeReady,
+        &kVector3TypeSpec, "Vector3", Vector3::Constructor, Vector3::TypeOf);
+}
+
+// Once-flag 0x004ea818, type info 0x004ea830, spec 0x004cfb9c, name 0x004cfb44.
+// FUNCTION: VC1 0x0041f2b0
+SquirrelObject* Vector2::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    const SQChar* className)
+{
+    return RegisterValueClass(out, vm, className, &g_vector2Type, &g_vector2TypeReady,
+        &kVector2TypeSpec, "Vector2", Vector2::Constructor, Vector2::TypeOf);
+}
+
+// Once-flag 0x004ee3e8, type info 0x004ee200, spec 0x004cfba4, name 0x004d7590.
+// FUNCTION: VC1 0x0041f410
+SquirrelObject* Vector4::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    const SQChar* className)
+{
+    return RegisterValueClass(out, vm, className, &g_vector4Type, &g_vector4TypeReady,
+        &kVector4TypeSpec, "Vector4", Vector4::Constructor, Vector4::TypeOf);
+}
+
 // Squirrel class constructor registered at 0x0041eff0 as "constructor" (0x004d2f10)
 // with null typemask. Does not read extra stack args. Arg-taking factory is 0x004bed80.
 // FUNCTION: VC1 0x0041fe10

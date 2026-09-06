@@ -1,4 +1,5 @@
 #include "bindings/value_types.h"
+#include "bindings/squirrel_object.h"
 #include "memory/fixed_pool.h"
 
 // Reccmp harness entry; not the original WinMain.
@@ -20,7 +21,16 @@ int main()
         vc1::Vector4::ConstructArgs,
         vc1::Vector4::TypeOf
     };
+    volatile void* keepBind[] = {
+        (void*)&vc1::CreateNativeClass,
+        (void*)&vc1::RegisterNativeSlot,
+        (void*)&vc1::Color::RegisterClass,
+        (void*)&vc1::Vector2::RegisterClass,
+        (void*)&vc1::Vector3::RegisterClass,
+        (void*)&vc1::Vector4::RegisterClass
+    };
     (void)keep;
+    (void)keepBind;
     vc1::DestroySizeClassPools();
     return 0;
 }

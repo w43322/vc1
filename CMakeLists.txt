@@ -27,6 +27,7 @@ include(cmake/squirrel223.cmake)
 add_executable(vc1_recompiled
   src/host/main.cpp
   src/bindings/value_types.cpp
+  src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include)

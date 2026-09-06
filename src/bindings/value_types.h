@@ -1,6 +1,6 @@
 #ifndef VC1_BINDINGS_VALUE_TYPES_H
 #define VC1_BINDINGS_VALUE_TYPES_H
-#include <squirrel.h>
+#include "squirrel_object.h"
 
 namespace vc1 {
 
@@ -14,6 +14,8 @@ struct Color
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
+    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+        const SQChar* className);
 };
 
 struct Vector2
@@ -25,6 +27,8 @@ struct Vector2
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
+    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+        const SQChar* className);
 };
 
 struct Vector3
@@ -37,6 +41,8 @@ struct Vector3
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
+    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+        const SQChar* className);
 };
 
 struct Vector4
@@ -50,6 +56,8 @@ struct Vector4
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
+    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+        const SQChar* className);
 };
 
 typedef char Vc1Vector3SizeCheck[sizeof(Vector3) == 12 ? 1 : -1];
