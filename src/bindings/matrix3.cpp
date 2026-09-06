@@ -287,6 +287,71 @@ Matrix3* Matrix3::Add(Matrix3* out, const Matrix3* other)
     return out;
 }
 
+// Bound as "Transpose" (0x004d739c) via 0x00421e70 from 0x004c0ded.
+// cdecl; out=[esp+4], src=[esp+8]. Column-major 3x3.
+// FUNCTION: VC1 0x004740d0
+void Matrix3::Transpose(Matrix3* out, const Matrix3* src)
+{
+    out->m[0] = src->m[0];
+    out->m[1] = src->m[3];
+    out->m[2] = src->m[6];
+    out->m[3] = src->m[1];
+    out->m[4] = src->m[4];
+    out->m[5] = src->m[7];
+    out->m[6] = src->m[2];
+    out->m[7] = src->m[5];
+    out->m[8] = src->m[8];
+}
+
+// Bound as "Inverse" (0x004d7394) via 0x00421e70 from 0x004c0dd1.
+// cdecl; out=[esp+4], src=[esp+8]. Adjugate / det of column-major 3x3.
+// FUNCTION: VC1 0x00474110
+void Matrix3::Inverse(Matrix3* out, const Matrix3* src)
+{
+    const SQFloat a = src->m[0];
+    const SQFloat b = src->m[1];
+    const SQFloat c = src->m[2];
+    const SQFloat d = src->m[3];
+    const SQFloat e = src->m[4];
+    const SQFloat f = src->m[5];
+    const SQFloat g = src->m[6];
+    const SQFloat h = src->m[7];
+    const SQFloat i = src->m[8];
+    const SQFloat c0 = e * i - f * h;
+    const SQFloat c1 = g * f - d * i;
+    const SQFloat c2 = h * d - g * e;
+    const SQFloat invDet = 1.0f / (b * c1 + a * c0 + c * c2);
+    out->m[0] = invDet * c0;
+    out->m[1] = invDet * (c * h - i * b);
+    out->m[2] = (f * b - e * c) * invDet;
+    out->m[3] = invDet * c1;
+    out->m[4] = invDet * (a * i - g * c);
+    out->m[5] = invDet * (d * c - f * a);
+    out->m[6] = invDet * c2;
+    out->m[7] = invDet * (b * g - h * a);
+    out->m[8] = invDet * (e * a - b * d);
+}
+
+// Bound as "MultInvVect" (0x004d735c) via 0x00421dc0 from 0x004c0d4a.
+// out = (X·v, Y·v). this in ECX; RET 8.
+// FUNCTION: VC1 0x004742b0
+Vector2* Matrix3::MultInvVect(Vector2* out, const Vector2* v)
+{
+    out->x = m[0] * v->x + m[1] * v->y;
+    out->y = m[3] * v->x + m[4] * v->y;
+    return out;
+}
+
+// Bound as "MultVect" (0x004d7374) via 0x00421dc0 from 0x004c0d82.
+// out = 2x2 linear part * v. this in ECX; RET 8.
+// FUNCTION: VC1 0x004742e0
+Vector2* Matrix3::MultVect(Vector2* out, const Vector2* v)
+{
+    out->x = m[0] * v->x + m[3] * v->y;
+    out->y = m[1] * v->x + m[4] * v->y;
+    return out;
+}
+
 // Bound as "Mult" (0x004d7354) via 0x00421d10 from 0x004c0d31.
 // out = this * v, column-major. this in ECX; RET 8.
 // FUNCTION: VC1 0x00474310

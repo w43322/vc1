@@ -11,10 +11,43 @@ static const int kRectFTypeSpec = 0;
 
 static void ZeroRectF(RectF* rect)
 {
-    rect->left = 0.0f;
-    rect->top = 0.0f;
-    rect->right = 0.0f;
-    rect->bottom = 0.0f;
+    rect->x = 0.0f;
+    rect->y = 0.0f;
+    rect->width = 0.0f;
+    rect->height = 0.0f;
+}
+
+// Bound as "Union" (0x004d7418) via 0x00423360 from 0x004c14f1.
+// In-place xywh union. Returns 1 if the result has positive width and height.
+// FUNCTION: VC1 0x00415ad0
+SQBool RectF::Union(const RectF* other)
+{
+    SQFloat left = other->x;
+    SQFloat top = other->y;
+    SQFloat right = other->width + left;
+    SQFloat bottom = other->height + top;
+    const SQFloat thisRight = width + x;
+    const SQFloat thisBottom = height + y;
+    if (right < thisRight) {
+        right = thisRight;
+    }
+    if (bottom < thisBottom) {
+        bottom = thisBottom;
+    }
+    if (x < left) {
+        left = x;
+    }
+    if (y < top) {
+        top = y;
+    }
+    x = left;
+    y = top;
+    width = right - left;
+    height = bottom - top;
+    if (width > 0.0f && height > 0.0f) {
+        return 1;
+    }
+    return 0;
 }
 
 // this in ESI. Name 0x004d4ffc.
@@ -77,10 +110,10 @@ SQInteger RectF::ConstructArgs(HSQUIRRELVM vm)
     if (rect) {
         ZeroRectF(rect);
         if (extra == 4) {
-            rect->left = NumericFloat(vm, 2);
-            rect->top = NumericFloat(vm, 3);
-            rect->right = NumericFloat(vm, 4);
-            rect->bottom = NumericFloat(vm, 5);
+            rect->x = NumericFloat(vm, 2);
+            rect->y = NumericFloat(vm, 3);
+            rect->width = NumericFloat(vm, 4);
+            rect->height = NumericFloat(vm, 5);
         }
     }
     return BindNativeInstance(vm, rect, Vector4::ReleaseHook);

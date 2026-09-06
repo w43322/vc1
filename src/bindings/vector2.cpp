@@ -55,6 +55,16 @@ SQFloat Vector2::GetDotProduct(const Vector2* a, const Vector2* b)
     return a->x * b->x + a->y * b->y;
 }
 
+// Bound as "GetOrthogonal" (0x004d72e4) via 0x00423b50 / FUN_00425190.
+// cdecl; out=[esp+4], v=[esp+8]; (-y, x). RET.
+// FUNCTION: VC1 0x0040cd90
+Vector2* Vector2::GetOrthogonal(Vector2* out, const Vector2* v)
+{
+    out->x = -v->y;
+    out->y = v->x;
+    return out;
+}
+
 // SQRELEASEHOOK; size unused. Puts 8 bytes back on pools[2].
 // FUNCTION: VC1 0x0041dd00
 SQInteger Vector2::ReleaseHook(SQUserPointer object, SQInteger size)
@@ -107,6 +117,16 @@ SQInteger Vector2::TypeOf(HSQUIRRELVM vm)
 {
     sq_pushstring(vm, "Vector2", -1);
     return 1;
+}
+
+// Bound as "Lerp" (0x004d729c) via 0x00423af0 / FUN_00425120.
+// cdecl; out=a+t*(b-a). a=[esp+8], b=[esp+0xc], t=[esp+0x10], out=[esp+4].
+// FUNCTION: VC1 0x004286b0
+Vector2* Vector2::Lerp(Vector2* out, const Vector2* a, const Vector2* b, SQFloat t)
+{
+    out->x = a->x + t * (b->x - a->x);
+    out->y = a->y + t * (b->y - a->y);
+    return out;
 }
 
 // Bound as "IsValid" (0x004d72cc) via 0x00420fe0 from 0x004c089f.

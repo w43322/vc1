@@ -1,6 +1,7 @@
 #ifndef VC1_BINDINGS_VECTOR4_H
 #define VC1_BINDINGS_VECTOR4_H
 #include "squirrel_object.h"
+#include "vector3.h"
 
 namespace vc1 {
 
@@ -22,6 +23,9 @@ struct Vector4
     SQFloat GetMagnitude();
     Vector4* GetNormalized(Vector4* out); // thiscall RET 4
     void Normalize(); // thiscall; bound as "Normalize"
+    static Vector4* Lerp(Vector4* out, const Vector4* a, const Vector4* b, SQFloat t); // cdecl
+    static Vector3* GetCrossProduct(Vector3* out, const Vector3* a, const Vector3* b); // cdecl
+    static SQFloat GetDotProduct(const Vector4* a, const Vector4* b); // cdecl; "GetDotProduct"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

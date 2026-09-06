@@ -5,13 +5,15 @@
 namespace vc1 {
 
 // Inferred name. _typeof string 0x004d4ffc. 4 floats, 16 bytes.
-// Release hook is Vector4::ReleaseHook 0x0041dd60. Type spec overlaps Vector4 0x004cfba4.
+// Slots X/Y/Width/Height at +0/+4/+8/+0xc. Release hook is Vector4::ReleaseHook.
 struct RectF
 {
-    SQFloat left;
-    SQFloat top;
-    SQFloat right;
-    SQFloat bottom;
+    SQFloat x;
+    SQFloat y;
+    SQFloat width;
+    SQFloat height;
+
+    SQBool Union(const RectF* other); // thiscall; bound as "Union" (0x004d7418)
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

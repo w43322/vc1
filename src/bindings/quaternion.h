@@ -1,6 +1,7 @@
 #ifndef VC1_BINDINGS_QUATERNION_H
 #define VC1_BINDINGS_QUATERNION_H
 #include "squirrel_object.h"
+#include "matrix4.h"
 
 namespace vc1 {
 
@@ -12,6 +13,19 @@ struct Quaternion
     SQFloat y;
     SQFloat z;
     SQFloat w;
+
+    static void Inverse(Quaternion* out, const Quaternion* src); // cdecl; "Inverse"
+    Quaternion* GetNormalized(Quaternion* out); // thiscall RET 4; "GetNormalized"
+    SQFloat GetSquareMagnitude(); // thiscall; "GetSquareMagnitude"
+    SQFloat GetMagnitude(); // thiscall; "GetMagnitude"
+    Quaternion* Unm(Quaternion* out); // thiscall RET 4; "_unm" conjugates xyz, keeps w
+    Quaternion* Div(Quaternion* out, SQFloat scalar); // thiscall RET 8; "_div"
+    Quaternion* Mul(Quaternion* out, SQFloat scalar); // thiscall RET 8; "_mul" (scalar)
+    Quaternion* Sub(Quaternion* out, const Quaternion* other); // thiscall RET 8; "_sub"
+    Quaternion* Add(Quaternion* out, const Quaternion* other); // thiscall RET 8; "_add"
+    void FromMatrix(const Matrix4* matrix); // thiscall; "FromMatrix"
+    void ToMatrix(Matrix4* out) const; // thiscall; "ToMatrix"
+    void Slerp(const Quaternion* a, const Quaternion* b, SQFloat t); // thiscall; "Slerp"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

@@ -21,6 +21,9 @@ struct Vector3
     SQFloat GetMagnitude();
     Vector3* GetNormalized(Vector3* out); // thiscall RET 4
     void Normalize(); // thiscall; bound as "Normalize"
+    static Vector3* GetCrossProduct(Vector3* out, const Vector3* a, const Vector3* b); // cdecl
+    static SQFloat GetDotProduct(const Vector3* a, const Vector3* b); // cdecl; "GetDotProduct"
+    static Vector3* Lerp(Vector3* out, const Vector3* a, const Vector3* b, SQFloat t); // cdecl
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

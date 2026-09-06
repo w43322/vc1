@@ -16,6 +16,8 @@ struct Matrix4
     Matrix4* Mul(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_mul"
     Matrix4* Sub(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_sub"
     Matrix4* Add(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_add"
+    static void Transpose(Matrix4* out, const Matrix4* src); // cdecl; "Transpose"
+    static void Inverse(Matrix4* out, const Matrix4* src); // cdecl; "Inverse"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

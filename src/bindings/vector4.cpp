@@ -68,6 +68,37 @@ SQInteger Vector4::TypeOf(HSQUIRRELVM vm)
     return 1;
 }
 
+// Bound as "Lerp" (0x004d729c) via 0x00423c70 / FUN_00425300.
+// cdecl; out=a+t*(b-a) for xyzw. a=[esp+8], b=[esp+0xc], t=[esp+0x10], out=[esp+4].
+// FUNCTION: VC1 0x00428280
+Vector4* Vector4::Lerp(Vector4* out, const Vector4* a, const Vector4* b, SQFloat t)
+{
+    out->x = a->x + t * (b->x - a->x);
+    out->y = a->y + t * (b->y - a->y);
+    out->z = a->z + t * (b->z - a->z);
+    out->w = a->w + t * (b->w - a->w);
+    return out;
+}
+
+// Bound as "GetCrossProduct" (0x004d728c) via 0x004216b0 / FUN_00423c10 from 0x004c0aaf.
+// cdecl xyz cross into a Vector3. a=[esp+8], b=[esp+0xc], out=[esp+4].
+// FUNCTION: VC1 0x004282d0
+Vector3* Vector4::GetCrossProduct(Vector3* out, const Vector3* a, const Vector3* b)
+{
+    out->x = a->y * b->z - a->z * b->y;
+    out->y = a->z * b->x - a->x * b->z;
+    out->z = a->x * b->y - a->y * b->x;
+    return out;
+}
+
+// Bound as "GetDotProduct" (0x004d727c) via 0x00421640 / FUN_00423bb0.
+// cdecl; a=[esp+4], b=[esp+8]; y, x, z, w.
+// FUNCTION: VC1 0x00428310
+SQFloat Vector4::GetDotProduct(const Vector4* a, const Vector4* b)
+{
+    return a->x * b->x + a->y * b->y + a->z * b->z + a->w * b->w;
+}
+
 // Bound as "GetNormalized" (0x004d7248) via 0x00421380 from 0x004c0a4c.
 // Writes this/|this| into out=[esp+4]. this in ECX; RET 4.
 // FUNCTION: VC1 0x00428340

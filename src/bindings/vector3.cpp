@@ -10,6 +10,28 @@ static NativeTypeInfo g_vector3Type;
 static unsigned g_vector3TypeReady;
 static const int kVector3TypeSpec = 0;
 
+// Bound as "GetCrossProduct" (0x004d728c) via 0x00420ae0 / FUN_00423990 from 0x004c06a4.
+// cdecl; out=[esp+4], a=[esp+8], b=[esp+0xc]. Stores z, then x, then y.
+// FUNCTION: VC1 0x0040cb90
+Vector3* Vector3::GetCrossProduct(Vector3* out, const Vector3* a, const Vector3* b)
+{
+    const SQFloat x = a->y * b->z - a->z * b->y;
+    const SQFloat y = a->z * b->x - a->x * b->z;
+    const SQFloat z = a->x * b->y - a->y * b->x;
+    out->x = x;
+    out->y = y;
+    out->z = z;
+    return out;
+}
+
+// Bound as "GetDotProduct" (0x004d727c) via 0x00420a70 / FUN_00423930.
+// cdecl; a=[esp+4], b=[esp+8]; y*y then x*x then z*z.
+// FUNCTION: VC1 0x0040cbd0
+SQFloat Vector3::GetDotProduct(const Vector3* a, const Vector3* b)
+{
+    return a->x * b->x + a->y * b->y + a->z * b->z;
+}
+
 // Bound as "Normalize" (0x004d723c) via 0x004209c0 from 0x004c0632.
 // In-place this/=|this|. sqrt helper 0x004c4280. this in ECX.
 // FUNCTION: VC1 0x00415880
@@ -104,6 +126,17 @@ SQInteger Vector3::TypeOf(HSQUIRRELVM vm)
 {
     sq_pushstring(vm, "Vector3", -1);
     return 1;
+}
+
+// Bound as "Lerp" (0x004d729c) via 0x004239f0 / FUN_00425020.
+// cdecl; out=a+t*(b-a). a=[esp+8], b=[esp+0xc], t=[esp+0x10], out=[esp+4].
+// FUNCTION: VC1 0x00428960
+Vector3* Vector3::Lerp(Vector3* out, const Vector3* a, const Vector3* b, SQFloat t)
+{
+    out->x = a->x + t * (b->x - a->x);
+    out->y = a->y + t * (b->y - a->y);
+    out->z = a->z + t * (b->z - a->z);
+    return out;
 }
 
 // Bound as "_cmp" (0x004d36e0) from 0x00420860. this in ECX; other on stack.
