@@ -11,12 +11,16 @@ struct Vector2
     SQFloat y;
 
     SQInteger Cmp(const Vector2* other); // thiscall RET 4; bound as "_cmp"
+    SQBool Equal(const Vector2* other); // thiscall RET 4; bound as "Equal"
     Vector2* Unm(Vector2* out); // thiscall RET 4; bound as "_unm"
     Vector2* Div(Vector2* out, SQFloat scalar); // thiscall RET 8; bound as "_div"
     Vector2* Mul(Vector2* out, SQFloat scalar); // thiscall RET 8; bound as "_mul"
+    Vector2* Sub(Vector2* out, const Vector2* other); // thiscall RET 8; bound as "_sub"
+    Vector2* Add(Vector2* out, const Vector2* other); // thiscall RET 8; bound as "_add"
     SQFloat GetSquareMagnitude();
     SQFloat GetMagnitude();
     Vector2* GetNormalized(Vector2* out); // thiscall RET 4
+    void Normalize(); // thiscall; bound as "Normalize"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

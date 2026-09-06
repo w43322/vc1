@@ -10,6 +10,17 @@ static NativeTypeInfo g_vector3Type;
 static unsigned g_vector3TypeReady;
 static const int kVector3TypeSpec = 0;
 
+// Bound as "Normalize" (0x004d723c) via 0x004209c0 from 0x004c0632.
+// In-place this/=|this|. sqrt helper 0x004c4280. this in ECX.
+// FUNCTION: VC1 0x00415880
+void Vector3::Normalize()
+{
+    const SQFloat inv = 1.0f / GetMagnitude();
+    x *= inv;
+    y *= inv;
+    z *= inv;
+}
+
 // Bound as "GetSquareMagnitude" (0x004d7268) via 0x00422b70 from 0x004c0679.
 // this in ECX; y, x, z then y*y + x*x + z*z.
 // FUNCTION: VC1 0x004158e0
@@ -133,6 +144,28 @@ Vector3* Vector3::Mul(Vector3* out, SQFloat scalar)
     out->x = x * scalar;
     out->y = y * scalar;
     out->z = z * scalar;
+    return out;
+}
+
+// Bound as "_sub" (0x004d36b8) via 0x00422550 from 0x004c05a4.
+// Writes this-other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428b10
+Vector3* Vector3::Sub(Vector3* out, const Vector3* other)
+{
+    out->x = x - other->x;
+    out->y = y - other->y;
+    out->z = z - other->z;
+    return out;
+}
+
+// Bound as "_add" (0x004d36b0) via 0x00422550 from 0x004c0588.
+// Writes this+other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428b40
+Vector3* Vector3::Add(Vector3* out, const Vector3* other)
+{
+    out->x = x + other->x;
+    out->y = y + other->y;
+    out->z = z + other->z;
     return out;
 }
 

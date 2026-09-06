@@ -97,6 +97,18 @@ SQFloat Vector4::GetMagnitude()
     return sqrtf(GetSquareMagnitude());
 }
 
+// Bound as "Normalize" (0x004d723c) via 0x00421590 from 0x004c0a3d.
+// In-place this/=|this|. sqrt helper 0x004c4280. this in ECX.
+// FUNCTION: VC1 0x00428440
+void Vector4::Normalize()
+{
+    const SQFloat inv = 1.0f / GetMagnitude();
+    x *= inv;
+    y *= inv;
+    z *= inv;
+    w *= inv;
+}
+
 // Bound as "_cmp" (0x004d36e0) from 0x00421430. this in ECX; other on stack.
 // Also reused by another 16-byte binder at 0x00422960.
 // FUNCTION: VC1 0x00428590
@@ -139,6 +151,30 @@ Vector4* Vector4::Mul(Vector4* out, SQFloat scalar)
     out->y = y * scalar;
     out->z = z * scalar;
     out->w = w * scalar;
+    return out;
+}
+
+// Bound as "_sub" (0x004d36b8) via 0x00421220 from 0x004c09af.
+// Writes this-other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428650
+Vector4* Vector4::Sub(Vector4* out, const Vector4* other)
+{
+    out->x = x - other->x;
+    out->y = y - other->y;
+    out->z = z - other->z;
+    out->w = w - other->w;
+    return out;
+}
+
+// Bound as "_add" (0x004d36b0) via 0x00421220 from 0x004c0993.
+// Writes this+other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428680
+Vector4* Vector4::Add(Vector4* out, const Vector4* other)
+{
+    out->x = x + other->x;
+    out->y = y + other->y;
+    out->z = z + other->z;
+    out->w = w + other->w;
     return out;
 }
 

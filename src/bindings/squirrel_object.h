@@ -39,6 +39,10 @@ void AttachStackTop(SquirrelObject* dest);
 // 0x0049ab30; dest=EBX, source=EAX. addref source, release dest, copy HSQOBJECT. returns dest.
 SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject* source);
 
+// 0x0049b130; EAX=SquirrelObject*, name=[esp+4], value=[esp+8], RET 8.
+// Pushes class, name, integer, then 0x00498a40 (newslot-like; not mapped sq_newslot 0x00499600).
+SQBool RegisterIntegerSlot(SquirrelObject* object, const SQChar* name, SQInteger value);
+
 // 0x0049a370; original ABI: out=ECX, name=EAX, callback=[esp+4], typemask=EBX.
 // Null typemask becomes "t|y|x"; "*" skips sq_setparamscheck; other masks prefix "t|y|x".
 SquirrelObject* RegisterNativeSlot(SquirrelObject* out, const SQChar* name,

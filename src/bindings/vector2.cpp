@@ -37,6 +37,16 @@ Vector2* Vector2::GetNormalized(Vector2* out)
     return out;
 }
 
+// Bound as "Normalize" (0x004d723c) via 0x00420f30 from 0x004c083c.
+// In-place this/=|this|. sqrt helper 0x004c4280. this in ECX.
+// FUNCTION: VC1 0x0040cb10
+void Vector2::Normalize()
+{
+    const SQFloat inv = 1.0f / GetMagnitude();
+    x *= inv;
+    y *= inv;
+}
+
 // SQRELEASEHOOK; size unused. Puts 8 bytes back on pools[2].
 // FUNCTION: VC1 0x0041dd00
 SQInteger Vector2::ReleaseHook(SQUserPointer object, SQInteger size)
@@ -91,6 +101,14 @@ SQInteger Vector2::TypeOf(HSQUIRRELVM vm)
     return 1;
 }
 
+// Bound as "Equal" (0x004d72c4) via 0x00420e80 from 0x004c082d.
+// FUCOMPP x then y. this in ECX; other=[esp+4]; RET 4.
+// FUNCTION: VC1 0x00428750
+SQBool Vector2::Equal(const Vector2* other)
+{
+    return x == other->x && y == other->y;
+}
+
 // Bound as "_cmp" (0x004d36e0) from 0x00420d20. this in ECX; other on stack.
 // FUNCTION: VC1 0x00428890
 SQInteger Vector2::Cmp(const Vector2* other)
@@ -126,6 +144,26 @@ Vector2* Vector2::Mul(Vector2* out, SQFloat scalar)
 {
     out->x = x * scalar;
     out->y = y * scalar;
+    return out;
+}
+
+// Bound as "_sub" (0x004d36b8) via 0x00421dc0 from 0x004c079f.
+// Writes this-other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428920
+Vector2* Vector2::Sub(Vector2* out, const Vector2* other)
+{
+    out->x = x - other->x;
+    out->y = y - other->y;
+    return out;
+}
+
+// Bound as "_add" (0x004d36b0) via 0x00421dc0 from 0x004c0783.
+// Writes this+other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428940
+Vector2* Vector2::Add(Vector2* out, const Vector2* other)
+{
+    out->x = x + other->x;
+    out->y = y + other->y;
     return out;
 }
 

@@ -28,6 +28,7 @@ int main()
     volatile SQInteger keepVec2Cmp = vec2.Cmp(&vec2);
     volatile SQFloat keepVec2Sq = vec2.GetSquareMagnitude();
     volatile SQFloat keepVec2Mag = vec2.GetMagnitude();
+    vec2.Normalize();
     vc1::Vector2 vec2n;
     volatile vc1::Vector2* keepVec2N = vec2.GetNormalized(&vec2n);
     vc1::Vector2 vec2u;
@@ -36,6 +37,11 @@ int main()
     volatile vc1::Vector2* keepVec2D = vec2.Div(&vec2d, 2.0f);
     vc1::Vector2 vec2m;
     volatile vc1::Vector2* keepVec2M = vec2.Mul(&vec2m, 2.0f);
+    vc1::Vector2 vec2s;
+    volatile vc1::Vector2* keepVec2S = vec2.Sub(&vec2s, &vec2);
+    vc1::Vector2 vec2a;
+    volatile vc1::Vector2* keepVec2A = vec2.Add(&vec2a, &vec2);
+    volatile SQBool keepVec2Eq = vec2.Equal(&vec2);
     vc1::Vector3 vec3;
     vec3.x = 1.0f;
     vec3.y = 2.0f;
@@ -43,6 +49,7 @@ int main()
     volatile SQInteger keepVec3Cmp = vec3.Cmp(&vec3);
     volatile SQFloat keepVec3Sq = vec3.GetSquareMagnitude();
     volatile SQFloat keepVec3Mag = vec3.GetMagnitude();
+    vec3.Normalize();
     vc1::Vector3 vec3n;
     volatile vc1::Vector3* keepVec3N = vec3.GetNormalized(&vec3n);
     vc1::Vector3 vec3u;
@@ -51,6 +58,10 @@ int main()
     volatile vc1::Vector3* keepVec3D = vec3.Div(&vec3d, 2.0f);
     vc1::Vector3 vec3m;
     volatile vc1::Vector3* keepVec3M = vec3.Mul(&vec3m, 2.0f);
+    vc1::Vector3 vec3s;
+    volatile vc1::Vector3* keepVec3S = vec3.Sub(&vec3s, &vec3);
+    vc1::Vector3 vec3a;
+    volatile vc1::Vector3* keepVec3A = vec3.Add(&vec3a, &vec3);
     vc1::Vector4 vec4;
     vec4.x = 1.0f;
     vec4.y = 2.0f;
@@ -59,6 +70,7 @@ int main()
     volatile SQInteger keepVec4Cmp = vec4.Cmp(&vec4);
     volatile SQFloat keepVec4Sq = vec4.GetSquareMagnitude();
     volatile SQFloat keepVec4Mag = vec4.GetMagnitude();
+    vec4.Normalize();
     vc1::Vector4 vec4n;
     volatile vc1::Vector4* keepVec4N = vec4.GetNormalized(&vec4n);
     vc1::Vector4 vec4u;
@@ -67,6 +79,10 @@ int main()
     volatile vc1::Vector4* keepVec4D = vec4.Div(&vec4d, 2.0f);
     vc1::Vector4 vec4m;
     volatile vc1::Vector4* keepVec4M = vec4.Mul(&vec4m, 2.0f);
+    vc1::Vector4 vec4s;
+    volatile vc1::Vector4* keepVec4S = vec4.Sub(&vec4s, &vec4);
+    vc1::Vector4 vec4a;
+    volatile vc1::Vector4* keepVec4A = vec4.Add(&vec4a, &vec4);
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -89,6 +105,9 @@ int main()
     (void)keepVec2U;
     (void)keepVec2D;
     (void)keepVec2M;
+    (void)keepVec2S;
+    (void)keepVec2A;
+    (void)keepVec2Eq;
     (void)keepVec3Cmp;
     (void)keepVec3Sq;
     (void)keepVec3Mag;
@@ -96,6 +115,8 @@ int main()
     (void)keepVec3U;
     (void)keepVec3D;
     (void)keepVec3M;
+    (void)keepVec3S;
+    (void)keepVec3A;
     (void)keepVec4Cmp;
     (void)keepVec4Sq;
     (void)keepVec4Mag;
@@ -103,6 +124,8 @@ int main()
     (void)keepVec4U;
     (void)keepVec4D;
     (void)keepVec4M;
+    (void)keepVec4S;
+    (void)keepVec4A;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,
@@ -123,6 +146,7 @@ int main()
         (void*)&vc1::CreateNativeClass,
         (void*)&vc1::MemCompare,
         (void*)&vc1::RegisterNativeSlot,
+        (void*)&vc1::RegisterIntegerSlot,
         (void*)&vc1::Color::RegisterClass,
         (void*)&vc1::Color::CreateBinding,
         (void*)&vc1::Color::BindArgConstructor,

@@ -101,6 +101,21 @@ SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject*
     return dest;
 }
 
+// EAX=class SquirrelObject (NativeClassBinding+8). Stack: name, integer. RET 8.
+// Color registrar 0x004bf610 at 0x004bfac1: "AlphaShift" (0x004d6b84), 0x18. ~155 xrefs.
+// Original newslot helper 0x00498a40, not mapped sq_newslot 0x00499600.
+// FUNCTION: VC1 0x0049b130
+SQBool RegisterIntegerSlot(SquirrelObject* object, const SQChar* name, SQInteger value)
+{
+    const SQInteger savedTop = sq_gettop(g_vm);
+    sq_pushobject(g_vm, object->obj);
+    sq_pushstring(g_vm, name, -1);
+    sq_pushinteger(g_vm, value);
+    const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+    sq_settop(g_vm, savedTop);
+    return ok;
+}
+
 // FUNCTION: VC1 0x004c3240
 SQBool CreateNativeClass(HSQUIRRELVM vm, SquirrelObject* out,
     SQUserPointer typeTag, const SQChar* className)

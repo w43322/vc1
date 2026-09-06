@@ -15,9 +15,12 @@ struct Vector3
     Vector3* Unm(Vector3* out); // thiscall RET 4; bound as "_unm"
     Vector3* Div(Vector3* out, SQFloat scalar); // thiscall RET 8; bound as "_div"
     Vector3* Mul(Vector3* out, SQFloat scalar); // thiscall RET 8; bound as "_mul"
+    Vector3* Sub(Vector3* out, const Vector3* other); // thiscall RET 8; bound as "_sub"
+    Vector3* Add(Vector3* out, const Vector3* other); // thiscall RET 8; bound as "_add"
     SQFloat GetSquareMagnitude();
     SQFloat GetMagnitude();
     Vector3* GetNormalized(Vector3* out); // thiscall RET 4
+    void Normalize(); // thiscall; bound as "Normalize"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
