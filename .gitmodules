@@ -1,0 +1,3 @@
+[submodule "vendor/reccmp"]
+	path = vendor/reccmp
+	url = https://github.com/isledecomp/reccmp.git

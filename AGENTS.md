@@ -14,6 +14,7 @@
 - 写 C++ 前必须看函数边界、原始汇编、xrefs、caller/callee 和相关常量/字符串。伪代码只作辅助。
 - 参数位置、返回寄存器、栈平衡、callee-saved 寄存器和函数指针 ABI 必须从汇编及至少一个调用方核实。VC9 LTCG 可能使用 EAX、ESI、EDI 等自定义传参。
 - 确认后才写入描述性名称、精确类型、自定义 storage、结构字段、plate comment 和 `VC1_INFERRED`/`SQ223_IDENTIFIED` 标签。推定名必须注明不是原符号。
+- 源码映射后的函数名/类型用 `tools/import-ghidra.ps1`（官方 `reccmp-ghidra-import`）写回 Ghidra，不要另写同步脚本。headless 导入前必须关掉 Ghidra GUI。
 - 修改后必须 `save_program`。Ghidra 数据库不入 Git。
 
 ## reccmp

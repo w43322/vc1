@@ -2,7 +2,6 @@
 /Virtual-City_Win_EN_Full/
 /Virtual-City_Win_EN_Full.zip
 /ghidra/
-/vendor/
 /build/
 /analysis/*.log
 *.gpr
@@ -10,3 +9,4 @@
 __pycache__/
 .venv/
 /reccmp-user.yml
+/reccmp-build.yml
