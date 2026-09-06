@@ -22,12 +22,22 @@ int main()
         vc1::Vector4::TypeOf
     };
     volatile void* keepBind[] = {
+        (void*)&vc1::AttachStackTop,
+        (void*)&vc1::AssignSquirrelObject,
         (void*)&vc1::CreateNativeClass,
         (void*)&vc1::RegisterNativeSlot,
         (void*)&vc1::Color::RegisterClass,
+        (void*)&vc1::Color::CreateBinding,
+        (void*)&vc1::Color::BindArgConstructor,
         (void*)&vc1::Vector2::RegisterClass,
+        (void*)&vc1::Vector2::CreateBinding,
+        (void*)&vc1::Vector2::BindArgConstructor,
         (void*)&vc1::Vector3::RegisterClass,
-        (void*)&vc1::Vector4::RegisterClass
+        (void*)&vc1::Vector3::CreateBinding,
+        (void*)&vc1::Vector3::BindArgConstructor,
+        (void*)&vc1::Vector4::RegisterClass,
+        (void*)&vc1::Vector4::CreateBinding,
+        (void*)&vc1::Vector4::BindArgConstructor
     };
     (void)keep;
     (void)keepBind;

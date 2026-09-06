@@ -13,11 +13,27 @@ struct SquirrelObject
 
 typedef char Vc1SquirrelObjectSizeCheck[sizeof(SquirrelObject) == 12 ? 1 : -1];
 
+// Inferred holder used by Color/Vector class setup. Original reads HSQOBJECT at +0x0c/+0x10.
+struct NativeClassBinding
+{
+    HSQUIRRELVM vm;          // +0x00, copied from g_vm
+    const SQChar* className; // +0x04
+    SquirrelObject obj;      // +0x08
+};
+
+typedef char Vc1NativeClassBindingSizeCheck[sizeof(NativeClassBinding) == 20 ? 1 : -1];
+
 // Global VM used by slot registration. Original 0x004ed13c.
 extern HSQUIRRELVM g_vm;
 extern const void* g_squirrelObjectVftable;
 
 void InitSquirrelObject(SquirrelObject* object);
+
+// 0x0049aaa0; stdcall dest=[esp+4]. Copies stack top into dest->obj; addref new, release old.
+void AttachStackTop(SquirrelObject* dest);
+
+// 0x0049ab30; dest=EBX, source=EAX. addref source, release dest, copy HSQOBJECT. returns dest.
+SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject* source);
 
 // 0x0049a370; original ABI: out=ECX, name=EAX, callback=[esp+4], typemask=EBX.
 // Null typemask becomes "t|y|x"; "*" skips sq_setparamscheck; other masks prefix "t|y|x".

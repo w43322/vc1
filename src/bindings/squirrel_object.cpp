@@ -15,12 +15,6 @@ void InitSquirrelObject(SquirrelObject* object)
     object->obj._type = OT_NULL;
 }
 
-static void CaptureTop(SquirrelObject* out)
-{
-    sq_getstackobj(g_vm, -1, &out->obj);
-    sq_addref(g_vm, &out->obj);
-}
-
 // FUNCTION: VC1 0x0049a370
 SquirrelObject* RegisterNativeSlot(SquirrelObject* out, const SQChar* name,
     SQFUNCTION callback, const SQChar* typemask)
@@ -31,7 +25,7 @@ SquirrelObject* RegisterNativeSlot(SquirrelObject* out, const SQChar* name,
     InitSquirrelObject(out);
     sq_pushstring(g_vm, name, -1);
     sq_newclosure(g_vm, callback, 0);
-    CaptureTop(out);
+    AttachStackTop(out);
 
     if (!typemask) {
         check = "t|y|x";
@@ -48,6 +42,28 @@ SquirrelObject* RegisterNativeSlot(SquirrelObject* out, const SQChar* name,
     return out;
 }
 
+// stdcall; used from RegisterNativeSlot 0x0049a3b9 and CreateNativeClass 0x004c32c4.
+// FUNCTION: VC1 0x0049aaa0
+void AttachStackTop(SquirrelObject* dest)
+{
+    HSQOBJECT top;
+    sq_getstackobj(g_vm, -1, &top);
+    sq_addref(g_vm, &top);
+    sq_release(g_vm, &dest->obj);
+    dest->obj = top;
+}
+
+// dest=EBX, source=EAX. Used from Color/Vector CreateBinding after RegisterClass.
+// FUNCTION: VC1 0x0049ab30
+SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject* source)
+{
+    HSQOBJECT copy = source->obj;
+    sq_addref(g_vm, &copy);
+    sq_release(g_vm, &dest->obj);
+    dest->obj = copy;
+    return dest;
+}
+
 // FUNCTION: VC1 0x004c3240
 SQBool CreateNativeClass(HSQUIRRELVM vm, SquirrelObject* out,
     SQUserPointer typeTag, const SQChar* className)
@@ -59,8 +75,7 @@ SQBool CreateNativeClass(HSQUIRRELVM vm, SquirrelObject* out,
         sq_settop(vm, savedTop);
         return SQFalse;
     }
-    sq_getstackobj(vm, -1, &out->obj);
-    sq_addref(vm, &out->obj);
+    AttachStackTop(out);
     sq_settypetag(vm, -1, typeTag);
     sq_newslot(vm, -3, SQFalse);
     sq_pop(vm, 1);

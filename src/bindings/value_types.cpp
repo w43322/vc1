@@ -27,6 +27,50 @@ SQInteger Vector4::ReleaseHook(SQUserPointer object, SQInteger size)
     return 0;
 }
 
+static NativeClassBinding* CreateValueBinding(NativeClassBinding* self, const SQChar* name,
+    SquirrelObject* (*registerClass)(SquirrelObject*, HSQUIRRELVM, const SQChar*))
+{
+    SquirrelObject created;
+    self->vm = g_vm;
+    self->className = name;
+    InitSquirrelObject(&self->obj);
+    if (!self->className) {
+        self->className = name;
+    }
+    registerClass(&created, self->vm, self->className);
+    AssignSquirrelObject(&self->obj, &created);
+    sq_release(g_vm, &created.obj);
+    return self;
+}
+
+// this in ESI. Fills NativeClassBinding {g_vm, "Color", obj} then RegisterClass + Assign.
+// FUNCTION: VC1 0x0041de10
+NativeClassBinding* Color::CreateBinding(NativeClassBinding* self)
+{
+    return CreateValueBinding(self, "Color", Color::RegisterClass);
+}
+
+// this in ESI. Name 0x004d7588.
+// FUNCTION: VC1 0x0041dea0
+NativeClassBinding* Vector3::CreateBinding(NativeClassBinding* self)
+{
+    return CreateValueBinding(self, "Vector3", Vector3::RegisterClass);
+}
+
+// this in ESI. Name 0x004cfb44.
+// FUNCTION: VC1 0x0041df30
+NativeClassBinding* Vector2::CreateBinding(NativeClassBinding* self)
+{
+    return CreateValueBinding(self, "Vector2", Vector2::RegisterClass);
+}
+
+// this in ESI. Name 0x004d7590.
+// FUNCTION: VC1 0x0041dfc0
+NativeClassBinding* Vector4::CreateBinding(NativeClassBinding* self)
+{
+    return CreateValueBinding(self, "Vector4", Vector4::RegisterClass);
+}
+
 // FUNCTION: VC1 0x0041e3b0
 SQInteger BindNativeInstance(HSQUIRRELVM vm, SQUserPointer nativeObject,
     SQRELEASEHOOK releaseHook)
@@ -34,6 +78,41 @@ SQInteger BindNativeInstance(HSQUIRRELVM vm, SQUserPointer nativeObject,
     sq_setinstanceup(vm, 1, nativeObject);
     sq_setreleasehook(vm, 1, releaseHook);
     return 1;
+}
+
+static NativeClassBinding* BindStarConstructor(NativeClassBinding* self, SQFUNCTION fn)
+{
+    SquirrelObject slot;
+    sq_pushobject(g_vm, self->obj.obj);
+    RegisterNativeSlot(&slot, "constructor", fn, "*");
+    sq_release(g_vm, &slot.obj);
+    sq_pop(g_vm, 1);
+    return self;
+}
+
+// this in EDI. Pushes binding->obj, RegisterNativeSlot("constructor", ConstructArgs, "*").
+// FUNCTION: VC1 0x0041e440
+NativeClassBinding* Color::BindArgConstructor(NativeClassBinding* self)
+{
+    return BindStarConstructor(self, Color::ConstructArgs);
+}
+
+// FUNCTION: VC1 0x0041e4c0
+NativeClassBinding* Vector3::BindArgConstructor(NativeClassBinding* self)
+{
+    return BindStarConstructor(self, Vector3::ConstructArgs);
+}
+
+// FUNCTION: VC1 0x0041e620
+NativeClassBinding* Vector2::BindArgConstructor(NativeClassBinding* self)
+{
+    return BindStarConstructor(self, Vector2::ConstructArgs);
+}
+
+// FUNCTION: VC1 0x0041e780
+NativeClassBinding* Vector4::BindArgConstructor(NativeClassBinding* self)
+{
+    return BindStarConstructor(self, Vector4::ConstructArgs);
 }
 
 struct NativeTypeInfo

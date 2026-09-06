@@ -16,6 +16,8 @@ struct Color
     static SQInteger TypeOf(HSQUIRRELVM vm);
     static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
         const SQChar* className);
+    static NativeClassBinding* CreateBinding(NativeClassBinding* self);
+    static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);
 };
 
 struct Vector2
@@ -29,6 +31,8 @@ struct Vector2
     static SQInteger TypeOf(HSQUIRRELVM vm);
     static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
         const SQChar* className);
+    static NativeClassBinding* CreateBinding(NativeClassBinding* self);
+    static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);
 };
 
 struct Vector3
@@ -43,6 +47,8 @@ struct Vector3
     static SQInteger TypeOf(HSQUIRRELVM vm);
     static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
         const SQChar* className);
+    static NativeClassBinding* CreateBinding(NativeClassBinding* self);
+    static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);
 };
 
 struct Vector4
@@ -58,6 +64,8 @@ struct Vector4
     static SQInteger TypeOf(HSQUIRRELVM vm);
     static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
         const SQChar* className);
+    static NativeClassBinding* CreateBinding(NativeClassBinding* self);
+    static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);
 };
 
 typedef char Vc1Vector3SizeCheck[sizeof(Vector3) == 12 ? 1 : -1];
