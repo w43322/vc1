@@ -8,7 +8,8 @@ namespace vc1 {
 //   +0x04 pools[0x21] starting at 0x004ed458; index i has itemSize i*4
 //   +0x88 releasedBytes at 0x004ed4dc
 // Color (4 bytes) uses pools[1] / 0x004ed45c; Vector2 (8) pools[2] / 0x004ed460;
-// Vector3 (12) pools[3] / 0x004ed464; Vector4 (16) pools[4] / 0x004ed468.
+// Vector3 (12) pools[3] / 0x004ed464; Vector4/Quaternion/Rect/RectF (16) pools[4] / 0x004ed468;
+// Matrix3 (36) pools[9] / 0x004ed47c; Matrix4 (64) pools[16] / 0x004ed498.
 // Other 4-byte clients also use slot 1 (e.g. 0x0041fdd0). Names are inferred.
 enum { kSizeClassCount = 0x21 };
 enum { kInitialGrowthCount = 32 };

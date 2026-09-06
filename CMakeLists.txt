@@ -31,6 +31,11 @@ add_executable(vc1_recompiled
   src/bindings/vector2.cpp
   src/bindings/vector3.cpp
   src/bindings/vector4.cpp
+  src/bindings/matrix3.cpp
+  src/bindings/matrix4.cpp
+  src/bindings/quaternion.cpp
+  src/bindings/rect.cpp
+  src/bindings/rectf.cpp
   src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES})

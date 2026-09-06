@@ -138,7 +138,22 @@ int main()
         vc1::Vector3::TypeOf,
         vc1::Vector4::Constructor,
         vc1::Vector4::ConstructArgs,
-        vc1::Vector4::TypeOf
+        vc1::Vector4::TypeOf,
+        vc1::Matrix3::Constructor,
+        vc1::Matrix3::ConstructArgs,
+        vc1::Matrix3::TypeOf,
+        vc1::Matrix4::Constructor,
+        vc1::Matrix4::ConstructArgs,
+        vc1::Matrix4::TypeOf,
+        vc1::Quaternion::Constructor,
+        vc1::Quaternion::ConstructArgs,
+        vc1::Quaternion::TypeOf,
+        vc1::Rect::Constructor,
+        vc1::Rect::ConstructArgs,
+        vc1::Rect::TypeOf,
+        vc1::RectF::Constructor,
+        vc1::RectF::ConstructArgs,
+        vc1::RectF::TypeOf
     };
     volatile void* keepBind[] = {
         (void*)&vc1::AttachStackTop,
@@ -158,7 +173,22 @@ int main()
         (void*)&vc1::Vector3::BindArgConstructor,
         (void*)&vc1::Vector4::RegisterClass,
         (void*)&vc1::Vector4::CreateBinding,
-        (void*)&vc1::Vector4::BindArgConstructor
+        (void*)&vc1::Vector4::BindArgConstructor,
+        (void*)&vc1::Matrix3::RegisterClass,
+        (void*)&vc1::Matrix3::CreateBinding,
+        (void*)&vc1::Matrix3::BindArgConstructor,
+        (void*)&vc1::Matrix4::RegisterClass,
+        (void*)&vc1::Matrix4::CreateBinding,
+        (void*)&vc1::Matrix4::BindArgConstructor,
+        (void*)&vc1::Quaternion::RegisterClass,
+        (void*)&vc1::Quaternion::CreateBinding,
+        (void*)&vc1::Quaternion::BindArgConstructor,
+        (void*)&vc1::Rect::RegisterClass,
+        (void*)&vc1::Rect::CreateBinding,
+        (void*)&vc1::Rect::BindArgConstructor,
+        (void*)&vc1::RectF::RegisterClass,
+        (void*)&vc1::RectF::CreateBinding,
+        (void*)&vc1::RectF::BindArgConstructor
     };
     (void)keep;
     (void)keepBind;
