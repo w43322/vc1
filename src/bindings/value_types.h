@@ -23,6 +23,7 @@ struct Color
     SQFloat GetGreen();
     SQFloat GetRed();
     SQFloat GetAlpha();
+    SQInteger Cmp(const Color* other); // thiscall RET 4; bound as "_cmp"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
@@ -38,6 +39,8 @@ struct Vector2
 {
     SQFloat x;
     SQFloat y;
+
+    SQInteger Cmp(const Vector2* other); // thiscall RET 4; bound as "_cmp"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
@@ -55,6 +58,8 @@ struct Vector3
     SQFloat y;
     SQFloat z;
 
+    SQInteger Cmp(const Vector3* other); // thiscall RET 4; bound as "_cmp"
+
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
@@ -71,6 +76,8 @@ struct Vector4
     SQFloat y;
     SQFloat z;
     SQFloat w;
+
+    SQInteger Cmp(const Vector4* other); // thiscall RET 4; bound as "_cmp"
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

@@ -376,6 +376,35 @@ SQInteger Vector4::TypeOf(HSQUIRRELVM vm)
     return 1;
 }
 
+// Bound as "_cmp" (0x004d36e0) from 0x00421430. this in ECX; other on stack.
+// Also reused by another 16-byte binder at 0x00422960.
+// FUNCTION: VC1 0x00428590
+SQInteger Vector4::Cmp(const Vector4* other)
+{
+    return MemCompare(this, other, sizeof(Vector4));
+}
+
+// Bound as "_cmp" (0x004d36e0) from 0x00420d20. this in ECX; other on stack.
+// FUNCTION: VC1 0x00428890
+SQInteger Vector2::Cmp(const Vector2* other)
+{
+    return MemCompare(this, other, sizeof(Vector2));
+}
+
+// Bound as "_cmp" (0x004d36e0) from 0x00420860. this in ECX; other on stack.
+// FUNCTION: VC1 0x00428a70
+SQInteger Vector3::Cmp(const Vector3* other)
+{
+    return MemCompare(this, other, sizeof(Vector3));
+}
+
+// Bound as "_cmp" (0x004d36e0) from 0x00420490. this in ECX; other on stack.
+// FUNCTION: VC1 0x00428c50
+SQInteger Color::Cmp(const Color* other)
+{
+    return MemCompare(this, other, sizeof(Color));
+}
+
 // Bound as "GetBlue" (0x004d6b70) via 0x00422b70. this in ECX.
 // Scale qword 0x004d8a58 is a truncated 1/255 (0x3f70101020000000).
 // FUNCTION: VC1 0x00428c70

@@ -19,6 +19,24 @@ int main()
     volatile SQFloat keepGreen = color.GetGreen();
     volatile SQFloat keepRed = color.GetRed();
     volatile SQFloat keepAlpha = color.GetAlpha();
+    vc1::Color otherColor;
+    otherColor.argb = value;
+    volatile SQInteger keepColorCmp = color.Cmp(&otherColor);
+    vc1::Vector2 vec2;
+    vec2.x = 0.0f;
+    vec2.y = 0.0f;
+    volatile SQInteger keepVec2Cmp = vec2.Cmp(&vec2);
+    vc1::Vector3 vec3;
+    vec3.x = 0.0f;
+    vec3.y = 0.0f;
+    vec3.z = 0.0f;
+    volatile SQInteger keepVec3Cmp = vec3.Cmp(&vec3);
+    vc1::Vector4 vec4;
+    vec4.x = 0.0f;
+    vec4.y = 0.0f;
+    vec4.z = 0.0f;
+    vec4.w = 0.0f;
+    volatile SQInteger keepVec4Cmp = vec4.Cmp(&vec4);
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -33,6 +51,10 @@ int main()
     (void)keepGreen;
     (void)keepRed;
     (void)keepAlpha;
+    (void)keepColorCmp;
+    (void)keepVec2Cmp;
+    (void)keepVec3Cmp;
+    (void)keepVec4Cmp;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,
@@ -51,6 +73,7 @@ int main()
         (void*)&vc1::AttachStackTop,
         (void*)&vc1::AssignSquirrelObject,
         (void*)&vc1::CreateNativeClass,
+        (void*)&vc1::MemCompare,
         (void*)&vc1::RegisterNativeSlot,
         (void*)&vc1::Color::RegisterClass,
         (void*)&vc1::Color::CreateBinding,
