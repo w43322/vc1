@@ -113,6 +113,29 @@ Vector3* Vector3::Unm(Vector3* out)
     return out;
 }
 
+// Bound as "_div" (0x004d36c8) via 0x00420700 from 0x004c05dc.
+// inv=1/scalar into [esp+8], then out=this*inv. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428ab0
+Vector3* Vector3::Div(Vector3* out, SQFloat scalar)
+{
+    const SQFloat inv = 1.0f / scalar;
+    out->x = x * inv;
+    out->y = y * inv;
+    out->z = z * inv;
+    return out;
+}
+
+// Bound as "_mul" (0x004d36c0) via 0x00420700 from 0x004c05c0.
+// Writes this*scalar into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428ae0
+Vector3* Vector3::Mul(Vector3* out, SQFloat scalar)
+{
+    out->x = x * scalar;
+    out->y = y * scalar;
+    out->z = z * scalar;
+    return out;
+}
+
 // Registered from 0x0041e4c0 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
 // extra = gettop-1; jump table 0x004bed64. Error string 0x004d69f0.
 // FUNCTION: VC1 0x004beb40

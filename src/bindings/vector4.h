@@ -14,6 +14,8 @@ struct Vector4
 
     SQInteger Cmp(const Vector4* other); // thiscall RET 4; bound as "_cmp"
     Vector4* Unm(Vector4* out); // thiscall RET 4; bound as "_unm"
+    Vector4* Div(Vector4* out, SQFloat scalar); // thiscall RET 8; bound as "_div"
+    Vector4* Mul(Vector4* out, SQFloat scalar); // thiscall RET 8; bound as "_mul"
     SQFloat GetSquareMagnitude();
     SQFloat GetMagnitude();
     Vector4* GetNormalized(Vector4* out); // thiscall RET 4

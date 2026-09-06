@@ -13,6 +13,8 @@ struct Vector3
 
     SQInteger Cmp(const Vector3* other); // thiscall RET 4; bound as "_cmp"
     Vector3* Unm(Vector3* out); // thiscall RET 4; bound as "_unm"
+    Vector3* Div(Vector3* out, SQFloat scalar); // thiscall RET 8; bound as "_div"
+    Vector3* Mul(Vector3* out, SQFloat scalar); // thiscall RET 8; bound as "_mul"
     SQFloat GetSquareMagnitude();
     SQFloat GetMagnitude();
     Vector3* GetNormalized(Vector3* out); // thiscall RET 4

@@ -108,6 +108,27 @@ Vector2* Vector2::Unm(Vector2* out)
     return out;
 }
 
+// Bound as "_div" (0x004d36c8) via 0x00420bc0 from 0x004c07d7.
+// inv=1/scalar into [esp+8], then out=this*inv. this in ECX; RET 8.
+// FUNCTION: VC1 0x004288d0
+Vector2* Vector2::Div(Vector2* out, SQFloat scalar)
+{
+    const SQFloat inv = 1.0f / scalar;
+    out->x = x * inv;
+    out->y = y * inv;
+    return out;
+}
+
+// Bound as "_mul" (0x004d36c0) via 0x00420bc0 from 0x004c07bb.
+// Writes this*scalar into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428900
+Vector2* Vector2::Mul(Vector2* out, SQFloat scalar)
+{
+    out->x = x * scalar;
+    out->y = y * scalar;
+    return out;
+}
+
 // Registered from 0x0041e620 as "constructor" (0x004d2f10) with typemask "*" (0x004d6b14).
 // extra = gettop-1. Error string 0x004d6a14.
 // FUNCTION: VC1 0x004be9e0
