@@ -10,6 +10,16 @@ struct Color
 {
     SQUnsignedInteger argb; // 0xff000000 default in 0x0041fe10
 
+    // thiscall; bound from 0x004bf610 as GetA/GetR/GetG/GetB.
+    unsigned char GetA();
+    unsigned char GetR();
+    SQUnsignedInteger GetG();
+    unsigned char GetB();
+    static SQUnsignedInteger MakeARGB(unsigned char a, unsigned char r, unsigned char g,
+        unsigned char b);
+    void SetValue(SQUnsignedInteger value); // thiscall, RET 4
+    SQUnsignedInteger GetValue();
+
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);

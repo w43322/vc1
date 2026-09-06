@@ -7,6 +7,24 @@
 int main()
 {
     vc1::InitSizeClassPools();
+    vc1::Color color;
+    volatile SQUnsignedInteger value = 0xff112233;
+    color.argb = value;
+    volatile unsigned keepA = color.GetA();
+    volatile unsigned keepR = color.GetR();
+    volatile unsigned keepG = color.GetG();
+    volatile unsigned keepB = color.GetB();
+    volatile unsigned keepV = color.GetValue();
+    volatile unsigned char ba = static_cast<unsigned char>(value);
+    volatile unsigned char br = static_cast<unsigned char>(value >> 8);
+    volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
+    volatile unsigned char bb = static_cast<unsigned char>(value >> 24);
+    color.SetValue(vc1::Color::MakeARGB(ba, br, bg, bb));
+    (void)keepA;
+    (void)keepR;
+    (void)keepG;
+    (void)keepB;
+    (void)keepV;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,

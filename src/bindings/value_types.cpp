@@ -3,6 +3,59 @@
 
 namespace vc1 {
 
+// Bound as "GetA" (0x004d6b30) from 0x004bf9af. this in ECX; returns [argb+3].
+// FUNCTION: VC1 0x00418480
+unsigned char Color::GetA()
+{
+    return static_cast<unsigned char>(argb >> 24);
+}
+
+// Bound as "GetR" (0x004d6b38) from 0x004bf9cb. this in ECX; returns [argb+2].
+// FUNCTION: VC1 0x00418490
+unsigned char Color::GetR()
+{
+    return static_cast<unsigned char>(argb >> 16);
+}
+
+// Bound as "GetG" (0x004d6b40) from 0x004bf9e7. this in ECX; MOV EAX,[this]; SHR 8.
+// FUNCTION: VC1 0x004184a0
+SQUnsignedInteger Color::GetG()
+{
+    return argb >> 8;
+}
+
+// Bound as "GetB" (0x004d6b48) from 0x004bfa03. this in ECX; returns [argb+0].
+// FUNCTION: VC1 0x004184b0
+unsigned char Color::GetB()
+{
+    return static_cast<unsigned char>(argb);
+}
+
+// Packs A,R,G,B bytes; string "MakeARGB" (0x004d6b78). cdecl, no this.
+// FUNCTION: VC1 0x004184c0
+SQUnsignedInteger Color::MakeARGB(unsigned char a, unsigned char r, unsigned char g,
+    unsigned char b)
+{
+    return (static_cast<SQUnsignedInteger>(a) << 24)
+        | (static_cast<SQUnsignedInteger>(r) << 16)
+        | (static_cast<SQUnsignedInteger>(g) << 8)
+        | b;
+}
+
+// Bound as "SetValue" (0x004d6b24) from 0x00420280's sibling 0x00420330. thiscall RET 4.
+// FUNCTION: VC1 0x00418560
+void Color::SetValue(SQUnsignedInteger value)
+{
+    argb = value;
+}
+
+// Bound as "GetValue" (0x004d6b18) from 0x00420280. this in ECX.
+// FUNCTION: VC1 0x00418570
+SQUnsignedInteger Color::GetValue()
+{
+    return argb;
+}
+
 // SQRELEASEHOOK; size unused. Puts 8 bytes back on pools[2].
 // FUNCTION: VC1 0x0041dd00
 SQInteger Vector2::ReleaseHook(SQUserPointer object, SQInteger size)

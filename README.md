@@ -5,8 +5,10 @@ SHA-256：`bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695`
 
 ```powershell
 .\tools\setup-reccmp.ps1
+.\tools\open-ghidra.ps1
 .\tools\build-vc9.cmd
 .\tools\compare-reccmp.ps1
+.\tools\close-ghidra.ps1
 .\tools\import-ghidra.ps1
 ```
 
