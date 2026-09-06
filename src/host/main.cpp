@@ -42,6 +42,8 @@ int main()
     vc1::Vector2 vec2a;
     volatile vc1::Vector2* keepVec2A = vec2.Add(&vec2a, &vec2);
     volatile SQBool keepVec2Eq = vec2.Equal(&vec2);
+    volatile SQBool keepVec2Valid = vec2.IsValid();
+    volatile SQFloat keepVec2Dot = vc1::Vector2::GetDotProduct(&vec2, &vec2);
     vc1::Vector3 vec3;
     vec3.x = 1.0f;
     vec3.y = 2.0f;
@@ -83,6 +85,63 @@ int main()
     volatile vc1::Vector4* keepVec4S = vec4.Sub(&vec4s, &vec4);
     vc1::Vector4 vec4a;
     volatile vc1::Vector4* keepVec4A = vec4.Add(&vec4a, &vec4);
+    vc1::Matrix3 mat3;
+    mat3.m[0] = 1.0f;
+    mat3.m[1] = 0.0f;
+    mat3.m[2] = 0.0f;
+    mat3.m[3] = 0.0f;
+    mat3.m[4] = 1.0f;
+    mat3.m[5] = 0.0f;
+    mat3.m[6] = 0.0f;
+    mat3.m[7] = 0.0f;
+    mat3.m[8] = 1.0f;
+    volatile vc1::Vector2* keepM3X = mat3.GetXVec();
+    volatile vc1::Vector2* keepM3Y = mat3.GetYVec();
+    volatile vc1::Vector2* keepM3O = mat3.GetOrigin();
+    mat3.SetXVec(&vec2);
+    mat3.SetYVec(&vec2);
+    mat3.SetOrigin(&vec2);
+    mat3.MultVecs(&vec2);
+    vc1::Vector2 mat3iv;
+    volatile vc1::Vector2* keepM3IV = mat3.MultInvVrt(&mat3iv, &vec2);
+    vc1::Matrix3 mat3n;
+    volatile vc1::Matrix3* keepM3N = mat3.GetNormalized(&mat3n);
+    mat3.Normalize();
+    volatile SQInteger keepM3Cmp = mat3.Cmp(&mat3);
+    vc1::Matrix3 mat3u;
+    volatile vc1::Matrix3* keepM3U = mat3.Unm(&mat3u);
+    vc1::Matrix3 mat3d;
+    volatile vc1::Matrix3* keepM3D = mat3.Div(&mat3d, 2.0f);
+    vc1::Matrix3 mat3m;
+    volatile vc1::Matrix3* keepM3M = mat3.Mul(&mat3m, &mat3);
+    vc1::Matrix3 mat3s;
+    volatile vc1::Matrix3* keepM3S = mat3.Sub(&mat3s, &mat3);
+    vc1::Matrix3 mat3a;
+    volatile vc1::Matrix3* keepM3A = mat3.Add(&mat3a, &mat3);
+    vc1::Vector3 mat3v;
+    volatile vc1::Vector3* keepM3V = mat3.Mult(&mat3v, &vec3);
+    vc1::Matrix4 mat4;
+    {
+        unsigned i;
+        for (i = 0; i < 16; ++i) {
+            mat4.m[i] = 0.0f;
+        }
+    }
+    mat4.m[0] = 1.0f;
+    mat4.m[5] = 1.0f;
+    mat4.m[10] = 1.0f;
+    mat4.m[15] = 1.0f;
+    volatile SQInteger keepM4Cmp = mat4.Cmp(&mat4);
+    vc1::Matrix4 mat4u;
+    volatile vc1::Matrix4* keepM4U = mat4.Unm(&mat4u);
+    vc1::Matrix4 mat4d;
+    volatile vc1::Matrix4* keepM4D = mat4.Div(&mat4d, 2.0f);
+    vc1::Matrix4 mat4m;
+    volatile vc1::Matrix4* keepM4M = mat4.Mul(&mat4m, &mat4);
+    vc1::Matrix4 mat4s;
+    volatile vc1::Matrix4* keepM4S = mat4.Sub(&mat4s, &mat4);
+    vc1::Matrix4 mat4a;
+    volatile vc1::Matrix4* keepM4A = mat4.Add(&mat4a, &mat4);
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -108,6 +167,8 @@ int main()
     (void)keepVec2S;
     (void)keepVec2A;
     (void)keepVec2Eq;
+    (void)keepVec2Valid;
+    (void)keepVec2Dot;
     (void)keepVec3Cmp;
     (void)keepVec3Sq;
     (void)keepVec3Mag;
@@ -126,6 +187,24 @@ int main()
     (void)keepVec4M;
     (void)keepVec4S;
     (void)keepVec4A;
+    (void)keepM3X;
+    (void)keepM3Y;
+    (void)keepM3O;
+    (void)keepM3IV;
+    (void)keepM3N;
+    (void)keepM3Cmp;
+    (void)keepM3U;
+    (void)keepM3D;
+    (void)keepM3M;
+    (void)keepM3S;
+    (void)keepM3A;
+    (void)keepM3V;
+    (void)keepM4Cmp;
+    (void)keepM4U;
+    (void)keepM4D;
+    (void)keepM4M;
+    (void)keepM4S;
+    (void)keepM4A;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,

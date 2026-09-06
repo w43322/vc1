@@ -47,6 +47,14 @@ void Vector2::Normalize()
     y *= inv;
 }
 
+// Bound as "GetDotProduct" (0x004d727c) via 0x00421090 from 0x004c08ae.
+// cdecl; a=[esp+4], b=[esp+8]; y*y then x*x.
+// FUNCTION: VC1 0x0040cd20
+SQFloat Vector2::GetDotProduct(const Vector2* a, const Vector2* b)
+{
+    return a->x * b->x + a->y * b->y;
+}
+
 // SQRELEASEHOOK; size unused. Puts 8 bytes back on pools[2].
 // FUNCTION: VC1 0x0041dd00
 SQInteger Vector2::ReleaseHook(SQUserPointer object, SQInteger size)
@@ -99,6 +107,20 @@ SQInteger Vector2::TypeOf(HSQUIRRELVM vm)
 {
     sq_pushstring(vm, "Vector2", -1);
     return 1;
+}
+
+// Bound as "IsValid" (0x004d72cc) via 0x00420fe0 from 0x004c089f.
+// FLD x; FLD +Inf (0x004e95cc / 0x7f800000); FCHS to -Inf; FCOM/FUCOM with TEST AH,5 (NaN/below).
+// Same pair for y. Returns 1 if both finite. this in ECX.
+// FUNCTION: VC1 0x004286e0
+SQBool Vector2::IsValid()
+{
+    union {
+        unsigned bits;
+        SQFloat value;
+    } inf;
+    inf.bits = 0x7f800000;
+    return x > -inf.value && x < inf.value && y > -inf.value && y < inf.value;
 }
 
 // Bound as "Equal" (0x004d72c4) via 0x00420e80 from 0x004c082d.

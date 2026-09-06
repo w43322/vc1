@@ -21,6 +21,8 @@ struct Vector2
     SQFloat GetMagnitude();
     Vector2* GetNormalized(Vector2* out); // thiscall RET 4
     void Normalize(); // thiscall; bound as "Normalize"
+    static SQFloat GetDotProduct(const Vector2* a, const Vector2* b); // cdecl; "GetDotProduct"
+    SQBool IsValid(); // thiscall; bound as "IsValid" (0x004d72cc)
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

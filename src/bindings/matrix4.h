@@ -10,6 +10,13 @@ struct Matrix4
 {
     SQFloat m[16];
 
+    SQInteger Cmp(const Matrix4* other); // thiscall RET 4; bound as "_cmp"
+    Matrix4* Unm(Matrix4* out); // thiscall RET 4; bound as "_unm" via 0x00427d20
+    Matrix4* Div(Matrix4* out, SQFloat scalar); // thiscall RET 8; bound as "_div"
+    Matrix4* Mul(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_mul"
+    Matrix4* Sub(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_sub"
+    Matrix4* Add(Matrix4* out, const Matrix4* other); // thiscall RET 8; bound as "_add"
+
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);

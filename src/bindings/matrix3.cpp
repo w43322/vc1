@@ -2,6 +2,8 @@
 #include "value_types.h"
 #include "memory/fixed_pool.h"
 
+#include <math.h>
+
 namespace vc1 {
 
 static NativeTypeInfo g_matrix3Type;
@@ -19,6 +21,57 @@ static void IdentityMatrix3(Matrix3* matrix)
     matrix->m[6] = 0.0f;
     matrix->m[7] = 0.0f;
     matrix->m[8] = 1.0f;
+}
+
+// Bound as "GetOrigin" (0x004d732c) via 0x00421b00 from 0x004c0c96.
+// Returns &m[6]. this in ECX.
+// FUNCTION: VC1 0x00401e60
+Vector2* Matrix3::GetOrigin()
+{
+    return (Vector2*)(m + 6);
+}
+
+// Bound as "SetOrigin" (0x004d7348) via 0x00421bb0 from 0x004c0ce8.
+// Writes two floats into m[6], m[7]. this in ECX; RET 4.
+// FUNCTION: VC1 0x00401e70
+void Matrix3::SetOrigin(const Vector2* origin)
+{
+    m[6] = origin->x;
+    m[7] = origin->y;
+}
+
+// Bound as "GetYVec" (0x004d7324) via 0x00421b00 from 0x004c0c7a.
+// Returns &m[3]. this in ECX.
+// FUNCTION: VC1 0x004060a0
+Vector2* Matrix3::GetYVec()
+{
+    return (Vector2*)(m + 3);
+}
+
+// Bound as "GetXVec" (0x004d731c) via 0x00421b00 from 0x004c0c5e.
+// Returns this as Vector2*. this in ECX.
+// FUNCTION: VC1 0x004060b0
+Vector2* Matrix3::GetXVec()
+{
+    return (Vector2*)m;
+}
+
+// Bound as "SetYVec" (0x004d7340) via 0x00421bb0 from 0x004c0cce.
+// Writes two floats into m[3], m[4]. this in ECX; RET 4.
+// FUNCTION: VC1 0x0040cdb0
+void Matrix3::SetYVec(const Vector2* axis)
+{
+    m[3] = axis->x;
+    m[4] = axis->y;
+}
+
+// Bound as "SetXVec" (0x004d7338) via 0x00421bb0 from 0x004c0cb2.
+// Writes two floats into m[0], m[1]. this in ECX; RET 4.
+// FUNCTION: VC1 0x0040cdd0
+void Matrix3::SetXVec(const Vector2* axis)
+{
+    m[0] = axis->x;
+    m[1] = axis->y;
 }
 
 // SQRELEASEHOOK; size unused. Puts 36 bytes back on pools[9] / 0x004ed47c.
@@ -74,6 +127,175 @@ SQInteger Matrix3::TypeOf(HSQUIRRELVM vm)
 {
     sq_pushstring(vm, "Matrix3", -1);
     return 1;
+}
+
+// Bound as "MultVecs" (0x004d7380) via 0x00421bb0 from 0x004c0d94.
+// Scales X by v.x and Y by v.y. this in ECX; scale=[esp+4]; RET 4.
+// FUNCTION: VC1 0x00427dc0
+void Matrix3::MultVecs(const Vector2* scale)
+{
+    m[0] *= scale->x;
+    m[1] *= scale->x;
+    m[3] *= scale->y;
+    m[4] *= scale->y;
+}
+
+// Bound as "MultInvVrt" (0x004d7368) via 0x00421dc0 from 0x004c0d5c.
+// out = (v-origin) dotted with orthonormal X/Y. this in ECX; RET 8.
+// FUNCTION: VC1 0x00427e00
+Vector2* Matrix3::MultInvVrt(Vector2* out, const Vector2* v)
+{
+    const SQFloat dx = v->x - m[6];
+    const SQFloat dy = v->y - m[7];
+    out->x = dx * m[0] + dy * m[1];
+    out->y = dx * m[3] + dy * m[4];
+    return out;
+}
+
+// Bound as "GetNormalized" (0x004d7248) via 0x004218f0 from 0x004c0d15.
+// Unit X/Y, copy origin, m[2]=m[5]=0, m[8]=1. sqrt 0x004c4280. RET 4.
+// Assembly length of Y (m[3],m[4]) first, then X (m[0],m[1]); stores y-hat, origin, x-hat.
+// FUNCTION: VC1 0x00427e50
+Matrix3* Matrix3::GetNormalized(Matrix3* out)
+{
+    const SQFloat invY = 1.0f / sqrtf(m[3] * m[3] + m[4] * m[4]);
+    const SQFloat y0 = m[3] * invY;
+    const SQFloat y1 = m[4] * invY;
+    const SQFloat invX = 1.0f / sqrtf(m[0] * m[0] + m[1] * m[1]);
+    out->m[0] = m[0] * invX;
+    out->m[3] = y0;
+    out->m[6] = m[6];
+    out->m[1] = m[1] * invX;
+    out->m[4] = y1;
+    out->m[7] = m[7];
+    out->m[2] = 0.0f;
+    out->m[5] = 0.0f;
+    out->m[8] = 1.0f;
+    return out;
+}
+
+// In-place unit X/Y, m[2]=m[5]=0, m[8]=1. sqrt helper 0x004c4280. this in ESI/ECX.
+// Assembly normalizes X (m[0],m[1]) first, then Y (m[3],m[4]); zeros m[5] then m[2].
+// Not the Squirrel "Mult" binder at 0x00474310; this is the in-place companion of GetNormalized.
+// FUNCTION: VC1 0x00427f20
+void Matrix3::Normalize()
+{
+    SQFloat inv = 1.0f / sqrtf(m[0] * m[0] + m[1] * m[1]);
+    m[0] *= inv;
+    m[1] *= inv;
+    inv = 1.0f / sqrtf(m[3] * m[3] + m[4] * m[4]);
+    m[3] *= inv;
+    m[4] *= inv;
+    m[2] = 0.0f;
+    m[5] = 0.0f;
+    m[8] = 1.0f;
+}
+
+// Bound as "_cmp" (0x004d36e0). this in EDX; other on stack; size 0x24.
+// FUNCTION: VC1 0x00428110
+SQInteger Matrix3::Cmp(const Matrix3* other)
+{
+    return MemCompare(this, other, sizeof(Matrix3));
+}
+
+// Bound as "_unm" (0x004d36d0) via 0x004218f0 from 0x004c0c24.
+// Writes -this into out=[esp+4]. this in ECX; RET 4.
+// FUNCTION: VC1 0x00428130
+Matrix3* Matrix3::Unm(Matrix3* out)
+{
+    out->m[0] = -m[0];
+    out->m[1] = -m[1];
+    out->m[2] = -m[2];
+    out->m[3] = -m[3];
+    out->m[4] = -m[4];
+    out->m[5] = -m[5];
+    out->m[6] = -m[6];
+    out->m[7] = -m[7];
+    out->m[8] = -m[8];
+    return out;
+}
+
+// Bound as "_div" (0x004d36c8) via 0x00421840 from 0x004c0c15.
+// Wrapper 0x00428180: FLD scalar, EAX=out, PUSH this, FSTP [esp], CALL 0x00474370, RET 8.
+// Helper 0x00474370: this in ECX, scalar on stack, out in EAX, writes (1/scalar)*this.
+// FUNCTION: VC1 0x00428180
+Matrix3* Matrix3::Div(Matrix3* out, SQFloat scalar)
+{
+    const SQFloat inv = 1.0f / scalar;
+    out->m[0] = m[0] * inv;
+    out->m[1] = m[1] * inv;
+    out->m[2] = m[2] * inv;
+    out->m[3] = m[3] * inv;
+    out->m[4] = m[4] * inv;
+    out->m[5] = m[5] * inv;
+    out->m[6] = m[6] * inv;
+    out->m[7] = m[7] * inv;
+    out->m[8] = m[8] * inv;
+    return out;
+}
+
+// Bound as "_mul" (0x004d36c0) via 0x00421790 from 0x004c0bf7.
+// Wrapper 0x004281a0: EAX=out, EDX=this, ECX=other, CALL 0x00474470, RET 8.
+// Helper 0x00474470: out = this * other, column-major 3x3 (EDX=this, ECX=other, EAX=out).
+// FUNCTION: VC1 0x004281a0
+Matrix3* Matrix3::Mul(Matrix3* out, const Matrix3* other)
+{
+    const SQFloat* o = other->m;
+    out->m[0] = m[0] * o[0] + m[3] * o[1] + m[6] * o[2];
+    out->m[1] = m[1] * o[0] + m[4] * o[1] + m[7] * o[2];
+    out->m[2] = m[2] * o[0] + m[5] * o[1] + m[8] * o[2];
+    out->m[3] = m[0] * o[3] + m[3] * o[4] + m[6] * o[5];
+    out->m[4] = m[1] * o[3] + m[4] * o[4] + m[7] * o[5];
+    out->m[5] = m[2] * o[3] + m[5] * o[4] + m[8] * o[5];
+    out->m[6] = m[0] * o[6] + m[3] * o[7] + m[6] * o[8];
+    out->m[7] = m[1] * o[6] + m[4] * o[7] + m[7] * o[8];
+    out->m[8] = m[2] * o[6] + m[5] * o[7] + m[8] * o[8];
+    return out;
+}
+
+// Bound as "_sub" (0x004d36b8) via 0x00421790 from 0x004c0bdd.
+// Writes this-other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x004281c0
+Matrix3* Matrix3::Sub(Matrix3* out, const Matrix3* other)
+{
+    out->m[0] = m[0] - other->m[0];
+    out->m[1] = m[1] - other->m[1];
+    out->m[2] = m[2] - other->m[2];
+    out->m[3] = m[3] - other->m[3];
+    out->m[4] = m[4] - other->m[4];
+    out->m[5] = m[5] - other->m[5];
+    out->m[6] = m[6] - other->m[6];
+    out->m[7] = m[7] - other->m[7];
+    out->m[8] = m[8] - other->m[8];
+    return out;
+}
+
+// Bound as "_add" (0x004d36b0) via 0x00421790 from 0x004c0bc1.
+// Writes this+other into out=[esp+4]. this in ECX; RET 8.
+// FUNCTION: VC1 0x00428220
+Matrix3* Matrix3::Add(Matrix3* out, const Matrix3* other)
+{
+    out->m[0] = m[0] + other->m[0];
+    out->m[1] = m[1] + other->m[1];
+    out->m[2] = m[2] + other->m[2];
+    out->m[3] = m[3] + other->m[3];
+    out->m[4] = m[4] + other->m[4];
+    out->m[5] = m[5] + other->m[5];
+    out->m[6] = m[6] + other->m[6];
+    out->m[7] = m[7] + other->m[7];
+    out->m[8] = m[8] + other->m[8];
+    return out;
+}
+
+// Bound as "Mult" (0x004d7354) via 0x00421d10 from 0x004c0d31.
+// out = this * v, column-major. this in ECX; RET 8.
+// FUNCTION: VC1 0x00474310
+Vector3* Matrix3::Mult(Vector3* out, const Vector3* v)
+{
+    out->x = m[0] * v->x + m[3] * v->y + m[6] * v->z;
+    out->y = m[1] * v->x + m[4] * v->y + m[7] * v->z;
+    out->z = m[2] * v->x + m[5] * v->y + m[8] * v->z;
+    return out;
 }
 
 // Registered from 0x0041e860 as "constructor" with typemask "*" (0x004d6b14).
