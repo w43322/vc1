@@ -19,6 +19,10 @@ struct Color
         unsigned char b);
     void SetValue(SQUnsignedInteger value); // thiscall, RET 4
     SQUnsignedInteger GetValue();
+    SQFloat GetBlue();
+    SQFloat GetGreen();
+    SQFloat GetRed();
+    SQFloat GetAlpha();
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

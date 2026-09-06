@@ -15,6 +15,10 @@ int main()
     volatile unsigned keepG = color.GetG();
     volatile unsigned keepB = color.GetB();
     volatile unsigned keepV = color.GetValue();
+    volatile SQFloat keepBlue = color.GetBlue();
+    volatile SQFloat keepGreen = color.GetGreen();
+    volatile SQFloat keepRed = color.GetRed();
+    volatile SQFloat keepAlpha = color.GetAlpha();
     volatile unsigned char ba = static_cast<unsigned char>(value);
     volatile unsigned char br = static_cast<unsigned char>(value >> 8);
     volatile unsigned char bg = static_cast<unsigned char>(value >> 16);
@@ -25,6 +29,10 @@ int main()
     (void)keepG;
     (void)keepB;
     (void)keepV;
+    (void)keepBlue;
+    (void)keepGreen;
+    (void)keepRed;
+    (void)keepAlpha;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,
         vc1::Color::ConstructArgs,

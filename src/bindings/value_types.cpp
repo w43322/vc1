@@ -376,6 +376,35 @@ SQInteger Vector4::TypeOf(HSQUIRRELVM vm)
     return 1;
 }
 
+// Bound as "GetBlue" (0x004d6b70) via 0x00422b70. this in ECX.
+// Scale qword 0x004d8a58 is a truncated 1/255 (0x3f70101020000000).
+// FUNCTION: VC1 0x00428c70
+SQFloat Color::GetBlue()
+{
+    return static_cast<SQFloat>(static_cast<unsigned char>(argb) * (1.0 / 255.0));
+}
+
+// Bound as "GetGreen" (0x004d6b64). MOV EAX,[this]; SHR 8; MOVZX AL.
+// FUNCTION: VC1 0x00428c90
+SQFloat Color::GetGreen()
+{
+    return static_cast<SQFloat>(((argb >> 8) & 0xff) * (1.0 / 255.0));
+}
+
+// Bound as "GetRed" (0x004d6b5c). this in ECX; [argb+2].
+// FUNCTION: VC1 0x00428cb0
+SQFloat Color::GetRed()
+{
+    return static_cast<SQFloat>(static_cast<unsigned char>(argb >> 16) * (1.0 / 255.0));
+}
+
+// Bound as "GetAlpha" (0x004d6b50) from 0x004bfa1f. this in ECX; [argb+3].
+// FUNCTION: VC1 0x00428cd0
+SQFloat Color::GetAlpha()
+{
+    return static_cast<SQFloat>(static_cast<unsigned char>(argb >> 24) * (1.0 / 255.0));
+}
+
 static SQFloat NumericFloat(HSQUIRRELVM vm, SQInteger idx)
 {
     SQFloat value = 0.0f;
