@@ -23,14 +23,22 @@ int main()
     otherColor.argb = value;
     volatile SQInteger keepColorCmp = color.Cmp(&otherColor);
     vc1::Vector2 vec2;
-    vec2.x = 0.0f;
-    vec2.y = 0.0f;
+    vec2.x = 3.0f;
+    vec2.y = 4.0f;
     volatile SQInteger keepVec2Cmp = vec2.Cmp(&vec2);
+    volatile SQFloat keepVec2Sq = vec2.GetSquareMagnitude();
+    volatile SQFloat keepVec2Mag = vec2.GetMagnitude();
+    vc1::Vector2 vec2n;
+    volatile vc1::Vector2* keepVec2N = vec2.GetNormalized(&vec2n);
     vc1::Vector3 vec3;
-    vec3.x = 0.0f;
-    vec3.y = 0.0f;
-    vec3.z = 0.0f;
+    vec3.x = 1.0f;
+    vec3.y = 2.0f;
+    vec3.z = 2.0f;
     volatile SQInteger keepVec3Cmp = vec3.Cmp(&vec3);
+    volatile SQFloat keepVec3Sq = vec3.GetSquareMagnitude();
+    volatile SQFloat keepVec3Mag = vec3.GetMagnitude();
+    vc1::Vector3 vec3n;
+    volatile vc1::Vector3* keepVec3N = vec3.GetNormalized(&vec3n);
     vc1::Vector4 vec4;
     vec4.x = 0.0f;
     vec4.y = 0.0f;
@@ -53,7 +61,13 @@ int main()
     (void)keepAlpha;
     (void)keepColorCmp;
     (void)keepVec2Cmp;
+    (void)keepVec2Sq;
+    (void)keepVec2Mag;
+    (void)keepVec2N;
     (void)keepVec3Cmp;
+    (void)keepVec3Sq;
+    (void)keepVec3Mag;
+    (void)keepVec3N;
     (void)keepVec4Cmp;
     volatile SQFUNCTION keep[] = {
         vc1::Color::Constructor,

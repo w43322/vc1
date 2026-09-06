@@ -41,6 +41,9 @@ struct Vector2
     SQFloat y;
 
     SQInteger Cmp(const Vector2* other); // thiscall RET 4; bound as "_cmp"
+    SQFloat GetSquareMagnitude();
+    SQFloat GetMagnitude();
+    Vector2* GetNormalized(Vector2* out); // thiscall RET 4
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
@@ -59,6 +62,9 @@ struct Vector3
     SQFloat z;
 
     SQInteger Cmp(const Vector3* other); // thiscall RET 4; bound as "_cmp"
+    SQFloat GetSquareMagnitude();
+    SQFloat GetMagnitude();
+    Vector3* GetNormalized(Vector3* out); // thiscall RET 4
 
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);

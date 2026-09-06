@@ -1,7 +1,64 @@
 #include "value_types.h"
 #include "memory/fixed_pool.h"
 
+#include <math.h>
+
 namespace vc1 {
+
+// Bound as "GetSquareMagnitude" (0x004d7268) via 0x00422b70 from 0x004c0883.
+// this in ECX; x*x + y*y.
+// FUNCTION: VC1 0x004073c0
+SQFloat Vector2::GetSquareMagnitude()
+{
+    return x * x + y * y;
+}
+
+// Bound as "GetMagnitude" (0x004d7258) via 0x00422b70 from 0x004c0867.
+// sqrt helper 0x004c4280. this in ECX.
+// FUNCTION: VC1 0x004073e0
+SQFloat Vector2::GetMagnitude()
+{
+    return sqrtf(GetSquareMagnitude());
+}
+
+// Bound as "GetNormalized" (0x004d7248) via 0x00420c70 from 0x004c084b.
+// Writes this/|this| into out=[esp+4]. this in ECX; RET 4.
+// FUNCTION: VC1 0x00407410
+Vector2* Vector2::GetNormalized(Vector2* out)
+{
+    const SQFloat inv = 1.0f / GetMagnitude();
+    out->x = x * inv;
+    out->y = y * inv;
+    return out;
+}
+
+// Bound as "GetSquareMagnitude" (0x004d7268) via 0x00422b70 from 0x004c0679.
+// this in ECX; y, x, z then y*y + x*x + z*z.
+// FUNCTION: VC1 0x004158e0
+SQFloat Vector3::GetSquareMagnitude()
+{
+    return x * x + y * y + z * z;
+}
+
+// Bound as "GetMagnitude" (0x004d7258) via 0x00422b70 from 0x004c065d.
+// sqrt helper 0x004c4280. this in ECX.
+// FUNCTION: VC1 0x00415910
+SQFloat Vector3::GetMagnitude()
+{
+    return sqrtf(GetSquareMagnitude());
+}
+
+// Bound as "GetNormalized" (0x004d7248) via 0x004207b0 from 0x004c0641.
+// Writes this/|this| into out=[esp+4]. this in ECX; RET 4.
+// FUNCTION: VC1 0x00415950
+Vector3* Vector3::GetNormalized(Vector3* out)
+{
+    const SQFloat inv = 1.0f / GetMagnitude();
+    out->x = x * inv;
+    out->y = y * inv;
+    out->z = z * inv;
+    return out;
+}
 
 // Bound as "GetA" (0x004d6b30) from 0x004bf9af. this in ECX; returns [argb+3].
 // FUNCTION: VC1 0x00418480
