@@ -36,4 +36,17 @@ struct SQUserData : SQDelegable
 	SQChar _val[1];
 };
 
+// FUNCTION: VC1 0x0040d9c0
+// SQUserData::~SQUserData
+// FUNCTION: VC1 0x0040da40
+// SQUserData::Create
+// FUNCTION: VC1 0x0040dad0
+// SQUserData::Finalize
+// FUNCTION: VC1 0x0040db10
+// SQUserData::Release
+// FUNCTION: VC1 0x0040db70
+// SQUserData::`scalar deleting destructor'
+// FUNCTION: VC1 0x0048acf0
+// SQUserData::Mark
+
 #endif //_SQUSERDATA_H_

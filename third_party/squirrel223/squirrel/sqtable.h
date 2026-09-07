@@ -91,6 +91,14 @@ public:
 
 // FUNCTION: VC1 0x0040d100
 // SQTable::Create
+// FUNCTION: VC1 0x00415330
+// SQTable::~SQTable
+// FUNCTION: VC1 0x00415450
+// SQTable::Release
+// FUNCTION: VC1 0x00415470
+// SQTable::`scalar deleting destructor'
+// FUNCTION: VC1 0x0048ad60
+// SQTable::Mark
 // FUNCTION: VC1 0x004b7120
 // SQTable::_ClearNodes
 // FUNCTION: VC1 0x004b71d0
@@ -101,6 +109,8 @@ public:
 // SQTable::NewSlot
 // FUNCTION: VC1 0x004b75f0
 // SQTable::Get
+// FUNCTION: VC1 0x004b76f0
+// SQTable::Finalize
 // FUNCTION: VC1 0x004b7730
 // SQTable::AllocNodes
 // FUNCTION: VC1 0x004b77c0

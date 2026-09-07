@@ -68,11 +68,12 @@ Always confirm with **one caller** and the assembly (`RET` vs `RET N`, this in E
 Leave it unmapped when the original does not have a unique body:
 
 - LTCG inlined the stock function into every caller (`sq_gettop`, `OptionalSemicolon`, `SQLexer::Error`, `sqstd_rex_match` into `_regexp_match`).
-- LTCG merged several source functions into one (`LogicalAndExp` with later binops). Do not pin a single source name to that blob.
+- LTCG merged several *different* source functions into one blob (`LogicalAndExp` with later binops). Do not pin a single source name to that blob.
+- Identical functions that `/OPT:ICF` combined at one VA: annotate **every** source name with `// FUNCTION: VC1 0x... FOLDED` on that address (see reccmp annotations). All copies must be `FOLDED`; a mix of folded and non-folded on the same VA is a duplicate.
 - The VA uses `g_vm`, `g_sizeClassHeap`, Win32, or sits in the host run after `sq_compilebuffer` (`0x004999c0+`). That is host or CRT, not stock `sq_*`. `0x00497490` is the host size-class heap, not `sq_malloc`.
 - Generic `sqvector` push/pop helpers (`FUN_00415790`, `FUN_0040f8c0`) are not unique source symbols.
 
-A **0%** asmcmp hit on a newly named function usually means the wrong overload or the wrong source symbol (`default_delegate_tostring` vs `base_type`), not “LTCG noise”. Check the `Ambiguous match` warning. Two overloads of the same name need the **mangled symbol** as the name comment (see reccmp annotations). Do not put two `FUNCTION` comments on one VA, and do not give two comments the same source name.
+A **0%** asmcmp hit on a newly named function usually means the wrong overload or the wrong source symbol (`default_delegate_tostring` vs `base_type`), not “LTCG noise”. Check the `Ambiguous match` warning. Two overloads of the same name need the **mangled symbol** as the name comment (see reccmp annotations). Do not give two comments the same source name. Do not put two non-`FOLDED` `FUNCTION` comments on one VA.
 
 ```c++
 // FUNCTION: VC1 0x0047eaa0

@@ -140,4 +140,14 @@ bool CompileTypemask(SQIntVec &res,const SQChar *typemask);
 void *sq_vm_malloc(SQUnsignedInteger size);
 void *sq_vm_realloc(void *p,SQUnsignedInteger oldsize,SQUnsignedInteger size);
 void sq_vm_free(void *p,SQUnsignedInteger size);
+
+// FUNCTION: VC1 0x00488490
+// StringTable::Remove
+// FUNCTION: VC1 0x00488c90
+// StringTable::AllocNodes
+// FUNCTION: VC1 0x00489010
+// StringTable::Resize
+// FUNCTION: VC1 0x004890a0
+// StringTable::Add
+
 #endif //_SQSTATE_H_
