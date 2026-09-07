@@ -144,20 +144,28 @@ void UnmappedRegisterExtra1();
 void UnmappedRegisterExtra2();
 void UnmappedRegisterExtra3();
 void UnmappedRegisterExtra4();
-void UnmappedOpenVm();
 void UnmappedBindHostClasses();
-void UnmappedInitHostServices();
-void UnmappedPushRegistry();
-void UnmappedBindIndex(unsigned index);
-void UnmappedFinishRoot();
-int UnmappedGetSlot(SquirrelObject* object, const char* name);
-int UnmappedLoadNut(SquirrelObject* out, const char* path);
-void UnmappedNewSlot(SquirrelObject* object, int flags);
-void UnmappedPopValue(SquirrelObject* dest);
-unsigned UnmappedReadInt();
-int UnmappedHasSlot();
-void UnmappedRunConsole(const char* text);
-void UnmappedReleaseRef();
+HSQUIRRELVM UnmappedSqOpen();
+void UnmappedCompilerError();
+void UnmappedRegisterStdIo(HSQUIRRELVM vm);
+void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
+    const char* ns, void* methods, void* casts);
+void UnmappedRegisterStdMath(HSQUIRRELVM vm);
+void UnmappedRegisterStdString(HSQUIRRELVM vm);
+void UnmappedRegisterStdSystem(HSQUIRRELVM vm);
+void UnmappedRegisterStdAux(HSQUIRRELVM vm);
+void UnmappedTableCtor(void* table, void* sharedstate, SQInteger initialSize);
+void* UnmappedRefLookup(void* refsTable, HSQOBJECT* obj, unsigned* index, void** prev,
+    int create);
+void UnmappedClearRefSlot(unsigned* slot);
+void UnmappedReleaseRefCounted(int* object);
+int UnmappedSqCall(HSQUIRRELVM vm, SQInteger nparams);
+int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
+    const SQChar* sourcename, int raiseerror);
+SQInteger UnmappedConsoleBufferRead(SQUserPointer p);
+int UnmappedSqLoadFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
+int UnmappedGet(HSQUIRRELVM vm);
+void UnmappedBindHostApi();
 void UnmappedLog(const char* text);
 void UnmappedShutdownHost();
 int UnmappedFindFirstFile(const char* path, WIN32_FIND_DATAA* data);
@@ -185,8 +193,10 @@ void UnmappedSimpleLockFallback();
 void UnmappedApcFallback();
 LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
-// 0x00463b40
-void InitScriptEngine();
+// 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
+void InitScriptEngine(int argc, char** argv);
+// 0x00499130; EAX=vm, cdecl initialSize
+void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize);
 // 0x00476e60
 int ProbeDebuggerPresent();
 // 0x00477240
@@ -253,8 +263,17 @@ void KdLog(const char* fmt, ...);
 SquirrelObject* PushRootTable();
 // 0x0049a170
 void CloseScriptVm();
+// 0x0049a510
+int OpenScriptVm();
 // 0x0049ac80; original dest in ECX
 void ResetSquirrelObject(SquirrelObject* object);
+// 0x0049b1d0; EAX=table, EDI=value, stdcall name, RET 4
+SQBool __stdcall RegisterObjectSlot(SquirrelObject* table, const SQChar* name,
+    SquirrelObject* value);
+// 0x0049b250; EAX=table, stdcall index + name, RET 8
+SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar* name);
+// 0x004b61b0
+void InitHostServices();
 // 0x004bdc50
 void RegisterStdBindings();
 // 0x004c38b0

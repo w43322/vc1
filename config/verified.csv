@@ -9,6 +9,7 @@ address|type|name|symbol
 0x0047ef70|library|SQLexer::LexBlockComment|?LexBlockComment@SQLexer@@QAEXXZ
 0x00496f20|library|sq_pushnull|_sq_pushnull
 0x00496dc0|library|sq_pushroottable|_sq_pushroottable
+0x00496e50|library|sq_pushfloat|_sq_pushfloat
 0x00496d70|library|sq_pushregistrytable|_sq_pushregistrytable
 0x00497360|library|sq_push|_sq_push
 0x00497330|library|sq_gettype|_sq_gettype

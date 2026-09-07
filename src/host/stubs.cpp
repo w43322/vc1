@@ -54,76 +54,126 @@ void UnmappedRegisterExtra4()
 {
 }
 
-void UnmappedOpenVm()
-{
-}
-
 void UnmappedBindHostClasses()
 {
 }
 
-void UnmappedInitHostServices()
+HSQUIRRELVM UnmappedSqOpen()
+{
+    return 0;
+}
+
+void UnmappedCompilerError()
 {
 }
 
-void UnmappedPushRegistry()
+void UnmappedRegisterStdIo(HSQUIRRELVM vm)
 {
+    (void)vm;
 }
 
-void UnmappedBindIndex(unsigned index)
+void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
+    const char* ns, void* methods, void* casts)
 {
-    (void)index;
-}
-
-void UnmappedFinishRoot()
-{
-}
-
-int UnmappedGetSlot(SquirrelObject* object, const char* name)
-{
-    (void)object;
+    (void)vm;
     (void)name;
-    return 0;
+    (void)typeTag;
+    (void)ns;
+    (void)methods;
+    (void)casts;
 }
 
-int UnmappedLoadNut(SquirrelObject* out, const char* path)
+void UnmappedRegisterStdMath(HSQUIRRELVM vm)
 {
-    (void)path;
-    if (out) {
-        InitSquirrelObject(out);
+    (void)vm;
+}
+
+void UnmappedRegisterStdString(HSQUIRRELVM vm)
+{
+    (void)vm;
+}
+
+void UnmappedRegisterStdSystem(HSQUIRRELVM vm)
+{
+    (void)vm;
+}
+
+void UnmappedRegisterStdAux(HSQUIRRELVM vm)
+{
+    (void)vm;
+}
+
+void UnmappedTableCtor(void* table, void* sharedstate, SQInteger initialSize)
+{
+    (void)table;
+    (void)sharedstate;
+    (void)initialSize;
+}
+
+void* UnmappedRefLookup(void* refsTable, HSQOBJECT* obj, unsigned* index, void** prev,
+    int create)
+{
+    (void)refsTable;
+    (void)obj;
+    (void)create;
+    if (index) {
+        *index = 0;
+    }
+    if (prev) {
+        *prev = 0;
     }
     return 0;
 }
 
-void UnmappedNewSlot(SquirrelObject* object, int flags)
+void UnmappedClearRefSlot(unsigned* slot)
+{
+    (void)slot;
+}
+
+void UnmappedReleaseRefCounted(int* object)
 {
     (void)object;
-    (void)flags;
 }
 
-void UnmappedPopValue(SquirrelObject* dest)
+int UnmappedSqCall(HSQUIRRELVM vm, SQInteger nparams)
 {
-    if (dest) {
-        InitSquirrelObject(dest);
-    }
+    (void)vm;
+    (void)nparams;
+    return -1;
 }
 
-unsigned UnmappedReadInt()
+int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
+    const SQChar* sourcename, int raiseerror)
 {
+    (void)vm;
+    (void)read;
+    (void)p;
+    (void)sourcename;
+    (void)raiseerror;
+    return -1;
+}
+
+SQInteger UnmappedConsoleBufferRead(SQUserPointer p)
+{
+    (void)p;
     return 0;
 }
 
-int UnmappedHasSlot()
+int UnmappedSqLoadFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
 {
+    (void)vm;
+    (void)path;
+    (void)raiseerror;
+    return -1;
+}
+
+int UnmappedGet(HSQUIRRELVM vm)
+{
+    (void)vm;
     return 0;
 }
 
-void UnmappedRunConsole(const char* text)
-{
-    (void)text;
-}
-
-void UnmappedReleaseRef()
+void UnmappedBindHostApi()
 {
 }
 

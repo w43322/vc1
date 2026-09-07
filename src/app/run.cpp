@@ -4,13 +4,12 @@
 
 namespace vc1 {
 
-static const unsigned kSqRefCounted = 0x08000000;
-
 typedef void* (__thiscall *KdQueryInterfaceFn)(void* self, const char* name);
 typedef unsigned (__thiscall *KdAddRefFn)(void* self);
 typedef unsigned (__thiscall *KdReleaseFn)(void* self);
 typedef int (__thiscall *KdBoolMethodFn)(void* self);
 typedef int (__thiscall *KdBoolMethod1Fn)(void* self, unsigned arg);
+typedef int (__thiscall *KdBoolMethod2Fn)(void* self, unsigned a, unsigned b);
 typedef void* (__thiscall *KdPtrMethodFn)(void* self);
 
 static void** Vtable(void* object)
@@ -63,6 +62,16 @@ static int CallBool1(void* object, unsigned offset, unsigned arg)
     return (reinterpret_cast<KdBoolMethod1Fn>(vtbl[index]))(object, arg);
 }
 
+static int CallBool2(void* object, unsigned offset, unsigned a, unsigned b)
+{
+    void** const vtbl = Vtable(object);
+    const unsigned index = offset / sizeof(void*);
+    if (!object || !vtbl || !vtbl[index]) {
+        return 0;
+    }
+    return (reinterpret_cast<KdBoolMethod2Fn>(vtbl[index]))(object, a, b);
+}
+
 static void* CallPtr(void* object, unsigned offset)
 {
     void** const vtbl = Vtable(object);
@@ -113,10 +122,9 @@ int RunApp()
     int argc;
     int i;
     int token;
-    (void)scratch0;
-    (void)scratch1;
+    char** argv;
 
-    InitScriptEngine();
+    InitScriptEngine(static_cast<int>(scratch0), reinterpret_cast<char**>(scratch1));
     RegisterStdBindings();
 
     if (g_rootTable.obj._type == OT_NULL && g_vm) {
@@ -124,7 +132,8 @@ int RunApp()
         AttachStackTop(&g_rootTable);
         sq_pop(g_vm, 1);
     }
-    UnmappedGetSlot(&g_rootTable, "IsCheatsEnabled");
+    // STRING: VC1 0x004d0c58
+    RegisterBoolFalseSlot(&g_rootTable, "IsCheatsEnabled");
 
     memset(&version, 0, sizeof(version));
     version.dwOSVersionInfoSize = sizeof(version);
@@ -137,12 +146,13 @@ int RunApp()
         g_windowsVersionText);
 
     InitSquirrelObject(&mainNut);
-    UnmappedLoadNut(&mainNut, "scripts/Main.nut");
+    // STRING: VC1 0x004d0c88
+    CompilePath("scripts/Main.nut", &mainNut);
     if (mainNut.obj._type == OT_NULL) {
         return -1;
     }
 
-    UnmappedNewSlot(&mainNut, 0);
+    InvokeWithRoot(&mainNut, 0, &slot);
     display = AcquireNamed("Display", "IDisplay");
     if (!display) {
         ResetSquirrelObject(&mainNut);
@@ -151,9 +161,11 @@ int RunApp()
     }
 
     {
-        const unsigned width = UnmappedReadInt();
-        const unsigned height = UnmappedReadInt();
-        if (!CallBool1(display, 0x20, width | height)) {
+        // STRING: VC1 0x004d0c9c
+        const unsigned height = static_cast<unsigned>(ReadIntFromSlot(&slot, "DisplayHeight"));
+        // STRING: VC1 0x004d0cac
+        const unsigned width = static_cast<unsigned>(ReadIntFromSlot(&slot, "DisplayWidth"));
+        if (!CallBool2(display, 0x20, width, height)) {
             Release(display);
             ResetSquirrelObject(&mainNut);
             return static_cast<int>(0xfffffffe);
@@ -175,39 +187,39 @@ int RunApp()
     }
 
     PushRootTable();
-    UnmappedPopValue(&slot);
-    UnmappedNewSlot(&mainNut, 0);
+    // STRING: VC1 0x004d0cbc
+    GetNamedObject(&g_rootTable, "initApp", &slot);
+    InvokeWithRoot(&slot, 0, &slot);
     sound = AcquireNamed("SoundDriver", "ISoundDriver");
     {
         void* const mix = CallPtr(display, 0x2c);
         (void)mix;
         if (!CallBool(sound, 0x0c)) {
-            UnmappedGetSlot(&g_rootTable, "IsCheatsEnabled");
+            // STRING: VC1 0x004d0cc4
+            RegisterBoolFalseSlot(&slot, "SoundEnabled");
         }
     }
 
     PushRootTable();
-    UnmappedPopValue(&slot);
-    UnmappedNewSlot(&mainNut, 0);
+    // STRING: VC1 0x004d0cd4
+    GetNamedObject(&g_rootTable, "startApp", &slot);
+    InvokeWithRoot(&slot, 0, &slot);
     ResetSquirrelObject(&slot);
 
-    argc = 0;
+    argv = reinterpret_cast<char**>(scratch1);
+    argc = static_cast<int>(scratch0);
     for (i = 0; i < argc; ++i) {
-        char* const arg = 0;
+        char* const arg = argv[i];
         if (arg && arg[0] == '+') {
-            UnmappedRunConsole(arg + 1);
-            UnmappedNewSlot(&mainNut, 0);
+            CompileString(arg + 1, &slot);
+            InvokeWithRoot(&slot, 0, &slot);
             ResetSquirrelObject(&slot);
         }
     }
 
     if (g_vm) {
-        if ((abstractDisplay != 0) && (reinterpret_cast<unsigned>(abstractDisplay) & kSqRefCounted)) {
-            UnmappedReleaseRef();
-        }
-        if (g_vm && (slot.obj._type & kSqRefCounted) != 0) {
-            UnmappedReleaseRef();
-        }
+        ReleaseObjectIfNeeded(&slot.obj);
+        ReleaseObjectIfNeeded(&mainNut.obj);
     }
 
     for (;;) {
@@ -225,7 +237,8 @@ int RunApp()
                 AttachStackTop(&g_rootTable);
                 sq_pop(g_vm, 1);
             }
-            if (UnmappedHasSlot()) {
+            // STRING: VC1 0x004d0cf0
+            if (HasNamedSlot(&g_rootTable, "pauseApp")) {
                 AttachStackTop(&slot);
                 if (g_vm) {
                     sq_pop(g_vm, 1);
@@ -234,7 +247,7 @@ int RunApp()
             if (g_vm) {
                 sq_pop(g_vm, 1);
             }
-            UnmappedNewSlot(&mainNut, 0);
+            InvokeWithRoot(&slot, 0, &mainNut);
             ResetSquirrelObject(&slot);
         }
         else if (token == 0x2e) {
@@ -243,23 +256,24 @@ int RunApp()
                 AttachStackTop(&g_rootTable);
                 sq_pop(g_vm, 1);
             }
-            UnmappedPopValue(&slot);
-            UnmappedNewSlot(&mainNut, 0);
+            // STRING: VC1 0x004d0cfc
+            GetNamedObject(&g_rootTable, "resumeApp", &slot);
+            InvokeWithRoot(&slot, 0, &slot);
             ResetSquirrelObject(&slot);
         }
     }
 
+    // STRING: VC1 0x004d0d08
     UnmappedLog("exiting...");
     if (g_rootTable.obj._type == OT_NULL && g_vm) {
         sq_pushroottable(g_vm);
         AttachStackTop(&g_rootTable);
         sq_pop(g_vm, 1);
     }
-    UnmappedPopValue(&slot);
-    UnmappedNewSlot(&mainNut, 0);
-    if (g_vm && (slot.obj._type & kSqRefCounted) != 0) {
-        UnmappedReleaseRef();
-    }
+    // STRING: VC1 0x004d0d14
+    GetNamedObject(&g_rootTable, "destroyApp", &slot);
+    InvokeWithRoot(&slot, 0, &slot);
+    ReleaseObjectIfNeeded(&slot.obj);
     ResetSquirrelObject(&slot);
 
     CallBool(sound, 0x0c);

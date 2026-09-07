@@ -30,15 +30,48 @@ extern const void* g_squirrelObjectVftable;
 
 void InitSquirrelObject(SquirrelObject* object);
 
+// 0x00489320; EAX=vm->_sharedstate+0x18, stdcall obj=[esp+4], RET 4. Inferred name.
+SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj);
+void ReleaseObjectIfNeeded(HSQOBJECT* obj);
+
 // 0x00499d00; original ABI: size=EAX, left=EDX, right=ECX. Returns -1, 0, or 1.
 // Used by Color/Vector `_cmp` (0x004d36e0) wrappers and other byte-wise compares.
 int MemCompare(const void* left, const void* right, unsigned size);
+
+// 0x0049a270; EAX=script, ECX=env or 0 for root, EBX=dest. returns dest. Inferred name.
+SquirrelObject* InvokeWithRoot(SquirrelObject* script, SquirrelObject* env,
+    SquirrelObject* dest);
+
+// 0x0049a5a0; EDX=source, EDI=dest. returns dest. Inferred name.
+SquirrelObject* CompileString(const SQChar* source, SquirrelObject* dest);
+
+// 0x0049a670; EAX=path, EDI=dest. returns dest. Inferred name.
+SquirrelObject* CompilePath(const SQChar* path, SquirrelObject* dest);
+
+// 0x0049a910; EAX=table, stdcall name=[esp+4], RET 4. Inferred name.
+SQBool __stdcall HasNamedSlot(SquirrelObject* table, const SQChar* name);
 
 // 0x0049aaa0; stdcall dest=[esp+4]. Copies stack top into dest->obj; addref new, release old.
 void AttachStackTop(SquirrelObject* dest);
 
 // 0x0049ab30; dest=EBX, source=EAX. addref source, release dest, copy HSQOBJECT. returns dest.
 SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject* source);
+
+// 0x0049ac30; ESI=dest, ECX=source. copy HSQOBJECT and addref if 0x08000000. returns dest.
+SquirrelObject* CopySquirrelObject(SquirrelObject* dest, const SquirrelObject* source);
+
+// 0x0049acc0; EAX=name, stdcall table=[esp+4], RET 4. Inferred name.
+SQInteger __stdcall ReadIntFromSlot(SquirrelObject* table, const SQChar* name);
+
+// 0x0049ad30; EAX=name, EDI=dest, stdcall table=[esp+4], RET 4. Inferred name.
+SquirrelObject* __stdcall GetNamedObject(SquirrelObject* table, const SQChar* name,
+    SquirrelObject* dest);
+
+// 0x0049b020; EAX=object, stdcall name=[esp+4], RET 4. Pushes OT_BOOL 0. Inferred name.
+SQBool __stdcall RegisterBoolFalseSlot(SquirrelObject* object, const SQChar* name);
+
+// 0x0049b0c0; EAX=object, stdcall name=[esp+4], float=[esp+8], RET 8. Inferred name.
+SQBool __stdcall RegisterFloatSlot(SquirrelObject* object, const SQChar* name, SQFloat value);
 
 // 0x0049b130; EAX=SquirrelObject*, name=[esp+4], value=[esp+8], RET 8.
 // Pushes class, name, integer, then 0x00498a40 (newslot-like; not mapped sq_newslot 0x00499600).
