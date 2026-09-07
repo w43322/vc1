@@ -99,6 +99,10 @@ void* g_kdPath2;
 // GLOBAL: VC1 0x004ed504
 char g_resourceLocale[8];
 
+// Scratch for ScriptPrint (SQPRINTFUNCTION). Size not pinned by a second xref.
+// GLOBAL: VC1 0x004ed9d0
+char g_scriptPrintBuf[0x400];
+
 // GLOBAL: VC1 0x004e9740
 HSQOBJECT g_sqNull = { OT_NULL, { 0 } };
 

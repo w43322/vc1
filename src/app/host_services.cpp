@@ -2,6 +2,8 @@
 
 #include <errno.h>
 #include <math.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <squirrel.h>
@@ -32,6 +34,17 @@ float RoundToNearest(float value)
         value = (float)floor((double)(value + 0.5f));
     }
     return value;
+}
+
+// SQPRINTFUNCTION at sharedstate+0xa4 from OpenScriptVm. Dest 0x004ed9d0 then KdLog.
+// FUNCTION: VC1 0x00499e00
+void ScriptPrint(HSQUIRRELVM, const SQChar* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    _vsnprintf(g_scriptPrintBuf, (size_t)-1, fmt, args);
+    va_end(args);
+    KdLog(g_scriptPrintBuf);
 }
 
 // INFINITY/INT_*/FLT_* and UPDATE_LAYER_* on the root table, then host native binds.

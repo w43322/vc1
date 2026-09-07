@@ -114,6 +114,7 @@ extern void* g_kdPath0;           // 0x004ed4e4
 extern void* g_kdPath1;           // 0x004ed4ec
 extern void* g_kdPath2;           // 0x004ed4f4
 extern char g_resourceLocale[8];  // 0x004ed504
+extern char g_scriptPrintBuf[0x400];  // 0x004ed9d0
 extern HSQOBJECT g_sqNull;        // 0x004e9740
 extern SquirrelObject g_rootTable; // 0x004e96e0, type at 0x004e96e4
 extern char g_windowsVersionText[0x80]; // 0x004eb050
@@ -267,6 +268,8 @@ const char* GetKdEnv(const char* name);
 void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x00496a40
 void KdLog(const char* fmt, ...);
+// 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
+void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
 // 0x00499fe0
 SquirrelObject* PushRootTable();
 // 0x0049a170

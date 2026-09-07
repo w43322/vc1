@@ -453,8 +453,20 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x004837b0
+// base_dummy
+// FUNCTION: VC1 0x004837c0
+// base_enabledebuginfo
+// FUNCTION: VC1 0x004837f0
+// base_getconsttable
+// FUNCTION: VC1 0x00483850
+// base_getroottable
+// FUNCTION: VC1 0x004838a0
+// base_collectgarbage
 // FUNCTION: VC1 0x004838f0
 // str2num
+// FUNCTION: VC1 0x004839c0
+// base_setdebughook
 // FUNCTION: VC1 0x004839d0
 // base_seterrorhandler
 // FUNCTION: VC1 0x004839f0
@@ -463,6 +475,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // generator_getstatus
 // FUNCTION: VC1 0x00483b30
 // closure_getinfos
+// FUNCTION: VC1 0x004842c0
+// closure_bindenv
 // FUNCTION: VC1 0x004842e0
 // string_toupper
 // FUNCTION: VC1 0x004843d0
@@ -475,10 +489,16 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // array_remove
 // FUNCTION: VC1 0x004846f0
 // array_top
+// FUNCTION: VC1 0x00484730
+// array_extend
+// FUNCTION: VC1 0x00484750
+// table_rawget
 // FUNCTION: VC1 0x00484770
 // container_rawexists
 // FUNCTION: VC1 0x004847d0
 // number_delegate_tochar
+// FUNCTION: VC1 0x00484870
+// default_delegate_tostring
 // FUNCTION: VC1 0x00484890
 // default_delegate_tointeger
 // FUNCTION: VC1 0x004849f0
@@ -487,10 +507,32 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // base_type
 // FUNCTION: VC1 0x00484c00
 // base_array
+// FUNCTION: VC1 0x00484d40
+// base_assert
+// FUNCTION: VC1 0x00484d90
+// base_setconsttable
+// FUNCTION: VC1 0x00484dd0
+// base_setroottable
+// FUNCTION: VC1 0x00484e10
+// weakref_ref
+// FUNCTION: VC1 0x00484e30
+// instance_getclass
 // FUNCTION: VC1 0x00484e50
 // class_instance
+// FUNCTION: VC1 0x00484e70
+// class_setattributes
+// FUNCTION: VC1 0x00484e90
+// class_getattributes
 // FUNCTION: VC1 0x00484eb0
 // string_find
+// FUNCTION: VC1 0x00484fc0
+// array_pop
+// FUNCTION: VC1 0x00484ff0
+// array_append
+// FUNCTION: VC1 0x00485000
+// table_rawset
+// FUNCTION: VC1 0x00485010
+// table_rawdelete
 // FUNCTION: VC1 0x00485040
 // default_delegate_len
 // FUNCTION: VC1 0x004850e0
@@ -509,6 +551,10 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // thread_call
 // FUNCTION: VC1 0x00485960
 // _closure_acall
+// FUNCTION: VC1 0x00485a50
+// closure_call
+// FUNCTION: VC1 0x00485a80
+// closure_pcall
 // FUNCTION: VC1 0x00485ab0
 // _qsort_compare
 // FUNCTION: VC1 0x00485b80
@@ -559,6 +605,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_gettype
 // FUNCTION: VC1 0x00497360
 // sq_push
+// FUNCTION: VC1 0x004973d0
+// sq_setdebughook
 // FUNCTION: VC1 0x00497430
 // sq_seterrorhandler
 // FUNCTION: VC1 0x00497510

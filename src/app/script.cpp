@@ -85,9 +85,9 @@ int OpenScriptVm()
     if (!vm) {
         return 0;
     }
-    *reinterpret_cast<void**>(
+    *reinterpret_cast<SQPRINTFUNCTION*>(
         *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x8c) + 0xa4)
-        = reinterpret_cast<void*>(0x00499e00);
+        = ScriptPrint;
     sq_pushroottable(vm);
     sqstd_register_iolib(vm);
     sqstd_register_bloblib(vm);

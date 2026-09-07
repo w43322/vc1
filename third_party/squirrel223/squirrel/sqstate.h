@@ -145,8 +145,12 @@ void sq_vm_free(void *p,SQUnsignedInteger size);
 // SQSharedState::MarkObject
 // FUNCTION: VC1 0x004881b0
 // RefTable::Add
+// FUNCTION: VC1 0x00488210
+// ?Mark@RefTable@@QAEXPAPAUSQCollectable@@@Z
 // FUNCTION: VC1 0x00488290
 // RefTable::Finalize
+// FUNCTION: VC1 0x004882f0
+// ?CollectGarbage@SQSharedState@@QAEHPAUSQVM@@@Z
 // FUNCTION: VC1 0x00488410
 // SQSharedState::GetMetaMethodIdxByName
 // FUNCTION: VC1 0x00488490
