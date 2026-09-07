@@ -216,8 +216,14 @@ char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
 void* OpenKdPath(const char* path, const char* mode);
 // 0x00487140; cdecl path + mode
 void* OpenKdFile(const char* path, const char* mode);
+// 0x0048f240; cdecl p + size. Scalar-deleting dtor if p != 0
+SQInteger FileReleaseHook(SQUserPointer p, SQInteger size);
 // 0x0048f260; original ESI=file wrapper
 int CloseKdFile(void* file);
+// 0x0048f600; cdecl vm. Push "file"
+SQInteger FileTypeof(HSQUIRRELVM vm);
+// 0x0048f620; cdecl vm. OpenKdFile or wrap a userpointer
+SQInteger FileConstructor(HSQUIRRELVM vm);
 // 0x0048f8b0; EAX=vm, cdecl user pointer
 int CreateStdFile(HSQUIRRELVM vm, void* user);
 // 0x0048f990; original ESI=vm
@@ -228,6 +234,8 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 SQInteger IoLoadFile(HSQUIRRELVM vm);
 // 0x0048fc80; ECX=vm, EAX=path, cdecl raiseerror
 SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
+// 0x0048fd20; native dofile: string + optional bool, push this, DoScriptFile
+SQInteger IoDoFile(HSQUIRRELVM vm);
 // 0x0048e420; EAX=vm
 int RegisterStdString(HSQUIRRELVM vm);
 // 0x0048ff90; EAX=idx, ESI=vm
@@ -323,6 +331,12 @@ const char* GetResourceLocale();
 SQInteger AuxPrintError(HSQUIRRELVM vm);
 // 0x004b8700; EAX=vm
 void RegisterStdAux(HSQUIRRELVM vm);
+// 0x004bafb0; cdecl vm. QPC * g_nsPerTick / 1e9 as integer
+SQInteger SystemClock(HSQUIRRELVM vm);
+// 0x004bb210; cdecl vm. ShellExecuteA("open") instead of system()
+SQInteger SystemSystem(HSQUIRRELVM vm);
+// 0x004bb2e0; cdecl vm. GetKdEnv instead of getenv
+SQInteger SystemGetenv(HSQUIRRELVM vm);
 // 0x004bb6c0; EAX=vm
 int RegisterStdSystem(HSQUIRRELVM vm);
 // 0x004bbfd0; EAX=vm

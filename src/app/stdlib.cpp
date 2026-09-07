@@ -1,5 +1,6 @@
 #include "host/runtime.h"
 
+#include <shellapi.h>
 #include <squirrel.h>
 
 namespace vc1 {
@@ -158,11 +159,11 @@ SQRegFunction g_stringlibFuncs[] = {
 // GLOBAL: VC1 0x004e93d0
 SQRegFunction g_systemlibFuncs[] = {
     // STRING: VC1 0x004d2e6c
-    { "getenv", reinterpret_cast<SQFUNCTION>(0x004bb2e0), 2, kMaskS },
+    { "getenv", SystemGetenv, 2, kMaskS },
     // STRING: VC1 0x004d2e60
-    { "system", reinterpret_cast<SQFUNCTION>(0x004bb210), 2, kMaskS },
+    { "system", SystemSystem, 2, kMaskS },
     // STRING: VC1 0x004d2e58
-    { "clock", reinterpret_cast<SQFUNCTION>(0x004bafb0), 1, 0 },
+    { "clock", SystemClock, 1, 0 },
     // STRING: VC1 0x004d2e50
     { "time", reinterpret_cast<SQFUNCTION>(0x004baf50), 1, 0 },
     // STRING: VC1 0x004d2e48
@@ -277,8 +278,8 @@ SQRegFunction g_blobGlobals[] = {
 
 // GLOBAL: VC1 0x004e9360
 SQRegFunction g_fileMethods[] = {
-    { "constructor", reinterpret_cast<SQFUNCTION>(0x0048f620), 3, kMaskX },
-    { "_typeof", reinterpret_cast<SQFUNCTION>(0x0048f600), 1, kMaskX },
+    { "constructor", FileConstructor, 3, kMaskX },
+    { "_typeof", FileTypeof, 1, kMaskX },
     { 0, 0, 0, 0 }
 };
 
@@ -287,7 +288,7 @@ SQRegFunction g_fileGlobals[] = {
     // STRING: VC1 0x004d2ef8
     { "loadfile", IoLoadFile, -2, kMaskSB },
     // STRING: VC1 0x004d2eec
-    { "dofile", reinterpret_cast<SQFUNCTION>(0x0048fd20), -2, kMaskSB },
+    { "dofile", IoDoFile, -2, kMaskSB },
     // STRING: VC1 0x004d2ed8
     { "writeclosuretofile", reinterpret_cast<SQFUNCTION>(0x0048f830), 3, kMaskSC },
     { 0, 0, 0, 0 }
@@ -469,6 +470,67 @@ void RegisterStdAux(HSQUIRRELVM vm)
         = reinterpret_cast<void*>(0x004b82d0);
     sq_newclosure(vm, AuxPrintError, 0);
     SetErrorHandler(vm);
+}
+
+// cdecl vm. QPC ticks * g_nsPerTick, then unsigned divide by 1e9; push integer.
+// FUNCTION: VC1 0x004bafb0
+SQInteger SystemClock(HSQUIRRELVM vm)
+{
+    LARGE_INTEGER now;
+    unsigned long long ns;
+
+    QueryPerformanceCounter(&now);
+    ns = static_cast<unsigned long long>(
+        static_cast<double>(now.QuadPart) * g_nsPerTick);
+    PushRawInteger(vm, static_cast<SQInteger>(ns / 1000000000ull));
+    return 1;
+}
+
+// cdecl vm. String at idx 2; ShellExecuteA(NULL, "open", path, NULL, NULL, 1).
+// Pushes 0 if the HINSTANCE is > 32, else -1.
+// FUNCTION: VC1 0x004bb210
+SQInteger SystemSystem(HSQUIRRELVM vm)
+{
+    HSQOBJECT* obj;
+    const SQChar* path;
+    HINSTANCE result;
+
+    obj = reinterpret_cast<HSQOBJECT*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18)
+        + *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34) * 8
+        + 8);
+    if (obj->_type != OT_STRING) {
+        UnmappedWrongArgType(vm, obj);
+        // STRING: VC1 0x004d2e74
+        return sq_throwerror(vm, "wrong param");
+    }
+    path = reinterpret_cast<const SQChar*>(
+        reinterpret_cast<char*>(obj->_unVal.pString) + 0x1c);
+    // STRING: VC1 0x004d27e8
+    result = ShellExecuteA(0, "open", path, 0, 0, 1);
+    PushRawInteger(vm, reinterpret_cast<int>(result) > 32 ? 0 : -1);
+    return 1;
+}
+
+// cdecl vm. String at idx 2; GetKdEnv then sq_pushstring. Missing string returns 0.
+// FUNCTION: VC1 0x004bb2e0
+SQInteger SystemGetenv(HSQUIRRELVM vm)
+{
+    HSQOBJECT* obj;
+    const SQChar* name;
+
+    obj = reinterpret_cast<HSQOBJECT*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18)
+        + *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34) * 8
+        + 8);
+    if (obj->_type != OT_STRING) {
+        UnmappedWrongArgType(vm, obj);
+        return 0;
+    }
+    name = reinterpret_cast<const SQChar*>(
+        reinterpret_cast<char*>(obj->_unVal.pString) + 0x1c);
+    sq_pushstring(vm, GetKdEnv(name), -1);
+    return 1;
 }
 
 // EAX=vm. sqstd_register_systemlib analog.

@@ -53,7 +53,7 @@ add_executable(vc1_recompiled
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include)
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
-target_link_libraries(vc1_recompiled user32 ws2_32)
+target_link_libraries(vc1_recompiled user32 ws2_32 shell32)
 target_link_options(vc1_recompiled PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")

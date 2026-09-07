@@ -43,6 +43,65 @@ void InitScriptEngine(int argc, char** argv)
     ReleaseObjectIfNeeded(&scratch.obj);
 }
 
+struct StdFile
+{
+    const void* vftable;
+    void* handle;
+    unsigned char owns;
+
+    void* ScalarDtor(unsigned flags);
+};
+
+typedef char Vc1StdFileSizeCheck[sizeof(StdFile) == 12 ? 1 : -1];
+
+void* StdFile::ScalarDtor(unsigned flags)
+{
+    if (owns && handle) {
+        CloseKdFile(handle);
+        handle = 0;
+    }
+    if ((flags & 1) != 0) {
+        free(this);
+    }
+    return this;
+}
+
+static void* g_stdFileVftable[1];
+
+static void EnsureStdFileVftable()
+{
+    union {
+        void* (StdFile::*method)(unsigned flags);
+        void* pointer;
+    } u;
+
+    u.method = &StdFile::ScalarDtor;
+    g_stdFileVftable[0] = u.pointer;
+}
+
+static const void* StdFileVftable()
+{
+    if (!g_stdFileVftable[0]) {
+        EnsureStdFileVftable();
+    }
+    return static_cast<const void*>(g_stdFileVftable);
+}
+
+// cdecl p at [esp+4]. Ignore size. Call vtable[0](this, 1) when p != 0.
+// FUNCTION: VC1 0x0048f240
+SQInteger FileReleaseHook(SQUserPointer p, SQInteger size)
+{
+    typedef void* (__thiscall *DtorFn)(void* self, unsigned flags);
+    DtorFn dtor;
+
+    (void)size;
+    if (p) {
+        dtor = *reinterpret_cast<DtorFn*>(*reinterpret_cast<void**>(p));
+        dtor(p, 1);
+    }
+    return 1;
+}
+
 // ESI=file wrapper {inner, extra}. Null sets errno 0x11. Close is inner+0x118.
 // FUNCTION: VC1 0x0048f260
 int CloseKdFile(void* file)
@@ -61,6 +120,91 @@ int CloseKdFile(void* file)
     status = (*reinterpret_cast<KdCloseFn*>(static_cast<char*>(inner) + 0x118))(inner, extra);
     free(file);
     return status;
+}
+
+// cdecl vm. Push the "file" type name.
+// FUNCTION: VC1 0x0048f600
+SQInteger FileTypeof(HSQUIRRELVM vm)
+{
+    sq_pushstring(vm, "file", -1);
+    return 1;
+}
+
+// cdecl vm. Strings at idx 2/3 -> OpenKdFile; userpointer at 2 wraps that handle.
+// FUNCTION: VC1 0x0048f620
+SQInteger FileConstructor(HSQUIRRELVM vm)
+{
+    const SQInteger stackbase =
+        *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    const SQInteger top =
+        *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
+    char* const stack = *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18);
+    HSQOBJECT* const arg2 = reinterpret_cast<HSQOBJECT*>(stack + stackbase * 8 + 8);
+    HSQOBJECT* const arg3 = reinterpret_cast<HSQOBJECT*>(stack + stackbase * 8 + 0x10);
+    HSQOBJECT* const self = reinterpret_cast<HSQOBJECT*>(stack + stackbase * 8);
+    unsigned char owns = 1;
+    void* handle;
+    StdFile* file;
+    SQInteger err;
+
+    if (arg2->_type == OT_STRING && arg3->_type == OT_STRING) {
+        handle = OpenKdFile(
+            reinterpret_cast<const SQChar*>(
+                reinterpret_cast<char*>(arg2->_unVal.pString) + 0x1c),
+            reinterpret_cast<const SQChar*>(
+                reinterpret_cast<char*>(arg3->_unVal.pString) + 0x1c));
+        if (!handle) {
+            // STRING: VC1 0x004d2f24
+            return sq_throwerror(vm, "cannot open file");
+        }
+    }
+    else if (arg2->_type == OT_USERPOINTER) {
+        owns = static_cast<unsigned char>(arg3->_type != OT_NULL);
+        handle = arg2->_unVal.pUserPointer;
+    }
+    else {
+        // STRING: VC1 0x004d2f38
+        return sq_throwerror(vm, "wrong parameter");
+    }
+
+    file = static_cast<StdFile*>(malloc(0xc));
+    if (file) {
+        file->handle = handle;
+        file->vftable = StdFileVftable();
+        file->owns = owns;
+    }
+
+    if (self->_type == OT_INSTANCE) {
+        *reinterpret_cast<StdFile**>(
+            static_cast<char*>(self->_unVal.pUserPointer) + 0x20) = file;
+    }
+    else {
+        // STRING: VC1 0x004d2608
+        err = sq_throwerror(vm, "the object is not a class instance");
+        if (err < 0) {
+            if (file) {
+                file->ScalarDtor(1);
+            }
+            // STRING: VC1 0x004d2f48
+            return sq_throwerror(vm, "cannot create blob with negative size");
+        }
+    }
+
+    if (top - stackbase >= 1) {
+        if (self->_type == OT_CLASS) {
+            *reinterpret_cast<SQRELEASEHOOK*>(
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x50) = FileReleaseHook;
+        }
+        else if (self->_type == OT_USERDATA) {
+            *reinterpret_cast<SQRELEASEHOOK*>(
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x20) = FileReleaseHook;
+        }
+        else if (self->_type == OT_INSTANCE) {
+            *reinterpret_cast<SQRELEASEHOOK*>(
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x24) = FileReleaseHook;
+        }
+    }
+    return 0;
 }
 
 // EAX=vm, cdecl user pointer (address of a KD object slot). sqstd_createfile with own=false.
@@ -270,6 +414,43 @@ SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
     }
     SqRemove(vm, -2);
     return 1;
+}
+
+// Native dofile: string at idx 2, optional bool at idx 3, push this, DoScriptFile.
+// FUNCTION: VC1 0x0048fd20
+SQInteger IoDoFile(HSQUIRRELVM vm)
+{
+    HSQOBJECT* obj;
+    const SQChar* path;
+    int raiseerror;
+    SQInteger stackbase;
+    SQInteger top;
+
+    stackbase = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    obj = reinterpret_cast<HSQOBJECT*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18) + stackbase * 8 + 8);
+    path = 0;
+    if (obj->_type == OT_STRING) {
+        path = reinterpret_cast<const SQChar*>(
+            reinterpret_cast<char*>(obj->_unVal.pString) + 0x1c);
+    }
+    else {
+        UnmappedWrongArgType(vm, obj);
+    }
+    raiseerror = 0;
+    top = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
+    if (top - stackbase >= 3) {
+        obj = reinterpret_cast<HSQOBJECT*>(
+            *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18) + stackbase * 8 + 0x10);
+        if (obj->_type == OT_BOOL) {
+            raiseerror = obj->_unVal.nInteger;
+        }
+    }
+    sq_push(vm, 1);
+    if (DoScriptFile(vm, path, raiseerror) >= 0) {
+        return 1;
+    }
+    return -1;
 }
 
 // EAX=vm, cdecl initialSize used as SQTable ctor EBX. Alloc 0x24 from pools[9] at 0x004ed47c.
