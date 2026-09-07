@@ -4,32 +4,55 @@
 
 namespace vc1 {
 
+// GLOBAL: VC1 0x004ed530
 TlsBlock* g_tlsPrimary;
+// GLOBAL: VC1 0x004ed534
 TlsBlock* g_tlsSecondary;
+// GLOBAL: VC1 0x004ed51c
 TlsBlock* g_tlsSlot0;
+// GLOBAL: VC1 0x004ed520
 TlsBlock* g_tlsSlot1;
+// GLOBAL: VC1 0x004ed518
 unsigned g_threadingReady;
+// GLOBAL: VC1 0x004ed524
 unsigned g_cpuFlags;
+// GLOBAL: VC1 0x004e89bc
 unsigned g_multiCpu;
+// GLOBAL: VC1 0x004eb0e8
 HMODULE g_quserex;
+// GLOBAL: VC1 0x004eb0ec
 HMODULE g_kernel32Sync;
+// GLOBAL: VC1 0x004ed528
 FARPROC g_interlockedCompareExchange;
+// GLOBAL: VC1 0x004ed52c
 FARPROC g_queueUserApcEx;
+// GLOBAL: VC1 0x004ef9c0
 CRITICAL_SECTION g_csList;
+// GLOBAL: VC1 0x004efa00
 CRITICAL_SECTION g_csMutex;
+// GLOBAL: VC1 0x004ef980
 CRITICAL_SECTION g_csPad0;
+// GLOBAL: VC1 0x004ef9e0
 CRITICAL_SECTION g_csPad1;
+// GLOBAL: VC1 0x004ef9a0
 CRITICAL_SECTION g_csPad2;
+// GLOBAL: VC1 0x004ef960
 CRITICAL_SECTION g_csPad3;
+// GLOBAL: VC1 0x004e89b4
 void* g_threadNodeSentinel = reinterpret_cast<void*>(1);
 
+// GLOBAL: VC1 0x004ed510
 SocketNode* g_socketHead;
+// GLOBAL: VC1 0x004ed50c
 SocketNode* g_socketCursor;
+// GLOBAL: VC1 0x004ed514
 HWND g_kdNetworkWindow;
 
+// STRING: VC1 0x004d4428
 static const char kKdNetworkClassName[] = "[kdNetwork]";
 
-// Original 0x004e89d8: style 0, WndProc 0x0047c190, class name 0x004d4428.
+// Original WNDCLASSA at 0x004e89d8: style 0, WndProc 0x0047c190, class name 0x004d4428.
+// GLOBAL: VC1 0x004e89d8
 WNDCLASSA g_kdNetworkClass = {
     0,
     KdNetworkWndProc,
@@ -43,32 +66,52 @@ WNDCLASSA g_kdNetworkClass = {
     kKdNetworkClassName
 };
 
+// GLOBAL: VC1 0x004f0a20
 double g_nsPerTick;
+// GLOBAL: VC1 0x004ed448
 HeapNode* g_heapHead;
+// GLOBAL: VC1 0x004ed44c
 HeapNode* g_heapTail;
+// GLOBAL: VC1 0x004ed144
 unsigned* g_bumpCursor;
+// GLOBAL: VC1 0x004ed148
 unsigned char g_bumpArena[0x300];
+// GLOBAL: VC1 0x004e95c8
 void* g_heapPageList;
+// GLOBAL: VC1 0x004e918c
 void* g_heapPageSentinel;
 
+// GLOBAL: VC1 0x004ed4f8
 KdObject* g_kdObjects;
+// GLOBAL: VC1 0x004ed4f0
 KdObject* g_kdObjectIt0;
+// GLOBAL: VC1 0x004ed4e8
 KdObject* g_kdObjectIt1;
+// GLOBAL: VC1 0x004ed4e0
 KdObject* g_kdObjectIt2;
+// GLOBAL: VC1 0x004ed4e4
 void* g_kdPath0;
+// GLOBAL: VC1 0x004ed4ec
 void* g_kdPath1;
+// GLOBAL: VC1 0x004ed4f4
 void* g_kdPath2;
 
-// Original 0x004e96e0: vftable 0x004cfb98, type OT_NULL, value 0.
+// Original SquirrelObject at 0x004e96e0: vftable 0x004cfb98, type OT_NULL, value 0.
+// GLOBAL: VC1 0x004e96e0
 SquirrelObject g_rootTable = {
     0,
     { OT_NULL, { 0 } }
 };
+// GLOBAL: VC1 0x004eb050
 char g_windowsVersionText[0x80];
+// GLOBAL: VC1 0x004e9d94
 unsigned g_runScratch0;
+// GLOBAL: VC1 0x004e9d98
 unsigned g_runScratch1;
+// GLOBAL: VC1 0x004ed660
 void* g_serviceUnknown;
 
+// GLOBAL: VC1 0x004e89a8
 HMODULE g_dbghelp = reinterpret_cast<HMODULE>(-1);
 FARPROC g_MiniDumpWriteDump;
 FARPROC g_SymInitialize;

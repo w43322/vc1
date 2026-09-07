@@ -56,6 +56,8 @@ target_link_options(vc1_recompiled PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")
 configure_file(cmake/reccmp-build.yml.in "${CMAKE_BINARY_DIR}/reccmp-build.yml" @ONLY)
+# Full reccmp pass: decomplint, asmcmp (json/html/svg), round-to-round aggregate,
+# datacmp, vtable, and roadmap. Stack layout is tools/stackcmp-reccmp.ps1 <offset>.
 add_custom_target(compare
   COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${CMAKE_SOURCE_DIR}/tools/compare-reccmp.ps1"
   DEPENDS vc1_recompiled USES_TERMINAL)

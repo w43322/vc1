@@ -4,6 +4,7 @@
 
 namespace vc1 {
 
+// GLOBAL: VC1 0x004ed454
 SizeClassHeap g_sizeClassHeap;
 
 static unsigned GreatestCommonDivisor(unsigned left, unsigned right)

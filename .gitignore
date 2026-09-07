@@ -3,7 +3,6 @@
 /Virtual-City_Win_EN_Full.zip
 /ghidra/
 /build/
-/analysis/*.log
 *.gpr
 *.rep/
 __pycache__/

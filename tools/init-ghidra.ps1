@@ -7,8 +7,8 @@ if (Test-Path (Join-Path $projectDir 'VirtualCity.gpr')) {
     throw 'VirtualCity already exists. Open it instead of importing over it.'
 }
 if (!(Test-Path $exePath)) { throw "Missing input: $exePath" }
-New-Item -ItemType Directory -Force $projectDir, (Join-Path $repoRoot 'analysis') | Out-Null
+New-Item -ItemType Directory -Force $projectDir | Out-Null
 & (Join-Path $GhidraHome 'support\analyzeHeadless.bat') $projectDir VirtualCity `
     -import $exePath -scriptPath $PSScriptRoot -postScript ReplayAnalysis.java `
-    -log (Join-Path $repoRoot 'analysis\ghidra-import.log')
+    -log (Join-Path $projectDir 'analyze-headless.log')
 if ($LASTEXITCODE -ne 0) { throw "Ghidra import failed: $LASTEXITCODE" }

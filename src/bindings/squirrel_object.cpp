@@ -4,6 +4,7 @@
 
 namespace vc1 {
 
+// GLOBAL: VC1 0x004ed13c
 HSQUIRRELVM g_vm;
 static int g_squirrelObjectVftableStorage;
 const void* g_squirrelObjectVftable = &g_squirrelObjectVftableStorage;

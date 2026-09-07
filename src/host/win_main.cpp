@@ -10,12 +10,15 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, in
     (void)cmdLine;
     (void)show;
 
+    // STRING: VC1 0x004d0b38
     if (!vc1::GetKdEnv("KD_PARENT_WINDOW")) {
+        // STRING: VC1 0x004d0c48
         CreateMutexA(0, 0, "Virtual City");
         if (GetLastError() != ERROR_ALREADY_EXISTS && GetLastError() != ERROR_ACCESS_DENIED) {
             // Unique instance: fall through to startup.
         }
         else {
+            // STRING: VC1 0x004d2844
             const HWND existing = FindWindowA("G5__OpenKODE", "Virtual City");
             return SetForegroundWindow(existing);
         }

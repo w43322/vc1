@@ -1,4 +1,4 @@
-"""Read-only PE fingerprint and local input manifest. Run from any directory."""
+"""Read-only PE fingerprint of the original EXE. Writes under build/ by default."""
 import argparse
 import datetime
 import hashlib
@@ -25,7 +25,7 @@ def fingerprint(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--exe', type=Path, default=ROOT / 'Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe')
-    parser.add_argument('--output', type=Path, default=ROOT / 'analysis/binary-fingerprint.json')
+    parser.add_argument('--output', type=Path, default=ROOT / 'build/binary-fingerprint.json')
     args = parser.parse_args()
     path = args.exe.resolve()
     data = path.read_bytes()
@@ -62,13 +62,7 @@ def main():
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    originals = sorted(p for p in path.parent.rglob('*') if p.is_file())
-    archive = ROOT / 'Virtual-City_Win_EN_Full.zip'
-    if archive.exists():
-        originals.append(archive)
-    manifest = {'algorithm': 'sha256', 'files': [fingerprint(p) for p in originals]}
-    (args.output.parent / 'input-manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
-    print(f'Wrote {args.output}; {len(originals)} inputs; {len(script_files)} .nut files')
+    print(f'Wrote {args.output}; {len(script_files)} .nut files')
 
 if __name__ == '__main__':
     main()
