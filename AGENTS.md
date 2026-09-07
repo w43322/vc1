@@ -52,6 +52,33 @@ Do not wait until every callee, string, and sibling in the cluster is fully dump
 
 Inferred names are not original symbols; say so in the source comment. The Ghidra project under `ghidra/` is local-only.
 
+## Identify (strings, xrefs, gaps)
+
+Start from a unique literal in the stock source, not from a guessed address. `search_strings` then `get_xrefs_to` on that VA. Error / assert / `Raise_Error` / `sq_throwerror` text is the usual fingerprint. Keep original typos; they are better IDs than the corrected English (`delagate cycle`, `comparsion between`, `ivalid type`). A string with **no code xref** is often dead table data, not a missing function.
+
+When there is no unique string, work from neighbors:
+
+- **Address gaps** in existing `FUNCTION` comments in that header or `.cpp`. Unnamed `FUN_00......` in a mapped cluster are the next candidates. `get_function_by_address` on the byte after a mapped `RET` if Ghidra did not create a function.
+- **Callers of a mapped helper** (`sq_aux_gettypedarg`, `sq_throwerror`, `sq_aux_invalidtype`, `GetConstant`, `PrintObjVal`, `IdType2Name`). Tiny wrappers often have no string of their own.
+- **Registration / vtable / `SQRegFunction` data.** A DATA xref to a `FUN_` from a table whose next/prev slot is a name string (`type`, `dummy`, `collectgarbage`) is the native at that pointer. Confirm `nparamscheck` / typemask if the record layout is visible. Do not treat a pointer that is not a function (ICF-folded `return 0`, or a VA with no Ghidra function) as recovered.
+- **Type-tag immediates** in the body. Squirrel `OT_*` shows up as hex compares: `OT_NULL=0x1000001`, `OT_INTEGER=0x5000002`, `OT_FLOAT=0x5000004`, `OT_BOOL=0x1000008`, `OT_STRING=0x8000010`, `OT_TABLE=0xa000020`, `OT_ARRAY=0x8000040`, `OT_INSTANCE=0xa008000`, `OT_CLASS=0x8004000`. Refcounted objects test `0x8000000` (`SQOBJECT_REF_COUNTED`).
+
+Always confirm with **one caller** and the assembly (`RET` vs `RET N`, this in ECX/EAX). Ghidra decompiler frequently **inverts** `SQTable::Get` / similar bool returns; trust the `TEST`/`JZ` in asm over the pseudocode.
+
+Leave it unmapped when the original does not have a unique body:
+
+- LTCG inlined the stock function into every caller (`sq_gettop`, `OptionalSemicolon`, `SQLexer::Error`, `sqstd_rex_match` into `_regexp_match`).
+- LTCG merged several source functions into one (`LogicalAndExp` with later binops). Do not pin a single source name to that blob.
+- The VA uses `g_vm`, `g_sizeClassHeap`, Win32, or sits in the host run after `sq_compilebuffer` (`0x004999c0+`). That is host or CRT, not stock `sq_*`. `0x00497490` is the host size-class heap, not `sq_malloc`.
+- Generic `sqvector` push/pop helpers (`FUN_00415790`, `FUN_0040f8c0`) are not unique source symbols.
+
+A **0%** asmcmp hit on a newly named function usually means the wrong overload or the wrong source symbol (`default_delegate_tostring` vs `base_type`), not “LTCG noise”. Check the `Ambiguous match` warning. Two overloads of the same name need the **mangled symbol** as the name comment (see reccmp annotations). Do not put two `FUNCTION` comments on one VA, and do not give two comments the same source name.
+
+```c++
+// FUNCTION: VC1 0x0047eaa0
+// ?AddInstruction@SQFuncState@@QAEXAAUSQInstruction@@@Z
+```
+
 ## Write source
 
 - Toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, `/EHsc`. Keep `/GL /LTCG`.
@@ -69,7 +96,7 @@ Inferred names are not original symbols; say so in the source comment. The Ghidr
 // _file__typeof
 ```
 
-  Do not also list that VA in `config/verified.csv` or as a `FUNCTION` in `src/`. Host forks of squirrel (KD `getenv` / `OpenKdFile` / `dofile`, extra math, aux printerror strings) stay as recovered bodies in `src/`.
+  Do not also list that VA in `config/verified.csv` or as a `FUNCTION` in `src/`. Host forks of squirrel (KD `getenv` / `OpenKdFile` / `dofile`, extra math, aux printerror strings) stay as recovered bodies in `src/`. Overloads of one C++ name (`AddInstruction`, `Raise_Error`, `GetNumericConstant`) need the mangled PDB symbol as the name comment, or asmcmp binds the wrong one (often 0%).
 - CRT and other libraries **without** source in this tree: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
 - Do not use inline asm. Do not invent a mapping for a function you did not recover.
 - Unmapped callees of a mapped function may live as stubs **without** `FUNCTION` markers (see `src/host/stubs.cpp`) so the TU links.
@@ -88,7 +115,7 @@ tools/compare-reccmp.ps1
 
 `tools/compare-reccmp.ps1` is the full pass: decomplint, asmcmp (JSON/HTML/SVG), aggregate diff against `reports/VC1.prev.json`, datacmp, vtable, and roadmap. Only decomplint and asmcmp fail the script. Data/vtable/roadmap mismatches are expected this early; still read those reports when you added `GLOBAL` or `VTABLE` markers.
 
-Compare reports per-function similarity. Report those numbers. Do not call them overall game completion.
+Compare reports per-function similarity. Report those numbers. Do not call them overall game completion. If asmcmp prints `Ambiguous match` on a name you just added, fix the name comment in the same round (mangled symbol) — do not leave a 0% overlay as “mapped”.
 
 For a function that is close but not matching, check stack slots with `tools/stackcmp-reccmp.ps1 <original-offset>`. For a single asm diff: from `build/vc9`, `reccmp-reccmp --target VC1 --verbose 0x...`.
 

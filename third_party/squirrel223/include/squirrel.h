@@ -453,6 +453,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x004838f0
+// str2num
 // FUNCTION: VC1 0x004839d0
 // base_seterrorhandler
 // FUNCTION: VC1 0x004839f0
@@ -481,6 +483,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // default_delegate_tointeger
 // FUNCTION: VC1 0x004849f0
 // default_delegate_tofloat
+// FUNCTION: VC1 0x00484b70
+// base_type
 // FUNCTION: VC1 0x00484c00
 // base_array
 // FUNCTION: VC1 0x00484e50

@@ -42,6 +42,12 @@ public:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0047ee60
+// LexInteger
+// FUNCTION: VC1 0x0047eea0
+// LexOctal
+// FUNCTION: VC1 0x0047eed0
+// LexHexadecimal
 // FUNCTION: VC1 0x0047ef30
 // SQLexer::Next
 // FUNCTION: VC1 0x0047ef70

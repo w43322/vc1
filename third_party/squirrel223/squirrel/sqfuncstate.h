@@ -92,12 +92,18 @@ private:
 // SQFuncState::PopTarget
 // FUNCTION: VC1 0x0047d9f0
 // SQFuncState::GetConstant
+// FUNCTION: VC1 0x0047db60
+// ?GetNumericConstant@SQFuncState@@QAEHM@Z
+// FUNCTION: VC1 0x0047db90
+// ?GetNumericConstant@SQFuncState@@QAEHH@Z
 // FUNCTION: VC1 0x0047dbb0
 // SQFuncState::~SQFuncState
 // FUNCTION: VC1 0x0047dee0
 // SQFuncState::BuildProto
 // FUNCTION: VC1 0x0047e2a0
 // SQFuncState::CreateTable
+// FUNCTION: VC1 0x0047e3b0
+// SQFuncState::AddOuterValue
 // FUNCTION: VC1 0x0047e550
 // SQFuncState::PushLocalVariable
 // FUNCTION: VC1 0x0047e5d0
@@ -114,6 +120,8 @@ private:
 // ?AddInstruction@SQFuncState@@QAEXAAUSQInstruction@@@Z
 // FUNCTION: VC1 0x0047ed00
 // SQFuncState::AddParameter
+// FUNCTION: VC1 0x0047ed60
+// SQFuncState::PushTarget
 
 #endif //_SQFUNCSTATE_H_
 

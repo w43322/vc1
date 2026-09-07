@@ -287,8 +287,16 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 // SQVM::NewSlot
 // FUNCTION: VC1 0x00495950
 // SQVM::Init
+// FUNCTION: VC1 0x004b7da0
+// ?Raise_Error@SQVM@@QAEXAAUSQObjectPtr@@@Z
+// FUNCTION: VC1 0x004b7e80
+// SQVM::PrintObjVal
 // FUNCTION: VC1 0x004b8030
 // SQVM::Raise_Error
+// FUNCTION: VC1 0x004b80e0
+// SQVM::Raise_CompareError
+// FUNCTION: VC1 0x004b8140
+// SQVM::Raise_IdxError
 // FUNCTION: VC1 0x004b8180
 // SQVM::Raise_ParamTypeError
 
