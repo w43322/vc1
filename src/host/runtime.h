@@ -171,11 +171,6 @@ int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
 SQInteger UnmappedConsoleBufferRead(SQUserPointer p);
 int UnmappedGet(HSQUIRRELVM vm);
 void UnmappedBindHostApi();
-int UnmappedTableNewSlot(HSQUIRRELVM vm);
-int UnmappedArraySet(HSQUIRRELVM vm);
-int UnmappedInstanceSet(HSQUIRRELVM vm);
-int UnmappedClassNewSlot(HSQUIRRELVM vm);
-void UnmappedRaiseIdxError(HSQUIRRELVM vm);
 void UnmappedLog(const char* text);
 void UnmappedShutdownHost();
 int UnmappedFindFirstFile(const char* path, WIN32_FIND_DATAA* data);

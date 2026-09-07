@@ -90,5 +90,7 @@ public:
 
 // FUNCTION: VC1 0x004b73c0
 // SQTable::NewSlot
+// FUNCTION: VC1 0x004b75f0
+// SQTable::Get
 
 #endif //_SQTABLE_H_

@@ -203,35 +203,6 @@ void UnmappedBindHostApi()
 {
 }
 
-int UnmappedTableNewSlot(HSQUIRRELVM vm)
-{
-    (void)vm;
-    return 1;
-}
-
-int UnmappedArraySet(HSQUIRRELVM vm)
-{
-    (void)vm;
-    return 1;
-}
-
-int UnmappedInstanceSet(HSQUIRRELVM vm)
-{
-    (void)vm;
-    return 1;
-}
-
-int UnmappedClassNewSlot(HSQUIRRELVM vm)
-{
-    (void)vm;
-    return 1;
-}
-
-void UnmappedRaiseIdxError(HSQUIRRELVM vm)
-{
-    (void)vm;
-}
-
 void UnmappedLog(const char* text)
 {
     (void)text;

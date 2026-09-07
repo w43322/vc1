@@ -202,4 +202,10 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 	else	\
 		v->ci = NULL; \
 }
+
+// FUNCTION: VC1 0x0048fe90
+// SQVM::Push
+// FUNCTION: VC1 0x004911f0
+// SQVM::DELEGATE_OP
+
 #endif //_SQVM_H_

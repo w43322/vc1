@@ -453,8 +453,60 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x004842e0
+// string_toupper
+// FUNCTION: VC1 0x004843d0
+// string_tolower
+// FUNCTION: VC1 0x004844c0
+// array_resize
+// FUNCTION: VC1 0x00484580
+// array_insert
+// FUNCTION: VC1 0x00484690
+// array_remove
+// FUNCTION: VC1 0x004846f0
+// array_top
+// FUNCTION: VC1 0x00484770
+// container_rawexists
+// FUNCTION: VC1 0x004847d0
+// number_delegate_tochar
+// FUNCTION: VC1 0x00484890
+// default_delegate_tointeger
+// FUNCTION: VC1 0x004849f0
+// default_delegate_tofloat
+// FUNCTION: VC1 0x00484c00
+// base_array
+// FUNCTION: VC1 0x00484e50
+// class_instance
+// FUNCTION: VC1 0x00484eb0
+// string_find
+// FUNCTION: VC1 0x00485040
+// default_delegate_len
+// FUNCTION: VC1 0x004850e0
+// base_suspend
+// FUNCTION: VC1 0x00485130
+// base_print
+// FUNCTION: VC1 0x00485320
+// string_slice
+// FUNCTION: VC1 0x00485470
+// array_slice
+// FUNCTION: VC1 0x00485690
+// thread_wakeup
+// FUNCTION: VC1 0x004857e0
+// thread_call
+// FUNCTION: VC1 0x00485960
+// _closure_acall
+// FUNCTION: VC1 0x00485ab0
+// _qsort_compare
+// FUNCTION: VC1 0x00485b80
+// closure_pacall
+// FUNCTION: VC1 0x00485ba0
+// closure_acall
+// FUNCTION: VC1 0x00485bc0
+// _qsort
 // FUNCTION: VC1 0x00485f40
 // sq_base_register
+// FUNCTION: VC1 0x004861a0
+// base_getstackinfos
 // FUNCTION: VC1 0x0048fee0
 // sq_pop
 // FUNCTION: VC1 0x0048ff40
@@ -469,6 +521,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_pushroottable
 // FUNCTION: VC1 0x00496e50
 // sq_pushfloat
+// FUNCTION: VC1 0x00496ee0
+// sq_pushinteger
 // FUNCTION: VC1 0x00496f20
 // sq_pushnull
 // FUNCTION: VC1 0x00496f70
@@ -489,32 +543,96 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_push
 // FUNCTION: VC1 0x00497430
 // sq_seterrorhandler
+// FUNCTION: VC1 0x00497510
+// sq_weakref
 // FUNCTION: VC1 0x004975e0
 // sq_newclosure
+// FUNCTION: VC1 0x00497740
+// sq_newuserdata
 // FUNCTION: VC1 0x004977d0
 // sq_throwerror
 // FUNCTION: VC1 0x00497830
 // sq_rawget
+// FUNCTION: VC1 0x00497980
+// sq_getinstanceup
 // FUNCTION: VC1 0x00497a50
 // sq_settypetag
+// FUNCTION: VC1 0x00497a90
+// sq_tostring
+// FUNCTION: VC1 0x00497b40
+// sq_setconsttable
+// FUNCTION: VC1 0x00497bc0
+// sq_setroottable
+// FUNCTION: VC1 0x00497c40
+// sq_bindenv
 // FUNCTION: VC1 0x00497de0
 // sq_setparamscheck
 // FUNCTION: VC1 0x00497ea0
 // sq_setnativeclosurename
+// FUNCTION: VC1 0x00497f30
+// sq_newtable
 // FUNCTION: VC1 0x00498010
 // sq_pushstring
+// FUNCTION: VC1 0x00498110
+// sq_addref
+// FUNCTION: VC1 0x00498150
+// sq_aux_invalidtype
+// FUNCTION: VC1 0x004981f0
+// sq_aux_gettypedarg
+// FUNCTION: VC1 0x00498270
+// sq_next
+// FUNCTION: VC1 0x00498450
+// sq_getweakrefval
+// FUNCTION: VC1 0x004984f0
+// sq_createinstance
+// FUNCTION: VC1 0x004985b0
+// sq_getclass
+// FUNCTION: VC1 0x00498650
+// sq_getattributes
+// FUNCTION: VC1 0x00498780
+// sq_setattributes
+// FUNCTION: VC1 0x00498920
+// sq_suspendvm
+// FUNCTION: VC1 0x00498a40
+// sq_rawset
+// FUNCTION: VC1 0x00498b70
+// sq_set
+// FUNCTION: VC1 0x00498c30
+// sq_getuserdata
 // FUNCTION: VC1 0x00498c80
 // sq_getsize
+// FUNCTION: VC1 0x00498cf0
+// sq_getstring
+// FUNCTION: VC1 0x00498d30
+// sq_clear
+// FUNCTION: VC1 0x00498d90
+// sq_arrayreverse
+// FUNCTION: VC1 0x00498f30
+// sq_arraypop
+// FUNCTION: VC1 0x00498fc0
+// sq_arrayappend
 // FUNCTION: VC1 0x00499040
 // sq_newclass
 // FUNCTION: VC1 0x00499130
 // sq_newarray
+// FUNCTION: VC1 0x004991d0
+// sq_readclosure
+// FUNCTION: VC1 0x004992c0
+// sq_writeclosure
+// FUNCTION: VC1 0x004993a0
+// sq_wakeupvm
 // FUNCTION: VC1 0x00499550
 // sq_call
 // FUNCTION: VC1 0x00499600
 // sq_newslot
+// FUNCTION: VC1 0x00499690
+// sq_newthread
 // FUNCTION: VC1 0x00499750
 // sq_open
+// FUNCTION: VC1 0x00499820
+// sq_compile
+// FUNCTION: VC1 0x00499980
+// sq_compilebuffer
 // FUNCTION: VC1 0x004b7de0
 // sq_stackinfos
 

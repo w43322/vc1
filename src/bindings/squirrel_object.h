@@ -34,9 +34,6 @@ void InitSquirrelObject(SquirrelObject* object);
 SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj);
 void ReleaseObjectIfNeeded(HSQOBJECT* obj);
 
-// 0x00498a40; EAX=vm. LTCG sq_rawset with the object at stack -3. Inferred name.
-SQInteger RawSet(HSQUIRRELVM vm);
-
 // 0x00499d00; original ABI: size=EAX, left=EDX, right=ECX. Returns -1, 0, or 1.
 // Used by Color/Vector `_cmp` (0x004d36e0) wrappers and other byte-wise compares.
 int MemCompare(const void* left, const void* right, unsigned size);
@@ -77,7 +74,7 @@ SQBool __stdcall RegisterBoolFalseSlot(SquirrelObject* object, const SQChar* nam
 SQBool __stdcall RegisterFloatSlot(SquirrelObject* object, const SQChar* name, SQFloat value);
 
 // 0x0049b130; EAX=SquirrelObject*, name=[esp+4], value=[esp+8], RET 8.
-// Pushes class, name, integer, then 0x00498a40 (newslot-like; not mapped sq_newslot 0x00499600).
+// Pushes class, name, integer, then sq_rawset at 0x00498a40.
 SQBool RegisterIntegerSlot(SquirrelObject* object, const SQChar* name, SQInteger value);
 
 // 0x0049a370; original ABI: out=ECX, name=EAX, callback=[esp+4], typemask=EBX.

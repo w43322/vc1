@@ -120,7 +120,7 @@ SQBool __stdcall RegisterObjectSlot(SquirrelObject* table, const SQChar* name,
     sq_pushstring(g_vm, name, -1);
     sq_pushobject(g_vm, value->obj);
     {
-        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
+        const SQBool ok = SQ_SUCCEEDED(sq_rawset(g_vm, -3));
         sq_settop(g_vm, savedTop);
         return ok;
     }
@@ -135,7 +135,7 @@ SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar*
     sq_pushinteger(g_vm, index);
     sq_pushstring(g_vm, name, -1);
     {
-        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
+        const SQBool ok = SQ_SUCCEEDED(sq_rawset(g_vm, -3));
         sq_settop(g_vm, savedTop);
         return ok;
     }
