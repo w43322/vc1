@@ -7,19 +7,44 @@
 // Unmapped callees of this round's functions. No FUNCTION markers.
 namespace vc1 {
 
-void* UnmappedFactory()
+void* UnmappedAllocEvent()
 {
     return 0;
 }
 
-int UnmappedQueryNamed(void* factory, void** outUnknown, const char* name)
+void UnmappedVectorGrow(int newSize, char zero)
+{
+    (void)newSize;
+    (void)zero;
+}
+
+void* UnmappedVectorInsert(void* factory, void* pos, int bytes)
 {
     (void)factory;
-    (void)name;
-    if (outUnknown) {
-        *outUnknown = 0;
-    }
+    (void)bytes;
+    return pos;
+}
+
+unsigned long long UnmappedQpcNow()
+{
     return 0;
+}
+
+void UnmappedConstructDisplayBase(void* self)
+{
+    (void)self;
+}
+
+void* UnmappedDisplayBaseQueryInterface(void* self, const char** iid)
+{
+    (void)self;
+    (void)iid;
+    return 0;
+}
+
+void UnmappedConstructCompoundBase(void* self)
+{
+    (void)self;
 }
 
 void UnmappedRegisterPrint(HSQUIRRELVM vm, void* fn)
@@ -201,11 +226,6 @@ int UnmappedGet(HSQUIRRELVM vm)
 
 void UnmappedBindHostApi()
 {
-}
-
-void UnmappedLog(const char* text)
-{
-    (void)text;
 }
 
 void UnmappedShutdownHost()

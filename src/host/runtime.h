@@ -6,6 +6,7 @@
 #endif
 #include <winsock2.h>
 #include <windows.h>
+#include <stdarg.h>
 
 #include "bindings/squirrel_object.h"
 #include "memory/fixed_pool.h"
@@ -137,8 +138,13 @@ extern FARPROC g_StackWalk64;
 extern FARPROC g_SymFunctionTableAccess64;
 extern FARPROC g_SymGetModuleBase64;
 
-void* UnmappedFactory();
-int UnmappedQueryNamed(void* factory, void** outUnknown, const char* name);
+void* UnmappedAllocEvent();
+void UnmappedVectorGrow(int newSize, char zero);
+void* UnmappedVectorInsert(void* factory, void* pos, int bytes);
+unsigned long long UnmappedQpcNow();
+void UnmappedConstructDisplayBase(void* self);
+void* UnmappedDisplayBaseQueryInterface(void* self, const char** iid);
+void UnmappedConstructCompoundBase(void* self);
 void UnmappedRegisterPrint(HSQUIRRELVM vm, void* fn);
 void UnmappedRegisterPrintAlt(HSQUIRRELVM vm, void* fn);
 void UnmappedRegisterExtra0();
@@ -172,7 +178,6 @@ int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
 SQInteger UnmappedConsoleBufferRead(SQUserPointer p);
 int UnmappedGet(HSQUIRRELVM vm);
 void UnmappedBindHostApi();
-void UnmappedLog(const char* text);
 void UnmappedShutdownHost();
 int UnmappedFindFirstFile(const char* path, WIN32_FIND_DATAA* data);
 char* UnmappedCopyExeDir(char* dest);
@@ -268,6 +273,10 @@ const char* GetKdEnv(const char* name);
 void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x00496a40
 void KdLog(const char* fmt, ...);
+// 0x004b7010
+void HostLogV(const char** prefix, const char* fmt, va_list args);
+// 0x004b7070
+void HostLog(const char* fmt, ...);
 // 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
 void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
 // 0x00499fe0

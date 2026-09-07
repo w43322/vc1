@@ -33,9 +33,52 @@ add_executable(vc1_recompiled
   src/host/network.cpp
   src/host/startup.cpp
   src/host/heap.cpp
+  src/host/kd_log.cpp
   src/app/script.cpp
   src/app/host_services.cpp
   src/app/run.cpp
+  src/kd/iface/iid.cpp
+  src/kd/iface/iunknown.cpp
+  src/kd/iface/iabstract.cpp
+  src/kd/iface/ishutdownable.cpp
+  src/kd/iface/iscript_object.cpp
+  src/kd/factory.cpp
+  src/kd/display/display.cpp
+  src/kd/system/system.cpp
+  src/kd/sound/sound_driver.cpp
+  src/kd/scene/compound_object.cpp
+  src/kd/console/console.cpp
+  src/kd/font/font.cpp
+  src/kd/scene/layer.cpp
+  src/kd/group/update_group.cpp
+  src/kd/group/render_group.cpp
+  src/kd/group/input_group.cpp
+  src/kd/resource/resource_manager.cpp
+  src/kd/file/file.cpp
+  src/kd/scene/scene.cpp
+  src/kd/blob/blob.cpp
+  src/kd/scene/camera.cpp
+  src/kd/scene/scripted_object.cpp
+  src/kd/world/game_level.cpp
+  src/kd/world/game_object.cpp
+  src/kd/tile/tile_manager.cpp
+  src/kd/tile/tile_animation_data.cpp
+  src/kd/tile/tile_layer.cpp
+  src/kd/tile/tile_object.cpp
+  src/kd/road/pass_map.cpp
+  src/kd/road/grid_router.cpp
+  src/kd/build/terrain_builder.cpp
+  src/kd/road/road_renderer.cpp
+  src/kd/tile/tile_animation.cpp
+  src/kd/build/building_builder.cpp
+  src/kd/route/route.cpp
+  src/kd/route/transport_mover.cpp
+  src/kd/road/grid_rect_renderer.cpp
+  src/kd/render/object_watcher.cpp
+  src/kd/render/classificated_renderer.cpp
+  src/kd/route/tsp_solver.cpp
+  src/kd/render/group_renderer.cpp
+  src/kd/road/road_cells_renderer.cpp
   src/bindings/value_types.cpp
   src/bindings/color.cpp
   src/bindings/vector2.cpp

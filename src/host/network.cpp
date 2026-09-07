@@ -40,7 +40,7 @@ LRESULT CALLBACK KdNetworkWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
         SocketNode* node = g_socketCursor;
         while (node) {
             if (node->socket == static_cast<SOCKET>(wparam)) {
-                void* const event = UnmappedFactory();
+                void* const event = UnmappedAllocEvent();
                 if (event) {
                     *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(event) + 0xc) =
                         node->unused04;
