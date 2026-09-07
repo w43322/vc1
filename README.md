@@ -44,15 +44,17 @@ Work one addressed function or a tight cluster per round. Typical loop:
 
 ```powershell
 .\tools\open-ghidra.ps1
-# analyze the original in Ghidra (MCP is read-only)
-# write C++ under src/
-.\tools\close-ghidra.ps1
+# MCP is read-only. For each address: recover it, then write src/ before
+# dumping the next function. Keep reading and writing in the same stretch.
+# Fix already-mapped source, flags, or workflow if a read shows they are wrong.
 .\tools\build-vc9.cmd
 .\tools\compare-reccmp.ps1
+# leave Ghidra open through compare; close only for import
+.\tools\close-ghidra.ps1
 .\tools\import-ghidra.ps1
 ```
 
-`import-ghidra.ps1` is the only allowed Ghidra write path: it runs official `reccmp-ghidra-import` and copies names, prototypes, and types from the recompiled PDB. Close the Ghidra GUI first; headless import fails if it is still open.
+`import-ghidra.ps1` is the only allowed Ghidra write path: it runs official `reccmp-ghidra-import` and copies names, prototypes, and types from the recompiled PDB. Close the Ghidra GUI immediately before that script; headless import fails if it is still open.
 
 See `AGENTS.md` for ABI rules, marker order, and what “done” means.
 

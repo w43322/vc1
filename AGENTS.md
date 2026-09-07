@@ -12,19 +12,22 @@ Do not spawn sub-agents. Do not upload game assets. Do not commit Ghidra databas
 2. Confirm the original binary hash matches README. Every Ghidra read must name program `VirtualCity.Unwrapped.exe`.
 3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/host/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
 
-## One round (do this in order)
+## One round
 
 Target about **1000 new lines under `src/`** per round (guideline, no upper bound). If you land short, **finish the round** — do not reopen Ghidra to pad the count.
 
+Keep Ghidra open through analyze, write, build, and compare. Close it only immediately before import. Never write to Ghidra from MCP.
+
 1. **Open Ghidra** — `tools/open-ghidra.ps1` (project `ghidra/VirtualCity.gpr`).
-2. **Analyze, read-only** — connect MCP, recover the chosen functions (details below). Never write to Ghidra from MCP.
-3. **Write C++ into `src/`** — VC9-era C++, `FUNCTION` / `GLOBAL` / `VTABLE` / `STRING` markers as in the Write source section. `FUNCTION` markers **in address order per file**.
+2. **Connect MCP** — then **interleave analyze and write**. For each chosen address: read enough to recover that function (see Analyze), and **write or update its C++ in `src/` before you pile up the next function's dumps**. Keep Ghidra reads going in parallel with edits. Do not finish a long read-only pass and only then start `src/`.
+3. **Build and compare** — `tools/build-vc9.cmd`, then `tools/compare-reccmp.ps1`. Read the asmcmp diff for every function you added or changed. If you added `GLOBAL` or `VTABLE` markers, also read `build/vc9/reports/VC1-data.txt` and `VC1-vtable.txt`. Leave Ghidra up so you can re-read a function if the diff needs it.
 4. **Close Ghidra** — `tools/close-ghidra.ps1`. Headless import fails if the GUI is still open.
-5. **Build and compare** — `tools/build-vc9.cmd`, then `tools/compare-reccmp.ps1`. Read the asmcmp diff for every function you added or changed. If you added `GLOBAL` or `VTABLE` markers, also read `build/vc9/reports/VC1-data.txt` and `VC1-vtable.txt`.
-6. **Import names into Ghidra** — `tools/import-ghidra.ps1` (official `reccmp-ghidra-import`). This is the only allowed Ghidra write path.
-7. **Commit** — only when the user asked for the loop that includes commit, or they explicitly ask to commit. Do not commit `.gitignore` edits or generated `reccmp-*.yml` copies unless the user asked for those.
+5. **Import names into Ghidra** — `tools/import-ghidra.ps1` (official `reccmp-ghidra-import`). This is the only allowed Ghidra write path.
+6. **Commit** — only when the user asked for the loop that includes commit, or they explicitly ask to commit. Do not commit `.gitignore` edits or generated `reccmp-*.yml` copies unless the user asked for those.
 
 Then stop, or start a **new** round from step 1 if the user wants another loop.
+
+If a read shows that already-mapped source, a callee, a marker, a compile flag, a tool script, or this workflow is wrong or weaker than the original, **fix it in the same round**. That includes existing `FUNCTION` bodies, `config/verified.csv`, CMake/VC9 flags (keep `/GL /LTCG`), and `AGENTS.md` / `tools/` when the loop itself is the problem.
 
 ## Analyze (Ghidra MCP)
 
@@ -36,12 +39,14 @@ MCP namespace is `user-ghidra`.
 
 **Decompiled pseudocode is the main evidence.** Use disassembly, xrefs, callers/callees, and strings/constants as supplements — especially for ABI.
 
-Before writing C++:
+Write the C++ for a function as soon as you have that function's evidence. Enough to write:
 
-- Confirm function bounds (start/end).
-- Read the decompiler output for control flow and calls.
-- Check assembly for parameter location, return register, stack balance, callee-saved registers, and `RET N`.
-- Confirm ABI from **at least one caller**. VC9 LTCG often passes values in EAX, ESI, EDI, EBX instead of the stack. `WinMain` is stdcall (`RET 0x10`).
+- Function bounds (start/end).
+- Decompiler output for control flow and calls.
+- Assembly for parameter location, return register, stack balance, callee-saved registers, and `RET N`.
+- ABI from **at least one caller**. VC9 LTCG often passes values in EAX, ESI, EDI, EBX instead of the stack. `WinMain` is stdcall (`RET 0x10`).
+
+Do not wait until every callee, string, and sibling in the cluster is fully dumped. Recover the next address after the current body is in `src/` (stubs without `FUNCTION` markers are fine for unmapped callees). Follow-up reads that refine the same body are expected; wholesale “analyze the cluster, then write” is not.
 
 **Never write Ghidra through MCP.** Do not rename, set comments, set prototypes, create structs, or save the program. Names and types go back through `tools/import-ghidra.ps1` after the GUI is closed.
 
@@ -60,7 +65,7 @@ Inferred names are not original symbols; say so in the source comment. The Ghidr
 - Stock third-party / CRT / Squirrel: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
 - Do not edit `third_party/squirrel223`. Do not use inline asm. Do not invent a mapping for a function you did not recover.
 - Unmapped callees of a mapped function may live as stubs **without** `FUNCTION` markers (see `src/host/stubs.cpp`) so the TU links.
-- You may change recovered source layout and compile flags when original evidence supports it; do not drop `/GL /LTCG`.
+- Prefer improving existing mapped functions over leaving a known-wrong body in place. Layout, names, ABI, call targets, markers, `verified.csv`, flags, and workflow scripts are all in scope when the original supports the change. Do not drop `/GL /LTCG`.
 
 A function is not recovered if it only exists as a Ghidra name, or only as uncommented C++ in `src/`.
 
