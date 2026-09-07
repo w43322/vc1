@@ -94,10 +94,24 @@ public:
 // SQArray::Create
 // FUNCTION: VC1 0x0040d260
 // SQArray::Finalize
+// FUNCTION: VC1 0x0040d290
+// ?Resize@SQArray@@QAEXHAAUSQObjectPtr@@@Z
+// FUNCTION: VC1 0x0040d2e0
+// ?Append@SQArray@@QAEXABUtagSQObject@@@Z
+// FUNCTION: VC1 0x0040d330
+// ?Pop@SQArray@@QAEXXZ
+// FUNCTION: VC1 0x0040d3b0
+// ?Insert@SQArray@@QAE_NHABUtagSQObject@@@Z
+// FUNCTION: VC1 0x0040d410
+// ?ShrinkIfNeeded@SQArray@@QAEXXZ
 // FUNCTION: VC1 0x0040d460
 // SQArray::Release
 // FUNCTION: VC1 0x0040d480
 // SQArray::`scalar deleting destructor'
+// FUNCTION: VC1 0x0040e870
+// ?Get@SQArray@@QAE_NHAAUSQObjectPtr@@@Z
+// FUNCTION: VC1 0x0040ea10
+// ?Clone@SQArray@@QAEPAU1@XZ
 // FUNCTION: VC1 0x0048b810
 // SQArray::Mark
 // FUNCTION: VC1 0x0048bcd0

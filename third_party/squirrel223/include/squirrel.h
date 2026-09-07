@@ -484,9 +484,9 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // FUNCTION: VC1 0x004844c0
 // array_resize
 // FUNCTION: VC1 0x00484580
-// array_insert
-// FUNCTION: VC1 0x00484690
 // array_remove
+// FUNCTION: VC1 0x00484690
+// array_insert
 // FUNCTION: VC1 0x004846f0
 // array_top
 // FUNCTION: VC1 0x00484730
