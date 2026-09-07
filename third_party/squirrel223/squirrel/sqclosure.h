@@ -154,6 +154,8 @@ public:
 // SQGenerator::~SQGenerator
 // FUNCTION: VC1 0x0040e7c0
 // SQGenerator::Release
+// FUNCTION: VC1 0x0040e7e0
+// SQGenerator::Finalize
 // FUNCTION: VC1 0x0040e850
 // SQGenerator::`scalar deleting destructor'
 // FUNCTION: VC1 0x0048b0e0

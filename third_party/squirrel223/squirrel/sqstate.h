@@ -141,6 +141,8 @@ void *sq_vm_malloc(SQUnsignedInteger size);
 void *sq_vm_realloc(void *p,SQUnsignedInteger oldsize,SQUnsignedInteger size);
 void sq_vm_free(void *p,SQUnsignedInteger size);
 
+// FUNCTION: VC1 0x00488150
+// SQSharedState::MarkObject
 // FUNCTION: VC1 0x00488490
 // StringTable::Remove
 // FUNCTION: VC1 0x00488c90
@@ -149,5 +151,11 @@ void sq_vm_free(void *p,SQUnsignedInteger size);
 // StringTable::Resize
 // FUNCTION: VC1 0x004890a0
 // StringTable::Add
+// FUNCTION: VC1 0x00489470
+// CompileTypemask
+// FUNCTION: VC1 0x00489640
+// CreateDefaultDelegate
+// FUNCTION: VC1 0x00489890
+// SQSharedState::Init
 
 #endif //_SQSTATE_H_

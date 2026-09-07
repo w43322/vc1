@@ -204,6 +204,12 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 		v->ci = NULL; \
 }
 
+// FUNCTION: VC1 0x0040e530
+// SQVM::Release
+// FUNCTION: VC1 0x0040eaf0
+// SQVM::`scalar deleting destructor'
+// FUNCTION: VC1 0x0048b8e0
+// SQVM::Mark
 // FUNCTION: VC1 0x0048fe90
 // SQVM::Push
 // FUNCTION: VC1 0x00490040

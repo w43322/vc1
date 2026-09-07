@@ -1,4 +1,5 @@
 address|type|name|symbol
+0x0042f403|library|_purecall|__purecall
 0x0042f456|library|___tmainCRTStartup|___tmainCRTStartup
 0x0042f5d4|library|WinMainCRTStartup|_WinMainCRTStartup
 0x0042f5de|library|free|_free

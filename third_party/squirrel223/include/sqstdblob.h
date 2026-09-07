@@ -16,6 +16,24 @@ SQUIRREL_API SQRESULT sqstd_register_bloblib(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x0040ef00
+// SQBlob::SQBlob
+// FUNCTION: VC1 0x0040ef70
+// SQBlob::Write
+// FUNCTION: VC1 0x0040efd0
+// SQBlob::Read
+// FUNCTION: VC1 0x0040f020
+// SQBlob::Resize
+// FUNCTION: VC1 0x0040f0b0
+// SQBlob::Seek
+// FUNCTION: VC1 0x0040f110
+// SQBlob::IsValid
+// FUNCTION: VC1 0x0040f120
+// SQBlob::EOS
+// FUNCTION: VC1 0x0040f140
+// SQBlob::`scalar deleting destructor'
+// FUNCTION: VC1 0x0042f140
+// SQBlob::Tell
 // FUNCTION: VC1 0x0048e780
 // _g_blob_swapfloat
 // FUNCTION: VC1 0x0048e7f0
