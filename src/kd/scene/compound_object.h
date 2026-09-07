@@ -10,9 +10,9 @@ namespace vc1 {
 class KdCompoundObject : public IUnknown
 {
 public:
-    Unknown face4;           // 0x04
-    Unknown face8;           // 0x08
-    Unknown faceC;           // 0x0c
+    void* unk04;             // 0x04
+    void* unk08;             // 0x08
+    void* unk0c;             // 0x0c
     unsigned pad[15];        // 0x10
     Abstract abstract;       // 0x4c
     unsigned char tail[32];  // 0x50

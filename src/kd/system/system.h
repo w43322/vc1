@@ -2,6 +2,9 @@
 #define VC1_KD_SYSTEM_H
 
 #include "kd/iface/isystem.h"
+#include "kd/iface/irenderable.h"
+#include "kd/iface/iscript_object.h"
+#include "kd/iface/iinput_stream.h"
 #include "kd/iface/iabstract.h"
 
 namespace vc1 {
@@ -10,23 +13,23 @@ class KdSystem;
 
 extern IAbstract* g_kdSystem;
 
+// Extra original vftables: 0x004d1984, 0x004d199c, 0x004d19b4, 0x004d19dc.
 // VTABLE: VC1 0x004d1930
 // SIZE 0xd8
-class KdSystem : public ISystem
+class KdSystem : public ISystem,
+                 public IRenderable,
+                 public IScriptObject,
+                 public IInputStream,
+                 public IAbstract
 {
 public:
-    Unknown face4;          // 0x04
-    Unknown face8;          // 0x08
-    Unknown faceC;          // 0x0c
-    unsigned pad10[8];      // 0x10
-    Abstract abstract;      // 0x30
     unsigned char tail[164]; // 0x34
 
     KdSystem();
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    int Unmapped0c();                       // vtable+0x0c
+    int Shutdown();                         // vtable+0x0c
     int Unmapped10();                       // vtable+0x10
     int Unmapped14();                       // vtable+0x14
     int Unmapped18();                       // vtable+0x18
@@ -34,6 +37,7 @@ public:
     int Unmapped20();                       // vtable+0x20
     int Unmapped24();                       // vtable+0x24
     int Start();                            // vtable+0x28
+    int Unmapped0c();                       // vtable+0x0c
 };
 
 typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];

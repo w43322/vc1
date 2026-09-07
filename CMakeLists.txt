@@ -40,8 +40,6 @@ add_executable(vc1_recompiled
   src/kd/iface/iid.cpp
   src/kd/iface/iunknown.cpp
   src/kd/iface/iabstract.cpp
-  src/kd/iface/ishutdownable.cpp
-  src/kd/iface/iscript_object.cpp
   src/kd/factory.cpp
   src/kd/display/display.cpp
   src/kd/system/system.cpp

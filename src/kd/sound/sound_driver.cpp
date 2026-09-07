@@ -30,16 +30,16 @@ void* KdSoundDriver::QueryInterface(const char** iid)
     }
     name = *iid;
     if (name == g_iidScriptObject) {
-        return &scriptObject;
+        return static_cast<IScriptObject*>(this);
     }
     if (name == g_iidSoundDriver) {
-        return this;
+        return static_cast<ISoundDriver*>(this);
     }
     if (name == g_iidShutdownable) {
-        return &shutdownable;
+        return static_cast<IShutdownable*>(this);
     }
     if (name == g_iidAbstract) {
-        return &abstract;
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
@@ -83,8 +83,8 @@ void** CreateKdSoundDriver(void** out)
         return out;
     }
     object->KdSoundDriver::KdSoundDriver();
-    g_kdSoundDriver = &object->abstract;
-    queried = static_cast<IUnknown*>(object->abstract.QueryInterface(&g_iidAbstract));
+    g_kdSoundDriver = static_cast<IAbstract*>(object);
+    queried = static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
     if (queried) {
         queried->AddRef();
     }
@@ -101,6 +101,16 @@ void** CreateKdSoundDriver(void** out)
 int KdSoundDriver::SetEnabled()
 {
     return 1;
+}
+
+int KdSoundDriver::Shutdown()
+{
+    return 0;
+}
+
+int KdSoundDriver::Unmapped0c()
+{
+    return 0;
 }
 
 }

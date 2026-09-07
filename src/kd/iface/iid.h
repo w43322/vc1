@@ -4,11 +4,15 @@
 namespace vc1 {
 
 extern const char* g_iidAbstract;
+extern const char* g_iidInputStream;
 extern const char* g_iidShutdownable;
 extern const char* g_iidDisplay;
+extern const char* g_iidRenderTarget;
 extern const char* g_iidSystem;
 extern const char* g_iidFunctionalGroup;
+extern const char* g_iidComponentGroup;
 extern const char* g_iidUpdateable;
+extern const char* g_iidRenderable;
 extern const char* g_iidResourceManager;
 extern const char* g_iidCamera;
 extern const char* g_iidSoundDriver;

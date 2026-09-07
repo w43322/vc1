@@ -1,14 +1,13 @@
 #ifndef VC1_KD_ISYSTEM_H
 #define VC1_KD_ISYSTEM_H
 
-#include "kd/iface/iunknown.h"
+#include "kd/iface/ishutdownable.h"
 
 namespace vc1 {
 
 // SIZE 0x04
-struct ISystem : IUnknown
+struct ISystem : IShutdownable
 {
-    virtual int Unmapped0c() = 0; // vtable+0x0c
     virtual int Unmapped10() = 0; // vtable+0x10
     virtual int Unmapped14() = 0; // vtable+0x14
     virtual int Unmapped18() = 0; // vtable+0x18

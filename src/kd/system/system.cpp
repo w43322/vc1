@@ -21,7 +21,7 @@ const char* g_kdNameSystem = kSystem;
 
 KdSystem::KdSystem()
 {
-    memset(pad10, 0, sizeof(pad10));
+    memset(pad04, 0, sizeof(pad04));
     memset(tail, 0, sizeof(tail));
 }
 
@@ -139,7 +139,7 @@ int KdSystem::Unmapped24() { return 0; }
 int KdSystem::Unmapped1c() { return 0; }
 
 // STUB: VC1 0x00462720
-int KdSystem::Unmapped0c() { return 0; }
+int KdSystem::Shutdown() { return 0; }
 
 // STUB: VC1 0x004630d0
 int KdSystem::Unmapped18() { return 0; }
@@ -153,11 +153,24 @@ int KdSystem::Unmapped10() { return 0; }
 // STUB: VC1 0x004a8d20
 void* KdSystem::QueryInterface(const char** iid)
 {
-    if (iid && *iid == g_iidAbstract) {
-        return &abstract;
+    if (!iid) {
+        return 0;
     }
-    if (iid && *iid == g_iidSystem) {
-        return this;
+    if (*iid == g_iidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (*iid == g_iidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (*iid == g_iidShutdownable || *iid == g_iidComponentGroup
+        || *iid == g_iidSystem) {
+        return static_cast<ISystem*>(this);
+    }
+    if (*iid == g_iidInputStream) {
+        return static_cast<IInputStream*>(this);
+    }
+    if (*iid == g_iidAbstract) {
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
@@ -196,8 +209,8 @@ void** CreateKdSystem(void** out)
         return out;
     }
     ConstructKdSystem(memory);
-    g_kdSystem = &memory->abstract;
-    queried = static_cast<IUnknown*>(memory->abstract.QueryInterface(&g_iidAbstract));
+    g_kdSystem = static_cast<IAbstract*>(memory);
+    queried = static_cast<IUnknown*>(memory->QueryInterface(&g_iidAbstract));
     if (queried) {
         queried->AddRef();
     }
@@ -214,6 +227,11 @@ void** CreateKdSystem(void** out)
 int KdSystem::Start()
 {
     return 1;
+}
+
+int KdSystem::Unmapped0c()
+{
+    return 0;
 }
 
 }

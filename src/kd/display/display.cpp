@@ -18,8 +18,9 @@ const char* g_kdNameDisplay = kDisplay;
 
 KdDisplay::KdDisplay()
 {
-    pad08 = 0;
-    pad0c = 0;
+    unk04 = 0;
+    unk08 = 0;
+    unk0c = 0;
     pad20[0] = 0;
     pad20[1] = 0;
     pad20[2] = 0;
@@ -37,47 +38,36 @@ KdDisplay::KdDisplay()
     enabled58 = 1;
 }
 
-int KdDisplay::Unmapped14() { return 0; }
-
-// STUB: VC1 0x004022e0
-int KdDisplay::SetSize(unsigned, unsigned)
-{
-    return 1;
-}
-
-// STUB: VC1 0x004023e0
-int KdDisplay::Unmapped24() { return 0; }
-
-// STUB: VC1 0x004023f0
-int KdDisplay::Unmapped1c() { return 0; }
-
-// STUB: VC1 0x00466290
-int KdDisplay::Unmapped34() { return 0; }
-
-// STUB: VC1 0x004662a0
-int KdDisplay::Unmapped30() { return 0; }
-
-// STUB: VC1 0x004662e0
-int KdDisplay::Unmapped38() { return 0; }
-
-// STUB: VC1 0x004b1c90
-int KdDisplay::Unmapped18() { return 0; }
-
-// STUB: VC1 0x004b1d30
-int KdDisplay::Unmapped10() { return 0; }
+int KdDisplay::Display14() { return 0; }
+int KdDisplay::SetSize(unsigned, unsigned) { return 1; }
+int KdDisplay::Display24() { return 0; }
+int KdDisplay::Display1c() { return 0; }
+int KdDisplay::Display34() { return 0; }
+int KdDisplay::Display30() { return 0; }
+int KdDisplay::Display38() { return 0; }
+int KdDisplay::Display18() { return 0; }
+int KdDisplay::Display10() { return 0; }
 
 // FUNCTION: VC1 0x004b1d40
 void* KdDisplay::QueryInterface(const char** iid)
 {
-    void* const base = UnmappedDisplayBaseQueryInterface(this, iid);
-    if (base) {
-        return base;
+    if (!iid) {
+        return 0;
     }
-    if (iid && *iid == g_iidAbstract) {
-        return &abstract;
+    if (*iid == g_iidScriptObject) {
+        return static_cast<IScriptObject*>(this);
     }
-    if (iid && *iid == g_iidDisplay) {
-        return this;
+    if (*iid == g_iidRenderTarget) {
+        return static_cast<IRenderTarget*>(this);
+    }
+    if (*iid == g_iidDisplay) {
+        return static_cast<IDisplay*>(this);
+    }
+    if (*iid == g_iidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (*iid == g_iidAbstract) {
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
@@ -126,8 +116,8 @@ void** CreateKdDisplay(void** out)
         return out;
     }
     ConstructKdDisplay(object);
-    g_kdDisplay = &object->abstract;
-    queried = static_cast<IUnknown*>(object->abstract.QueryInterface(&g_iidAbstract));
+    g_kdDisplay = static_cast<IAbstract*>(object);
+    queried = static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
     if (queried) {
         queried->AddRef();
     }
@@ -140,16 +130,14 @@ void** CreateKdDisplay(void** out)
     return out;
 }
 
-// STUB: VC1 0x004b1f50
 void* KdDisplay::GetMixer()
 {
     return 0;
 }
 
-// STUB: VC1 0x004b20c0
-int KdDisplay::Unmapped28() { return 0; }
-
-// STUB: VC1 0x004b22e0
+int KdDisplay::Display28() { return 0; }
+int KdDisplay::Display0c() { return 0; }
+int KdDisplay::Shutdown() { return 0; }
 int KdDisplay::Unmapped0c() { return 0; }
 
 }

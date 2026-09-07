@@ -7,6 +7,11 @@ static const char kIidAbstract[] = "IAbstract";
 // GLOBAL: VC1 0x004d0584
 const char* g_iidAbstract = kIidAbstract;
 
+// STRING: VC1 0x004d4e8c
+static const char kIidInputStream[] = "IInputStream";
+// GLOBAL: VC1 0x004d0588
+const char* g_iidInputStream = kIidInputStream;
+
 // STRING: VC1 0x004d4e5c
 static const char kIidShutdownable[] = "IShutdownable";
 // GLOBAL: VC1 0x004d0594
@@ -16,6 +21,11 @@ const char* g_iidShutdownable = kIidShutdownable;
 static const char kIidDisplay[] = "IDisplay";
 // GLOBAL: VC1 0x004d0598
 const char* g_iidDisplay = kIidDisplay;
+
+// STRING: VC1 0x004d4e40
+static const char kIidRenderTarget[] = "IRenderTarget";
+// GLOBAL: VC1 0x004d059c
+const char* g_iidRenderTarget = kIidRenderTarget;
 
 // STRING: VC1 0x004d4dc4
 static const char kIidSystem[] = "ISystem";
@@ -27,10 +37,20 @@ static const char kIidFunctionalGroup[] = "IFunctionalGroup";
 // GLOBAL: VC1 0x004d05cc
 const char* g_iidFunctionalGroup = kIidFunctionalGroup;
 
+// STRING: VC1 0x004d4da0
+static const char kIidComponentGroup[] = "IComponentGroup";
+// GLOBAL: VC1 0x004d05d0
+const char* g_iidComponentGroup = kIidComponentGroup;
+
 // STRING: VC1 0x004d4d84
 static const char kIidUpdateable[] = "IUpdateable";
 // GLOBAL: VC1 0x004d05d8
 const char* g_iidUpdateable = kIidUpdateable;
+
+// STRING: VC1 0x004d4d68
+static const char kIidRenderable[] = "IRenderable";
+// GLOBAL: VC1 0x004d05e0
+const char* g_iidRenderable = kIidRenderable;
 
 // STRING: VC1 0x004d4d38
 static const char kIidResourceManager[] = "IResourceManager";

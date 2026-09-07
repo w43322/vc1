@@ -2,22 +2,6 @@
 
 namespace vc1 {
 
-void* Unknown::QueryInterface(const char** iid)
-{
-    (void)iid;
-    return 0;
-}
-
-unsigned Unknown::AddRef()
-{
-    return 0;
-}
-
-unsigned Unknown::Release()
-{
-    return 0;
-}
-
 void* KdQueryInterface(IUnknown* object, const char** iid)
 {
     if (!object) {
