@@ -453,6 +453,14 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x004839d0
+// base_seterrorhandler
+// FUNCTION: VC1 0x004839f0
+// thread_getstatus
+// FUNCTION: VC1 0x00483a90
+// generator_getstatus
+// FUNCTION: VC1 0x00483b30
+// closure_getinfos
 // FUNCTION: VC1 0x004842e0
 // string_toupper
 // FUNCTION: VC1 0x004843d0
@@ -485,6 +493,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // base_suspend
 // FUNCTION: VC1 0x00485130
 // base_print
+// FUNCTION: VC1 0x004851d0
+// get_slice_params
 // FUNCTION: VC1 0x00485320
 // string_slice
 // FUNCTION: VC1 0x00485470
@@ -507,6 +517,10 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_base_register
 // FUNCTION: VC1 0x004861a0
 // base_getstackinfos
+// FUNCTION: VC1 0x00486480
+// base_newthread
+// FUNCTION: VC1 0x00486510
+// base_compilestring
 // FUNCTION: VC1 0x0048fee0
 // sq_pop
 // FUNCTION: VC1 0x0048ff40

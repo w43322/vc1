@@ -30,10 +30,46 @@ SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x004822c0
+// sqstd_rex_matchcclass
+// FUNCTION: VC1 0x00482490
+// sqstd_rex_parsenumber
+// FUNCTION: VC1 0x00482500
+// sqstd_rex_escapechar
+// FUNCTION: VC1 0x004825b0
+// sqstd_rex_expect
+// FUNCTION: VC1 0x004825d0
+// sqstd_rex_free
+// FUNCTION: VC1 0x00482680
+// sqstd_rex_matchclass
+// FUNCTION: VC1 0x004826e0
+// sqstd_rex_matchnode
+// FUNCTION: VC1 0x00482b10
+// sqstd_rex_searchrange
+// FUNCTION: VC1 0x00482c20
+// sqstd_rex_newnode
+// FUNCTION: VC1 0x00482ca0
+// sqstd_rex_charclass
+// FUNCTION: VC1 0x00482d20
+// sqstd_rex_charnode
+// FUNCTION: VC1 0x00482e80
+// sqstd_rex_class
+// FUNCTION: VC1 0x004830c0
+// sqstd_rex_element
+// FUNCTION: VC1 0x00483420
+// sqstd_rex_list
+// FUNCTION: VC1 0x00483540
+// sqstd_rex_compile
+// FUNCTION: VC1 0x0048d480
+// _rexobj_releasehook
 // FUNCTION: VC1 0x0048d4a0
 // _regexp__typeof
 // FUNCTION: VC1 0x0048d4c0
 // _regexp_subexpcount
+// FUNCTION: VC1 0x0048d540
+// validate_format
+// FUNCTION: VC1 0x0048d6c0
+// _addrexmatch
 // FUNCTION: VC1 0x0048d780
 // _regexp_match
 // FUNCTION: VC1 0x0048d8b0
@@ -44,6 +80,8 @@ SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 // _string_lstrip
 // FUNCTION: VC1 0x0048dc50
 // _string_strip
+// FUNCTION: VC1 0x0048dd80
+// sqstd_format
 // FUNCTION: VC1 0x0048e0f0
 // _regexp_capture
 // FUNCTION: VC1 0x0048e290
