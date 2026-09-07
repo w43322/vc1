@@ -74,4 +74,62 @@ struct SQVM;
 
 typedef void(*CompilerErrorFunc)(void *ud, const SQChar *s);
 bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcename, SQObjectPtr &out, bool raiseerror, bool lineinfo);
+
+// FUNCTION: VC1 0x0040ff00
+// SQCompiler::ThrowError
+// FUNCTION: VC1 0x0040ff10
+// SQCompiler::Error
+// FUNCTION: VC1 0x0040ffe0
+// SQCompiler::Compile
+// FUNCTION: VC1 0x00410330
+// SQCompiler::Statements
+// FUNCTION: VC1 0x00410390
+// SQCompiler::Statement
+// FUNCTION: VC1 0x00410d20
+// SQCompiler::CommaExpr
+// FUNCTION: VC1 0x00410d70
+// SQCompiler::Expression
+// FUNCTION: VC1 0x00411110
+// SQCompiler::LogicalOrExp
+// FUNCTION: VC1 0x004116a0
+// SQCompiler::PrefixedExpr
+// FUNCTION: VC1 0x00411ae0
+// SQCompiler::Factor
+// FUNCTION: VC1 0x00412760
+// SQCompiler::ParseTableOrClass
+// FUNCTION: VC1 0x00412c60
+// SQCompiler::LocalDeclStatement
+// FUNCTION: VC1 0x00412e40
+// SQCompiler::IfStatement
+// FUNCTION: VC1 0x00413010
+// SQCompiler::WhileStatement
+// FUNCTION: VC1 0x00413190
+// SQCompiler::DoWhileStatement
+// FUNCTION: VC1 0x00413310
+// SQCompiler::ForStatement
+// FUNCTION: VC1 0x00413710
+// SQCompiler::ForEachStatement
+// FUNCTION: VC1 0x00413af0
+// SQCompiler::SwitchStatement
+// FUNCTION: VC1 0x00413d70
+// SQCompiler::FunctionStatement
+// FUNCTION: VC1 0x00414080
+// SQCompiler::ClassStatement
+// FUNCTION: VC1 0x00414120
+// SQCompiler::ExpectScalar
+// FUNCTION: VC1 0x004142d0
+// SQCompiler::EnumStatement
+// FUNCTION: VC1 0x004145a0
+// SQCompiler::TryCatchStatement
+// FUNCTION: VC1 0x004148c0
+// SQCompiler::ClassExp
+// FUNCTION: VC1 0x00414ac0
+// SQCompiler::DeleteExpr
+// FUNCTION: VC1 0x00414c60
+// SQCompiler::CreateFunction
+// FUNCTION: VC1 0x00415190
+// SQCompiler::ResolveBreaks
+// FUNCTION: VC1 0x004151e0
+// SQCompiler::ResolveContinues
+
 #endif //_SQCOMPILER_H_

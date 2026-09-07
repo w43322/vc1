@@ -42,9 +42,23 @@ public:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0047ef30
+// SQLexer::Next
 // FUNCTION: VC1 0x0047ef70
 // SQLexer::LexBlockComment
 // FUNCTION: VC1 0x0047f0a0
 // SQLexer::Tok2Str
+// FUNCTION: VC1 0x0047f220
+// SQLexer::ReadNumber
+// FUNCTION: VC1 0x0047f720
+// SQLexer::ReadString
+// FUNCTION: VC1 0x0047fcf0
+// SQLexer::GetIDType
+// FUNCTION: VC1 0x0047fdb0
+// SQLexer::Init
+// FUNCTION: VC1 0x004811d0
+// SQLexer::ReadID
+// FUNCTION: VC1 0x004812d0
+// SQLexer::Lex
 
 #endif

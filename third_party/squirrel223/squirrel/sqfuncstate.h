@@ -80,6 +80,8 @@ private:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0047e700
+// SQFuncState::SQFuncState
 
 #endif //_SQFUNCSTATE_H_
 
