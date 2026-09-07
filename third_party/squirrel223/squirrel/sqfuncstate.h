@@ -80,8 +80,40 @@ private:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0047d720
+// SQFuncState::GetOuterVariable
+// FUNCTION: VC1 0x0047d750
+// SQFuncState::GetLocalVariable
+// FUNCTION: VC1 0x0047d790
+// SQFuncState::IsLocal
+// FUNCTION: VC1 0x0047d890
+// SQFuncState::IsConstant
+// FUNCTION: VC1 0x0047d950
+// SQFuncState::PopTarget
+// FUNCTION: VC1 0x0047d9f0
+// SQFuncState::GetConstant
+// FUNCTION: VC1 0x0047dbb0
+// SQFuncState::~SQFuncState
+// FUNCTION: VC1 0x0047dee0
+// SQFuncState::BuildProto
+// FUNCTION: VC1 0x0047e2a0
+// SQFuncState::CreateTable
+// FUNCTION: VC1 0x0047e550
+// SQFuncState::PushLocalVariable
+// FUNCTION: VC1 0x0047e5d0
+// SQFuncState::SetStackSize
+// FUNCTION: VC1 0x0047e6a0
+// SQFuncState::AllocStackPos
 // FUNCTION: VC1 0x0047e700
 // SQFuncState::SQFuncState
+// FUNCTION: VC1 0x0047e990
+// SQFuncState::PushChildState
+// FUNCTION: VC1 0x0047e9f0
+// SQFuncState::CreateString
+// FUNCTION: VC1 0x0047eaa0
+// ?AddInstruction@SQFuncState@@QAEXAAUSQInstruction@@@Z
+// FUNCTION: VC1 0x0047ed00
+// SQFuncState::AddParameter
 
 #endif //_SQFUNCSTATE_H_
 

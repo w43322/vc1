@@ -79,22 +79,38 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::ThrowError
 // FUNCTION: VC1 0x0040ff10
 // SQCompiler::Error
+// FUNCTION: VC1 0x0040ff40
+// SQCompiler::IsEndOfStatement
 // FUNCTION: VC1 0x0040ffe0
 // SQCompiler::Compile
 // FUNCTION: VC1 0x00410330
 // SQCompiler::Statements
 // FUNCTION: VC1 0x00410390
 // SQCompiler::Statement
+// FUNCTION: VC1 0x00410ae0
+// SQCompiler::EmitDerefOp
+// FUNCTION: VC1 0x00410b70
+// SQCompiler::Emit2ArgsOP
+// FUNCTION: VC1 0x00410bf0
+// SQCompiler::EmitCompoundArith
 // FUNCTION: VC1 0x00410d20
 // SQCompiler::CommaExpr
 // FUNCTION: VC1 0x00410d70
 // SQCompiler::Expression
+// FUNCTION: VC1 0x00411080
+// SQCompiler::BIN_EXP
 // FUNCTION: VC1 0x00411110
 // SQCompiler::LogicalOrExp
 // FUNCTION: VC1 0x004116a0
 // SQCompiler::PrefixedExpr
 // FUNCTION: VC1 0x00411ae0
 // SQCompiler::Factor
+// FUNCTION: VC1 0x00412520
+// SQCompiler::UnaryOP
+// FUNCTION: VC1 0x004125a0
+// SQCompiler::NeedGet
+// FUNCTION: VC1 0x00412630
+// SQCompiler::FunctionCallArgs
 // FUNCTION: VC1 0x00412760
 // SQCompiler::ParseTableOrClass
 // FUNCTION: VC1 0x00412c60
@@ -121,10 +137,16 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::EnumStatement
 // FUNCTION: VC1 0x004145a0
 // SQCompiler::TryCatchStatement
+// FUNCTION: VC1 0x00414820
+// SQCompiler::FunctionExp
 // FUNCTION: VC1 0x004148c0
 // SQCompiler::ClassExp
+// FUNCTION: VC1 0x00414a10
+// SQCompiler::DelegateExpr
 // FUNCTION: VC1 0x00414ac0
 // SQCompiler::DeleteExpr
+// FUNCTION: VC1 0x00414b60
+// SQCompiler::PrefixIncDec
 // FUNCTION: VC1 0x00414c60
 // SQCompiler::CreateFunction
 // FUNCTION: VC1 0x00415190
