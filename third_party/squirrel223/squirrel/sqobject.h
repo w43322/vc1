@@ -53,6 +53,7 @@ enum SQMetaMethod{
 
 #define MINPOWER2 4
 
+// VTABLE: VC1 0x004d27c8
 struct SQRefCounted
 {
 	SQRefCounted() { _uiRef = 0; _weakref = NULL; }
@@ -63,6 +64,7 @@ struct SQRefCounted
 	virtual void Release()=0;
 };
 
+// VTABLE: VC1 0x004d3694
 struct SQWeakRef : SQRefCounted
 {
 	void Release();
@@ -367,11 +369,27 @@ const SQChar *IdType2Name(SQObjectType type);
 // SQDelegable::SetDelegate
 // FUNCTION: VC1 0x0048af80
 // IdType2Name
+// FUNCTION: VC1 0x0048bb00
+// SQString::Next
 // FUNCTION: VC1 0x0048bc20
 // SQWeakRef::Release
 // FUNCTION: VC1 0x0048bc70
 // SQRefCounted::GetWeakRef
+// FUNCTION: VC1 0x0048bdd0
+// SafeRead
+// FUNCTION: VC1 0x0048be00
+// SafeWrite
 // FUNCTION: VC1 0x0048be30
 // SQGenerator::Resume
+// FUNCTION: VC1 0x0048c0f0
+// SQGenerator::Yield
+// FUNCTION: VC1 0x0048c370
+// ReadObject
+// FUNCTION: VC1 0x0048c4f0
+// WriteObject
+// FUNCTION: VC1 0x0048c5c0
+// CheckTag
+// FUNCTION: VC1 0x0048c620
+// WriteTag
 
 #endif //_SQOBJECT_H_

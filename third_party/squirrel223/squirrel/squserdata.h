@@ -2,6 +2,7 @@
 #ifndef _SQUSERDATA_H_
 #define _SQUSERDATA_H_
 
+// VTABLE: VC1 0x004d27b4
 struct SQUserData : SQDelegable
 {
 	SQUserData(SQSharedState *ss){ _delegate = 0; _hook = NULL; INIT_CHAIN(); ADD_TO_CHAIN(&_ss(this)->_gc_chain, this); }

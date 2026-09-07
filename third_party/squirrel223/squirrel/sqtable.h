@@ -22,6 +22,7 @@ inline SQHash HashObj(const SQObjectPtr &key)
 	}
 }
 
+// VTABLE: VC1 0x004d3a80
 struct SQTable : public SQDelegable 
 {
 private:
@@ -88,9 +89,27 @@ public:
 	
 };
 
+// FUNCTION: VC1 0x0040d100
+// SQTable::Create
+// FUNCTION: VC1 0x004b7120
+// SQTable::_ClearNodes
+// FUNCTION: VC1 0x004b71d0
+// SQTable::Set
+// FUNCTION: VC1 0x004b72b0
+// SQTable::Next
 // FUNCTION: VC1 0x004b73c0
 // SQTable::NewSlot
 // FUNCTION: VC1 0x004b75f0
 // SQTable::Get
+// FUNCTION: VC1 0x004b7730
+// SQTable::AllocNodes
+// FUNCTION: VC1 0x004b77c0
+// SQTable::SQTable
+// FUNCTION: VC1 0x004b7810
+// SQTable::Clone
+// FUNCTION: VC1 0x004b7910
+// SQTable::Rehash
+// FUNCTION: VC1 0x004b7a60
+// SQTable::Remove
 
 #endif //_SQTABLE_H_

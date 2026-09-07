@@ -6,6 +6,7 @@
 
 #define SQSTD_STREAM_TYPE_TAG 0x80000000
 
+// VTABLE: VC1 0x004d301c
 struct SQStream {
 	virtual ~SQStream() {}
 	virtual SQInteger Read(void *buffer, SQInteger size) = 0;

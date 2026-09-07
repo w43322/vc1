@@ -70,6 +70,7 @@ typedef sqvector<SQLineInfo> SQLineInfoVec;
 			ptr[nl].~type(); \
 	} \
 }
+// VTABLE: VC1 0x004d368c
 struct SQFunctionProto : public SQRefCounted
 {
 private:
@@ -161,5 +162,9 @@ public:
 // SQFunctionProto::GetLine
 // FUNCTION: VC1 0x0048bba0
 // SQFunctionProto::GetLocal
+// FUNCTION: VC1 0x0048c650
+// SQFunctionProto::Load
+// FUNCTION: VC1 0x0048cdc0
+// SQFunctionProto::Save
 
 #endif //_SQFUNCTION_H_

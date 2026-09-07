@@ -28,6 +28,7 @@ struct SQExceptionTrap{
 
 typedef sqvector<SQExceptionTrap> ExceptionsTraps;
 
+// VTABLE: VC1 0x004d2d50
 struct SQVM : public CHAINABLE_OBJ
 {
 	struct VarArgs {

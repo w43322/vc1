@@ -151,10 +151,36 @@ public:
 	SQObjectPtr _values[1];
 };
 
+// FUNCTION: VC1 0x0040ea70
+// SQInstance::Clone
 // FUNCTION: VC1 0x0040f9c0
 // SQClass::Release
+// FUNCTION: VC1 0x0040fa00
+// SQInstance::Create
+// FUNCTION: VC1 0x0040fa80
+// SQInstance::Release
 // FUNCTION: VC1 0x0040fae0
 // SQClass::`scalar deleting destructor'
+// FUNCTION: VC1 0x0040fb40
+// SQInstance::`scalar deleting destructor'
+// FUNCTION: VC1 0x00487540
+// SQInstance::InstanceOf
+// FUNCTION: VC1 0x00487560
+// SQInstance::GetMetaMethod
+// FUNCTION: VC1 0x004875c0
+// SQInstance::Finalize
+// FUNCTION: VC1 0x00487680
+// SQClass::GetAttributes
+// FUNCTION: VC1 0x00487760
+// SQClass::SetAttributes
+// FUNCTION: VC1 0x00487880
+// SQClass::Next
+// FUNCTION: VC1 0x00487980
+// SQInstance::~SQInstance
+// FUNCTION: VC1 0x00487a10
+// ??0SQInstance@@QAE@PAUSQSharedState@@PAU0@H@Z
+// FUNCTION: VC1 0x00487ab0
+// ??0SQInstance@@QAE@PAUSQSharedState@@PAUSQClass@@H@Z
 // FUNCTION: VC1 0x00487b80
 // SQClass::NewSlot
 // FUNCTION: VC1 0x00487da0
@@ -163,19 +189,9 @@ public:
 // SQClass::SQClass
 // FUNCTION: VC1 0x00488050
 // SQClass::~SQClass
-// FUNCTION: VC1 0x0048b560
-// SQClass::Mark
-// FUNCTION: VC1 0x0040fa80
-// SQInstance::Release
-// FUNCTION: VC1 0x0040fb40
-// SQInstance::`scalar deleting destructor'
-// FUNCTION: VC1 0x00487560
-// SQInstance::GetMetaMethod
-// FUNCTION: VC1 0x004875c0
-// SQInstance::Finalize
-// FUNCTION: VC1 0x00487980
-// SQInstance::~SQInstance
 // FUNCTION: VC1 0x0048b480
 // SQInstance::Mark
+// FUNCTION: VC1 0x0048b560
+// SQClass::Mark
 
 #endif //_SQCLASS_H_

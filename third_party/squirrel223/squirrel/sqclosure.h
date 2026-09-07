@@ -4,6 +4,7 @@
 
 struct SQFunctionProto;
 
+// VTABLE: VC1 0x004d2794
 struct SQClosure : public CHAINABLE_OBJ
 {
 private:
@@ -41,6 +42,7 @@ public:
 	SQObjectPtrVec _defaultparams;
 };
 //////////////////////////////////////////////
+// VTABLE: VC1 0x004d2d60
 struct SQGenerator : public CHAINABLE_OBJ 
 {
 	enum SQGeneratorState{eRunning,eSuspended,eDead};
@@ -77,6 +79,7 @@ public:
 	SQGeneratorState _state;
 };
 
+// VTABLE: VC1 0x004d27a4
 struct SQNativeClosure : public CHAINABLE_OBJ
 {
 private:
@@ -117,6 +120,9 @@ public:
 	SQObjectPtr _name;
 };
 
-
+// FUNCTION: VC1 0x0048d270
+// SQClosure::Load
+// FUNCTION: VC1 0x0048d370
+// SQClosure::Save
 
 #endif //_SQCLOSURE_H_

@@ -11,6 +11,7 @@ inline SQHash _hashstr (const SQChar *s, size_t l)
 		return h;
 }
 
+// VTABLE: VC1 0x004d3734
 struct SQString : public SQRefCounted
 {
 	SQString(){}

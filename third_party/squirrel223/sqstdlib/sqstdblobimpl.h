@@ -2,6 +2,7 @@
 #ifndef _SQSTD_BLOBIMPL_H_
 #define _SQSTD_BLOBIMPL_H_
 
+// VTABLE: VC1 0x004d3280
 struct SQBlob : public SQStream
 {
 	SQBlob(SQInteger size) {

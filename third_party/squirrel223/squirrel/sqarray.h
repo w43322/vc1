@@ -88,6 +88,10 @@ public:
 
 // FUNCTION: VC1 0x0040d150
 // SQArray::SQArray
+// FUNCTION: VC1 0x0040d1b0
+// SQArray::~SQArray
+// FUNCTION: VC1 0x0040d220
+// SQArray::Create
 // FUNCTION: VC1 0x0040d260
 // SQArray::Finalize
 // FUNCTION: VC1 0x0040d460
@@ -96,5 +100,7 @@ public:
 // SQArray::`scalar deleting destructor'
 // FUNCTION: VC1 0x0048b810
 // SQArray::Mark
+// FUNCTION: VC1 0x0048bcd0
+// SQArray::Extend
 
 #endif //_SQARRAY_H_

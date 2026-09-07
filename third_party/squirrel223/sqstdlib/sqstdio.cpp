@@ -59,6 +59,7 @@ SQInteger sqstd_feof(SQFILE file)
 }
 
 //File
+// VTABLE: VC1 0x004d3040
 struct SQFile : public SQStream {
 	SQFile() { _handle = NULL; _owns = false;}
 	SQFile(SQFILE file, bool owns) { _handle = file; _owns = owns;}
