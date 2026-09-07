@@ -216,12 +216,8 @@ char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
 void* OpenKdPath(const char* path, const char* mode);
 // 0x00487140; cdecl path + mode
 void* OpenKdFile(const char* path, const char* mode);
-// 0x0048f240; cdecl p + size. Scalar-deleting dtor if p != 0
-SQInteger FileReleaseHook(SQUserPointer p, SQInteger size);
 // 0x0048f260; original ESI=file wrapper
 int CloseKdFile(void* file);
-// 0x0048f600; cdecl vm. Push "file"
-SQInteger FileTypeof(HSQUIRRELVM vm);
 // 0x0048f620; cdecl vm. OpenKdFile or wrap a userpointer
 SQInteger FileConstructor(HSQUIRRELVM vm);
 // 0x0048f8b0; EAX=vm, cdecl user pointer

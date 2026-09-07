@@ -30,4 +30,27 @@ SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x0048d4a0
+// _regexp__typeof
+// FUNCTION: VC1 0x0048d4c0
+// _regexp_subexpcount
+// FUNCTION: VC1 0x0048d780
+// _regexp_match
+// FUNCTION: VC1 0x0048d8b0
+// _string_split
+// FUNCTION: VC1 0x0048dab0
+// _string_rstrip
+// FUNCTION: VC1 0x0048dbb0
+// _string_lstrip
+// FUNCTION: VC1 0x0048dc50
+// _string_strip
+// FUNCTION: VC1 0x0048e0f0
+// _regexp_capture
+// FUNCTION: VC1 0x0048e290
+// _regexp_search
+// FUNCTION: VC1 0x0048e3c0
+// _string_format
+// FUNCTION: VC1 0x0048e600
+// _regexp_constructor
+
 #endif /*_SQSTD_STRING_H_*/

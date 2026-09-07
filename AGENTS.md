@@ -10,7 +10,7 @@ Do not spawn sub-agents. Do not upload game assets. Do not commit Ghidra databas
 
 1. `git status --short`. Keep other people's and the user's uncommitted files. Do not reset or clean the tree.
 2. Confirm the original binary hash matches README. Every Ghidra read must name program `VirtualCity.Unwrapped.exe`.
-3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/host/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
+3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and `third_party/squirrel223`, and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/host/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
 
 ## One round
 
@@ -19,7 +19,7 @@ Target about **1000 new lines under `src/`** per round (guideline, no upper boun
 Keep Ghidra open through analyze, write, build, and compare. Close it only immediately before import. Never write to Ghidra from MCP.
 
 1. **Open Ghidra** — `tools/open-ghidra.ps1` (project `ghidra/VirtualCity.gpr`).
-2. **Connect MCP** — then **interleave analyze and write**. For each chosen address: read enough to recover that function (see Analyze), and **write or update its C++ in `src/` before you pile up the next function's dumps**. Keep Ghidra reads going in parallel with edits. Do not finish a long read-only pass and only then start `src/`.
+2. **Connect MCP** — then **interleave analyze and write**. For each chosen address: read enough to recover that function (see Analyze), and **write or update its C++ in `src/` (or a squirrel header `FUNCTION` name comment) before you pile up the next function's dumps**. Keep Ghidra reads going in parallel with edits. Do not finish a long read-only pass and only then start writing.
 3. **Build and compare** — `tools/build-vc9.cmd`, then `tools/compare-reccmp.ps1`. Read the asmcmp diff for every function you added or changed. If you added `GLOBAL` or `VTABLE` markers, also read `build/vc9/reports/VC1-data.txt` and `VC1-vtable.txt`. Leave Ghidra up so you can re-read a function if the diff needs it.
 4. **Close Ghidra** — `tools/close-ghidra.ps1`. Headless import fails if the GUI is still open.
 5. **Import names into Ghidra** — `tools/import-ghidra.ps1` (official `reccmp-ghidra-import`). This is the only allowed Ghidra write path.
@@ -62,12 +62,20 @@ Inferred names are not original symbols; say so in the source comment. The Ghidr
 - Classes/structs with a known original vftable: `// VTABLE: VC1 0x00......` immediately above the type.
 - String literals with a known original VA: `// STRING: VC1 0x00......` immediately above the line that contains the text. The same STRING address may repeat if the text matches.
 - `LINE` pins a recompiled instruction to a source line when the asm diff mis-aligns; use it on near-matches, not as a first annotation.
-- Stock third-party / CRT / Squirrel: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
-- Do not edit `third_party/squirrel223`. Do not use inline asm. Do not invent a mapping for a function you did not recover.
+- Stock Squirrel 2.2.3 (`third_party/squirrel223`): **comments only**, do not rewrite the bodies. `reccmp-project.yml` already has this tree in `source-root`. Prefer `// FUNCTION: VC1 0x...` on the implementation when that `.cpp` is already in original address order. Static functions are fine that way. If source order does not match the original (typical for sqstdlib), use the **name-comment** form from reccmp's annotations docs, and put it in a **header** (`.h` / `.hpp`). Decomplint allows lookup-by-name only in headers (`byname_function_in_cpp` fails `--warnfail` in `.cpp`). Example that matches `_file__typeof`:
+
+```c++
+// FUNCTION: VC1 0x0048f600
+// _file__typeof
+```
+
+  Do not also list that VA in `config/verified.csv` or as a `FUNCTION` in `src/`. Host forks of squirrel (KD `getenv` / `OpenKdFile` / `dofile`, extra math, aux printerror strings) stay as recovered bodies in `src/`.
+- CRT and other libraries **without** source in this tree: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
+- Do not use inline asm. Do not invent a mapping for a function you did not recover.
 - Unmapped callees of a mapped function may live as stubs **without** `FUNCTION` markers (see `src/host/stubs.cpp`) so the TU links.
 - Prefer improving existing mapped functions over leaving a known-wrong body in place. Layout, names, ABI, call targets, markers, `verified.csv`, flags, and workflow scripts are all in scope when the original supports the change. Do not drop `/GL /LTCG`.
 
-A function is not recovered if it only exists as a Ghidra name, or only as uncommented C++ in `src/`.
+A function is not recovered if it only exists as a Ghidra name, or only as uncommented C++. A `FUNCTION` comment on a stock squirrel implementation or a header name-comment that asmcmp diffs counts.
 
 ## reccmp
 
@@ -93,6 +101,6 @@ Follow the original call graph from `WinMain` (`0x00486b00`) and from existing `
 ## Invariants
 
 - Original binary identity: README SHA-256, program name `VirtualCity.Unwrapped.exe`.
-- Read Ghidra, write `src/`, import with the script. Never the reverse.
+- Read Ghidra, write `src/` or squirrel comments, import with the script. Never the reverse.
 - No fake host `main`, no `ignore-functions` in the reccmp YAML.
 - Default: no sub-agents, no asset upload, no commits of local databases or build output.

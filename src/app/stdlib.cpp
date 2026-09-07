@@ -279,7 +279,7 @@ SQRegFunction g_blobGlobals[] = {
 // GLOBAL: VC1 0x004e9360
 SQRegFunction g_fileMethods[] = {
     { "constructor", FileConstructor, 3, kMaskX },
-    { "_typeof", FileTypeof, 1, kMaskX },
+    { "_typeof", reinterpret_cast<SQFUNCTION>(0x0048f600), 1, kMaskX },
     { 0, 0, 0, 0 }
 };
 

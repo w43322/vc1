@@ -87,21 +87,6 @@ static const void* StdFileVftable()
     return static_cast<const void*>(g_stdFileVftable);
 }
 
-// cdecl p at [esp+4]. Ignore size. Call vtable[0](this, 1) when p != 0.
-// FUNCTION: VC1 0x0048f240
-SQInteger FileReleaseHook(SQUserPointer p, SQInteger size)
-{
-    typedef void* (__thiscall *DtorFn)(void* self, unsigned flags);
-    DtorFn dtor;
-
-    (void)size;
-    if (p) {
-        dtor = *reinterpret_cast<DtorFn*>(*reinterpret_cast<void**>(p));
-        dtor(p, 1);
-    }
-    return 1;
-}
-
 // ESI=file wrapper {inner, extra}. Null sets errno 0x11. Close is inner+0x118.
 // FUNCTION: VC1 0x0048f260
 int CloseKdFile(void* file)
@@ -120,14 +105,6 @@ int CloseKdFile(void* file)
     status = (*reinterpret_cast<KdCloseFn*>(static_cast<char*>(inner) + 0x118))(inner, extra);
     free(file);
     return status;
-}
-
-// cdecl vm. Push the "file" type name.
-// FUNCTION: VC1 0x0048f600
-SQInteger FileTypeof(HSQUIRRELVM vm)
-{
-    sq_pushstring(vm, "file", -1);
-    return 1;
 }
 
 // cdecl vm. Strings at idx 2/3 -> OpenKdFile; userpointer at 2 wraps that handle.
@@ -193,15 +170,18 @@ SQInteger FileConstructor(HSQUIRRELVM vm)
     if (top - stackbase >= 1) {
         if (self->_type == OT_CLASS) {
             *reinterpret_cast<SQRELEASEHOOK*>(
-                static_cast<char*>(self->_unVal.pUserPointer) + 0x50) = FileReleaseHook;
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x50)
+                = reinterpret_cast<SQRELEASEHOOK>(0x0048f240);
         }
         else if (self->_type == OT_USERDATA) {
             *reinterpret_cast<SQRELEASEHOOK*>(
-                static_cast<char*>(self->_unVal.pUserPointer) + 0x20) = FileReleaseHook;
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x20)
+                = reinterpret_cast<SQRELEASEHOOK>(0x0048f240);
         }
         else if (self->_type == OT_INSTANCE) {
             *reinterpret_cast<SQRELEASEHOOK*>(
-                static_cast<char*>(self->_unVal.pUserPointer) + 0x24) = FileReleaseHook;
+                static_cast<char*>(self->_unVal.pUserPointer) + 0x24)
+                = reinterpret_cast<SQRELEASEHOOK>(0x0048f240);
         }
     }
     return 0;
