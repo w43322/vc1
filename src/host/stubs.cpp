@@ -90,17 +90,6 @@ void UnmappedVmDelete(HSQUIRRELVM vm)
     (void)vm;
 }
 
-void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
-    const char* ns, void* methods, void* casts)
-{
-    (void)vm;
-    (void)name;
-    (void)typeTag;
-    (void)ns;
-    (void)methods;
-    (void)casts;
-}
-
 void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj)
 {
     (void)vm;

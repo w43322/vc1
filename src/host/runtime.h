@@ -114,6 +114,12 @@ extern void* g_kdPath0;           // 0x004ed4e4
 extern void* g_kdPath1;           // 0x004ed4ec
 extern void* g_kdPath2;           // 0x004ed4f4
 extern char g_resourceLocale[8];  // 0x004ed504
+extern HSQOBJECT g_sqNull;        // 0x004e9740
+extern SQRegFunction g_streamMethods[]; // 0x004e8a00
+extern SQRegFunction g_blobMethods[];   // 0x004e9270
+extern SQRegFunction g_blobGlobals[];   // 0x004e9300
+extern SQRegFunction g_fileMethods[];   // 0x004e9360
+extern SQRegFunction g_fileGlobals[];   // 0x004e9390
 
 extern SquirrelObject g_rootTable; // 0x004e96e0, type at 0x004e96e4
 extern char g_windowsVersionText[0x80]; // 0x004eb050
@@ -152,8 +158,6 @@ void __stdcall UnmappedSharedStateInit(void* ss);
 void UnmappedVmCtor(HSQUIRRELVM vm, void* ss);
 int __stdcall UnmappedVmInit(HSQUIRRELVM vm, HSQUIRRELVM friendvm);
 void UnmappedVmDelete(HSQUIRRELVM vm);
-void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
-    const char* ns, void* methods, void* casts);
 void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj);
 int UnmappedLoadBytecode(HSQUIRRELVM vm);
 void* UnmappedCreateString(void* strings, const SQChar* name);
@@ -226,6 +230,8 @@ SQInteger IoLoadFile(HSQUIRRELVM vm);
 SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 // 0x0048e420; EAX=vm
 int RegisterStdString(HSQUIRRELVM vm);
+// 0x0048ff90; EAX=idx, ESI=vm
+void SqRemove(HSQUIRRELVM vm, SQInteger idx);
 // 0x00497430; original ESI=vm
 void SetErrorHandler(HSQUIRRELVM vm);
 // 0x00497ea0; EAX=vm, EDX=name
@@ -321,6 +327,11 @@ void RegisterStdAux(HSQUIRRELVM vm);
 int RegisterStdSystem(HSQUIRRELVM vm);
 // 0x004bbfd0; EAX=vm
 int RegisterStdMath(HSQUIRRELVM vm);
+// 0x004c20a0; EAX=vm
+void InitStreamClass(HSQUIRRELVM vm);
+// 0x004c2420; EAX=vm, cdecl name/typetag/regName/methods/globals
+int DeclareStream(HSQUIRRELVM vm, const SQChar* name, SQUserPointer typetag,
+    const SQChar* regName, SQRegFunction* methods, SQRegFunction* globals);
 // 0x004bdc50
 void RegisterStdBindings();
 // 0x004c38b0

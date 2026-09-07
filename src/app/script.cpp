@@ -85,7 +85,7 @@ int CreateStdFile(HSQUIRRELVM vm, void* user)
             return 0;
         }
     }
-    sq_remove(vm, -2);
+    SqRemove(vm, -2);
     sq_pushroottable(vm);
     top = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
     slot = reinterpret_cast<HSQOBJECT*>(
@@ -106,7 +106,7 @@ int CreateStdFile(HSQUIRRELVM vm, void* user)
         sq_settop(vm, savedTop);
         return 0;
     }
-    sq_remove(vm, -2);
+    SqRemove(vm, -2);
     return 0;
 }
 
@@ -117,12 +117,12 @@ int RegisterStdFile(HSQUIRRELVM vm)
     const SQInteger savedTop =
         *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30)
         - *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
-    UnmappedRegisterStdBlob(vm,
+    DeclareStream(vm,
         // STRING: VC1 0x004d2f1c
-        "file", 0x80000001,
+        "file", reinterpret_cast<SQUserPointer>(0x80000001),
         // STRING: VC1 0x004d2f70
         "std_file",
-        reinterpret_cast<void*>(0x004e9360), reinterpret_cast<void*>(0x004e9390));
+        g_fileMethods, g_fileGlobals);
     // STRING: VC1 0x004d3004
     sq_pushstring(vm, "stdout", -1);
     CreateStdFile(vm, &g_kdObjectIt1);
@@ -268,7 +268,7 @@ SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
         sq_pop(vm, 1);
         return -1;
     }
-    sq_remove(vm, -2);
+    SqRemove(vm, -2);
     return 1;
 }
 
@@ -385,12 +385,12 @@ int OpenScriptVm()
         = reinterpret_cast<void*>(0x00499e00);
     sq_pushroottable(vm);
     RegisterStdFile(vm);
-    UnmappedRegisterStdBlob(vm,
+    DeclareStream(vm,
         // STRING: VC1 0x004d326c
-        "blob", 0x80000002,
+        "blob", reinterpret_cast<SQUserPointer>(0x80000002),
         // STRING: VC1 0x004d3274
         "std_blob",
-        reinterpret_cast<void*>(0x004e9270), reinterpret_cast<void*>(0x004e9300));
+        g_blobMethods, g_blobGlobals);
     RegisterStdMath(vm);
     RegisterStdString(vm);
     RegisterStdSystem(vm);

@@ -20,6 +20,20 @@ static const SQChar kMaskX[] = "x";
 static const SQChar kMaskXS[] = "xs";
 // STRING: VC1 0x004d32ec
 static const SQChar kMaskXSN[] = "xsn";
+// STRING: VC1 0x004d322c
+static const SQChar kMaskXN[] = "xn";
+// STRING: VC1 0x004d3208
+static const SQChar kMaskXNN[] = "xnn";
+// STRING: VC1 0x004d3f88
+static const SQChar kMaskXX[] = "xx";
+// STRING: VC1 0x004d2ef4
+static const SQChar kMaskSB[] = ".sb";
+// STRING: VC1 0x004d2ed4
+static const SQChar kMaskSC[] = ".sc";
+// STRING: VC1 0x004d4000
+static const SQChar kStdStream[] = "std_stream";
+// STRING: VC1 0x004d26a4
+static const SQChar kIndexMissing[] = "the index doesn't exist";
 
 static HSQOBJECT* StackObj(HSQUIRRELVM vm, SQInteger idx)
 {
@@ -56,7 +70,7 @@ static void CreateSlotMinus3(HSQUIRRELVM vm)
     sq_pop(vm, 2);
 }
 
-static void RegisterNativeFuncs(HSQUIRRELVM vm, SQRegFunction* funcs)
+static void RegisterNativeFuncs(HSQUIRRELVM vm, SQRegFunction* funcs, int setName)
 {
     SQRegFunction* r;
 
@@ -64,7 +78,9 @@ static void RegisterNativeFuncs(HSQUIRRELVM vm, SQRegFunction* funcs)
         sq_pushstring(vm, r->name, -1);
         sq_newclosure(vm, r->f, 0);
         sq_setparamscheck(vm, r->nparamscheck, r->typemask);
-        SetNativeClosureName(vm, r->name);
+        if (setName) {
+            SetNativeClosureName(vm, r->name);
+        }
         CreateSlotMinus3(vm);
     }
 }
@@ -204,6 +220,79 @@ SQRegFunction g_mathlibFuncs[] = {
     { 0, 0, 0, 0 }
 };
 
+// GLOBAL: VC1 0x004e8a00
+SQRegFunction g_streamMethods[] = {
+    // STRING: VC1 0x004d3fa0
+    { "readblob", reinterpret_cast<SQFUNCTION>(0x004c22c0), 2, kMaskXN },
+    // STRING: VC1 0x004d3f98
+    { "readn", reinterpret_cast<SQFUNCTION>(0x004c1d00), 2, kMaskXN },
+    // STRING: VC1 0x004d3f8c
+    { "writeblob", reinterpret_cast<SQFUNCTION>(0x004c1f70), -2, kMaskXX },
+    // STRING: VC1 0x004d3f80
+    { "writen", reinterpret_cast<SQFUNCTION>(0x004c1ab0), 3, kMaskXNN },
+    // STRING: VC1 0x004d28b0
+    { "seek", reinterpret_cast<SQFUNCTION>(0x004c1920), -2, kMaskXNN },
+    // STRING: VC1 0x004d3f78
+    { "tell", reinterpret_cast<SQFUNCTION>(0x004c1850), 1, kMaskX },
+    // STRING: VC1 0x004d3c88
+    { "len", reinterpret_cast<SQFUNCTION>(0x004c1780), 1, kMaskX },
+    // STRING: VC1 0x004d3f74
+    { "eos", reinterpret_cast<SQFUNCTION>(0x004c1620), 1, kMaskX },
+    // STRING: VC1 0x004d3f6c
+    { "flush", reinterpret_cast<SQFUNCTION>(0x004c16d0), 1, kMaskX },
+    { 0, 0, 0, 0 }
+};
+
+// GLOBAL: VC1 0x004e9270
+SQRegFunction g_blobMethods[] = {
+    { "constructor", reinterpret_cast<SQFUNCTION>(0x0048ea10), -1, kMaskXN },
+    // STRING: VC1 0x004d3224
+    { "resize", reinterpret_cast<SQFUNCTION>(0x0048efc0), 2, kMaskXN },
+    // STRING: VC1 0x004d321c
+    { "swap2", reinterpret_cast<SQFUNCTION>(0x0048ee40), 1, kMaskX },
+    // STRING: VC1 0x004d3214
+    { "swap4", reinterpret_cast<SQFUNCTION>(0x0048ef00), 1, kMaskX },
+    // STRING: VC1 0x004d320c
+    { "_set", reinterpret_cast<SQFUNCTION>(0x0048ed30), 3, kMaskXNN },
+    // STRING: VC1 0x004d3200
+    { "_get", reinterpret_cast<SQFUNCTION>(0x0048ec60), 2, kMaskXN },
+    { "_typeof", reinterpret_cast<SQFUNCTION>(0x0048eb20), 1, kMaskX },
+    // STRING: VC1 0x004d31f8
+    { "_nexti", reinterpret_cast<SQFUNCTION>(0x0048eb40), 2, kMaskX },
+    { 0, 0, 0, 0 }
+};
+
+// GLOBAL: VC1 0x004e9300
+SQRegFunction g_blobGlobals[] = {
+    // STRING: VC1 0x004d31f0
+    { "casti2f", reinterpret_cast<SQFUNCTION>(0x0048e980), 2, kMaskN },
+    // STRING: VC1 0x004d31e8
+    { "castf2i", reinterpret_cast<SQFUNCTION>(0x0048e910), 2, kMaskN },
+    { "swap2", reinterpret_cast<SQFUNCTION>(0x0048e890), 2, kMaskN },
+    { "swap4", reinterpret_cast<SQFUNCTION>(0x0048e7f0), 2, kMaskN },
+    // STRING: VC1 0x004d31dc
+    { "swapfloat", reinterpret_cast<SQFUNCTION>(0x0048e780), 2, kMaskN },
+    { 0, 0, 0, 0 }
+};
+
+// GLOBAL: VC1 0x004e9360
+SQRegFunction g_fileMethods[] = {
+    { "constructor", reinterpret_cast<SQFUNCTION>(0x0048f620), 3, kMaskX },
+    { "_typeof", reinterpret_cast<SQFUNCTION>(0x0048f600), 1, kMaskX },
+    { 0, 0, 0, 0 }
+};
+
+// GLOBAL: VC1 0x004e9390
+SQRegFunction g_fileGlobals[] = {
+    // STRING: VC1 0x004d2ef8
+    { "loadfile", IoLoadFile, -2, kMaskSB },
+    // STRING: VC1 0x004d2eec
+    { "dofile", reinterpret_cast<SQFUNCTION>(0x0048fd20), -2, kMaskSB },
+    // STRING: VC1 0x004d2ed8
+    { "writeclosuretofile", reinterpret_cast<SQFUNCTION>(0x0048f830), 3, kMaskSC },
+    { 0, 0, 0, 0 }
+};
+
 // EAX=vm. sqstd_register_stringlib: regexp class then format/strip helpers.
 // FUNCTION: VC1 0x0048e420
 int RegisterStdString(HSQUIRRELVM vm)
@@ -211,10 +300,65 @@ int RegisterStdString(HSQUIRRELVM vm)
     // STRING: VC1 0x004d342c
     sq_pushstring(vm, "regexp", -1);
     sq_newclass(vm, SQFalse);
-    RegisterNativeFuncs(vm, g_rexobjFuncs);
+    RegisterNativeFuncs(vm, g_rexobjFuncs, 1);
     sq_newslot(vm, -3, SQFalse);
-    RegisterNativeFuncs(vm, g_stringlibFuncs);
+    RegisterNativeFuncs(vm, g_stringlibFuncs, 1);
     return 1;
+}
+
+// EAX=idx, ESI=vm. Shift objects down and write g_sqNull at the old top.
+// FUNCTION: VC1 0x0048ff90
+void SqRemove(HSQUIRRELVM vm, SQInteger idx)
+{
+    char* const stack = *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18);
+    SQInteger* const pTop = reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
+    const SQInteger stackbase = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    SQInteger i;
+    HSQOBJECT* slot;
+    HSQOBJECT next;
+    unsigned oldType;
+    int* oldValue;
+
+    if (idx >= 0) {
+        i = idx + stackbase - 1;
+    }
+    else {
+        i = idx + *pTop;
+    }
+    while (i < *pTop) {
+        slot = reinterpret_cast<HSQOBJECT*>(stack + i * 8);
+        oldType = slot->_type;
+        oldValue = reinterpret_cast<int*>(slot->_unVal.pUserPointer);
+        next = slot[1];
+        *slot = next;
+        if ((next._type & kSqRefCounted) != 0) {
+            reinterpret_cast<int*>(next._unVal.pUserPointer)[1] += 1;
+        }
+        if ((oldType & kSqRefCounted) != 0) {
+            oldValue[1] -= 1;
+            if (oldValue[1] == 0) {
+                UnmappedReleaseRefCounted(oldValue);
+            }
+        }
+        i += 1;
+    }
+    slot = reinterpret_cast<HSQOBJECT*>(stack + *pTop * 8);
+    oldType = slot->_type;
+    oldValue = reinterpret_cast<int*>(slot->_unVal.pUserPointer);
+    slot->_unVal = g_sqNull._unVal;
+    slot->_type = g_sqNull._type;
+    if ((slot->_type & kSqRefCounted) != 0) {
+        reinterpret_cast<int*>(slot->_unVal.pUserPointer)[1] += 1;
+    }
+    if ((oldType & kSqRefCounted) != 0) {
+        oldValue[1] -= 1;
+        if (oldValue[1] == 0) {
+            UnmappedReleaseRefCounted(oldValue);
+        }
+        *pTop -= 1;
+        return;
+    }
+    *pTop -= 1;
 }
 
 // ESI=vm. Copy stack top onto vm+0x48 if closure/nativeclosure/null, then poptop.
@@ -331,7 +475,7 @@ void RegisterStdAux(HSQUIRRELVM vm)
 // FUNCTION: VC1 0x004bb6c0
 int RegisterStdSystem(HSQUIRRELVM vm)
 {
-    RegisterNativeFuncs(vm, g_systemlibFuncs);
+    RegisterNativeFuncs(vm, g_systemlibFuncs, 1);
     return 1;
 }
 
@@ -339,7 +483,7 @@ int RegisterStdSystem(HSQUIRRELVM vm)
 // FUNCTION: VC1 0x004bbfd0
 int RegisterStdMath(HSQUIRRELVM vm)
 {
-    RegisterNativeFuncs(vm, g_mathlibFuncs);
+    RegisterNativeFuncs(vm, g_mathlibFuncs, 1);
     // STRING: VC1 0x004d2e0c
     sq_pushstring(vm, "RAND_MAX", -1);
     PushRawInteger(vm, 0x7fff);
@@ -360,6 +504,84 @@ int RegisterStdMath(HSQUIRRELVM vm)
     sq_pushstring(vm, "INVDBPI", -1);
     PushRawFloatBits(vm, 0x3e22f983);
     sq_newslot(vm, -3, SQFalse);
+    return 0;
+}
+
+// EAX=vm. Create registry std_stream / root stream if missing.
+// FUNCTION: VC1 0x004c20a0
+void InitStreamClass(HSQUIRRELVM vm)
+{
+    sq_pushregistrytable(vm);
+    sq_pushstring(vm, kStdStream, -1);
+    if (UnmappedGet(vm)) {
+        sq_pop(vm, 1);
+        sq_pop(vm, 1);
+        return;
+    }
+    sq_pop(vm, 1);
+    if (sq_throwerror(vm, kIndexMissing) >= 0) {
+        sq_pop(vm, 1);
+        sq_pop(vm, 1);
+        return;
+    }
+    sq_pushstring(vm, kStdStream, -1);
+    sq_newclass(vm, SQFalse);
+    sq_settypetag(vm, -1, reinterpret_cast<SQUserPointer>(0x80000000));
+    RegisterNativeFuncs(vm, g_streamMethods, 0);
+    sq_newslot(vm, -3, SQFalse);
+    sq_pushroottable(vm);
+    // STRING: VC1 0x004d400c
+    sq_pushstring(vm, "stream", -1);
+    sq_pushstring(vm, kStdStream, -1);
+    if (!UnmappedGet(vm)) {
+        sq_pop(vm, 1);
+        sq_throwerror(vm, kIndexMissing);
+    }
+    sq_newslot(vm, -3, SQFalse);
+    sq_pop(vm, 1);
+    sq_pop(vm, 1);
+}
+
+// EAX=vm, cdecl name, typetag, reg_name, methods, globals. sqstd declare_stream.
+// FUNCTION: VC1 0x004c2420
+int DeclareStream(HSQUIRRELVM vm, const SQChar* name, SQUserPointer typetag,
+    const SQChar* regName, SQRegFunction* methods, SQRegFunction* globals)
+{
+    const SQInteger savedTop =
+        *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30)
+        - *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+
+    if (StackObj(vm, -1)->_type != OT_TABLE) {
+        // STRING: VC1 0x004d4014
+        return sq_throwerror(vm, "table expected");
+    }
+    InitStreamClass(vm);
+    sq_pushregistrytable(vm);
+    sq_pushstring(vm, regName, -1);
+    sq_pushstring(vm, kStdStream, -1);
+    if (!UnmappedGet(vm)) {
+        sq_pop(vm, 1);
+        if (sq_throwerror(vm, kIndexMissing) < 0) {
+            sq_settop(vm, savedTop);
+            return -1;
+        }
+    }
+    sq_newclass(vm, SQTrue);
+    sq_settypetag(vm, -1, typetag);
+    RegisterNativeFuncs(vm, methods, 1);
+    sq_newslot(vm, -3, SQFalse);
+    sq_pop(vm, 1);
+    RegisterNativeFuncs(vm, globals, 1);
+    sq_pushstring(vm, name, -1);
+    sq_pushregistrytable(vm);
+    sq_pushstring(vm, regName, -1);
+    if (!UnmappedGet(vm)) {
+        sq_pop(vm, 1);
+        sq_throwerror(vm, kIndexMissing);
+    }
+    SqRemove(vm, -2);
+    sq_newslot(vm, -3, SQFalse);
+    sq_settop(vm, savedTop);
     return 0;
 }
 
