@@ -52,10 +52,26 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 
 // FUNCTION: VC1 0x0048f240
 // _file_releasehook
+// FUNCTION: VC1 0x0048f500
+// _io_file_lexfeed_UTF8
 // FUNCTION: VC1 0x0048f600
 // _file__typeof
+// FUNCTION: VC1 0x0048f620
+// _file_constructor
 // FUNCTION: VC1 0x0048f830
 // _g_io_writeclosuretofile
+// FUNCTION: VC1 0x0048f8b0
+// sqstd_createfile
+// FUNCTION: VC1 0x0048f990
+// sqstd_register_iolib
+// FUNCTION: VC1 0x0048fa50
+// sqstd_loadfile
+// FUNCTION: VC1 0x0048fbd0
+// _g_io_loadfile
+// FUNCTION: VC1 0x0048fc80
+// sqstd_dofile
+// FUNCTION: VC1 0x0048fd20
+// _g_io_dofile
 
 #endif /*_SQSTDIO_H_*/
 

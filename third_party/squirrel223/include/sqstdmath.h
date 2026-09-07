@@ -48,5 +48,7 @@ SQUIRREL_API SQRESULT sqstd_register_mathlib(HSQUIRRELVM v);
 // math_abs
 // FUNCTION: VC1 0x004bbfa0
 // math_srand
+// FUNCTION: VC1 0x004bbfd0
+// sqstd_register_mathlib
 
 #endif /*_SQSTD_MATH_H_*/

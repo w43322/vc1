@@ -2,6 +2,7 @@
 
 #include "host/runtime.h"
 
+#include <sqstdio.h>
 #include <stdio.h>
 
 namespace vc1 {
@@ -251,7 +252,7 @@ SquirrelObject* CompilePath(const SQChar* path, SquirrelObject* dest)
     SquirrelObject local;
 
     InitSquirrelObject(&local);
-    if (LoadScriptFile(g_vm, path, 1) < 0) {
+    if (sqstd_loadfile(g_vm, path, SQTrue) < 0) {
         return CopySquirrelObject(dest, &local);
     }
     AttachStackTop(&local);

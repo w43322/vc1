@@ -88,4 +88,7 @@ public:
 	
 };
 
+// FUNCTION: VC1 0x004b73c0
+// SQTable::NewSlot
+
 #endif //_SQTABLE_H_

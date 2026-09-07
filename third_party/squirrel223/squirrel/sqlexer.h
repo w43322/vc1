@@ -42,4 +42,7 @@ public:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0047ef70
+// SQLexer::LexBlockComment
+
 #endif

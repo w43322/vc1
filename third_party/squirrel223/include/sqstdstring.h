@@ -50,6 +50,8 @@ SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 // _regexp_search
 // FUNCTION: VC1 0x0048e3c0
 // _string_format
+// FUNCTION: VC1 0x0048e420
+// sqstd_register_stringlib
 // FUNCTION: VC1 0x0048e600
 // _regexp_constructor
 

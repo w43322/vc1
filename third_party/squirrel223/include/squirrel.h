@@ -453,4 +453,69 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 } /*extern "C"*/
 #endif
 
+// FUNCTION: VC1 0x00485f40
+// sq_base_register
+// FUNCTION: VC1 0x0048fee0
+// sq_pop
+// FUNCTION: VC1 0x0048ff40
+// sq_poptop
+// FUNCTION: VC1 0x0048ff90
+// sq_remove
+// FUNCTION: VC1 0x00496c90
+// sq_pushobject
+// FUNCTION: VC1 0x00496d70
+// sq_pushregistrytable
+// FUNCTION: VC1 0x00496dc0
+// sq_pushroottable
+// FUNCTION: VC1 0x00496e50
+// sq_pushfloat
+// FUNCTION: VC1 0x00496f20
+// sq_pushnull
+// FUNCTION: VC1 0x00496f70
+// sq_move
+// FUNCTION: VC1 0x00497040
+// sq_getlocal
+// FUNCTION: VC1 0x004971c0
+// sq_settop
+// FUNCTION: VC1 0x00497240
+// sq_getbool
+// FUNCTION: VC1 0x00497280
+// sq_getfloat
+// FUNCTION: VC1 0x004972e0
+// sq_getinteger
+// FUNCTION: VC1 0x00497330
+// sq_gettype
+// FUNCTION: VC1 0x00497360
+// sq_push
+// FUNCTION: VC1 0x00497430
+// sq_seterrorhandler
+// FUNCTION: VC1 0x004975e0
+// sq_newclosure
+// FUNCTION: VC1 0x004977d0
+// sq_throwerror
+// FUNCTION: VC1 0x00497830
+// sq_rawget
+// FUNCTION: VC1 0x00497a50
+// sq_settypetag
+// FUNCTION: VC1 0x00497de0
+// sq_setparamscheck
+// FUNCTION: VC1 0x00497ea0
+// sq_setnativeclosurename
+// FUNCTION: VC1 0x00498010
+// sq_pushstring
+// FUNCTION: VC1 0x00498c80
+// sq_getsize
+// FUNCTION: VC1 0x00499040
+// sq_newclass
+// FUNCTION: VC1 0x00499130
+// sq_newarray
+// FUNCTION: VC1 0x00499550
+// sq_call
+// FUNCTION: VC1 0x00499600
+// sq_newslot
+// FUNCTION: VC1 0x00499750
+// sq_open
+// FUNCTION: VC1 0x004b7de0
+// sq_stackinfos
+
 #endif /*_SQUIRREL_H_*/

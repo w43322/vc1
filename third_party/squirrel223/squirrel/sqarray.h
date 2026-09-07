@@ -2,6 +2,7 @@
 #ifndef _SQARRAY_H_
 #define _SQARRAY_H_
 
+// VTABLE: VC1 0x004d2784
 struct SQArray : public CHAINABLE_OBJ
 {
 private:
@@ -84,4 +85,16 @@ public:
 	}
 	SQObjectPtrVec _values;
 };
+
+// FUNCTION: VC1 0x0040d150
+// SQArray::SQArray
+// FUNCTION: VC1 0x0040d260
+// SQArray::Finalize
+// FUNCTION: VC1 0x0040d460
+// SQArray::Release
+// FUNCTION: VC1 0x0040d480
+// SQArray::`scalar deleting destructor'
+// FUNCTION: VC1 0x0048b810
+// SQArray::Mark
+
 #endif //_SQARRAY_H_

@@ -26,6 +26,7 @@ typedef sqvector<SQClassMember> SQClassMemberVec;
 #define _member_type(o) (_integer(o)&0xFF000000)
 #define _member_idx(o) (_integer(o)&0x00FFFFFF)
 
+// VTABLE: VC1 0x004d373c
 struct SQClass : public CHAINABLE_OBJ
 {
 	SQClass(SQSharedState *ss,SQClass *base);
@@ -78,6 +79,7 @@ public:
 #define calcinstancesize(_theclass_) \
 	(_theclass_->_udsize + sizeof(SQInstance) + (sizeof(SQObjectPtr)*(_theclass_->_defaultvalues.size()>0?_theclass_->_defaultvalues.size()-1:0)))
 
+// VTABLE: VC1 0x004d374c
 struct SQInstance : public SQDelegable 
 {
 	void Init(SQSharedState *ss);
@@ -148,5 +150,32 @@ public:
 	SQInteger _memsize;
 	SQObjectPtr _values[1];
 };
+
+// FUNCTION: VC1 0x0040f9c0
+// SQClass::Release
+// FUNCTION: VC1 0x0040fae0
+// SQClass::`scalar deleting destructor'
+// FUNCTION: VC1 0x00487b80
+// SQClass::NewSlot
+// FUNCTION: VC1 0x00487da0
+// SQClass::Finalize
+// FUNCTION: VC1 0x00487ef0
+// SQClass::SQClass
+// FUNCTION: VC1 0x00488050
+// SQClass::~SQClass
+// FUNCTION: VC1 0x0048b560
+// SQClass::Mark
+// FUNCTION: VC1 0x0040fa80
+// SQInstance::Release
+// FUNCTION: VC1 0x0040fb40
+// SQInstance::`scalar deleting destructor'
+// FUNCTION: VC1 0x00487560
+// SQInstance::GetMetaMethod
+// FUNCTION: VC1 0x004875c0
+// SQInstance::Finalize
+// FUNCTION: VC1 0x00487980
+// SQInstance::~SQInstance
+// FUNCTION: VC1 0x0048b480
+// SQInstance::Mark
 
 #endif //_SQCLASS_H_

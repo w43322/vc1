@@ -34,5 +34,9 @@ SQRESULT declare_stream(HSQUIRRELVM v,SQChar* name,SQUserPointer typetag,const S
 // _stream_writeblob
 // FUNCTION: VC1 0x004c22c0
 // _stream_readblob
+// FUNCTION: VC1 0x004c20a0
+// init_streamclass
+// FUNCTION: VC1 0x004c2420
+// declare_stream
 
 #endif /*_SQSTD_STREAM_H_*/

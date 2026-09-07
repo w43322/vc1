@@ -115,12 +115,6 @@ extern void* g_kdPath1;           // 0x004ed4ec
 extern void* g_kdPath2;           // 0x004ed4f4
 extern char g_resourceLocale[8];  // 0x004ed504
 extern HSQOBJECT g_sqNull;        // 0x004e9740
-extern SQRegFunction g_streamMethods[]; // 0x004e8a00
-extern SQRegFunction g_blobMethods[];   // 0x004e9270
-extern SQRegFunction g_blobGlobals[];   // 0x004e9300
-extern SQRegFunction g_fileMethods[];   // 0x004e9360
-extern SQRegFunction g_fileGlobals[];   // 0x004e9390
-
 extern SquirrelObject g_rootTable; // 0x004e96e0, type at 0x004e96e4
 extern char g_windowsVersionText[0x80]; // 0x004eb050
 extern unsigned g_runScratch0;    // 0x004e9d94
@@ -216,34 +210,6 @@ char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
 void* OpenKdPath(const char* path, const char* mode);
 // 0x00487140; cdecl path + mode
 void* OpenKdFile(const char* path, const char* mode);
-// 0x0048f260; original ESI=file wrapper
-int CloseKdFile(void* file);
-// 0x0048f620; cdecl vm. OpenKdFile or wrap a userpointer
-SQInteger FileConstructor(HSQUIRRELVM vm);
-// 0x0048f8b0; EAX=vm, cdecl user pointer
-int CreateStdFile(HSQUIRRELVM vm, void* user);
-// 0x0048f990; original ESI=vm
-int RegisterStdFile(HSQUIRRELVM vm);
-// 0x0048fa50; original EAX=vm, cdecl path + raiseerror
-int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
-// 0x0048fbd0; native loadfile on the VM
-SQInteger IoLoadFile(HSQUIRRELVM vm);
-// 0x0048fc80; ECX=vm, EAX=path, cdecl raiseerror
-SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
-// 0x0048fd20; native dofile: string + optional bool, push this, DoScriptFile
-SQInteger IoDoFile(HSQUIRRELVM vm);
-// 0x0048e420; EAX=vm
-int RegisterStdString(HSQUIRRELVM vm);
-// 0x0048ff90; EAX=idx, ESI=vm
-void SqRemove(HSQUIRRELVM vm, SQInteger idx);
-// 0x00497430; original ESI=vm
-void SetErrorHandler(HSQUIRRELVM vm);
-// 0x00497ea0; EAX=vm, EDX=name
-SQInteger SetNativeClosureName(HSQUIRRELVM vm, const SQChar* name);
-// 0x00499130; EAX=vm, cdecl initialSize
-void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize);
-// 0x00499750; host sq_open, initial stack size ECX=0x400
-HSQUIRRELVM SqOpen();
 // 0x00476e60
 int ProbeDebuggerPresent();
 // 0x00477240
@@ -323,25 +289,6 @@ SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar*
 void InitHostServices();
 // 0x004bab00
 const char* GetResourceLocale();
-// 0x004b8680; cdecl vm
-SQInteger AuxPrintError(HSQUIRRELVM vm);
-// 0x004b8700; EAX=vm
-void RegisterStdAux(HSQUIRRELVM vm);
-// 0x004bafb0; cdecl vm. QPC * g_nsPerTick / 1e9 as integer
-SQInteger SystemClock(HSQUIRRELVM vm);
-// 0x004bb210; cdecl vm. ShellExecuteA("open") instead of system()
-SQInteger SystemSystem(HSQUIRRELVM vm);
-// 0x004bb2e0; cdecl vm. GetKdEnv instead of getenv
-SQInteger SystemGetenv(HSQUIRRELVM vm);
-// 0x004bb6c0; EAX=vm
-int RegisterStdSystem(HSQUIRRELVM vm);
-// 0x004bbfd0; EAX=vm
-int RegisterStdMath(HSQUIRRELVM vm);
-// 0x004c20a0; EAX=vm
-void InitStreamClass(HSQUIRRELVM vm);
-// 0x004c2420; EAX=vm, cdecl name/typetag/regName/methods/globals
-int DeclareStream(HSQUIRRELVM vm, const SQChar* name, SQUserPointer typetag,
-    const SQChar* regName, SQRegFunction* methods, SQRegFunction* globals);
 // 0x004bdc50
 void RegisterStdBindings();
 // 0x004c38b0
