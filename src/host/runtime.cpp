@@ -96,6 +96,9 @@ void* g_kdPath1;
 // GLOBAL: VC1 0x004ed4f4
 void* g_kdPath2;
 
+// GLOBAL: VC1 0x004ed504
+char g_resourceLocale[8];
+
 // Original SquirrelObject at 0x004e96e0: vftable 0x004cfb98, type OT_NULL, value 0.
 // GLOBAL: VC1 0x004e96e0
 SquirrelObject g_rootTable = {

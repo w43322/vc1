@@ -101,6 +101,12 @@ void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
     (void)casts;
 }
 
+void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj)
+{
+    (void)vm;
+    (void)obj;
+}
+
 void UnmappedRegisterStdMath(HSQUIRRELVM vm)
 {
     (void)vm;
@@ -119,24 +125,6 @@ void UnmappedRegisterStdSystem(HSQUIRRELVM vm)
 void UnmappedRegisterStdAux(HSQUIRRELVM vm)
 {
     (void)vm;
-}
-
-void UnmappedPushKdFile(HSQUIRRELVM vm, void* kdSlot)
-{
-    (void)vm;
-    (void)kdSlot;
-}
-
-void* UnmappedOpenKdFile(const char* path, const char* mode)
-{
-    (void)path;
-    (void)mode;
-    return 0;
-}
-
-void UnmappedCloseKdFile(void* file)
-{
-    (void)file;
 }
 
 int UnmappedLoadBytecode(HSQUIRRELVM vm)
@@ -285,16 +273,6 @@ int UnmappedKdConstructNamed(KdObject* object)
 int UnmappedKdConstructFail(KdObject* object)
 {
     (void)object;
-    return 0;
-}
-
-char* UnmappedFindBytes(const char* haystack, unsigned haystackLen, const char* needle,
-    unsigned needleLen)
-{
-    (void)haystack;
-    (void)haystackLen;
-    (void)needle;
-    (void)needleLen;
     return 0;
 }
 

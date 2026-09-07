@@ -113,6 +113,7 @@ extern KdObject* g_kdObjectIt2;   // 0x004ed4e0
 extern void* g_kdPath0;           // 0x004ed4e4
 extern void* g_kdPath1;           // 0x004ed4ec
 extern void* g_kdPath2;           // 0x004ed4f4
+extern char g_resourceLocale[8];  // 0x004ed504
 
 extern SquirrelObject g_rootTable; // 0x004e96e0, type at 0x004e96e4
 extern char g_windowsVersionText[0x80]; // 0x004eb050
@@ -153,9 +154,7 @@ int __stdcall UnmappedVmInit(HSQUIRRELVM vm, HSQUIRRELVM friendvm);
 void UnmappedVmDelete(HSQUIRRELVM vm);
 void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
     const char* ns, void* methods, void* casts);
-void UnmappedPushKdFile(HSQUIRRELVM vm, void* kdSlot);
-void* UnmappedOpenKdFile(const char* path, const char* mode);
-void UnmappedCloseKdFile(void* file);
+void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj);
 int UnmappedLoadBytecode(HSQUIRRELVM vm);
 void UnmappedRegisterStdMath(HSQUIRRELVM vm);
 void UnmappedRegisterStdString(HSQUIRRELVM vm);
@@ -185,8 +184,6 @@ void* UnmappedCrtPathSlot();
 int UnmappedKdConstruct(KdObject* object);
 int UnmappedKdConstructNamed(KdObject* object);
 int UnmappedKdConstructFail(KdObject* object);
-char* UnmappedFindBytes(const char* haystack, unsigned haystackLen, const char* needle,
-    unsigned needleLen);
 void UnmappedDirClose(void* dir);
 int UnmappedTryLoadDbgHelpSoft();
 void UnmappedLogOsInfo();
@@ -206,10 +203,25 @@ LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
 // 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
 void InitScriptEngine(int argc, char** argv);
+// 0x00482160; EDI=haystack, EBX=needle, ECX=haystackLen, cdecl needleLen
+char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
+    unsigned needleLen);
+// 0x00486eb0; cdecl path, mode in EBX
+void* OpenKdPath(const char* path, const char* mode);
+// 0x00487140; cdecl path + mode
+void* OpenKdFile(const char* path, const char* mode);
+// 0x0048f260; original ESI=file wrapper
+int CloseKdFile(void* file);
+// 0x0048f8b0; EAX=vm, cdecl user pointer
+int CreateStdFile(HSQUIRRELVM vm, void* user);
 // 0x0048f990; original ESI=vm
 int RegisterStdFile(HSQUIRRELVM vm);
 // 0x0048fa50; original EAX=vm, cdecl path + raiseerror
 int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
+// 0x0048fbd0; native loadfile on the VM
+SQInteger IoLoadFile(HSQUIRRELVM vm);
+// 0x0048fc80; ECX=vm, EAX=path, cdecl raiseerror
+SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 // 0x00499130; EAX=vm, cdecl initialSize
 void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize);
 // 0x00499750; host sq_open, initial stack size ECX=0x400
@@ -291,6 +303,8 @@ SQBool __stdcall RegisterObjectSlot(SquirrelObject* table, const SQChar* name,
 SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar* name);
 // 0x004b61b0
 void InitHostServices();
+// 0x004bab00
+const char* GetResourceLocale();
 // 0x004bdc50
 void RegisterStdBindings();
 // 0x004c38b0

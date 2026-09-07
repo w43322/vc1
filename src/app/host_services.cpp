@@ -1,5 +1,6 @@
 #include "host/runtime.h"
 
+#include <errno.h>
 #include <string.h>
 
 namespace vc1 {
@@ -55,6 +56,47 @@ void InitHostServices()
     // STRING: VC1 0x004d7694
     RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_MAX", 0x100);
     UnmappedBindHostApi();
+}
+
+// Cache KD_LOCALE or lang_COUNTRY from GetLocaleInfoA into DAT_004ed504.
+// FUNCTION: VC1 0x004bab00
+const char* GetResourceLocale()
+{
+    const char* env;
+    unsigned length;
+    LCID locale;
+    char country[4];
+    char lang[4];
+
+    if (g_resourceLocale[0] != 0) {
+        return g_resourceLocale;
+    }
+    // STRING: VC1 0x004d43fc
+    env = GetKdEnv("KD_LOCALE");
+    if (env) {
+        length = 0;
+        while (env[length] != 0) {
+            length += 1;
+        }
+        length += 1;
+        if (length <= 6) {
+            memcpy(g_resourceLocale, env, length);
+            return g_resourceLocale;
+        }
+        g_resourceLocale[0] = 0;
+        errno = 0x11;
+        return g_resourceLocale;
+    }
+    locale = GetThreadLocale();
+    if (GetLocaleInfoA(locale, LOCALE_SISO3166CTRYNAME, country, 3)
+        && GetLocaleInfoA(locale, LOCALE_SISO639LANGNAME, lang, 3)) {
+        g_resourceLocale[0] = lang[0];
+        g_resourceLocale[1] = lang[1];
+        g_resourceLocale[2] = '_';
+        g_resourceLocale[3] = country[0];
+        g_resourceLocale[4] = country[1];
+    }
+    return g_resourceLocale;
 }
 
 }

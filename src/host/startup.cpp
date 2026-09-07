@@ -7,6 +7,55 @@
 
 namespace vc1 {
 
+// EDI=haystack, EBX=needle, ECX=haystackLen, cdecl needleLen. Uses MemCompare for n>2.
+// FUNCTION: VC1 0x00482160
+char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
+    unsigned needleLen)
+{
+    unsigned i;
+    unsigned skipMiss;
+    unsigned skipMismatch;
+    unsigned limit;
+
+    if (needleLen > haystackLen || needleLen == 0 || haystackLen == 0) {
+        return 0;
+    }
+    if (needleLen == 1) {
+        while (*haystack != *needle) {
+            haystack += 1;
+            haystackLen -= 1;
+            if (haystackLen == 0) {
+                return 0;
+            }
+        }
+        return const_cast<char*>(haystack);
+    }
+
+    if (needle[0] == needle[1]) {
+        skipMiss = 2;
+        skipMismatch = 1;
+    }
+    else {
+        skipMiss = 1;
+        skipMismatch = 2;
+    }
+    limit = haystackLen - needleLen;
+    i = 0;
+    while (i <= limit) {
+        if (needle[1] != haystack[i + 1]) {
+            i += skipMiss;
+        }
+        else if (MemCompare(needle + 2, haystack + i + 2, needleLen - 2) != 0
+            || needle[0] != haystack[i]) {
+            i += skipMismatch;
+        }
+        else {
+            return const_cast<char*>(haystack + i);
+        }
+    }
+    return 0;
+}
+
 // QueryPerformanceFrequency -> ns/tick, srand(time64(0)), KD filesystem, SEH filter, WSA.
 // FUNCTION: VC1 0x00486aa0
 void InitTimingAndSeh()
@@ -59,6 +108,29 @@ void* DirRead(unsigned char* dir)
     return 0;
 }
 
+// Walk DAT_004ed4f8. Each node +0x114 is cdecl (self, path, mode); mode is EBX from the caller.
+// FUNCTION: VC1 0x00486eb0
+void* OpenKdPath(const char* path, const char* mode)
+{
+    KdObject* node = g_kdObjects;
+    int handle;
+    void* wrap;
+    typedef int (*KdOpenFn)(KdObject* self, const char* openPath, const char* openMode);
+
+    while (node) {
+        handle = (*reinterpret_cast<KdOpenFn*>(reinterpret_cast<char*>(node) + 0x114))(
+            node, path, mode);
+        if (handle) {
+            wrap = malloc(8);
+            reinterpret_cast<KdObject**>(wrap)[0] = node;
+            reinterpret_cast<int*>(wrap)[1] = handle;
+            return wrap;
+        }
+        node = node->next;
+    }
+    return 0;
+}
+
 // malloc(0x15c), copy EDI name to +0x10, run ctor, insert at DAT_004ed4f8.
 // FUNCTION: VC1 0x00486f50
 KdObject* CreateKdObject(int (*ctor)(KdObject* object))
@@ -93,6 +165,43 @@ KdObject* CreateKdObject(int (*ctor)(KdObject* object))
         KdLog("");
         return object;
     }
+}
+
+// cdecl path + mode. Strip leading '.' and '/', remap res/ via KD_LOCALE, then OpenKdPath.
+// FUNCTION: VC1 0x00487140
+void* OpenKdFile(const char* path, const char* mode)
+{
+    char buf[0x100];
+    const char* locale;
+    const char* cursor;
+    unsigned length;
+    void* file;
+
+    while (*path == '.' || *path == '/') {
+        path += 1;
+    }
+    cursor = path;
+    while (*cursor) {
+        cursor += 1;
+    }
+    length = static_cast<unsigned>(cursor - path);
+    // STRING: VC1 0x004d3ae4
+    if (FindBytes(path, length, "res/", 4) == path) {
+        locale = GetResourceLocale();
+        // STRING: VC1 0x004d3aec
+        FormatBuffer(buf, 0x100, "res_%s/%s", locale, path + 4);
+        file = OpenKdPath(buf, mode);
+        if (file) {
+            return file;
+        }
+        // STRING: VC1 0x004d3af8
+        FormatBuffer(buf, 0x100, "res_%.2s/%s", locale, path + 4);
+        file = OpenKdPath(buf, mode);
+        if (file) {
+            return file;
+        }
+    }
+    return OpenKdPath(path, mode);
 }
 
 // Walk DAT_004ed4f8 to the last node, unlink, call +0x110, free.
@@ -194,7 +303,7 @@ void InitKdFilesystem()
                 while (name[length] != 0) {
                     length += 1;
                 }
-                if (UnmappedFindBytes(name, length, ".dll", 4)) {
+                if (FindBytes(name, length, ".dll", 4)) {
                     CreateKdObject(UnmappedKdConstructNamed);
                 }
             }

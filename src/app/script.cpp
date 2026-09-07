@@ -1,5 +1,6 @@
 #include "host/runtime.h"
 
+#include <errno.h>
 #include <squirrel.h>
 #include <stdlib.h>
 
@@ -42,7 +43,74 @@ void InitScriptEngine(int argc, char** argv)
     ReleaseObjectIfNeeded(&scratch.obj);
 }
 
-// ESI=vm. Caller OpenScriptVm 0x0049a510. Top is vm+0x30 minus vm+0x34, not sq_gettop.
+// ESI=file wrapper {inner, extra}. Null sets errno 0x11. Close is inner+0x118.
+// FUNCTION: VC1 0x0048f260
+int CloseKdFile(void* file)
+{
+    void* inner;
+    void* extra;
+    int status;
+    typedef int (*KdCloseFn)(void* self, void* user);
+
+    if (!file) {
+        errno = 0x11;
+        return -1;
+    }
+    inner = *reinterpret_cast<void**>(file);
+    extra = reinterpret_cast<void**>(file)[1];
+    status = (*reinterpret_cast<KdCloseFn*>(static_cast<char*>(inner) + 0x118))(inner, extra);
+    free(file);
+    return status;
+}
+
+// EAX=vm, cdecl user pointer (address of a KD object slot). sqstd_createfile with own=false.
+// FUNCTION: VC1 0x0048f8b0
+int CreateStdFile(HSQUIRRELVM vm, void* user)
+{
+    const SQInteger savedTop =
+        *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30)
+        - *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    HSQOBJECT* slot;
+    SQInteger top;
+    unsigned oldType;
+    int* oldValue;
+
+    sq_pushregistrytable(vm);
+    sq_pushstring(vm, "std_file", -1);
+    if (!UnmappedGet(vm)) {
+        sq_pop(vm, 1);
+        // STRING: VC1 0x004d26a4
+        if (sq_throwerror(vm, "the index doesn't exist") < 0) {
+            sq_settop(vm, savedTop);
+            return 0;
+        }
+    }
+    sq_remove(vm, -2);
+    sq_pushroottable(vm);
+    top = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
+    slot = reinterpret_cast<HSQOBJECT*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18) + top * 8);
+    oldType = slot->_type;
+    oldValue = reinterpret_cast<int*>(slot->_unVal.pUserPointer);
+    slot->_unVal.pUserPointer = user;
+    slot->_type = OT_USERPOINTER;
+    *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30) = top + 1;
+    if ((oldType & kSqRefCounted) != 0) {
+        oldValue[1] -= 1;
+        if (oldValue[1] == 0) {
+            UnmappedReleaseRefCounted(oldValue);
+        }
+    }
+    sq_pushnull(vm);
+    if (sq_call(vm, 3, SQTrue, SQFalse) < 0) {
+        sq_settop(vm, savedTop);
+        return 0;
+    }
+    sq_remove(vm, -2);
+    return 0;
+}
+
+// ESI=vm. Caller OpenScriptVm. Top is vm+0x30 minus vm+0x34, not sq_gettop.
 // FUNCTION: VC1 0x0048f990
 int RegisterStdFile(HSQUIRRELVM vm)
 {
@@ -57,15 +125,15 @@ int RegisterStdFile(HSQUIRRELVM vm)
         reinterpret_cast<void*>(0x004e9360), reinterpret_cast<void*>(0x004e9390));
     // STRING: VC1 0x004d3004
     sq_pushstring(vm, "stdout", -1);
-    UnmappedPushKdFile(vm, &g_kdObjectIt1);
+    CreateStdFile(vm, &g_kdObjectIt1);
     sq_newslot(vm, -3, SQFalse);
     // STRING: VC1 0x004d300c
     sq_pushstring(vm, "stdin", -1);
-    UnmappedPushKdFile(vm, &g_kdObjectIt2);
+    CreateStdFile(vm, &g_kdObjectIt2);
     sq_newslot(vm, -3, SQFalse);
     // STRING: VC1 0x004d3014
     sq_pushstring(vm, "stderr", -1);
-    UnmappedPushKdFile(vm, &g_kdObjectIt0);
+    CreateStdFile(vm, &g_kdObjectIt0);
     sq_newslot(vm, -3, SQFalse);
     sq_settop(vm, savedTop);
     return 0;
@@ -88,7 +156,7 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
     typedef int (*KdSeekFn)(void* self, void* user, int a, int b, int c);
 
     // STRING: VC1 0x004d240c
-    file = UnmappedOpenKdFile(path, "rb");
+    file = OpenKdFile(path, "rb");
     reader = reinterpret_cast<SQLEXREADFUNC>(0x0048f5b0);
     if (!file) {
         // STRING: VC1 0x004d2fd8
@@ -104,10 +172,10 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
         (*reinterpret_cast<KdSeekFn*>(static_cast<char*>(inner) + 0x140))(
             inner, extra, 0, 0, 0);
         if (UnmappedLoadBytecode(vm) >= 0) {
-            UnmappedCloseKdFile(file);
+            CloseKdFile(file);
             return 0;
         }
-        UnmappedCloseKdFile(file);
+        CloseKdFile(file);
         return -1;
     }
     if (nread != 2) {
@@ -119,12 +187,12 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
         nread = (*reinterpret_cast<KdReadFn*>(static_cast<char*>(inner) + 0x120))(
             inner, &third, 1, 1, extra);
         if (nread == 0) {
-            UnmappedCloseKdFile(file);
+            CloseKdFile(file);
             // STRING: VC1 0x004d2720
             return sq_throwerror(vm, "io error");
         }
         if (third != '\xbf') {
-            UnmappedCloseKdFile(file);
+            CloseKdFile(file);
             // STRING: VC1 0x004d2fc0
             return sq_throwerror(vm, "Unrecognozed ecoding");
         }
@@ -143,11 +211,65 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
             inner, extra, 0, 0, 0);
     }
     if (UnmappedSqCompile(vm, reader, file, path, raiseerror) >= 0) {
-        UnmappedCloseKdFile(file);
+        CloseKdFile(file);
         return 0;
     }
-    UnmappedCloseKdFile(file);
+    CloseKdFile(file);
     return -1;
+}
+
+// Native loadfile: string at idx 2, optional bool at idx 3, then LoadScriptFile. Returns 1 or -1.
+// FUNCTION: VC1 0x0048fbd0
+SQInteger IoLoadFile(HSQUIRRELVM vm)
+{
+    HSQOBJECT* obj;
+    const SQChar* path;
+    int raiseerror;
+    SQInteger stackbase;
+    SQInteger top;
+
+    stackbase = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    obj = reinterpret_cast<HSQOBJECT*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18) + stackbase * 8 + 8);
+    path = 0;
+    if (obj->_type == OT_STRING) {
+        path = reinterpret_cast<const SQChar*>(
+            reinterpret_cast<char*>(obj->_unVal.pString) + 0x1c);
+    }
+    else {
+        UnmappedWrongArgType(vm, obj);
+    }
+    raiseerror = 0;
+    top = *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30);
+    if (top - stackbase >= 3) {
+        obj = reinterpret_cast<HSQOBJECT*>(
+            *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x18) + stackbase * 8 + 0x10);
+        if (obj->_type == OT_BOOL) {
+            raiseerror = obj->_unVal.nInteger;
+        }
+    }
+    if (LoadScriptFile(vm, path, raiseerror) >= 0) {
+        return 1;
+    }
+    return -1;
+}
+
+// ECX=vm, EAX=path, cdecl raiseerror. Logs then load+push(-2)+call(1).
+// FUNCTION: VC1 0x0048fc80
+SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
+{
+    // STRING: VC1 0x004d2ff0
+    KdLog("[dofile] %s\n", path);
+    if (LoadScriptFile(vm, path, raiseerror) < 0) {
+        return -1;
+    }
+    sq_push(vm, -2);
+    if (sq_call(vm, 1, SQTrue, SQTrue) < 0) {
+        sq_pop(vm, 1);
+        return -1;
+    }
+    sq_remove(vm, -2);
+    return 1;
 }
 
 // EAX=vm, cdecl initialSize used as SQTable ctor EBX. Alloc 0x24 from pools[9] at 0x004ed47c.

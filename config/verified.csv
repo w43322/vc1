@@ -3,6 +3,8 @@ address|type|name|symbol
 0x0042f5d4|library|WinMainCRTStartup|_WinMainCRTStartup
 0x0042f5de|library|free|_free
 0x0042f6bb|library|malloc|_malloc
+0x004301ed|library|_errno|__errno
+0x00436010|library|memcpy|_memcpy
 0x0043006d|library|srand|_srand
 0x004352c1|library|___security_init_cookie|___security_init_cookie
 0x00498010|library|sq_pushstring|_sq_pushstring
@@ -30,6 +32,7 @@ address|type|name|symbol
 0x004975e0|library|sq_newclosure|_sq_newclosure
 0x00497de0|library|sq_setparamscheck|_sq_setparamscheck
 0x00499040|library|sq_newclass|_sq_newclass
+0x00499550|library|sq_call|_sq_call
 0x0048fee0|library|sq_pop|_sq_pop
 0x004977d0|library|sq_throwerror|_sq_throwerror
 0x004d7580|string||
