@@ -363,6 +363,15 @@ typedef sqvector<SQInteger> SQIntVec;
 const SQChar *GetTypeName(const SQObjectPtr &obj1);
 const SQChar *IdType2Name(SQObjectType type);
 
-
+// FUNCTION: VC1 0x0048aef0
+// SQDelegable::SetDelegate
+// FUNCTION: VC1 0x0048af80
+// IdType2Name
+// FUNCTION: VC1 0x0048bc20
+// SQWeakRef::Release
+// FUNCTION: VC1 0x0048bc70
+// SQRefCounted::GetWeakRef
+// FUNCTION: VC1 0x0048be30
+// SQGenerator::Resume
 
 #endif //_SQOBJECT_H_

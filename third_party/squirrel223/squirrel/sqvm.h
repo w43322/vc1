@@ -267,5 +267,29 @@ inline SQObjectPtr &stack_get(HSQUIRRELVM v,SQInteger idx){return ((idx>=0)?(v->
 // SQVM::Clone
 // FUNCTION: VC1 0x00492d90
 // SQVM::CallNative
+// FUNCTION: VC1 0x00493230
+// SQVM::IsEqual
+// FUNCTION: VC1 0x004932e0
+// SQVM::DerefInc
+// FUNCTION: VC1 0x00493490
+// SQVM::PLOCAL_INC
+// FUNCTION: VC1 0x00493580
+// SQVM::LOCAL_INC
+// FUNCTION: VC1 0x004935d0
+// SQVM::CMP_OP
+// FUNCTION: VC1 0x004936a0
+// SQVM::Execute
+// FUNCTION: VC1 0x00495560
+// SQVM::Call
+// FUNCTION: VC1 0x00495680
+// SQVM::CallMetaMethod
+// FUNCTION: VC1 0x00495740
+// SQVM::NewSlot
+// FUNCTION: VC1 0x00495950
+// SQVM::Init
+// FUNCTION: VC1 0x004b8030
+// SQVM::Raise_Error
+// FUNCTION: VC1 0x004b8180
+// SQVM::Raise_ParamTypeError
 
 #endif //_SQVM_H_

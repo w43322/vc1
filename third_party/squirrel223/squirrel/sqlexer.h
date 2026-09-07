@@ -44,5 +44,7 @@ public:
 
 // FUNCTION: VC1 0x0047ef70
 // SQLexer::LexBlockComment
+// FUNCTION: VC1 0x0047f0a0
+// SQLexer::Tok2Str
 
 #endif

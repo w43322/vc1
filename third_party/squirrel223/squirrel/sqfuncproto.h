@@ -157,4 +157,9 @@ public:
 	SQInstruction _instructions[1];
 };
 
+// FUNCTION: VC1 0x0048aeb0
+// SQFunctionProto::GetLine
+// FUNCTION: VC1 0x0048bba0
+// SQFunctionProto::GetLocal
+
 #endif //_SQFUNCTION_H_

@@ -607,6 +607,8 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_setattributes
 // FUNCTION: VC1 0x00498920
 // sq_suspendvm
+// FUNCTION: VC1 0x00498970
+// sq_rawdeleteslot
 // FUNCTION: VC1 0x00498a40
 // sq_rawset
 // FUNCTION: VC1 0x00498b70
