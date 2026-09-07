@@ -143,14 +143,32 @@ void sq_vm_free(void *p,SQUnsignedInteger size);
 
 // FUNCTION: VC1 0x00488150
 // SQSharedState::MarkObject
+// FUNCTION: VC1 0x004881b0
+// RefTable::Add
+// FUNCTION: VC1 0x00488290
+// RefTable::Finalize
+// FUNCTION: VC1 0x00488410
+// SQSharedState::GetMetaMethodIdxByName
 // FUNCTION: VC1 0x00488490
 // StringTable::Remove
+// FUNCTION: VC1 0x00488590
+// SQSharedState::~SQSharedState
 // FUNCTION: VC1 0x00488c90
 // StringTable::AllocNodes
+// FUNCTION: VC1 0x00488d10
+// RefTable::AllocNodes
+// FUNCTION: VC1 0x00488dc0
+// RefTable::Resize
+// FUNCTION: VC1 0x00488f60
+// SQSharedState::SQSharedState
 // FUNCTION: VC1 0x00489010
 // StringTable::Resize
 // FUNCTION: VC1 0x004890a0
 // StringTable::Add
+// FUNCTION: VC1 0x004891e0
+// RefTable::Get
+// FUNCTION: VC1 0x00489420
+// SQSharedState::GetScratchPad
 // FUNCTION: VC1 0x00489470
 // CompileTypemask
 // FUNCTION: VC1 0x00489640

@@ -1,7 +1,10 @@
 #include "host/runtime.h"
 
 #include <errno.h>
+#include <math.h>
 #include <string.h>
+
+#include <squirrel.h>
 
 namespace vc1 {
 
@@ -19,6 +22,16 @@ static void EnsureRootTable()
         AttachStackTop(&g_rootTable);
         sq_pop(g_vm, 1);
     }
+}
+
+// floor(x+0.5) unless |x| is +Inf at 0x004e95cc. Host extra used by math_round.
+// FUNCTION: VC1 0x00499bc0
+float RoundToNearest(float value)
+{
+    if (fabsf(value) != FloatFromBits(0x7f800000)) {
+        value = (float)floor((double)(value + 0.5f));
+    }
+    return value;
 }
 
 // INFINITY/INT_*/FLT_* and UPDATE_LAYER_* on the root table, then host native binds.
@@ -97,6 +110,30 @@ const char* GetResourceLocale()
         g_resourceLocale[4] = country[1];
     }
     return g_resourceLocale;
+}
+
+// Host extra on the stock mathlib table as "fmod" (nparams 3). Stack slots 2/3, CRT fmod.
+// FUNCTION: VC1 0x004bb800
+SQInteger math_fmod(HSQUIRRELVM v)
+{
+    SQFloat x;
+    SQFloat y;
+
+    sq_getfloat(v, 2, &x);
+    sq_getfloat(v, 3, &y);
+    sq_pushfloat(v, (SQFloat)fmod((double)x, (double)y));
+    return 1;
+}
+
+// Host extra on the stock mathlib table as "round" (nparams 2).
+// FUNCTION: VC1 0x004bb890
+SQInteger math_round(HSQUIRRELVM v)
+{
+    SQFloat x;
+
+    sq_getfloat(v, 2, &x);
+    sq_pushfloat(v, RoundToNearest(x));
+    return 1;
 }
 
 }

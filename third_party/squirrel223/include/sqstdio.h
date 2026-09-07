@@ -75,6 +75,8 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 // _file_releasehook
 // FUNCTION: VC1 0x0048f310
 // sqstd_fseek
+// FUNCTION: VC1 0x0048f3f0
+// file_write
 // FUNCTION: VC1 0x0048f500
 // _io_file_lexfeed_UTF8
 // FUNCTION: VC1 0x0048f600

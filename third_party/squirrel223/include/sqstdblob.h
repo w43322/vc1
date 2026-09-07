@@ -44,6 +44,8 @@ SQUIRREL_API SQRESULT sqstd_register_bloblib(HSQUIRRELVM v);
 // _g_blob_castf2i
 // FUNCTION: VC1 0x0048e980
 // _g_blob_casti2f
+// FUNCTION: VC1 0x0048e9d0
+// sqstd_getblobsize
 // FUNCTION: VC1 0x0048ea10
 // _blob_constructor
 // FUNCTION: VC1 0x0048eb20
