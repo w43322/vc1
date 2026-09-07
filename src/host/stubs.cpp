@@ -107,22 +107,37 @@ void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj)
     (void)obj;
 }
 
-void UnmappedRegisterStdMath(HSQUIRRELVM vm)
+void* UnmappedCreateString(void* strings, const SQChar* name)
 {
-    (void)vm;
+    (void)strings;
+    (void)name;
+    return 0;
 }
 
-void UnmappedRegisterStdString(HSQUIRRELVM vm)
+void UnmappedNewSlot(HSQUIRRELVM vm, HSQOBJECT* self, HSQOBJECT* key, HSQOBJECT* val,
+    SQBool bstatic)
 {
     (void)vm;
+    (void)self;
+    (void)key;
+    (void)val;
+    (void)bstatic;
 }
 
-void UnmappedRegisterStdSystem(HSQUIRRELVM vm)
+void UnmappedRaiseFmt(const char* text)
+{
+    (void)text;
+}
+
+SQInteger UnmappedGetStringIdx(HSQUIRRELVM vm, SQInteger idx, const SQChar** out)
 {
     (void)vm;
+    (void)idx;
+    (void)out;
+    return -1;
 }
 
-void UnmappedRegisterStdAux(HSQUIRRELVM vm)
+void UnmappedPrintCallstack(HSQUIRRELVM vm)
 {
     (void)vm;
 }

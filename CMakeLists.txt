@@ -34,6 +34,7 @@ add_executable(vc1_recompiled
   src/host/startup.cpp
   src/host/heap.cpp
   src/app/script.cpp
+  src/app/stdlib.cpp
   src/app/host_services.cpp
   src/app/run.cpp
   src/bindings/value_types.cpp

@@ -156,10 +156,12 @@ void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
     const char* ns, void* methods, void* casts);
 void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj);
 int UnmappedLoadBytecode(HSQUIRRELVM vm);
-void UnmappedRegisterStdMath(HSQUIRRELVM vm);
-void UnmappedRegisterStdString(HSQUIRRELVM vm);
-void UnmappedRegisterStdSystem(HSQUIRRELVM vm);
-void UnmappedRegisterStdAux(HSQUIRRELVM vm);
+void* UnmappedCreateString(void* strings, const SQChar* name);
+void UnmappedNewSlot(HSQUIRRELVM vm, HSQOBJECT* self, HSQOBJECT* key, HSQOBJECT* val,
+    SQBool bstatic);
+void UnmappedRaiseFmt(const char* text);
+SQInteger UnmappedGetStringIdx(HSQUIRRELVM vm, SQInteger idx, const SQChar** out);
+void UnmappedPrintCallstack(HSQUIRRELVM vm);
 void UnmappedTableCtor(void* table, void* sharedstate, SQInteger initialSize);
 void* UnmappedRefLookup(void* refsTable, HSQOBJECT* obj, unsigned* index, void** prev,
     int create);
@@ -222,6 +224,12 @@ int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 SQInteger IoLoadFile(HSQUIRRELVM vm);
 // 0x0048fc80; ECX=vm, EAX=path, cdecl raiseerror
 SQInteger DoScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
+// 0x0048e420; EAX=vm
+int RegisterStdString(HSQUIRRELVM vm);
+// 0x00497430; original ESI=vm
+void SetErrorHandler(HSQUIRRELVM vm);
+// 0x00497ea0; EAX=vm, EDX=name
+SQInteger SetNativeClosureName(HSQUIRRELVM vm, const SQChar* name);
 // 0x00499130; EAX=vm, cdecl initialSize
 void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize);
 // 0x00499750; host sq_open, initial stack size ECX=0x400
@@ -305,6 +313,14 @@ SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar*
 void InitHostServices();
 // 0x004bab00
 const char* GetResourceLocale();
+// 0x004b8680; cdecl vm
+SQInteger AuxPrintError(HSQUIRRELVM vm);
+// 0x004b8700; EAX=vm
+void RegisterStdAux(HSQUIRRELVM vm);
+// 0x004bb6c0; EAX=vm
+int RegisterStdSystem(HSQUIRRELVM vm);
+// 0x004bbfd0; EAX=vm
+int RegisterStdMath(HSQUIRRELVM vm);
 // 0x004bdc50
 void RegisterStdBindings();
 // 0x004c38b0

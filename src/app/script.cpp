@@ -391,10 +391,10 @@ int OpenScriptVm()
         // STRING: VC1 0x004d3274
         "std_blob",
         reinterpret_cast<void*>(0x004e9270), reinterpret_cast<void*>(0x004e9300));
-    UnmappedRegisterStdMath(vm);
-    UnmappedRegisterStdString(vm);
-    UnmappedRegisterStdSystem(vm);
-    UnmappedRegisterStdAux(vm);
+    RegisterStdMath(vm);
+    RegisterStdString(vm);
+    RegisterStdSystem(vm);
+    RegisterStdAux(vm);
     sq_pop(vm, 1);
     g_vm = vm;
     return 1;
