@@ -34,6 +34,9 @@ void InitSquirrelObject(SquirrelObject* object);
 SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj);
 void ReleaseObjectIfNeeded(HSQOBJECT* obj);
 
+// 0x00498a40; EAX=vm. LTCG sq_rawset with the object at stack -3. Inferred name.
+SQInteger RawSet(HSQUIRRELVM vm);
+
 // 0x00499d00; original ABI: size=EAX, left=EDX, right=ECX. Returns -1, 0, or 1.
 // Used by Color/Vector `_cmp` (0x004d36e0) wrappers and other byte-wise compares.
 int MemCompare(const void* left, const void* right, unsigned size);

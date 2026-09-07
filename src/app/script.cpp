@@ -1,6 +1,7 @@
 #include "host/runtime.h"
 
 #include <squirrel.h>
+#include <stdlib.h>
 
 namespace vc1 {
 
@@ -41,6 +42,114 @@ void InitScriptEngine(int argc, char** argv)
     ReleaseObjectIfNeeded(&scratch.obj);
 }
 
+// ESI=vm. Caller OpenScriptVm 0x0049a510. Top is vm+0x30 minus vm+0x34, not sq_gettop.
+// FUNCTION: VC1 0x0048f990
+int RegisterStdFile(HSQUIRRELVM vm)
+{
+    const SQInteger savedTop =
+        *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x30)
+        - *reinterpret_cast<SQInteger*>(reinterpret_cast<char*>(vm) + 0x34);
+    UnmappedRegisterStdBlob(vm,
+        // STRING: VC1 0x004d2f1c
+        "file", 0x80000001,
+        // STRING: VC1 0x004d2f70
+        "std_file",
+        reinterpret_cast<void*>(0x004e9360), reinterpret_cast<void*>(0x004e9390));
+    // STRING: VC1 0x004d3004
+    sq_pushstring(vm, "stdout", -1);
+    UnmappedPushKdFile(vm, &g_kdObjectIt1);
+    sq_newslot(vm, -3, SQFalse);
+    // STRING: VC1 0x004d300c
+    sq_pushstring(vm, "stdin", -1);
+    UnmappedPushKdFile(vm, &g_kdObjectIt2);
+    sq_newslot(vm, -3, SQFalse);
+    // STRING: VC1 0x004d3014
+    sq_pushstring(vm, "stderr", -1);
+    UnmappedPushKdFile(vm, &g_kdObjectIt0);
+    sq_newslot(vm, -3, SQFalse);
+    sq_settop(vm, savedTop);
+    return 0;
+}
+
+// EAX=vm, cdecl path + raiseerror. Open "rb", detect BOM/bytecode, then sq_compile.
+// Inferred name. Called from CompilePath.
+// FUNCTION: VC1 0x0048fa50
+int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
+{
+    void* file;
+    void* inner;
+    void* extra;
+    SQLEXREADFUNC reader;
+    unsigned short bom;
+    char third;
+    int nread;
+
+    typedef int (*KdReadFn)(void* self, void* buf, int size, int count, void* user);
+    typedef int (*KdSeekFn)(void* self, void* user, int a, int b, int c);
+
+    // STRING: VC1 0x004d240c
+    file = UnmappedOpenKdFile(path, "rb");
+    reader = reinterpret_cast<SQLEXREADFUNC>(0x0048f5b0);
+    if (!file) {
+        // STRING: VC1 0x004d2fd8
+        return sq_throwerror(vm, "cannot open the file");
+    }
+    inner = *reinterpret_cast<void**>(file);
+    extra = reinterpret_cast<void**>(file)[1];
+    nread = (*reinterpret_cast<KdReadFn*>(static_cast<char*>(inner) + 0x120))(
+        inner, &bom, 1, 2, extra);
+    if (nread == 2 && bom == 0xfafa) {
+        inner = *reinterpret_cast<void**>(file);
+        extra = reinterpret_cast<void**>(file)[1];
+        (*reinterpret_cast<KdSeekFn*>(static_cast<char*>(inner) + 0x140))(
+            inner, extra, 0, 0, 0);
+        if (UnmappedLoadBytecode(vm) >= 0) {
+            UnmappedCloseKdFile(file);
+            return 0;
+        }
+        UnmappedCloseKdFile(file);
+        return -1;
+    }
+    if (nread != 2) {
+        bom = 0;
+    }
+    if (bom == 0xbbef) {
+        inner = *reinterpret_cast<void**>(file);
+        extra = reinterpret_cast<void**>(file)[1];
+        nread = (*reinterpret_cast<KdReadFn*>(static_cast<char*>(inner) + 0x120))(
+            inner, &third, 1, 1, extra);
+        if (nread == 0) {
+            UnmappedCloseKdFile(file);
+            // STRING: VC1 0x004d2720
+            return sq_throwerror(vm, "io error");
+        }
+        if (third != '\xbf') {
+            UnmappedCloseKdFile(file);
+            // STRING: VC1 0x004d2fc0
+            return sq_throwerror(vm, "Unrecognozed ecoding");
+        }
+        reader = reinterpret_cast<SQLEXREADFUNC>(0x0048f500);
+    }
+    else if (bom == 0xfeff) {
+        reader = reinterpret_cast<SQLEXREADFUNC>(0x0048f4c0);
+    }
+    else if (bom == 0xfffe) {
+        reader = reinterpret_cast<SQLEXREADFUNC>(0x0048f470);
+    }
+    else {
+        inner = *reinterpret_cast<void**>(file);
+        extra = reinterpret_cast<void**>(file)[1];
+        (*reinterpret_cast<KdSeekFn*>(static_cast<char*>(inner) + 0x140))(
+            inner, extra, 0, 0, 0);
+    }
+    if (UnmappedSqCompile(vm, reader, file, path, raiseerror) >= 0) {
+        UnmappedCloseKdFile(file);
+        return 0;
+    }
+    UnmappedCloseKdFile(file);
+    return -1;
+}
+
 // EAX=vm, cdecl initialSize used as SQTable ctor EBX. Alloc 0x24 from pools[9] at 0x004ed47c.
 // FUNCTION: VC1 0x00499130
 void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize)
@@ -61,6 +170,52 @@ void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize)
     sq_addref(vm, &obj);
     sq_pushobject(vm, obj);
     sq_release(vm, &obj);
+}
+
+// Host sq_open. malloc 0xb4 sharedstate + 0xa8 VM; Init ECX=0x400. Caller OpenScriptVm.
+// FUNCTION: VC1 0x00499750
+HSQUIRRELVM SqOpen()
+{
+    void* ss;
+    HSQUIRRELVM vm;
+    unsigned oldType;
+    int* oldValue;
+
+    g_sizeClassHeap.allocatedBytes += 0xb4;
+    ss = malloc(0xb4);
+    if (ss) {
+        UnmappedSharedStateCtor(ss);
+    }
+    UnmappedSharedStateInit(ss);
+
+    g_sizeClassHeap.allocatedBytes += 0xa8;
+    vm = static_cast<HSQUIRRELVM>(malloc(0xa8));
+    if (vm) {
+        UnmappedVmCtor(vm, ss);
+    }
+    reinterpret_cast<int*>(vm)[1] += 1;
+    oldType = *reinterpret_cast<unsigned*>(static_cast<char*>(ss) + 0x48);
+    oldValue = *reinterpret_cast<int**>(static_cast<char*>(ss) + 0x4c);
+    *reinterpret_cast<void**>(static_cast<char*>(ss) + 0x4c) = vm;
+    *reinterpret_cast<unsigned*>(static_cast<char*>(ss) + 0x48) = OT_THREAD;
+    reinterpret_cast<int*>(vm)[1] += 1;
+    if ((oldType & kSqRefCounted) != 0) {
+        oldValue[1] -= 1;
+        if (oldValue[1] == 0) {
+            UnmappedReleaseRefCounted(oldValue);
+        }
+    }
+    reinterpret_cast<int*>(vm)[1] -= 1;
+    if (reinterpret_cast<int*>(vm)[1] == 0) {
+        UnmappedReleaseRefCounted(reinterpret_cast<int*>(vm));
+    }
+    if (UnmappedVmInit(vm, 0)) {
+        return vm;
+    }
+    UnmappedVmDelete(vm);
+    g_sizeClassHeap.releasedBytes += 0xa8;
+    free(vm);
+    return 0;
 }
 
 // sq_pushroottable + AttachStackTop on 0x004e96e0 when the stored type is still OT_NULL.
@@ -99,15 +254,15 @@ int OpenScriptVm()
     if (g_vm) {
         return 1;
     }
-    vm = UnmappedSqOpen();
+    vm = SqOpen();
     if (!vm) {
         return 0;
     }
     *reinterpret_cast<void**>(
         *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x8c) + 0xa4)
-        = reinterpret_cast<void*>(&UnmappedCompilerError);
+        = reinterpret_cast<void*>(0x00499e00);
     sq_pushroottable(vm);
-    UnmappedRegisterStdIo(vm);
+    RegisterStdFile(vm);
     UnmappedRegisterStdBlob(vm,
         // STRING: VC1 0x004d326c
         "blob", 0x80000002,
@@ -143,7 +298,7 @@ SQBool __stdcall RegisterObjectSlot(SquirrelObject* table, const SQChar* name,
     sq_pushstring(g_vm, name, -1);
     sq_pushobject(g_vm, value->obj);
     {
-        const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
         sq_settop(g_vm, savedTop);
         return ok;
     }
@@ -158,7 +313,7 @@ SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar*
     sq_pushinteger(g_vm, index);
     sq_pushstring(g_vm, name, -1);
     {
-        const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
         sq_settop(g_vm, savedTop);
         return ok;
     }

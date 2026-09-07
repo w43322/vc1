@@ -76,6 +76,47 @@ SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj)
     return SQTrue;
 }
 
+// EAX=vm. LTCG sq_rawset with idx=-3. Null key at -2; self at -3.
+// FUNCTION: VC1 0x00498a40
+SQInteger RawSet(HSQUIRRELVM vm)
+{
+    HSQOBJECT self;
+    HSQOBJECT key;
+
+    sq_getstackobj(vm, -2, &key);
+    if (key._type == OT_NULL) {
+        // STRING: VC1 0x004d2658
+        return sq_throwerror(vm, "null key");
+    }
+    sq_getstackobj(vm, -3, &self);
+    if (self._type == OT_TABLE) {
+        UnmappedTableNewSlot(vm);
+        sq_pop(vm, 2);
+        return 0;
+    }
+    if (self._type == OT_ARRAY) {
+        UnmappedArraySet(vm);
+        sq_pop(vm, 2);
+        return 0;
+    }
+    if (self._type == OT_INSTANCE) {
+        if (!UnmappedInstanceSet(vm)) {
+            UnmappedRaiseIdxError(vm);
+            return -1;
+        }
+        sq_pop(vm, 2);
+        return 0;
+    }
+    if (self._type == OT_CLASS) {
+        UnmappedClassNewSlot(vm);
+        sq_pop(vm, 2);
+        return 0;
+    }
+    sq_pop(vm, 2);
+    // STRING: VC1 0x004d2664
+    return sq_throwerror(vm, "rawset works only on array/table/class and instance");
+}
+
 // DWORD loop then leftover bytes. Mismatch sign is (diff SAR 31) | 1.
 // FUNCTION: VC1 0x00499d00
 int MemCompare(const void* left, const void* right, unsigned size)
@@ -210,7 +251,7 @@ SquirrelObject* CompilePath(const SQChar* path, SquirrelObject* dest)
     SquirrelObject local;
 
     InitSquirrelObject(&local);
-    if (UnmappedSqLoadFile(g_vm, path, 1) < 0) {
+    if (LoadScriptFile(g_vm, path, 1) < 0) {
         return CopySquirrelObject(dest, &local);
     }
     AttachStackTop(&local);
@@ -317,7 +358,7 @@ SQBool __stdcall RegisterBoolFalseSlot(SquirrelObject* object, const SQChar* nam
     sq_pushstring(g_vm, name, -1);
     sq_pushbool(g_vm, SQFalse);
     {
-        const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
         sq_settop(g_vm, savedTop);
         return ok;
     }
@@ -332,7 +373,7 @@ SQBool __stdcall RegisterFloatSlot(SquirrelObject* object, const SQChar* name, S
     sq_pushstring(g_vm, name, -1);
     sq_pushfloat(g_vm, value);
     {
-        const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+        const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
         sq_settop(g_vm, savedTop);
         return ok;
     }
@@ -348,7 +389,7 @@ SQBool RegisterIntegerSlot(SquirrelObject* object, const SQChar* name, SQInteger
     sq_pushobject(g_vm, object->obj);
     sq_pushstring(g_vm, name, -1);
     sq_pushinteger(g_vm, value);
-    const SQBool ok = SQ_SUCCEEDED(sq_newslot(g_vm, -3, SQFalse));
+    const SQBool ok = SQ_SUCCEEDED(RawSet(g_vm));
     sq_settop(g_vm, savedTop);
     return ok;
 }

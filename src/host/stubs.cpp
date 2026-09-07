@@ -58,16 +58,34 @@ void UnmappedBindHostClasses()
 {
 }
 
-HSQUIRRELVM UnmappedSqOpen()
-{
-    return 0;
-}
-
 void UnmappedCompilerError()
 {
 }
 
-void UnmappedRegisterStdIo(HSQUIRRELVM vm)
+void UnmappedSharedStateCtor(void* ss)
+{
+    (void)ss;
+}
+
+void __stdcall UnmappedSharedStateInit(void* ss)
+{
+    (void)ss;
+}
+
+void UnmappedVmCtor(HSQUIRRELVM vm, void* ss)
+{
+    (void)vm;
+    (void)ss;
+}
+
+int __stdcall UnmappedVmInit(HSQUIRRELVM vm, HSQUIRRELVM friendvm)
+{
+    (void)vm;
+    (void)friendvm;
+    return 0;
+}
+
+void UnmappedVmDelete(HSQUIRRELVM vm)
 {
     (void)vm;
 }
@@ -101,6 +119,30 @@ void UnmappedRegisterStdSystem(HSQUIRRELVM vm)
 void UnmappedRegisterStdAux(HSQUIRRELVM vm)
 {
     (void)vm;
+}
+
+void UnmappedPushKdFile(HSQUIRRELVM vm, void* kdSlot)
+{
+    (void)vm;
+    (void)kdSlot;
+}
+
+void* UnmappedOpenKdFile(const char* path, const char* mode)
+{
+    (void)path;
+    (void)mode;
+    return 0;
+}
+
+void UnmappedCloseKdFile(void* file)
+{
+    (void)file;
+}
+
+int UnmappedLoadBytecode(HSQUIRRELVM vm)
+{
+    (void)vm;
+    return -1;
 }
 
 void UnmappedTableCtor(void* table, void* sharedstate, SQInteger initialSize)
@@ -159,14 +201,6 @@ SQInteger UnmappedConsoleBufferRead(SQUserPointer p)
     return 0;
 }
 
-int UnmappedSqLoadFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror)
-{
-    (void)vm;
-    (void)path;
-    (void)raiseerror;
-    return -1;
-}
-
 int UnmappedGet(HSQUIRRELVM vm)
 {
     (void)vm;
@@ -175,6 +209,35 @@ int UnmappedGet(HSQUIRRELVM vm)
 
 void UnmappedBindHostApi()
 {
+}
+
+int UnmappedTableNewSlot(HSQUIRRELVM vm)
+{
+    (void)vm;
+    return 1;
+}
+
+int UnmappedArraySet(HSQUIRRELVM vm)
+{
+    (void)vm;
+    return 1;
+}
+
+int UnmappedInstanceSet(HSQUIRRELVM vm)
+{
+    (void)vm;
+    return 1;
+}
+
+int UnmappedClassNewSlot(HSQUIRRELVM vm)
+{
+    (void)vm;
+    return 1;
+}
+
+void UnmappedRaiseIdxError(HSQUIRRELVM vm)
+{
+    (void)vm;
 }
 
 void UnmappedLog(const char* text)

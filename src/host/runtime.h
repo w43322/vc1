@@ -145,11 +145,18 @@ void UnmappedRegisterExtra2();
 void UnmappedRegisterExtra3();
 void UnmappedRegisterExtra4();
 void UnmappedBindHostClasses();
-HSQUIRRELVM UnmappedSqOpen();
 void UnmappedCompilerError();
-void UnmappedRegisterStdIo(HSQUIRRELVM vm);
+void UnmappedSharedStateCtor(void* ss);
+void __stdcall UnmappedSharedStateInit(void* ss);
+void UnmappedVmCtor(HSQUIRRELVM vm, void* ss);
+int __stdcall UnmappedVmInit(HSQUIRRELVM vm, HSQUIRRELVM friendvm);
+void UnmappedVmDelete(HSQUIRRELVM vm);
 void UnmappedRegisterStdBlob(HSQUIRRELVM vm, const char* name, unsigned typeTag,
     const char* ns, void* methods, void* casts);
+void UnmappedPushKdFile(HSQUIRRELVM vm, void* kdSlot);
+void* UnmappedOpenKdFile(const char* path, const char* mode);
+void UnmappedCloseKdFile(void* file);
+int UnmappedLoadBytecode(HSQUIRRELVM vm);
 void UnmappedRegisterStdMath(HSQUIRRELVM vm);
 void UnmappedRegisterStdString(HSQUIRRELVM vm);
 void UnmappedRegisterStdSystem(HSQUIRRELVM vm);
@@ -163,9 +170,13 @@ int UnmappedSqCall(HSQUIRRELVM vm, SQInteger nparams);
 int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
     const SQChar* sourcename, int raiseerror);
 SQInteger UnmappedConsoleBufferRead(SQUserPointer p);
-int UnmappedSqLoadFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 int UnmappedGet(HSQUIRRELVM vm);
 void UnmappedBindHostApi();
+int UnmappedTableNewSlot(HSQUIRRELVM vm);
+int UnmappedArraySet(HSQUIRRELVM vm);
+int UnmappedInstanceSet(HSQUIRRELVM vm);
+int UnmappedClassNewSlot(HSQUIRRELVM vm);
+void UnmappedRaiseIdxError(HSQUIRRELVM vm);
 void UnmappedLog(const char* text);
 void UnmappedShutdownHost();
 int UnmappedFindFirstFile(const char* path, WIN32_FIND_DATAA* data);
@@ -195,8 +206,14 @@ LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
 // 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
 void InitScriptEngine(int argc, char** argv);
+// 0x0048f990; original ESI=vm
+int RegisterStdFile(HSQUIRRELVM vm);
+// 0x0048fa50; original EAX=vm, cdecl path + raiseerror
+int LoadScriptFile(HSQUIRRELVM vm, const SQChar* path, int raiseerror);
 // 0x00499130; EAX=vm, cdecl initialSize
 void PushNewTable(HSQUIRRELVM vm, SQInteger initialSize);
+// 0x00499750; host sq_open, initial stack size ECX=0x400
+HSQUIRRELVM SqOpen();
 // 0x00476e60
 int ProbeDebuggerPresent();
 // 0x00477240
