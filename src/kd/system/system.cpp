@@ -43,9 +43,11 @@ static void FactoryDtorTail(void* self);
 static void FactoryClearSlots(void* begin, void* end);
 static void FactoryReleasePointers(void* self);
 static unsigned char RecordEq(void* key, void* record);
-static IUnknown** InsertCountedSlot(void* factory);
+static IUnknown** InsertCountedSlot(void* key, void* factory);
 static void AppendCountedRange(void* out, void* begin, void* end, void* factory);
+static unsigned char* InsertCountedRecord(void* factory, unsigned char* pos, void* source);
 static unsigned char* LookupCountedRecord(void* factory, void* key);
+static void ReserveRecordTable(void* factory, unsigned newCount);
 
 KdSystem::KdSystem()
 {
@@ -124,12 +126,38 @@ static void FactoryClearSlots(void* begin, void* end)
     }
 }
 
-// EAX=factory. Returns slot for a new IUnknown* in the counted buffer.
-// STUB: VC1 0x004161b0
-static IUnknown** InsertCountedSlot(void* factory)
+// EAX=key, EBX=factory. Lookup then copy-insert a 0x14-byte name record.
+// FUNCTION: VC1 0x004161b0
+static IUnknown** InsertCountedSlot(void* key, void* factory)
 {
-    (void)factory;
-    return 0;
+    unsigned char rec[0x14];
+    KdFactory* records = static_cast<KdFactory*>(factory);
+    unsigned char* pos;
+    unsigned char* end;
+    IUnknown* extra;
+    KdFactory* local;
+
+    pos = LookupCountedRecord(factory, key);
+    end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
+    if (pos != end && RecordEq(key, pos) == 0) {
+        return reinterpret_cast<IUnknown**>(pos + 0x10);
+    }
+    CopyCountedString(rec, key);
+    extra = 0;
+    *reinterpret_cast<IUnknown**>(rec + 0x10) = extra;
+    pos = InsertCountedRecord(factory, pos, rec);
+    extra = *reinterpret_cast<IUnknown**>(rec + 0x10);
+    if (extra) {
+        extra->Release();
+    }
+    *reinterpret_cast<IUnknown**>(rec + 0x10) = 0;
+    local = reinterpret_cast<KdFactory*>(rec);
+    *reinterpret_cast<void**>(rec) = *reinterpret_cast<void**>(&g_kdFactory);
+    if (local->capacity) {
+        free(local->begin);
+    }
+    local->Clear();
+    return reinterpret_cast<IUnknown**>(pos + 0x10);
 }
 
 // cdecl out, begin, end, dest factory. Copies IUnknown* range into a pointer vector.
@@ -161,6 +189,36 @@ static void AppendCountedRange(void* out, void* begin, void* end, void* factory)
         *slot = *src;
     }
     *static_cast<void**>(out) = factory;
+}
+
+// EAX=factory, EDI=source record, stdcall pos RET 4. Inserts a 0x14-byte slot.
+// FUNCTION: VC1 0x00416360
+static unsigned char* InsertCountedRecord(void* factory, unsigned char* pos, void* source)
+{
+    KdFactory* records = static_cast<KdFactory*>(factory);
+    unsigned char* oldBegin;
+    unsigned char* inserted;
+    IUnknown* object;
+
+    oldBegin = reinterpret_cast<unsigned char*>(records->begin);
+    ReserveRecordTable(factory, records->size / 20 + 1);
+    inserted = static_cast<unsigned char*>(InsertCountedBytes(
+        factory,
+        reinterpret_cast<unsigned char*>(records->begin) + (pos - oldBegin),
+        0x14));
+    AssignCountedString(
+        inserted,
+        *reinterpret_cast<char**>(static_cast<unsigned char*>(source) + 4),
+        *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(source) + 8));
+    object = *reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(source) + 0x10);
+    if (object) {
+        object->AddRef();
+    }
+    if (*reinterpret_cast<IUnknown**>(inserted + 0x10)) {
+        (*reinterpret_cast<IUnknown**>(inserted + 0x10))->Release();
+    }
+    *reinterpret_cast<IUnknown**>(inserted + 0x10) = object;
+    return inserted;
 }
 
 // EAX=factory, EDX=key. Binary search of 0x14-byte name records.
@@ -210,6 +268,33 @@ static unsigned char* LookupCountedRecord(void* factory, void* key)
         }
     }
     return lo;
+}
+
+// EAX=factory, ECX=new record count. Grow 0x14-byte slots; new ones use empty g_kdLogTag.
+// FUNCTION: VC1 0x004164a0
+static void ReserveRecordTable(void* factory, unsigned newCount)
+{
+    KdFactory* records = static_cast<KdFactory*>(factory);
+    unsigned oldCap;
+    unsigned char* slot;
+    unsigned char* end;
+
+    oldCap = records->capacity / 20;
+    GrowCountedBuffer(records, static_cast<int>(newCount * 20), 0);
+    if (records->capacity / 20 > oldCap) {
+        slot = reinterpret_cast<unsigned char*>(records->begin) + oldCap * 20;
+        end = reinterpret_cast<unsigned char*>(records->begin)
+            + (records->capacity / 20) * 20;
+        for (; slot < end; slot += 0x14) {
+            if (slot) {
+                *reinterpret_cast<unsigned*>(slot + 0xc) = 0;
+                *reinterpret_cast<unsigned*>(slot) = 0x004d0d9c;
+                *reinterpret_cast<void**>(slot + 4) = &g_kdLogTag;
+                *reinterpret_cast<unsigned*>(slot + 8) = 0;
+                *reinterpret_cast<IUnknown**>(slot + 0x10) = 0;
+            }
+        }
+    }
 }
 
 // EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
@@ -935,7 +1020,10 @@ static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
             (*out)->Release();
         }
         *out = object;
-        EraseCountedBytes(pos);
+        EraseCountedBytes(
+            pos,
+            pos + 0x14,
+            reinterpret_cast<unsigned char*>(records->begin) + records->size);
         records->size -= 0x14;
         if (member) {
             member->Release();
@@ -945,35 +1033,48 @@ static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
     return out;
 }
 
-// STUB: VC1 0x00472db0
+// RET 8. InsertCountedSlot then store *out; QI IGroupMember and notify.
+// FUNCTION: VC1 0x00472db0
 static void InputStreamInsert(IInputStream* self, void* key, void** out)
 {
+    KdFactory* records;
     IUnknown** slot;
     IUnknown* object;
     IUnknown* member;
+    void* ident;
+    typedef void (__thiscall *Fn10)(IUnknown* object, void* arg);
 
-    (void)key;
-    slot = InsertCountedSlot(self);
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    slot = InsertCountedSlot(key, records);
     object = out ? static_cast<IUnknown*>(*out) : 0;
     if (object) {
         object->AddRef();
     }
-    if (slot) {
-        if (*slot) {
-            (*slot)->Release();
-        }
-        *slot = object;
+    if (*slot) {
+        (*slot)->Release();
     }
-    if (object) {
-        member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
-        if (member) {
-            member->AddRef();
-            typedef void (__thiscall *Fn10)(IUnknown* object, void* arg);
-            reinterpret_cast<Fn10>((*reinterpret_cast<void***>(member))[4])(
-                member, &g_groupNotify);
-            member->Release();
+    *slot = object;
+    if (!object) {
+        return;
+    }
+    member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
+    if (!member) {
+        return;
+    }
+    member->AddRef();
+    ident = static_cast<IUnknown*>(self)->QueryInterface(&g_iidAbstract);
+    if (ident) {
+        ident = static_cast<IUnknown*>(
+            static_cast<IUnknown*>(ident)->QueryInterface(&g_iidAbstract));
+        if (ident) {
+            static_cast<IUnknown*>(ident)->AddRef();
         }
     }
+    reinterpret_cast<Fn10>((*reinterpret_cast<void***>(member))[4])(member, &ident);
+    if (ident) {
+        static_cast<IUnknown*>(ident)->Release();
+    }
+    member->Release();
 }
 
 // EDX=block. Unlinks the timed/heap node at g_timedEventHead.

@@ -31,6 +31,32 @@ void KdFactory::Clear()
     capacity = 0;
 }
 
+// EAX=exclusive end, ECX=first. Byte reverse of [first, last).
+// FUNCTION: VC1 0x0040e390
+void ReverseCountedBytes(void* first, void* last)
+{
+    unsigned char* lo;
+    unsigned char* hi;
+    unsigned char tmp;
+    int span;
+
+    lo = static_cast<unsigned char*>(first);
+    hi = static_cast<unsigned char*>(last);
+    hi -= 1;
+    span = static_cast<int>(hi - lo);
+    if (span <= 0) {
+        return;
+    }
+    do {
+        tmp = *lo;
+        *lo = *hi;
+        *hi = tmp;
+        hi -= 1;
+        lo += 1;
+        span = static_cast<int>(hi - lo);
+    } while (span > 0);
+}
+
 static void RegisterOne(const char** nameSlot, KdFactoryFn fn)
 {
     FactoryEntry pair;
@@ -123,11 +149,41 @@ unsigned KdFactory::Count()
     return 0;
 }
 
-// EAX=dest, EBX=end, param=src. Byte swap-move used by InputStreamFind erase.
-// STUB: VC1 0x004b8830
-void EraseCountedBytes(void* dest)
+// EAX=last, ECX=first, EBX=middle. Byte rotate used to open/close a hole.
+// FUNCTION: VC1 0x004b8830
+void EraseCountedBytes(void* first, void* middle, void* last)
 {
-    (void)dest;
+    unsigned char* esi;
+    unsigned char* edi;
+    unsigned char* ebx;
+    unsigned char left;
+    unsigned char right;
+
+    if (first == middle || middle == last) {
+        return;
+    }
+    ReverseCountedBytes(first, middle);
+    ReverseCountedBytes(middle, last);
+    esi = static_cast<unsigned char*>(first);
+    edi = static_cast<unsigned char*>(last);
+    ebx = static_cast<unsigned char*>(middle);
+    while (ebx != edi) {
+        left = *esi;
+        right = *(edi - 1);
+        edi -= 1;
+        *esi = right;
+        esi += 1;
+        *edi = left;
+        if (esi == ebx) {
+            ReverseCountedBytes(esi, edi);
+            return;
+        }
+    }
+    if (esi == ebx) {
+        ReverseCountedBytes(esi, edi);
+        return;
+    }
+    ReverseCountedBytes(esi, ebx);
 }
 
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
@@ -174,22 +230,127 @@ void GrowCountedBuffer(void* self, int bytes, char exact)
     factory->capacity = needed;
 }
 
-// EAX=counted buffer, stdcall pos + byte count. Grows then memmoves the tail.
-// STUB: VC1 0x004b8a20
+// EAX=factory, stdcall pos + byte count RET 8. Grows then rotates a hole at pos.
+// FUNCTION: VC1 0x004b8a20
 void* InsertCountedBytes(void* self, void* pos, int bytes)
 {
-    (void)self;
-    (void)bytes;
-    return pos;
+    KdFactory* factory = static_cast<KdFactory*>(self);
+    typedef unsigned (__thiscall *FnCount)(void* object);
+    unsigned offset;
+    unsigned newSize;
+    unsigned used;
+    unsigned char* begin;
+    unsigned char* first;
+    unsigned char* middle;
+    unsigned char* last;
+
+    offset = static_cast<unsigned>(
+        static_cast<unsigned char*>(pos)
+        - reinterpret_cast<unsigned char*>(factory->begin));
+    newSize = factory->size + static_cast<unsigned>(bytes);
+    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+    if (factory->capacity < used + newSize) {
+        GrowCountedBuffer(self, static_cast<int>(newSize), 0);
+    }
+    begin = reinterpret_cast<unsigned char*>(factory->begin);
+    last = begin + newSize;
+    middle = last - static_cast<unsigned>(bytes);
+    first = begin + offset;
+    factory->size = newSize;
+    EraseCountedBytes(first, middle, last);
+    return reinterpret_cast<unsigned char*>(factory->begin) + offset;
 }
 
-// ECX=counted buffer, EAX=length, EBX=source. Empty string uses DAT_004cfa94.
-// STUB: VC1 0x004b9090
+// EAX=dest counted string, stdcall source RET 4. COW if source.capacity==0.
+// FUNCTION: VC1 0x004b8bf0
+void* CopyCountedString(void* dest, void* source)
+{
+    KdFactory* dst = static_cast<KdFactory*>(dest);
+    KdFactory* src = static_cast<KdFactory*>(source);
+    typedef unsigned (__thiscall *FnCount)(void* object);
+    unsigned needed;
+    unsigned left;
+    unsigned char* out;
+    unsigned char* in;
+    unsigned used;
+
+    dst->begin = 0;
+    dst->size = 0;
+    *reinterpret_cast<void**>(dest) = *reinterpret_cast<void**>(&g_kdFactory);
+    dst->capacity = 0;
+    needed = src->size + 1;
+    if (src->capacity != 0) {
+        needed = src->size + 1;
+    }
+    else {
+        needed = 0;
+    }
+    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(dest))[2])(dest);
+    if (dst->capacity < used + needed) {
+        GrowCountedBuffer(dest, static_cast<int>(needed), 1);
+    }
+    dst->size = needed;
+    *reinterpret_cast<unsigned*>(dest) = 0x004d0d9c;
+    if (src->capacity == 0) {
+        dst->size = src->size;
+        dst->begin = src->begin;
+        return dest;
+    }
+    out = reinterpret_cast<unsigned char*>(dst->begin);
+    in = reinterpret_cast<unsigned char*>(src->begin);
+    left = needed;
+    for (; left != 0; left -= 1) {
+        *out = *in;
+        out += 1;
+        in += 1;
+    }
+    dst->size -= 1;
+    return dest;
+}
+
+// ECX=counted buffer, EAX=length, EBX=source. Empty string uses g_kdLogTag.
+// FUNCTION: VC1 0x004b9090
 void AssignCountedString(void* self, const char* text, unsigned len)
 {
-    (void)self;
-    (void)text;
-    (void)len;
+    KdFactory* dst = static_cast<KdFactory*>(self);
+    typedef unsigned (__thiscall *FnCount)(void* object);
+    unsigned n;
+    unsigned used;
+    unsigned char* out;
+    const char* src;
+
+    n = len;
+    src = text;
+    if (n != 0) {
+        while (src[n - 1] == 0) {
+            n -= 1;
+            if (n == 0) {
+                break;
+            }
+        }
+    }
+    if ((dst->capacity | n) == 0) {
+        dst->begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        dst->size = n;
+    }
+    else {
+        used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+        if (dst->capacity < used + n) {
+            GrowCountedBuffer(self, static_cast<int>(n), 1);
+        }
+        dst->size = n;
+        reinterpret_cast<unsigned char*>(dst->begin)[n] = 0;
+    }
+    if (text) {
+        out = reinterpret_cast<unsigned char*>(dst->begin);
+        src = text;
+        used = n;
+        for (; used != 0; used -= 1) {
+            *out = static_cast<unsigned char>(*src);
+            out += 1;
+            src += 1;
+        }
+    }
 }
 
 // thiscall factory, stdcall out + name slot, RET 8.

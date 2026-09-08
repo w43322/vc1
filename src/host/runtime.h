@@ -213,6 +213,7 @@ void* PopTimedEvent();
 const char* GetKdEnv(const char* name);
 // 0x004969c0; original EDX=cap, stack buf/fmt/varargs; ECX unused leftover
 void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
+extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
 // 0x00496a40
 void KdLog(const char* fmt, ...);
 // 0x004b7010
