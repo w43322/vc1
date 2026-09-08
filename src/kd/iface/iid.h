@@ -10,6 +10,7 @@ extern const char* g_iidShutdownable;
 extern const char* g_iidDisplay;
 extern const char* g_iidRenderTarget;
 extern const char* g_iidGraphics;
+extern const char* g_iidFont;
 extern const char* g_iidSystem;
 extern const char* g_iidFunctionalGroup;
 extern const char* g_iidComponentGroup;

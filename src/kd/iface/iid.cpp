@@ -37,6 +37,11 @@ static const char kIidGraphics[] = "IGraphics";
 // GLOBAL: VC1 0x004d05a0
 const char* g_iidGraphics = kIidGraphics;
 
+// STRING: VC1 0x004d4dcc
+static const char kIidFont[] = "IFont";
+// GLOBAL: VC1 0x004d05c4
+const char* g_iidFont = kIidFont;
+
 // STRING: VC1 0x004d4dc4
 static const char kIidSystem[] = "ISystem";
 // GLOBAL: VC1 0x004d05c8

@@ -14,6 +14,10 @@ namespace vc1 {
 IAbstract* g_kdDisplay;
 // GLOBAL: VC1 0x004ed550
 HWND g_kdDisplayWindow;
+// GLOBAL: VC1 0x004ed554
+static unsigned g_displayBusy;
+// GLOBAL: VC1 0x004ed558
+static int* g_displayMode;
 // GLOBAL: VC1 0x004ed590
 static int g_displayWindowX;
 // GLOBAL: VC1 0x004ed594
@@ -28,8 +32,28 @@ static int g_displayViewRight;
 static int g_displayViewBottom;
 // GLOBAL: VC1 0x004ed5f0
 static IUnknown* g_d3dDevice;
+// GLOBAL: VC1 0x004ed5ec
+static IUnknown* g_d3dObject;
+// GLOBAL: VC1 0x004ed5f4
+static IUnknown* g_d3dSwap;
+// GLOBAL: VC1 0x004ed5f8
+static IUnknown* g_d3dSurface;
+// GLOBAL: VC1 0x004ed5fc
+static IUnknown* g_d3dBackBuffer;
+// GLOBAL: VC1 0x004ed600
+static void* g_d3dChain;
 // GLOBAL: VC1 0x004ed604
-static unsigned g_d3dPresentFlag;
+static void* g_d3dLastMixer;
+// GLOBAL: VC1 0x004ed608
+static void* g_d3dChain2;
+// GLOBAL: VC1 0x004ed60c
+static unsigned g_d3dInScene;
+// GLOBAL: VC1 0x004ed564
+static unsigned g_displayReady;
+// GLOBAL: VC1 0x004ed5ac
+static unsigned g_displayModeReady;
+// GLOBAL: VC1 0x004ed700
+static IUnknown* g_displayScene;
 // GLOBAL: VC1 0x004ed6ec
 static IUnknown* g_graphicsQuery;
 // GLOBAL: VC1 0x004ed628
@@ -40,6 +64,14 @@ IUnknown* g_kdQueryUnknown;
 static IUnknown* g_graphics;
 // GLOBAL: VC1 0x004ed6f4
 static IUnknown* g_graphicsHost;
+// GLOBAL: VC1 0x004e74b6
+unsigned char g_displaySkipDevice;
+// GLOBAL: VC1 0x004e8744
+int g_displayWidth;
+// GLOBAL: VC1 0x004e8998
+int g_displayHeight;
+// GLOBAL: VC1 0x004e899c
+static int g_displayPresentInterval;
 // GLOBAL: VC1 0x004ed450
 static void* g_kdWindowMixer;
 // GLOBAL: VC1 0x004e95a0
@@ -75,10 +107,16 @@ static unsigned char DisplayQueryReady();
 static void RenderTargetInit(IRenderTarget* self);
 static void* Display34Construct(void* self);
 static void Display10Scene(void* self);
+static void* DisplaySceneConstruct(void* self);
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
 static void DisplayReleaseGraphics(IShutdownable* self);
+static int Display28Finish();
+static int Display28Mode();
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
+static void DisplayD3dSetBuffers(void* a, int b, int c, int d);
+static void DisplayD3dLogHresult(int hr, char flag);
+static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
 static void** Display38Body(void** out);
 static int Display28Apply();
@@ -112,10 +150,43 @@ KdDisplay::~KdDisplay()
 }
 
 // EDI=IRenderTarget (KdDisplay+0x04). Allocates a 100-byte helper and QIs IGraphics.
-// STUB: VC1 0x0041a460
+// FUNCTION: VC1 0x0041a460
 static void RenderTargetInit(IRenderTarget* self)
 {
-    (void)self;
+    IUnknown* ident;
+    IUnknown* graphics;
+    void* block;
+
+    *reinterpret_cast<unsigned*>(self) = 0x004d5de0;
+    *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 4) = 0;
+    *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8) = 0;
+    block = malloc(0x64);
+    ident = 0;
+    if (block) {
+        block = DisplaySceneConstruct(block);
+        if (block) {
+            ident = static_cast<IUnknown*>(
+                reinterpret_cast<IUnknown*>(
+                    reinterpret_cast<char*>(block) + 0x48)->QueryInterface(
+                    &g_iidAbstract));
+            if (ident) {
+                ident->AddRef();
+            }
+        }
+    }
+    if (ident) {
+        ident->Release();
+        graphics = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8);
+        if (graphics) {
+            graphics->Release();
+        }
+        graphics = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
+        *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8) = graphics;
+        if (graphics) {
+            graphics->AddRef();
+        }
+        ident->Release();
+    }
 }
 
 // this=IRenderTarget. RET 8. Out[0] is IGraphics; extra is camera/mixer.
@@ -126,6 +197,9 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
     IUnknown* queried;
     typedef int (__thiscall *Fn14)(IRenderTarget* object);
     void** vtbl;
+    unsigned pack[4];
+
+    (void)b;
 
     if (!DisplayQueryReady()) {
         if (!g_graphicsQuery) {
@@ -141,10 +215,12 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
     }
 
     vtbl = *reinterpret_cast<void***>(self);
-    reinterpret_cast<Fn14>(vtbl[6])(self);
-    reinterpret_cast<Fn14>(vtbl[5])(self);
+    pack[3] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[6])(self));
+    pack[2] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[5])(self));
+    pack[0] = 0;
+    pack[1] = 0;
     if (DisplayQueryFromTarget(
-            *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8), b)) {
+            *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8), pack)) {
         queried = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8);
         *out = queried;
         if (queried) {
@@ -179,26 +255,151 @@ static void** Display38Body(void** out)
 }
 
 // EAX=malloc(0x24) block. Sets vptrs; returns this.
-// STUB: VC1 0x0045c0f0
+// FUNCTION: VC1 0x0045c0f0
 static void* Display34Construct(void* self)
 {
+    unsigned* object = static_cast<unsigned*>(self);
+
+    object[1] = 0x004d1d30;
+    object[2] = 0x004d1e68;
+    object[3] = 0x004d681c;
+    object[4] = 0;
+    object[5] = 0x004d1034;
+    object[6] = 1;
+    object[0] = 0x004d683c;
+    object[1] = 0x004d684c;
+    object[2] = 0x004d685c;
+    object[3] = 0x004d6874;
+    object[5] = 0x004d6894;
+    object[7] = 0;
+    object[8] = 0;
     return self;
 }
 
-// ESI=IRenderTarget.unk08. Rebinds camera/font on the mixer object.
-// STUB: VC1 0x0045cda0
+// ESI=mixer. Rebinds camera at +0x50 and font via vtbl+0x38 from g_displayScene.
+// FUNCTION: VC1 0x0045cda0
 static void Display10Scene(void* self)
 {
-    (void)self;
+    IUnknown* camera;
+    IUnknown* font;
+    typedef void (__thiscall *Fn38)(void* mixer, IUnknown** fontSlot);
+
+    camera = *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50);
+    if (camera) {
+        camera->Release();
+    }
+    if (!g_displayScene) {
+        *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50) = 0;
+    }
+    else {
+        camera = static_cast<IUnknown*>(g_displayScene->QueryInterface(&g_iidCamera));
+        *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50) = camera;
+        if (camera) {
+            camera->AddRef();
+        }
+    }
+    font = 0;
+    if (g_displayScene) {
+        font = static_cast<IUnknown*>(g_displayScene->QueryInterface(&g_iidFont));
+        if (font) {
+            font->AddRef();
+        }
+    }
+    reinterpret_cast<Fn38>((*reinterpret_cast<void***>(self))[0xe])(self, &font);
+    if (font) {
+        font->Release();
+    }
 }
 
-// ESI=mixer, EAX=rect locals from DisplayQueryGraphics.
-// STUB: VC1 0x0045ce30
+// ESI=mixer, EAX=4 dwords, ECX=IUnknown**. Copies rect to mixer+0x54; rebinds camera +0x50.
+// FUNCTION: VC1 0x0045ce30
 static unsigned char DisplayQueryFromTarget(void* mixer, void* args)
 {
-    (void)mixer;
-    (void)args;
-    return 0;
+    unsigned* rect = static_cast<unsigned*>(args);
+    IUnknown** cameraSlot;
+    IUnknown* camera;
+    IUnknown* old;
+    void* ident;
+    unsigned char local[0x48];
+    typedef void (__thiscall *Fn10)(void* object, void* arg);
+    typedef void (__thiscall *Fn20)(void* object, void* arg);
+    typedef void (__thiscall *Fn14)(IUnknown* object, void* a, void* b);
+
+    (void)local;
+    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x54) = rect[0];
+    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x58) = rect[1];
+    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x5c) = rect[2];
+    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x60) = rect[3];
+    reinterpret_cast<Fn10>((*reinterpret_cast<void***>(mixer))[4])(mixer, local);
+    reinterpret_cast<Fn20>((*reinterpret_cast<void***>(mixer))[8])(
+        mixer, static_cast<char*>(mixer) + 0x54);
+    cameraSlot = static_cast<IUnknown**>(mixer);
+    (void)cameraSlot;
+    camera = 0;
+    if (camera) {
+        camera->AddRef();
+    }
+    old = *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x50);
+    if (old) {
+        old->Release();
+    }
+    *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x50) = camera;
+    if (camera) {
+        ident = *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x48);
+        if (ident) {
+            ident = static_cast<IUnknown*>(
+                static_cast<IUnknown*>(ident)->QueryInterface(&g_iidAbstract));
+            if (ident) {
+                ident = static_cast<IUnknown*>(
+                    static_cast<IUnknown*>(ident)->QueryInterface(&g_iidAbstract));
+                if (ident) {
+                    static_cast<IUnknown*>(ident)->AddRef();
+                }
+            }
+        }
+        reinterpret_cast<Fn14>((*reinterpret_cast<void***>(camera))[5])(
+            camera, &ident, static_cast<char*>(mixer) + 0x54);
+        if (ident) {
+            static_cast<IUnknown*>(ident)->Release();
+        }
+    }
+    return 1;
+}
+
+// EAX=malloc(0x64) scene/mixer block. Identity floats and vptrs.
+// FUNCTION: VC1 0x0045cff0
+static void* DisplaySceneConstruct(void* self)
+{
+    unsigned* object = static_cast<unsigned*>(self);
+
+    object[5] = 0xffffffff;
+    object[6] = 2;
+    object[1] = 0;
+    object[2] = 0;
+    object[3] = 0x7fffffff;
+    object[4] = 0x7fffffff;
+    object[7] = 0x3f800000;
+    object[0x10] = 0;
+    object[0xa] = 0;
+    object[0x11] = 0x004d1e68;
+    object[0xd] = 0;
+    object[8] = 0;
+    object[0xe] = 0;
+    object[9] = 0;
+    object[0xc] = 0;
+    object[0xb] = 0x3f800000;
+    object[0xf] = 0x3f800000;
+    object[0x12] = 0x004d1034;
+    object[0x13] = 1;
+    object[0] = 0x004d6770;
+    object[0x11] = 0x004d67dc;
+    object[0x12] = 0x004d67f4;
+    object[0x14] = 0;
+    object[0x18] = 0;
+    object[0x17] = 0;
+    object[0x16] = 0;
+    object[0x15] = 0;
+    return self;
 }
 
 // this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
@@ -274,6 +475,20 @@ static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned he
     return 1;
 }
 
+// JMP 0x00464210 from Display28Apply. Rebuilds present path after skip-device change.
+// STUB: VC1 0x00464210
+static int Display28Finish()
+{
+    return 0;
+}
+
+// EAX=mode record +8. Returns a D3D presentation interval.
+// STUB: VC1 0x004642e0
+static int Display28Mode()
+{
+    return 0;
+}
+
 // cdecl arg=1. Present/flip after Display10's scene setup.
 // STUB: VC1 0x004643f0
 static void Display10Present(int arg)
@@ -281,14 +496,99 @@ static void Display10Present(int arg)
     (void)arg;
 }
 
-// Release D3D device/surfaces used by Display.
-// STUB: VC1 0x00464960
+// Release D3D device, swap chain, surfaces, and linked lists.
+// FUNCTION: VC1 0x00464960
 static void DisplayD3DTeardown()
 {
+    void* node;
+    void* next;
+    IUnknown* object;
+    typedef int (__stdcall *Fn154)(IUnknown* device, int a, int b);
+    typedef int (__stdcall *Fn14c)(IUnknown* device, int a, int b, int c);
+    typedef int (__stdcall *Fn30)(IUnknown* object);
+
+    while (g_d3dChain2) {
+        object = *reinterpret_cast<IUnknown**>(g_d3dChain2);
+        next = *reinterpret_cast<void**>(static_cast<unsigned char*>(g_d3dChain2) + 0xc);
+        if (g_d3dChain2 == g_d3dChain2) {
+            g_d3dChain2 = next;
+        }
+        free(g_d3dChain2);
+        if (object) {
+            object->Release();
+        }
+        g_d3dChain2 = next;
+        break;
+    }
+
+    if (g_d3dBackBuffer) {
+        g_d3dBackBuffer->Release();
+        g_d3dBackBuffer = 0;
+    }
+    node = g_d3dChain;
+    while (node) {
+        object = *reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(node) + 8);
+        if (object) {
+            object->Release();
+        }
+        next = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc);
+        free(node);
+        node = next;
+    }
+    g_d3dChain = 0;
+    if (g_d3dSurface) {
+        if (g_d3dDevice) {
+            reinterpret_cast<Fn154>((*reinterpret_cast<void***>(g_d3dDevice))[0x55])(
+                g_d3dDevice, 0, 0);
+        }
+        g_d3dSurface->Release();
+        g_d3dSurface = 0;
+    }
+    if (g_d3dSwap) {
+        if (g_d3dInScene) {
+            reinterpret_cast<Fn30>((*reinterpret_cast<void***>(g_d3dSwap))[0xc])(g_d3dSwap);
+            g_d3dInScene = 0;
+        }
+        if (g_d3dDevice) {
+            reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
+                g_d3dDevice, 0, 0, 0x18);
+        }
+        g_d3dSwap->Release();
+        g_d3dSwap = 0;
+    }
     if (g_d3dDevice) {
         g_d3dDevice->Release();
         g_d3dDevice = 0;
     }
+    if (g_d3dObject) {
+        g_d3dObject->Release();
+        g_d3dObject = 0;
+    }
+}
+
+// EAX/EDX mode size. Called after a successful device reset.
+// STUB: VC1 0x00464ab0
+static void DisplayD3dSetBuffers(void* a, int b, int c, int d)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+}
+
+// EAX=HRESULT, ESI=prefix string, stdcall flag.
+// STUB: VC1 0x00464d60
+static void DisplayD3dLogHresult(int hr, char flag)
+{
+    (void)hr;
+    (void)flag;
+}
+
+// Reset the D3D device after DEVICENOTRESET. Returns AL.
+// STUB: VC1 0x00465200
+static unsigned char DisplayD3dReset()
+{
+    return 1;
 }
 
 // Direct3DCreate8 path. Returns AL success.
@@ -298,26 +598,77 @@ static unsigned char DisplayD3DInit()
     return 1;
 }
 
+// STRING: VC1 0x004d248c
+static const char kPercentS[] = "%s";
+// STRING: VC1 0x004d5f98
+static const char kSceneAlreadyRendered[] = "Gfx_BeginScene: Scene is already being rendered";
+
 // D3D TestCooperativeLevel / reset. Returns AL; EBX is the last mixer.
-// STUB: VC1 0x00465cc0
+// FUNCTION: VC1 0x00465cc0
 static unsigned char DisplayQueryReady()
 {
-    return 0;
+    typedef int (__stdcall *FnTest)(IUnknown* device);
+    typedef int (__stdcall *FnSetRender)(IUnknown* device, int state, void* value);
+    typedef int (__stdcall *FnBegin)(IUnknown* device);
+    typedef int (__stdcall *FnGetBack)(IUnknown* swap, int a, int b, unsigned* out, int c);
+    int hr;
+    char buf[520];
+
+    buf[0] = 0;
+    hr = reinterpret_cast<FnTest>((*reinterpret_cast<void***>(g_d3dDevice))[3])(g_d3dDevice);
+    if (hr == static_cast<int>(0x88760868)) {
+        return 0;
+    }
+    if (hr == static_cast<int>(0x88760869)) {
+        if (!DisplayD3dReset()) {
+            return 0;
+        }
+    }
+    if (g_d3dInScene) {
+        FormatBuffer(buf, sizeof(buf), kPercentS, kSceneAlreadyRendered);
+        HostLogError(buf);
+        return 0;
+    }
+    if (g_d3dLastMixer) {
+        DisplayD3dSetBuffers(g_d3dLastMixer, 0, 0, 0);
+    }
+    reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(g_d3dDevice);
+    if (g_d3dSwap) {
+        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dSwap))[0xb])(
+            g_d3dSwap, 0, 0, &g_d3dInScene, 0);
+    }
+    return 1;
 }
 
 // this = IDisplay. Called when Display28 arg is 0 or enabled at IDisplay+0x44.
-// STUB: VC1 0x00465e70
+// FUNCTION: VC1 0x00465e70
 static int Display28Apply()
 {
-    return 0;
-}
+    int interval;
 
-// GLOBAL: VC1 0x004e74b6
-unsigned char g_displaySkipDevice;
-// GLOBAL: VC1 0x004e8744
-int g_displayWidth;
-// GLOBAL: VC1 0x004e8998
-int g_displayHeight;
+    if (g_d3dInScene || g_displayBusy) {
+        return 0;
+    }
+    if (!g_d3dDevice) {
+        g_displaySkipDevice = 0;
+        return 0;
+    }
+    if (g_displaySkipDevice == 0) {
+        g_displaySkipDevice = 0;
+        return 0;
+    }
+    if (!g_displayReady || !g_displayModeReady) {
+        return 0;
+    }
+    if (g_displaySkipDevice) {
+        GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
+    }
+    g_displaySkipDevice = 0;
+    interval = Display28Mode();
+    g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
+    DisplayD3dReset();
+    return Display28Finish();
+}
 
 // MOV EAX, [0x004e8998]; RET. IDisplay vtable+0x18 body.
 // FUNCTION: VC1 0x00466290
@@ -849,7 +1200,7 @@ void* KdDisplay::Display10()
         DeviceEnd endScene = reinterpret_cast<DeviceEnd>(
             (*reinterpret_cast<void***>(g_d3dDevice))[0x23]);
         endScene(g_d3dDevice);
-        if (g_d3dPresentFlag == 0) {
+        if (g_d3dLastMixer == 0) {
             DeviceClear present = reinterpret_cast<DeviceClear>(
                 (*reinterpret_cast<void***>(g_d3dDevice))[0xf]);
             present(g_d3dDevice, 0, 0, 0, 0);
