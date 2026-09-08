@@ -7,6 +7,8 @@ namespace vc1 {
 
 // SIZE 0x10. GetGraphics..GetFont share bodies with IDisplay; IDisplay vtable
 // uses SUB ECX, 0x10 thunks to this this-pointer (IRenderTarget at KdDisplay+0x04).
+// Default vftable written by RenderTargetInit; KdDisplay/KdRenderTarget replace it.
+// VTABLE: VC1 0x004d5de0
 struct IRenderTarget : IUnknown
 {
     void* extra;         // 0x04  texture node on KdRenderTarget

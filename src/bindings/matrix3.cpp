@@ -10,6 +10,13 @@ static NativeTypeInfo g_matrix3Type;
 static unsigned g_matrix3TypeReady;
 static const int kMatrix3TypeSpec = 0;
 
+// GLOBAL: VC1 0x004e9808
+Matrix3 g_matrix3Identity = { {
+    1.0f, 0.0f, 0.0f,
+    0.0f, 1.0f, 0.0f,
+    0.0f, 0.0f, 1.0f
+} };
+
 static void IdentityMatrix3(Matrix3* matrix)
 {
     matrix->m[0] = 1.0f;

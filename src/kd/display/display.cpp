@@ -7,6 +7,7 @@
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
 #include "bindings/matrix4.h"
+#include "bindings/matrix3.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -72,8 +73,8 @@ static unsigned g_d3dGammaKind;
 static unsigned g_d3dGamma618;
 // GLOBAL: VC1 0x004ed61c
 static unsigned g_d3dGamma61c;
-// GLOBAL: VC1 0x004ed704
-static IUnknown* g_renderTargetDefault;
+// GLOBAL: VC1 0x004e960c
+static Matrix3 g_displayMatrixInv;
 // GLOBAL: VC1 0x004e9788
 static float g_d3dWorld[16];
 // GLOBAL: VC1 0x004e98c0
@@ -138,7 +139,6 @@ static void Display1cAtexit();
 static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b);
 static unsigned char DisplayQueryFromTarget(void* mixer, void* args);
 static unsigned char DisplayQueryReady();
-static void RenderTargetInit(IRenderTarget* self);
 static void Display10Scene(void* self);
 static void* DisplaySceneConstruct(void* self);
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
@@ -146,10 +146,7 @@ static void DisplayReleaseGraphics(IShutdownable* self);
 static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
-static void** CreateRenderTargetBody(void** out, unsigned width, unsigned height);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
-static void DisplayD3dClear(unsigned color);
-static void* LookupRenderTargetTexture(unsigned width, unsigned height);
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
 static void DisplayD3dSetBuffers(int right, int bottom, int left, int top);
@@ -162,19 +159,13 @@ static int DisplayShutdownPrep(IShutdownable* self);
 static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned height);
 static WNDCLASSA* GetKdWindowClass();
 static void* CreateKdWindow();
+static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
+static float MinFloat(float a, float b);
 
 KdDisplay::KdDisplay()
 {
     target = 0;
-    matrix[0] = 1.0f;
-    matrix[1] = 0.0f;
-    matrix[2] = 0.0f;
-    matrix[3] = 0.0f;
-    matrix[4] = 1.0f;
-    matrix[5] = 0.0f;
-    matrix[6] = 0.0f;
-    matrix[7] = 0.0f;
-    matrix[8] = 1.0f;
+    matrix = g_matrix3Identity;
     enabled58 = 1;
 }
 
@@ -187,9 +178,41 @@ KdDisplay::~KdDisplay()
     DisplayDtorBase(this);
 }
 
+// ESI=&target, stdcall CreateRenderTarget out. QI IRenderTarget into the slot. RET 4.
+// FUNCTION: VC1 0x00402290
+static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot)
+{
+    IUnknown* queried;
+
+    if (*slot) {
+        (*slot)->Release();
+    }
+    if (!*out) {
+        *slot = 0;
+        return slot;
+    }
+    queried = static_cast<IUnknown*>(
+        static_cast<IUnknown*>(*out)->QueryInterface(&g_iidRenderTarget));
+    *slot = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    return slot;
+}
+
+// cdecl two floats; returns min on the FPU stack.
+// FUNCTION: VC1 0x00402410
+static float MinFloat(float a, float b)
+{
+    if (a < b) {
+        return a;
+    }
+    return b;
+}
+
 // EDI=IRenderTarget (KdDisplay+0x04). Allocates a 100-byte helper and QIs IGraphics.
 // FUNCTION: VC1 0x0041a460
-static void RenderTargetInit(IRenderTarget* self)
+void RenderTargetInit(IRenderTarget* self)
 {
     IUnknown* ident;
     IUnknown* graphics;
@@ -290,98 +313,6 @@ static const char* DxGetErrorString(int hr)
 {
     (void)hr;
     return "";
-}
-
-// MOV EAX, [ECX+0x18]; RET. IRenderTarget vtable+0x18.
-// FUNCTION: VC1 0x0045bbe0
-int KdRenderTarget::GetHeight()
-{
-    return static_cast<int>(height);
-}
-
-// MOV EAX, [ECX+0x14]; RET. IRenderTarget vtable+0x14.
-// FUNCTION: VC1 0x0045bbf0
-int KdRenderTarget::GetWidth()
-{
-    return static_cast<int>(width);
-}
-
-// EAX=malloc(0x20) block, stdcall extra = texture node. EDI=self for RenderTargetInit. RET 4.
-// FUNCTION: VC1 0x0045bf00
-KdRenderTarget* ConstructKdRenderTarget(KdRenderTarget* self, void* node)
-{
-    unsigned* object = reinterpret_cast<unsigned*>(self);
-
-    RenderTargetInit(self);
-    object[3] = 0x004d1034;
-    object[4] = 1;
-    object[0] = 0x004d68b4;
-    object[3] = 0x004d68d4;
-    object[7] = 0;
-    object[1] = reinterpret_cast<unsigned>(node);
-    return self;
-}
-
-// cdecl out. LTCG extras width/height in EBX/EDI. Lookup miss AddRefs g_renderTargetDefault.
-// FUNCTION: VC1 0x0045bf40
-static void** CreateRenderTargetBody(void** out, unsigned width, unsigned height)
-{
-    void* node;
-    KdRenderTarget* object;
-    IUnknown* ident;
-    IUnknown* iface;
-
-    node = LookupRenderTargetTexture(width, height);
-    if (!node) {
-        ident = g_renderTargetDefault;
-        *out = ident;
-        if (ident) {
-            ident->AddRef();
-        }
-        return out;
-    }
-    object = static_cast<KdRenderTarget*>(malloc(0x20));
-    if (object) {
-        object = ConstructKdRenderTarget(object, node);
-    }
-    if (!object) {
-        *out = 0;
-        return out;
-    }
-    object->width = width;
-    object->height = height;
-    iface = reinterpret_cast<IUnknown*>(&object->abstract);
-    ident = static_cast<IUnknown*>(iface->QueryInterface(&g_iidAbstract));
-    if (ident) {
-        ident->AddRef();
-    }
-    ident->Release();
-    *out = ident;
-    ident->AddRef();
-    ident->Release();
-    return out;
-}
-
-// EAX=malloc(0x24) block. Sets vptrs; returns this.
-// FUNCTION: VC1 0x0045c0f0
-static KdTexture* ConstructKdTexture(KdTexture* self)
-{
-    unsigned* object = reinterpret_cast<unsigned*>(self);
-
-    object[1] = 0x004d1d30;
-    object[2] = 0x004d1e68;
-    object[3] = 0x004d681c;
-    object[4] = 0;
-    object[5] = 0x004d1034;
-    object[6] = 1;
-    object[0] = 0x004d683c;
-    object[1] = 0x004d684c;
-    object[2] = 0x004d685c;
-    object[3] = 0x004d6874;
-    object[5] = 0x004d6894;
-    object[7] = 0;
-    object[8] = 0;
-    return self;
 }
 
 // ESI=mixer. Rebinds camera at +0x50 and font via vtbl+0x38 from g_displayScene.
@@ -1242,7 +1173,7 @@ static unsigned char DisplayD3DInit()
 
 // cdecl width/height. CreateTexture + GetLevelDesc; link node onto g_d3dChain.
 // FUNCTION: VC1 0x00465bc0
-static void* LookupRenderTargetTexture(unsigned width, unsigned height)
+void* LookupRenderTargetTexture(unsigned width, unsigned height)
 {
     typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
         unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
@@ -1856,7 +1787,7 @@ void* KdDisplay::Display10()
             int rect[4];
             Fn44 fn44 = reinterpret_cast<Fn44>((*reinterpret_cast<void***>(graphics))[0x11]);
             fn44(static_cast<IUnknown*>(graphics),
-                reinterpret_cast<float*>(reinterpret_cast<char*>(self) + 0x30));
+                reinterpret_cast<KdDisplay*>(reinterpret_cast<char*>(self) - 4)->matrix.m);
             rect[0] = g_displayViewLeft;
             rect[1] = g_displayViewTop;
             rect[2] = g_displayViewRight;
@@ -1924,7 +1855,7 @@ int IDisplay::SetWindowed(unsigned char arg)
     return 0;
 }
 
-// this = IDisplay. Calls 0x00466690 then rebuilds the 3x3 at IDisplay+0x20.
+// this = IDisplay. Calls 0x00466690 then rebuilds the Matrix3 at IDisplay+0x20.
 // FUNCTION: VC1 0x004b2120
 int KdDisplay::SetSize(unsigned width, unsigned height)
 {
@@ -1932,12 +1863,15 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
     int viewW;
     int viewH;
     void* slot;
-    float* matrix;
+    float scaleX;
+    float scaleY;
+    float scale;
+    Matrix3 inverse;
 
     if (!DisplaySetSizeBody(self, width, height)) {
         return 0;
     }
-    if (GetKdEnv("KD_PARENT_WINDOW")) {
+    if (GetKdEnv(kKdParentWindow)) {
         return 1;
     }
 
@@ -1949,27 +1883,35 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
 
     slot = 0;
     self->CreateRenderTarget(&slot, g_displayWidth, g_displayHeight);
+    DisplayAssignTarget(&slot, &target);
     if (slot) {
         static_cast<IUnknown*>(slot)->Release();
     }
-
-    matrix = reinterpret_cast<float*>(reinterpret_cast<char*>(self) + 0x20);
-    if (!*reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x1c)) {
+    if (!target) {
         HostLogError(kCantCreateRt);
         return 0;
     }
 
-    matrix[0] = 1.0f;
-    matrix[1] = 0.0f;
-    matrix[2] = 0.0f;
-    matrix[3] = 0.0f;
-    matrix[4] = 1.0f;
-    matrix[5] = 0.0f;
-    matrix[6] = 0.0f;
-    matrix[7] = 0.0f;
-    matrix[8] = 1.0f;
-    (void)viewW;
-    (void)viewH;
+    scaleX = static_cast<float>(viewW) / static_cast<float>(g_displayWidth);
+    scaleY = static_cast<float>(viewH) / static_cast<float>(g_displayHeight);
+    scale = MinFloat(scaleX, scaleY);
+    matrix = g_matrix3Identity;
+    matrix.m[0] *= scale;
+    matrix.m[1] *= scale;
+    matrix.m[3] *= scale;
+    matrix.m[4] *= scale;
+    if (scaleX < scaleY) {
+        matrix.m[6] = (static_cast<float>(viewW) - static_cast<float>(g_displayWidth) * scale)
+            * 0.5f;
+        matrix.m[7] = 0.0f;
+    }
+    else {
+        matrix.m[6] = 0.0f;
+        matrix.m[7] = (static_cast<float>(viewH) - static_cast<float>(g_displayHeight) * scale)
+            * 0.5f;
+    }
+    Matrix3::Inverse(&inverse, &matrix);
+    g_displayMatrixInv = inverse;
     return 1;
 }
 

@@ -17,13 +17,19 @@ public:
     unsigned height;         // 0x18
     IUnknown* cachedTexture; // 0x1c
 
+    void* QueryInterface(const char** iid); // vtable+0x00
+    unsigned AddRef();                      // vtable+0x04
+    unsigned Release();                     // vtable+0x08
     int GetWidth();
     int GetHeight();
 };
 
 typedef char Vc1KdRenderTargetSizeCheck[sizeof(KdRenderTarget) == 0x20 ? 1 : -1];
 
+void RenderTargetInit(IRenderTarget* self);
+void* LookupRenderTargetTexture(unsigned width, unsigned height);
 KdRenderTarget* ConstructKdRenderTarget(KdRenderTarget* self, void* node);
+void** CreateRenderTargetBody(void** out, unsigned width, unsigned height);
 
 }
 

@@ -47,6 +47,8 @@ struct Matrix3
 
 typedef char Vc1Matrix3SizeCheck[sizeof(Matrix3) == 36 ? 1 : -1];
 
+extern Matrix3 g_matrix3Identity;
+
 }
 
 #endif

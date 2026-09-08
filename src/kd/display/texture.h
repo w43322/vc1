@@ -28,9 +28,17 @@ public:
     unsigned refs;   // 0x18
     unsigned width;  // 0x1c
     unsigned height; // 0x20
+
+    void* QueryInterface(const char** iid); // ILoadable vtable+0x00
+    unsigned AddRef();                      // ILoadable vtable+0x04
+    unsigned Release();                     // vtable+0x08
 };
 
 typedef char Vc1KdTextureSizeCheck[sizeof(KdTexture) == 0x24 ? 1 : -1];
+
+void* TextureQueryInterface(ITexture* self, const char** iid);
+unsigned TextureAddRef(ITexture* self);
+KdTexture* ConstructKdTexture(KdTexture* self);
 
 }
 

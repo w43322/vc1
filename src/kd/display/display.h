@@ -8,6 +8,7 @@
 #include "kd/iface/iabstract.h"
 #include "kd/display/render_target.h"
 #include "kd/display/texture.h"
+#include "bindings/matrix3.h"
 
 namespace vc1 {
 
@@ -33,7 +34,7 @@ public:
     unsigned pad28;          // 0x28
     void* mixer;             // 0x2c  IDisplay+0x18
     IUnknown* target;        // 0x30
-    float matrix[9];         // 0x34
+    Matrix3 matrix;          // 0x34
     unsigned char enabled58; // 0x58
 
     KdDisplay();
