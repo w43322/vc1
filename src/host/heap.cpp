@@ -221,6 +221,16 @@ void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...)
     va_end(args);
 }
 
+// EDX=buf, stack fmt then varargs. Cap is 0xffffffff.
+// FUNCTION: VC1 0x004969f0
+void FormatBufferOpen(char* buf, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    _vsnprintf(buf, 0xffffffff, fmt, args);
+    va_end(args);
+}
+
 // Thunk onto the alloca vsnprintf logger at 0x00496a10. Original format in EBX.
 // FUNCTION: VC1 0x00496a40
 void KdLog(const char* fmt, ...)

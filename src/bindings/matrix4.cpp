@@ -141,27 +141,10 @@ Matrix4* Matrix4::Div(Matrix4* out, SQFloat scalar)
 }
 
 // Bound as "_mul" (0x004d36c0). Wrapper 0x00427d60: EAX=out, EDX=this, ECX=other, CALL 0x00474e70, RET 8.
-// Helper 0x00474e70: out = this * other, column-major 4x4.
 // FUNCTION: VC1 0x00427d60
 Matrix4* Matrix4::Mul(Matrix4* out, const Matrix4* other)
 {
-    const SQFloat* o = other->m;
-    out->m[0] = m[0] * o[0] + m[4] * o[1] + m[8] * o[2] + m[12] * o[3];
-    out->m[1] = m[1] * o[0] + m[5] * o[1] + m[9] * o[2] + m[13] * o[3];
-    out->m[2] = m[2] * o[0] + m[6] * o[1] + m[10] * o[2] + m[14] * o[3];
-    out->m[3] = m[3] * o[0] + m[7] * o[1] + m[11] * o[2] + m[15] * o[3];
-    out->m[4] = m[0] * o[4] + m[4] * o[5] + m[8] * o[6] + m[12] * o[7];
-    out->m[5] = m[1] * o[4] + m[5] * o[5] + m[9] * o[6] + m[13] * o[7];
-    out->m[6] = m[2] * o[4] + m[6] * o[5] + m[10] * o[6] + m[14] * o[7];
-    out->m[7] = m[3] * o[4] + m[7] * o[5] + m[11] * o[6] + m[15] * o[7];
-    out->m[8] = m[0] * o[8] + m[4] * o[9] + m[8] * o[10] + m[12] * o[11];
-    out->m[9] = m[1] * o[8] + m[5] * o[9] + m[9] * o[10] + m[13] * o[11];
-    out->m[10] = m[2] * o[8] + m[6] * o[9] + m[10] * o[10] + m[14] * o[11];
-    out->m[11] = m[3] * o[8] + m[7] * o[9] + m[11] * o[10] + m[15] * o[11];
-    out->m[12] = m[0] * o[12] + m[4] * o[13] + m[8] * o[14] + m[12] * o[15];
-    out->m[13] = m[1] * o[12] + m[5] * o[13] + m[9] * o[14] + m[13] * o[15];
-    out->m[14] = m[2] * o[12] + m[6] * o[13] + m[10] * o[14] + m[14] * o[15];
-    out->m[15] = m[3] * o[12] + m[7] * o[13] + m[11] * o[14] + m[15] * o[15];
+    MulMatrix4(out->m, m, other->m);
     return out;
 }
 
@@ -297,6 +280,28 @@ void Matrix4::Inverse(Matrix4* out, const Matrix4* src)
         + (m11 * m20 - m21 * m10) * m03);
     out->m[15] = (((m21 * m10 - m11 * m20) * m02 + (m20 * m12 - m22 * m10) * m01
         + (m22 * m11 - m12 * m21) * m00) * invDet);
+}
+
+// EAX=out, EDX=a, ECX=b. Column-major 4x4. out = a * b. DisplayD3dSetBuffers copies the result.
+// FUNCTION: VC1 0x00474e70
+void MulMatrix4(float* out, const float* a, const float* b)
+{
+    out[0] = a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3];
+    out[1] = a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3];
+    out[2] = a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3];
+    out[3] = a[3] * b[0] + a[7] * b[1] + a[11] * b[2] + a[15] * b[3];
+    out[4] = a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7];
+    out[5] = a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7];
+    out[6] = a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7];
+    out[7] = a[3] * b[4] + a[7] * b[5] + a[11] * b[6] + a[15] * b[7];
+    out[8] = a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11];
+    out[9] = a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11];
+    out[10] = a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11];
+    out[11] = a[3] * b[8] + a[7] * b[9] + a[11] * b[10] + a[15] * b[11];
+    out[12] = a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15];
+    out[13] = a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15];
+    out[14] = a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15];
+    out[15] = a[3] * b[12] + a[7] * b[13] + a[11] * b[14] + a[15] * b[15];
 }
 
 // Registered from 0x0041e9c0 as "constructor" with typemask "*" (0x004d6b14).

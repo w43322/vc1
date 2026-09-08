@@ -3,6 +3,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
+#include "bindings/matrix4.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -60,6 +61,10 @@ static unsigned g_d3dInScene;
 static unsigned g_d3dGammaRamp;
 // GLOBAL: VC1 0x004ed614
 static unsigned g_d3dGammaKind;
+// GLOBAL: VC1 0x004ed704
+static IUnknown* g_display38Default;
+// GLOBAL: VC1 0x004e9900
+static float g_d3dProj[16];
 // GLOBAL: VC1 0x004ed564
 static unsigned g_displayReady;
 // GLOBAL: VC1 0x004ed5ac
@@ -125,14 +130,17 @@ static void DisplayReleaseGraphics(IShutdownable* self);
 static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
-static unsigned char DisplayD3dRecreate();
+static void* Display38Construct(void* self, void* extra);
+static void** Display38Body(void** out, void* a, void* b);
+static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
+static void* Display38Lookup(unsigned width, unsigned height);
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
-static void DisplayD3dSetBuffers(void* a, int b, int c, int d);
+static void DisplayD3dSetBuffers(int right, int bottom, int left, int top);
 static void DisplayD3dLogHresult(int hr, char flag);
+static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
-static void** Display38Body(void** out);
 static int Display28Apply();
 static int DisplayShutdownPrep(IShutdownable* self);
 static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned height);
@@ -269,10 +277,59 @@ static const char* DxGetErrorString(int hr)
     return "";
 }
 
-// EAX unused. LTCG passes extra args in EBX/EDI. RET 4.
-// STUB: VC1 0x0045bf40
-static void** Display38Body(void** out)
+// EAX=malloc(0x20) block, stdcall extra = lookup node. EDI=self for RenderTargetInit. RET 4.
+// FUNCTION: VC1 0x0045bf00
+static void* Display38Construct(void* self, void* extra)
 {
+    unsigned* object = static_cast<unsigned*>(self);
+
+    RenderTargetInit(static_cast<IRenderTarget*>(self));
+    object[3] = 0x004d1034;
+    object[4] = 1;
+    object[0] = 0x004d68b4;
+    object[3] = 0x004d68d4;
+    object[7] = 0;
+    object[1] = reinterpret_cast<unsigned>(extra);
+    return self;
+}
+
+// cdecl out. LTCG extras a/b in EBX/EDI. Lookup miss AddRefs g_display38Default.
+// FUNCTION: VC1 0x0045bf40
+static void** Display38Body(void** out, void* a, void* b)
+{
+    void* node;
+    void* object;
+    IUnknown* ident;
+    IUnknown* iface;
+
+    node = Display38Lookup(reinterpret_cast<unsigned>(a), reinterpret_cast<unsigned>(b));
+    if (!node) {
+        ident = g_display38Default;
+        *out = ident;
+        if (ident) {
+            ident->AddRef();
+        }
+        return out;
+    }
+    object = malloc(0x20);
+    if (object) {
+        object = Display38Construct(object, node);
+    }
+    if (!object) {
+        *out = 0;
+        return out;
+    }
+    *reinterpret_cast<void**>(static_cast<char*>(object) + 0x14) = a;
+    *reinterpret_cast<void**>(static_cast<char*>(object) + 0x18) = b;
+    iface = reinterpret_cast<IUnknown*>(static_cast<char*>(object) + 0xc);
+    ident = static_cast<IUnknown*>(iface->QueryInterface(&g_iidAbstract));
+    if (ident) {
+        ident->AddRef();
+    }
+    ident->Release();
+    *out = ident;
+    ident->AddRef();
+    ident->Release();
     return out;
 }
 
@@ -583,6 +640,46 @@ static void Display10Present(int arg)
     g_d3dInScene = 0;
 }
 
+// ESI=width*, EDI=height*. GetDeviceCaps TextureCaps: 0x20 square, 0x2 pow2.
+// FUNCTION: VC1 0x004647a0
+static void DisplayD3dPow2Caps(unsigned* w, unsigned* h)
+{
+    typedef int (__stdcall *FnCaps)(IUnknown* device, unsigned char* caps);
+    unsigned char caps[0xd4];
+    unsigned value;
+    unsigned packed;
+
+    if (reinterpret_cast<FnCaps>((*reinterpret_cast<void***>(g_d3dDevice))[7])(
+            g_d3dDevice, caps) < 0) {
+        return;
+    }
+    packed = caps[0x3c];
+    if (packed & 0x20) {
+        value = *h;
+        if (*w > value) {
+            value = *w;
+        }
+        *w = value;
+        *h = value;
+    }
+    if (packed & 0x2) {
+        value = 1;
+        if (*w > 1) {
+            do {
+                value = value * 2;
+            } while (value < *w);
+        }
+        *w = value;
+        value = 1;
+        if (*h > 1) {
+            do {
+                value = value * 2;
+            } while (value < *h);
+        }
+        *h = value;
+    }
+}
+
 // Release D3D device, swap chain, surfaces, and linked lists.
 // FUNCTION: VC1 0x00464960
 static void DisplayD3DTeardown()
@@ -653,14 +750,58 @@ static void DisplayD3DTeardown()
     }
 }
 
-// EAX/EDX mode size. Called after a successful device reset.
-// STUB: VC1 0x00464ab0
-static void DisplayD3dSetBuffers(void* a, int b, int c, int d)
+// EAX=bottom, EDX=right, cdecl left/top. Y-flip then ortho into g_d3dProj.
+// FUNCTION: VC1 0x00464ab0
+static void DisplayD3dSetBuffers(int right, int bottom, int left, int top)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    float yflip[16];
+    float ortho[16];
+    float product[16];
+    int width;
+    int height;
+    int i;
+
+    width = right - left;
+    height = bottom - top;
+    yflip[0] = 1.0f;
+    yflip[1] = 0.0f;
+    yflip[2] = 0.0f;
+    yflip[3] = 0.0f;
+    yflip[4] = 0.0f;
+    yflip[5] = -1.0f;
+    yflip[6] = 0.0f;
+    yflip[7] = 0.0f;
+    yflip[8] = 0.0f;
+    yflip[9] = 0.0f;
+    yflip[10] = 1.0f;
+    yflip[11] = 0.0f;
+    yflip[12] = -0.5f;
+    yflip[13] = 0.5f;
+    yflip[14] = 0.0f;
+    yflip[15] = 1.0f;
+    for (i = 0; i < 16; i++) {
+        g_d3dProj[i] = yflip[i];
+    }
+    ortho[0] = 2.0f / static_cast<float>(width);
+    ortho[1] = 0.0f;
+    ortho[2] = 0.0f;
+    ortho[3] = 0.0f;
+    ortho[4] = 0.0f;
+    ortho[5] = 2.0f / static_cast<float>(height);
+    ortho[6] = 0.0f;
+    ortho[7] = 0.0f;
+    ortho[8] = 0.0f;
+    ortho[9] = 0.0f;
+    ortho[10] = 1.0f;
+    ortho[11] = 0.0f;
+    ortho[12] = -1.0f - (static_cast<float>(left) * 2.0f) / static_cast<float>(width);
+    ortho[13] = (static_cast<float>(top) * 2.0f) / static_cast<float>(height) + 1.0f;
+    ortho[14] = 0.0f;
+    ortho[15] = 1.0f;
+    MulMatrix4(product, ortho, g_d3dProj);
+    for (i = 0; i < 16; i++) {
+        g_d3dProj[i] = product[i];
+    }
 }
 
 // STRING: VC1 0x004d248c
@@ -671,6 +812,8 @@ static const char kDxErrorFmt[] = "%s: %s";
 static const char kDirectXError[] = "DirectX Error";
 // STRING: VC1 0x004d5f98
 static const char kSceneAlreadyRendered[] = "Gfx_BeginScene: Scene is already being rendered";
+// STRING: VC1 0x004d5ff0
+static const char kCantCreateRtTexture[] = "Can't create render target texture";
 
 // EAX=HRESULT, ESI=prefix. cdecl flag. Logs via FormatBuffer; optional MB_ICONERROR.
 // FUNCTION: VC1 0x00464d60
@@ -739,6 +882,46 @@ static unsigned char DisplayD3DInit()
     return 1;
 }
 
+// cdecl width/height. CreateTexture + GetLevelDesc; link node onto g_d3dChain.
+// FUNCTION: VC1 0x00465bc0
+static void* Display38Lookup(unsigned width, unsigned height)
+{
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnLevelDesc)(IUnknown* tex, unsigned level, unsigned* desc);
+    unsigned* node;
+    IUnknown** texture;
+    int hr;
+    unsigned desc[8];
+    char buf[544];
+
+    node = static_cast<unsigned*>(malloc(0x10));
+    texture = reinterpret_cast<IUnknown**>(node + 2);
+    *texture = 0;
+    DisplayD3dPow2Caps(&width, &height);
+    hr = reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+        g_d3dDevice, width, height, 1, 1,
+        g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0, 0, texture);
+    if (hr < 0) {
+        if (hr == 0) {
+            FormatBufferOpen(buf, kPercentS, kCantCreateRtTexture);
+        }
+        else {
+            FormatBufferOpen(buf, kDxErrorFmt, kCantCreateRtTexture, DxGetErrorString(hr));
+        }
+        HostLogError(buf);
+        free(node);
+        return 0;
+    }
+    reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(*texture))[0xe])(
+        *texture, 0, desc);
+    node[0] = desc[6];
+    node[1] = desc[7];
+    node[3] = reinterpret_cast<unsigned>(g_d3dChain);
+    g_d3dChain = node;
+    return node;
+}
+
 // D3D TestCooperativeLevel / reset. Returns AL; EBX is the last mixer.
 // FUNCTION: VC1 0x00465cc0
 static unsigned char DisplayQueryReady()
@@ -762,12 +945,15 @@ static unsigned char DisplayQueryReady()
         }
     }
     if (g_d3dInScene) {
-        FormatBuffer(buf, sizeof(buf), kPercentS, kSceneAlreadyRendered);
+        FormatBufferOpen(buf, kPercentS, kSceneAlreadyRendered);
         HostLogError(buf);
         return 0;
     }
     if (g_d3dLastMixer) {
-        DisplayD3dSetBuffers(g_d3dLastMixer, 0, 0, 0);
+        DisplayD3dSetBuffers(
+            static_cast<int*>(g_d3dLastMixer)[0],
+            static_cast<int*>(g_d3dLastMixer)[1],
+            0, 0);
     }
     reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(g_d3dDevice);
     if (g_d3dSwap) {
@@ -990,14 +1176,12 @@ static void ConstructDisplayBase(KdDisplay* self)
     self->mixer = 0;
 }
 
-// RET 0xc. IDisplay vtable+0x38. Orig loads 3 stdcall args then cdecl-calls 0x0045bf40.
-// STUB: VC1 0x00466660
+// RET 0xc. IDisplay vtable+0x38. Loads 3 stdcall args then cdecl-calls 0x0045bf40.
+// FUNCTION: VC1 0x00466660
 void** KdDisplay::Display38(void** out, void* a, void* b)
 {
     (void)this;
-    (void)a;
-    (void)b;
-    Display38Body(out);
+    Display38Body(out, a, b);
     return out;
 }
 
@@ -1366,7 +1550,7 @@ void* KdDisplay::Display0c(void* a, void* b)
 }
 
 // this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58). RET 4.
-// STUB: VC1 0x004b2100
+// FUNCTION: VC1 0x004b2100
 int IDisplay::Display28(unsigned char arg)
 {
     if (arg == 0 || *(reinterpret_cast<unsigned char*>(this) + 0x44) != 0) {

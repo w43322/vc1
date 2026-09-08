@@ -31,6 +31,9 @@ struct Matrix4
 
 typedef char Vc1Matrix4SizeCheck[sizeof(Matrix4) == 64 ? 1 : -1];
 
+// EAX=out, EDX=a, ECX=b. Column-major 4x4 product.
+void MulMatrix4(float* out, const float* a, const float* b);
+
 }
 
 #endif
