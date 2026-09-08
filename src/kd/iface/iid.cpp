@@ -32,6 +32,11 @@ static const char kIidRenderTarget[] = "IRenderTarget";
 // GLOBAL: VC1 0x004d059c
 const char* g_iidRenderTarget = kIidRenderTarget;
 
+// STRING: VC1 0x004d4e34
+static const char kIidGraphics[] = "IGraphics";
+// GLOBAL: VC1 0x004d05a0
+const char* g_iidGraphics = kIidGraphics;
+
 // STRING: VC1 0x004d4dc4
 static const char kIidSystem[] = "ISystem";
 // GLOBAL: VC1 0x004d05c8

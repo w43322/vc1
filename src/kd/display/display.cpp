@@ -4,6 +4,7 @@
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
 
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -33,6 +34,14 @@ static unsigned g_d3dPresentFlag;
 static void* g_displayPyro;
 // GLOBAL: VC1 0x004ed65c
 IUnknown* g_kdQueryUnknown;
+// GLOBAL: VC1 0x004ed6f0
+static IUnknown* g_graphics;
+// GLOBAL: VC1 0x004ed6f4
+static IUnknown* g_graphicsHost;
+// GLOBAL: VC1 0x004ed450
+static void* g_kdWindowMixer;
+// GLOBAL: VC1 0x004e95a0
+static WNDCLASSA g_kdDisplayClass;
 
 // STRING: VC1 0x004d4c4c
 static const char kDisplay[] = "Display";
@@ -44,6 +53,10 @@ static const char kInitSize[] = "Init: %dx%d";
 static const char kCantInit[] = "Can't init";
 // STRING: VC1 0x004d0b4c
 static const char kCantCreateRt[] = "Can't create render target for full screen";
+// STRING: VC1 0x004d2854
+static const char kWindowName[] = "Window";
+// STRING: VC1 0x004d61ec
+static const char kCantInitPyro[] = "Can't init Pyro";
 
 // GLOBAL: VC1 0x004ee284
 static IUnknown* g_display1cObject;
@@ -59,12 +72,15 @@ static void RenderTargetInit(IRenderTarget* self);
 static void* Display34Construct(void* self);
 static void Display10Scene(void* self);
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
+static void DisplayReleaseGraphics(IShutdownable* self);
 static void Display10Present(int arg);
+static void DisplayD3DTeardown();
 static unsigned char DisplayD3DInit();
 static void** Display38Body(void** out);
 static int Display28Apply();
 static int DisplayShutdownPrep(IShutdownable* self);
 static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned height);
+static WNDCLASSA* GetKdWindowClass();
 static void* CreateKdWindow();
 
 KdDisplay::KdDisplay()
@@ -158,13 +174,53 @@ void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
     return 0;
 }
 
+// this=IShutdownable. Rebind IGraphics, destroy g_displayPyro.
+// FUNCTION: VC1 0x00464010
+static void DisplayReleaseGraphics(IShutdownable* self)
+{
+    IUnknown* queried;
+
+    if (g_graphics) {
+        g_graphics->Release();
+    }
+    if (!g_graphicsHost) {
+        g_graphics = 0;
+    }
+    else {
+        queried = static_cast<IUnknown*>(g_graphicsHost->QueryInterface(&g_iidGraphics));
+        g_graphics = queried;
+        if (queried) {
+            queried->AddRef();
+        }
+    }
+    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(self) + 0x0c) = 0;
+    if (g_displayPyro) {
+        free(g_displayPyro);
+        g_displayPyro = 0;
+    }
+}
+
 // this=IDisplay. malloc(0x18) Pyro object into g_displayPyro; RET 8.
-// STUB: VC1 0x004641b0
+// FUNCTION: VC1 0x004641b0
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height)
 {
-    (void)self;
+    unsigned* block;
+
     (void)width;
     (void)height;
+    block = static_cast<unsigned*>(malloc(0x18));
+    if (!block) {
+        g_displayPyro = 0;
+        HostLogError(kCantInitPyro);
+        return 0;
+    }
+    block[1] = 0;
+    block[2] = 0;
+    block[4] = 0;
+    block[5] = 0;
+    block[3] = 0;
+    g_displayPyro = block;
+    (void)self;
     return 1;
 }
 
@@ -173,6 +229,16 @@ static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned he
 static void Display10Present(int arg)
 {
     (void)arg;
+}
+
+// Release D3D device/surfaces used by Display.
+// STUB: VC1 0x00464960
+static void DisplayD3DTeardown()
+{
+    if (g_d3dDevice) {
+        g_d3dDevice->Release();
+        g_d3dDevice = 0;
+    }
 }
 
 // Direct3DCreate8 path. Returns AL success.
@@ -306,10 +372,49 @@ void** KdDisplay::Display34(void** out)
 }
 
 // this = IShutdownable. Called at the start of Shutdown.
-// STUB: VC1 0x00466400
+// FUNCTION: VC1 0x00466400
 static int DisplayShutdownPrep(IShutdownable* self)
 {
-    (void)self;
+    void** mixerSlot;
+    unsigned char* mixer;
+    HWND hwnd;
+    void* node;
+    void* next;
+    void* prev;
+
+    DisplayReleaseGraphics(self);
+    DisplayD3DTeardown();
+
+    mixerSlot = reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x14);
+    mixer = static_cast<unsigned char*>(*mixerSlot);
+    if (!mixer) {
+        return 0;
+    }
+
+    node = g_heapPageList;
+    while (node) {
+        next = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc);
+        if (*reinterpret_cast<int*>(static_cast<unsigned char*>(node) + 4) == 0
+            && *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 8) == mixer) {
+            if (g_heapPageList == node) {
+                g_heapPageList = next;
+            }
+            else {
+                prev = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x10);
+                *reinterpret_cast<void**>(static_cast<unsigned char*>(prev) + 0xc) = next;
+            }
+            free(node);
+            break;
+        }
+        node = next;
+    }
+
+    hwnd = *reinterpret_cast<HWND*>(mixer + 4);
+    KillTimer(hwnd, 1);
+    SetWindowLongA(hwnd, GWL_USERDATA, 0);
+    free(mixer);
+    DestroyWindow(hwnd);
+    *mixerSlot = 0;
     return 0;
 }
 
@@ -421,14 +526,79 @@ static unsigned char Script0cBody(void* a, void* b)
     return 0;
 }
 
+// RegisterClassA for the display window; hInstance at +0x10, class name at +0x24.
+// FUNCTION: VC1 0x00496020
+static WNDCLASSA* GetKdWindowClass()
+{
+    if (!g_kdDisplayClass.hInstance) {
+        g_kdDisplayClass.hInstance = GetModuleHandleA(0);
+        g_kdDisplayClass.hIcon = LoadIconA(g_kdDisplayClass.hInstance, MAKEINTRESOURCE(100));
+        g_kdDisplayClass.hCursor = LoadCursorA(g_kdDisplayClass.hInstance, MAKEINTRESOURCE(100));
+        g_kdDisplayClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+        if (!g_kdDisplayClass.hCursor) {
+            g_kdDisplayClass.hCursor = LoadCursorA(0, IDC_ARROW);
+        }
+        RegisterClassA(&g_kdDisplayClass);
+    }
+    return &g_kdDisplayClass;
+}
+
 // CreateWindowExA mixer block; hwnd at +4, size at +0x10/+0x14.
-// STUB: VC1 0x004961b0
+// FUNCTION: VC1 0x004961b0
 static void* CreateKdWindow()
 {
-    void* mixer = malloc(0x18);
-    if (mixer) {
-        memset(mixer, 0, 0x18);
+    const char* env;
+    HWND parent;
+    RECT client;
+    int x;
+    int y;
+    int width;
+    int height;
+    DWORD style;
+    HWND hwnd;
+    unsigned char* mixer;
+    WNDCLASSA* wnd;
+
+    env = GetKdEnv("KD_PARENT_WINDOW");
+    parent = 0;
+    if (env) {
+        parent = reinterpret_cast<HWND>(strtoul(env, 0, 16));
     }
+
+    x = static_cast<int>(CW_USEDEFAULT);
+    y = static_cast<int>(CW_USEDEFAULT);
+    width = static_cast<int>(CW_USEDEFAULT);
+    height = static_cast<int>(CW_USEDEFAULT);
+    if (parent) {
+        GetClientRect(parent, &client);
+        x = client.left;
+        y = client.top;
+        width = client.right - client.left;
+        height = client.bottom - client.top;
+    }
+
+    wnd = GetKdWindowClass();
+    style = 0xca0000;
+    if (parent) {
+        style += 0x3f360000;
+    }
+    hwnd = CreateWindowExA(0, wnd->lpszClassName, kWindowName, style,
+        x, y, width, height, parent, 0, wnd->hInstance, 0);
+    if (!hwnd) {
+        *_errno() = 0x1f;
+        return 0;
+    }
+
+    mixer = static_cast<unsigned char*>(malloc(0x18));
+    g_kdWindowMixer = mixer;
+    *reinterpret_cast<void**>(mixer) = mixer;
+    *reinterpret_cast<HWND*>(mixer + 4) = hwnd;
+    *reinterpret_cast<unsigned*>(mixer + 8) = 0;
+    *reinterpret_cast<unsigned*>(mixer + 0xc) = 0;
+    *reinterpret_cast<int*>(mixer + 0x10) = width;
+    *reinterpret_cast<int*>(mixer + 0x14) = height;
+    SetTimer(hwnd, 1, 100, 0);
+    SetWindowLongA(hwnd, GWL_USERDATA, reinterpret_cast<LONG>(mixer));
     return mixer;
 }
 

@@ -16,6 +16,8 @@ namespace vc1 {
 IAbstract* g_kdSystem;
 // GLOBAL: VC1 0x004ed6f8
 IUnknown* g_kdServices;
+// GLOBAL: VC1 0x004ed4fc
+static void* g_timedEventHead;
 
 // STRING: VC1 0x004d4be4
 static const char kSystem[] = "System";
@@ -32,13 +34,60 @@ static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a);
 static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key);
 static void InputStreamInsert(IInputStream* self, void* key, void** out);
 static void UnlinkCountedNode(KdSystem* self, void* block);
-static void* AllocSystemBuffer();
+static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner);
+static void FactoryDtorTail(void* self);
+static void FactoryClearSlots(void* self);
+static void FactoryReleasePointers(void* self);
 
 KdSystem::KdSystem()
 {
     memset(pad04, 0, sizeof(pad04));
     refs = 0;
     memset(tail, 0, sizeof(tail));
+}
+
+// ESI=this. KdFactory-shaped dtor; orig may call FUN_00415f10 first.
+// STUB: VC1 0x00415bf0
+static void FactoryDtorTail(void* self)
+{
+    KdFactory* factory = static_cast<KdFactory*>(self);
+    FactoryClearSlots(self);
+    if (factory->capacity) {
+        free(factory->begin);
+    }
+    factory->Clear();
+}
+
+// STUB: VC1 0x00415f10
+static void FactoryClearSlots(void* self)
+{
+    (void)self;
+}
+
+// EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
+// FUNCTION: VC1 0x00419bb0
+static void FactoryReleasePointers(void* self)
+{
+    KdFactory* factory = static_cast<KdFactory*>(self);
+    IUnknown** slot;
+    IUnknown** end;
+    IUnknown* object;
+
+    if (factory->capacity) {
+        slot = reinterpret_cast<IUnknown**>(factory->begin);
+        end = slot + (factory->capacity / sizeof(IUnknown*));
+        for (; slot < end; slot += 1) {
+            object = *slot;
+            if (object) {
+                object->Release();
+            }
+            *slot = 0;
+        }
+    }
+    if (factory->capacity) {
+        free(factory->begin);
+    }
+    factory->Clear();
 }
 
 // MOV EAX, 0x004d4be4; RET. IScriptObject vtable+0x14.
@@ -253,10 +302,55 @@ int KdSystem::Shutdown()
     return 0;
 }
 
-// STUB: VC1 0x00462900
+// EAX=this. Shutdown, clear g_kdSystem, Release service slots, factory dtors.
+// FUNCTION: VC1 0x00462900
 static void SystemDtorBase(KdSystem* self)
 {
-    (void)self;
+    IUnknown** slots = reinterpret_cast<IUnknown**>(self);
+    IUnknown* extra;
+
+    self->Shutdown();
+    g_kdSystem = 0;
+
+    extra = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0xd0);
+    if (extra) {
+        extra->Release();
+    }
+    *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0xd0) = 0;
+
+    FactoryDtorTail(reinterpret_cast<char*>(self) + 0x5c);
+
+    if (slots[0x15]) {
+        slots[0x15]->Release();
+    }
+    slots[0x15] = 0;
+    if (slots[0x14]) {
+        slots[0x14]->Release();
+    }
+    slots[0x14] = 0;
+    if (slots[0x13]) {
+        slots[0x13]->Release();
+    }
+    slots[0x13] = 0;
+    if (slots[0x12]) {
+        slots[0x12]->Release();
+    }
+    slots[0x12] = 0;
+    if (slots[0x11]) {
+        slots[0x11]->Release();
+    }
+    slots[0x11] = 0;
+    if (slots[0x10]) {
+        slots[0x10]->Release();
+    }
+    slots[0x10] = 0;
+    if (slots[0x0f]) {
+        slots[0x0f]->Release();
+    }
+    slots[0x0f] = 0;
+
+    FactoryReleasePointers(reinterpret_cast<char*>(self) + 0x20);
+    FactoryDtorTail(reinterpret_cast<char*>(self) + 0x10);
 }
 
 // this in ECX. Rebinds Display at +0x3c, allocates tail[0], StartPostMixer.
@@ -282,7 +376,8 @@ static unsigned char SystemStartBase(KdSystem* self, IUnknown** object)
         }
     }
 
-    *reinterpret_cast<void**>(self->tail) = AllocSystemBuffer();
+    *reinterpret_cast<void**>(self->tail) = AllocSystemBuffer(10000000, 0,
+        static_cast<unsigned>(reinterpret_cast<unsigned>(self)));
     StartPostMixer();
 
     if (!object || !*object) {
@@ -472,19 +567,60 @@ static void InputStreamInsert(IInputStream* self, void* key, void** out)
     (void)out;
 }
 
-// EDX=block. Unlinks the timed/heap node at g_kdObject list head 0x004ed4fc.
-// STUB: VC1 0x00486830
+// EDX=block. Unlinks the timed/heap node at g_timedEventHead.
+// FUNCTION: VC1 0x00486830
 static void UnlinkCountedNode(KdSystem* self, void* block)
 {
+    void** prev;
+    void* node;
+
     (void)self;
-    (void)block;
+    if (g_timedEventHead == block) {
+        g_timedEventHead = *reinterpret_cast<void**>(static_cast<unsigned char*>(block) + 0x18);
+        return;
+    }
+    prev = &g_timedEventHead;
+    node = g_timedEventHead;
+    while (node) {
+        if (*reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18) == block) {
+            *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18) =
+                *reinterpret_cast<void**>(static_cast<unsigned char*>(block) + 0x18);
+            return;
+        }
+        prev = reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18);
+        node = *prev;
+        (void)prev;
+    }
 }
 
-// Alloc 10000000-byte system scratch; orig EAX=size, stack flags.
-// STUB: VC1 0x00486890
-static void* AllocSystemBuffer()
+// malloc(0x20) timed node: size, flags, owner, QPC timestamp; link at +0x18.
+// FUNCTION: VC1 0x00486890
+static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner)
 {
-    return 0;
+    unsigned* node;
+    void** tail;
+    LARGE_INTEGER qpc;
+
+    node = static_cast<unsigned*>(malloc(0x20));
+    if (!node) {
+        return 0;
+    }
+    node[0] = size;
+    node[1] = flags;
+    node[2] = 0x3f;
+    node[3] = owner;
+    QueryPerformanceCounter(&qpc);
+    node[4] = static_cast<unsigned>(qpc.QuadPart);
+    node[5] = static_cast<unsigned>(qpc.QuadPart >> 32);
+    node[6] = 0;
+    tail = &g_timedEventHead;
+    if (g_timedEventHead) {
+        do {
+            tail = reinterpret_cast<void**>(static_cast<unsigned char*>(*tail) + 0x18);
+        } while (*tail);
+    }
+    *tail = node;
+    return node;
 }
 
 // STUB: VC1 0x004964f0
