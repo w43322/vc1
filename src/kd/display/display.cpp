@@ -61,8 +61,16 @@ static unsigned g_d3dInScene;
 static unsigned g_d3dGammaRamp;
 // GLOBAL: VC1 0x004ed614
 static unsigned g_d3dGammaKind;
+// GLOBAL: VC1 0x004ed618
+static unsigned g_d3dGamma618;
+// GLOBAL: VC1 0x004ed61c
+static unsigned g_d3dGamma61c;
 // GLOBAL: VC1 0x004ed704
 static IUnknown* g_display38Default;
+// GLOBAL: VC1 0x004e9788
+static float g_d3dWorld[16];
+// GLOBAL: VC1 0x004e98c0
+static float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
 static float g_d3dProj[16];
 // GLOBAL: VC1 0x004ed564
@@ -133,6 +141,7 @@ static const char* DxGetErrorString(int hr);
 static void* Display38Construct(void* self, void* extra);
 static void** Display38Body(void** out, void* a, void* b);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
+static void DisplayD3dClear(unsigned color);
 static void* Display38Lookup(unsigned width, unsigned height);
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
@@ -640,6 +649,17 @@ static void Display10Present(int arg)
     g_d3dInScene = 0;
 }
 
+// ECX=D3DCOLOR. Clear target, Z=1. Called from DisplayD3DInit with 0.
+// FUNCTION: VC1 0x00464780
+static void DisplayD3dClear(unsigned color)
+{
+    typedef int (__stdcall *FnClear)(IUnknown* device, unsigned count, void* rects,
+        unsigned flags, unsigned col, float z, unsigned stencil);
+
+    reinterpret_cast<FnClear>((*reinterpret_cast<void***>(g_d3dDevice))[0x24])(
+        g_d3dDevice, 0, 0, 1, color, 1.0f, 0);
+}
+
 // ESI=width*, EDI=height*. GetDeviceCaps TextureCaps: 0x20 square, 0x2 pow2.
 // FUNCTION: VC1 0x004647a0
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h)
@@ -814,6 +834,12 @@ static const char kDirectXError[] = "DirectX Error";
 static const char kSceneAlreadyRendered[] = "Gfx_BeginScene: Scene is already being rendered";
 // STRING: VC1 0x004d5ff0
 static const char kCantCreateRtTexture[] = "Can't create render target texture";
+// STRING: VC1 0x004d6170
+static const char kCantCreateVb[] = "Can't create D3D vertex buffer";
+// STRING: VC1 0x004d6190
+static const char kCantCreateIb[] = "Can't create D3D index buffer";
+// STRING: VC1 0x004d61b0
+static const char kCantLockIb[] = "Can't lock D3D index buffer";
 
 // EAX=HRESULT, ESI=prefix. cdecl flag. Logs via FormatBuffer; optional MB_ICONERROR.
 // FUNCTION: VC1 0x00464d60
@@ -833,10 +859,143 @@ static void DisplayD3dLogHresult(int hr, char flag)
     }
 }
 
-// Recreate surfaces after IDirect3DDevice8::Reset. Returns AL.
-// STUB: VC1 0x00464de0
+// Recreate VB/IB, chain textures, render states after Reset. Returns AL.
+// FUNCTION: VC1 0x00464de0
 static unsigned char DisplayD3dRecreate()
 {
+    typedef int (__stdcall *FnGetRt)(IUnknown* device, IUnknown** out);
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnCreateVb)(IUnknown* device, unsigned bytes, unsigned usage,
+        unsigned fvf, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnSetFvf)(IUnknown* device, unsigned fvf);
+    typedef int (__stdcall *FnStream)(IUnknown* device, unsigned stream, IUnknown* vb,
+        unsigned stride);
+    typedef int (__stdcall *FnCreateIb)(IUnknown* device, unsigned bytes, unsigned usage,
+        unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnLock)(IUnknown* object, unsigned offset, unsigned size,
+        short** out, unsigned flags);
+    typedef int (__stdcall *FnUnlock)(IUnknown* object);
+    typedef int (__stdcall *FnIndices)(IUnknown* device, IUnknown* ib, unsigned base);
+    typedef int (__stdcall *FnState)(IUnknown* device, unsigned state, unsigned value);
+    typedef int (__stdcall *FnTss)(IUnknown* device, unsigned stage, unsigned type,
+        unsigned value);
+    typedef int (__stdcall *FnXform)(IUnknown* device, unsigned type, float* matrix);
+    void* node;
+    IUnknown** texture;
+    unsigned width;
+    unsigned height;
+    int hr;
+    short* indices;
+    short base;
+    int i;
+    char buf[520];
+
+    g_d3dBackBuffer = 0;
+    reinterpret_cast<FnGetRt>((*reinterpret_cast<void***>(g_d3dDevice))[0x20])(
+        g_d3dDevice, &g_d3dBackBuffer);
+    for (node = g_d3dChain; node;
+        node = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc)) {
+        texture = reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(node) + 8);
+        if (*texture) {
+            width = *static_cast<unsigned*>(node);
+            height = *(static_cast<unsigned*>(node) + 1);
+            DisplayD3dPow2Caps(&width, &height);
+            reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+                g_d3dDevice, width, height, 1, 1,
+                g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0, 0, texture);
+        }
+    }
+    hr = reinterpret_cast<FnCreateVb>((*reinterpret_cast<void***>(g_d3dDevice))[0x17])(
+        g_d3dDevice, 0x17700, 8, 0x142, 0, &g_d3dSwap);
+    if (hr < 0) {
+        if (hr == 0) {
+            FormatBufferOpen(buf, kPercentS, kCantCreateVb);
+        }
+        else {
+            FormatBufferOpen(buf, kDxErrorFmt, kCantCreateVb, DxGetErrorString(hr));
+        }
+        HostLogError(buf);
+        return 0;
+    }
+    reinterpret_cast<FnSetFvf>((*reinterpret_cast<void***>(g_d3dDevice))[0x4c])(
+        g_d3dDevice, 0x142);
+    reinterpret_cast<FnStream>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
+        g_d3dDevice, 0, g_d3dSwap, 0x18);
+    hr = reinterpret_cast<FnCreateIb>((*reinterpret_cast<void***>(g_d3dDevice))[0x18])(
+        g_d3dDevice, 0x2ee0, 8, 0x65, 0, &g_d3dSurface);
+    if (hr < 0) {
+        if (hr == 0) {
+            FormatBufferOpen(buf, kPercentS, kCantCreateIb);
+        }
+        else {
+            FormatBufferOpen(buf, kDxErrorFmt, kCantCreateIb, DxGetErrorString(hr));
+        }
+        HostLogError(buf);
+        return 0;
+    }
+    hr = reinterpret_cast<FnLock>((*reinterpret_cast<void***>(g_d3dSurface))[0xb])(
+        g_d3dSurface, 0, 0, &indices, 0);
+    if (hr < 0) {
+        DisplayD3dLogHresult(hr, 0);
+        return 0;
+    }
+    base = 2;
+    for (i = 0; i < 1000; i++) {
+        indices[0] = static_cast<short>(base - 2);
+        indices[1] = static_cast<short>(base - 1);
+        indices[2] = base;
+        indices[3] = base;
+        indices[4] = static_cast<short>(base + 1);
+        indices[5] = static_cast<short>(base - 2);
+        indices += 6;
+        base = static_cast<short>(base + 4);
+    }
+    reinterpret_cast<FnUnlock>((*reinterpret_cast<void***>(g_d3dSurface))[0xc])(g_d3dSurface);
+    reinterpret_cast<FnIndices>((*reinterpret_cast<void***>(g_d3dDevice))[0x55])(
+        g_d3dDevice, g_d3dSurface, 0);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x16, 1);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x89, 0);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x1b, 1);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x13, 5);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x14, 6);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0xf, 1);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x18, 1);
+    reinterpret_cast<FnState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+        g_d3dDevice, 0x19, 7);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 1, 4);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 2, 2);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 3, 0);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 4, 4);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 5, 2);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 6, 0);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 0x12, 1);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 0x10, 2);
+    reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+        g_d3dDevice, 0, 0x11, 2);
+    g_d3dGammaRamp = 0;
+    g_d3dGammaKind = 4;
+    g_d3dGamma618 = 2;
+    g_d3dGamma61c = 0;
+    reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+        g_d3dDevice, 2, g_d3dView);
+    reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+        g_d3dDevice, 3, g_d3dProj);
     return 1;
 }
 
@@ -875,10 +1034,14 @@ static unsigned char DisplayD3dReset()
     return DisplayD3dRecreate() != 0;
 }
 
-// Direct3DCreate8 path. Returns AL success.
+// Direct3DCreate8 path. Returns AL success. Ends with Recreate then Clear(0).
 // STUB: VC1 0x004652b0
 static unsigned char DisplayD3DInit()
 {
+    if (!DisplayD3dRecreate()) {
+        return 0;
+    }
+    DisplayD3dClear(0);
     return 1;
 }
 
@@ -927,10 +1090,11 @@ static void* Display38Lookup(unsigned width, unsigned height)
 static unsigned char DisplayQueryReady()
 {
     typedef int (__stdcall *FnTest)(IUnknown* device);
-    typedef int (__stdcall *FnSetRender)(IUnknown* device, int state, void* value);
     typedef int (__stdcall *FnBegin)(IUnknown* device);
     typedef int (__stdcall *FnGetBack)(IUnknown* swap, int a, int b, unsigned* out, int c);
+    typedef int (__stdcall *FnXform)(IUnknown* device, unsigned type, float* matrix);
     int hr;
+    int i;
     char buf[520];
 
     buf[0] = 0;
@@ -940,7 +1104,6 @@ static unsigned char DisplayQueryReady()
     }
     if (hr == static_cast<int>(0x88760869)) {
         if (!DisplayD3dReset()) {
-            DisplayD3dLogHresult(hr, 0);
             return 0;
         }
     }
@@ -954,8 +1117,15 @@ static unsigned char DisplayQueryReady()
             static_cast<int*>(g_d3dLastMixer)[0],
             static_cast<int*>(g_d3dLastMixer)[1],
             0, 0);
+        reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+            g_d3dDevice, 3, g_d3dProj);
+        for (i = 0; i < 16; i++) {
+            g_d3dView[i] = g_d3dWorld[i];
+        }
+        reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+            g_d3dDevice, 2, g_d3dView);
     }
-    reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(g_d3dDevice);
+    reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x22])(g_d3dDevice);
     if (g_d3dSwap) {
         reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dSwap))[0xb])(
             g_d3dSwap, 0, 0, &g_d3dInScene, 0);
