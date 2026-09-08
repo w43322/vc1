@@ -9,6 +9,8 @@ address|type|name|symbol
 0x00430501|library|_fileno|__fileno
 0x0043063a|library|_get_osfhandle|__get_osfhandle
 0x00436010|library|memcpy|_memcpy
+0x00437490|library|memset|_memset
+0x00442e0e|library|Direct3DCreate8|_Direct3DCreate8@4
 0x0043006d|library|srand|_srand
 0x004352c1|library|___security_init_cookie|___security_init_cookie
 0x004c4096|library|_ftol2_sse|__ftol2_sse

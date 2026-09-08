@@ -19,6 +19,10 @@ HWND g_kdDisplayWindow;
 static unsigned g_displayBusy;
 // GLOBAL: VC1 0x004ed558
 static int* g_displayMode;
+// GLOBAL: VC1 0x004ed55c
+static unsigned g_d3dPresentWindowed[13];
+// GLOBAL: VC1 0x004ed5a4
+static unsigned g_d3dPresentFull[13];
 // GLOBAL: VC1 0x004ed590
 static int g_displayWindowX;
 // GLOBAL: VC1 0x004ed594
@@ -73,10 +77,6 @@ static float g_d3dWorld[16];
 static float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
 static float g_d3dProj[16];
-// GLOBAL: VC1 0x004ed564
-static unsigned g_displayReady;
-// GLOBAL: VC1 0x004ed5ac
-static unsigned g_displayModeReady;
 // GLOBAL: VC1 0x004ed700
 static IUnknown* g_displayScene;
 // GLOBAL: VC1 0x004ed6ec
@@ -104,6 +104,8 @@ static WNDCLASSA g_kdDisplayClass;
 
 // STRING: VC1 0x004d4c4c
 static const char kDisplay[] = "Display";
+// STRING: VC1 0x004d0b38
+static const char kKdParentWindow[] = "KD_PARENT_WINDOW";
 // GLOBAL: VC1 0x004d0630
 const char* g_kdNameDisplay = kDisplay;
 // STRING: VC1 0x004d5db8
@@ -840,6 +842,38 @@ static const char kCantCreateVb[] = "Can't create D3D vertex buffer";
 static const char kCantCreateIb[] = "Can't create D3D index buffer";
 // STRING: VC1 0x004d61b0
 static const char kCantLockIb[] = "Can't lock D3D index buffer";
+// STRING: VC1 0x004d5ed0
+static const char kFmtA8R8G8B8[] = "A8R8G8B8";
+// STRING: VC1 0x004d5edc
+static const char kFmtX8R8G8B8[] = "X8R8G8B8";
+// STRING: VC1 0x004d5ee8
+static const char kFmtA1R5G5B5[] = "A1R5G5B5";
+// STRING: VC1 0x004d5ef4
+static const char kFmtX1R5G5B5[] = "X1R5G5B5";
+// STRING: VC1 0x004d5f00
+static const char kFmtR5G6B5[] = "R5G6B5";
+// STRING: VC1 0x004d5f08
+static const char kFmtUnknown[] = "UNKNOWN";
+// STRING: VC1 0x004d6090
+static const char kCantCreateD3d[] = "Can't create D3D interface";
+// STRING: VC1 0x004d60ac
+static const char kD3dDriver[] = "D3D Driver: %s";
+// STRING: VC1 0x004d60bc
+static const char kD3dDescription[] = "Description: %s";
+// STRING: VC1 0x004d60cc
+static const char kD3dVersion[] = "Version: %d.%d.%d.%d";
+// STRING: VC1 0x004d60e4
+static const char kCantDesktopMode[] = "Can't determine desktop video mode";
+// STRING: VC1 0x004d6108
+static const char kCantFindFsMode[] = "Can't find appropriate full screen video mode";
+// STRING: VC1 0x004d6138
+static const char kFullScreenMode[] = "Full screen mode: %d x %d x %s\n";
+// STRING: VC1 0x004d6158
+static const char kCantCreateDevice[] = "Can't create D3D device";
+// GLOBAL: VC1 0x004e9a0c
+static const char* g_d3dFormatNames[6] = {
+    kFmtUnknown, kFmtR5G6B5, kFmtX1R5G5B5, kFmtA1R5G5B5, kFmtX8R8G8B8, kFmtA8R8G8B8
+};
 
 // EAX=HRESULT, ESI=prefix. cdecl flag. Logs via FormatBuffer; optional MB_ICONERROR.
 // FUNCTION: VC1 0x00464d60
@@ -1034,10 +1068,153 @@ static unsigned char DisplayD3dReset()
     return DisplayD3dRecreate() != 0;
 }
 
-// Direct3DCreate8 path. Returns AL success. Ends with Recreate then Clear(0).
-// STUB: VC1 0x004652b0
+static IUnknown* CallDirect3DCreate8(unsigned sdk)
+{
+    typedef IUnknown* (__stdcall *FnCreate8)(unsigned version);
+    static FnCreate8 create8;
+    HMODULE dll;
+
+    if (!create8) {
+        dll = LoadLibraryA("d3d8.dll");
+        if (dll) {
+            create8 = reinterpret_cast<FnCreate8>(GetProcAddress(dll, "Direct3DCreate8"));
+        }
+    }
+    if (!create8) {
+        return 0;
+    }
+    return create8(sdk);
+}
+
+// Direct3DCreate8, present params, CreateDevice, Recreate, Clear(0). Returns AL.
+// FUNCTION: VC1 0x004652b0
 static unsigned char DisplayD3DInit()
 {
+    typedef int (__stdcall *FnIdent)(IUnknown* d3d, unsigned adapter, unsigned flags,
+        void* out);
+    typedef int (__stdcall *FnMode)(IUnknown* d3d, unsigned adapter, unsigned* out);
+    typedef unsigned (__stdcall *FnModeCount)(IUnknown* d3d, unsigned adapter);
+    typedef int (__stdcall *FnEnum)(IUnknown* d3d, unsigned adapter, unsigned index,
+        unsigned* out);
+    typedef int (__stdcall *FnCreateDev)(IUnknown* d3d, unsigned adapter, unsigned type,
+        HWND focus, unsigned behavior, unsigned* present, IUnknown** device);
+    unsigned desktop[4];
+    unsigned enumMode[4];
+    unsigned ident[0x10c];
+    char buf[512];
+    unsigned* present;
+    unsigned format;
+    unsigned count;
+    unsigned index;
+    int hr;
+    int i;
+    unsigned viewW;
+    unsigned viewH;
+
+    g_d3dObject = CallDirect3DCreate8(0x78);
+    if (!g_d3dObject) {
+        FormatBufferOpen(buf, kDxErrorFmt, kCantCreateD3d,
+            DxGetErrorString(static_cast<int>(0x8876086a)));
+        HostLogError(buf);
+        MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
+        return 0;
+    }
+    reinterpret_cast<FnIdent>((*reinterpret_cast<void***>(g_d3dObject))[5])(
+        g_d3dObject, 0, 2, ident);
+    HostLog(kD3dDriver, ident);
+    HostLog(kD3dDescription, reinterpret_cast<char*>(ident) + 0x200);
+    HostLog(kD3dVersion,
+        (ident[0x105] >> 16) & 0xffff, ident[0x105] & 0xffff,
+        (ident[0x104] >> 16) & 0xffff, ident[0x104] & 0xffff);
+    hr = reinterpret_cast<FnMode>((*reinterpret_cast<void***>(g_d3dObject))[8])(
+        g_d3dObject, 0, desktop);
+    if (hr < 0 || desktop[3] == 0) {
+        DisplayD3dLogHresult(hr, g_displaySkipDevice);
+        return 0;
+    }
+    memset(g_d3dPresentWindowed, 0, sizeof(g_d3dPresentWindowed));
+    g_d3dPresentWindowed[0] = static_cast<unsigned>(g_displayWidth);
+    g_d3dPresentWindowed[1] = static_cast<unsigned>(g_displayHeight);
+    g_d3dPresentWindowed[2] = desktop[3];
+    g_d3dPresentWindowed[3] = 1;
+    g_d3dPresentWindowed[4] = 0;
+    g_d3dPresentWindowed[5] = 4;
+    g_d3dPresentWindowed[6] = reinterpret_cast<unsigned>(g_kdDisplayWindow);
+    g_d3dPresentWindowed[7] = 1;
+    if (GetKdEnv(kKdParentWindow)) {
+        g_displaySkipDevice = 1;
+        present = g_d3dPresentWindowed;
+    }
+    else {
+        viewW = static_cast<unsigned>(g_displayViewRight - g_displayViewLeft);
+        viewH = static_cast<unsigned>(g_displayViewBottom - g_displayViewTop);
+        format = 0;
+        if (viewW == desktop[0] && viewH == desktop[1]) {
+            format = desktop[3];
+        }
+        else {
+            count = reinterpret_cast<FnModeCount>((*reinterpret_cast<void***>(g_d3dObject))[6])(
+                g_d3dObject, 0);
+            for (index = 0; index < count; index++) {
+                reinterpret_cast<FnEnum>((*reinterpret_cast<void***>(g_d3dObject))[7])(
+                    g_d3dObject, 0, index, enumMode);
+                if (enumMode[0] != viewW || enumMode[1] != viewH) {
+                    continue;
+                }
+                if (g_displayPresentInterval == 0x10) {
+                    if (Display28Mode(enumMode[3]) > Display28Mode(0x19)) {
+                        continue;
+                    }
+                }
+                if (Display28Mode(enumMode[3]) > Display28Mode(format)) {
+                    format = enumMode[3];
+                }
+            }
+            if (format == 0) {
+                FormatBufferOpen(buf, kDxErrorFmt, kCantFindFsMode,
+                    DxGetErrorString(static_cast<int>(0x88760866)));
+                HostLogError(buf);
+                if (g_displaySkipDevice == 0) {
+                    MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
+                }
+                return 0;
+            }
+        }
+        memset(g_d3dPresentFull, 0, sizeof(g_d3dPresentFull));
+        g_d3dPresentFull[0] = viewW;
+        g_d3dPresentFull[1] = viewH;
+        g_d3dPresentFull[2] = format;
+        g_d3dPresentFull[3] = 1;
+        g_d3dPresentFull[4] = 0;
+        g_d3dPresentFull[5] = 2;
+        g_d3dPresentFull[6] = reinterpret_cast<unsigned>(g_kdDisplayWindow);
+        g_d3dPresentFull[7] = 0;
+        g_d3dPresentFull[11] = 0;
+        g_d3dPresentFull[12] = 1;
+        HostLog(kFullScreenMode, viewW, viewH,
+            g_d3dFormatNames[Display28Mode(format)]);
+        if (g_displaySkipDevice == 0) {
+            present = g_d3dPresentFull;
+        }
+        else {
+            present = g_d3dPresentWindowed;
+        }
+    }
+    g_displayMode = reinterpret_cast<int*>(present);
+    g_displayPresentInterval = ((Display28Mode(present[2]) < 4) - 1 & 0xfffffff0) + 0x20;
+    hr = reinterpret_cast<FnCreateDev>((*reinterpret_cast<void***>(g_d3dObject))[0xf])(
+        g_d3dObject, 0, 1, g_kdDisplayWindow, 0x20, present, &g_d3dDevice);
+    if (hr < 0) {
+        DisplayD3dLogHresult(hr, 1);
+        return 0;
+    }
+    Display28Finish();
+    g_d3dInScene = 0;
+    g_d3dChain2 = 0;
+    DisplayD3dSetBuffers(present[0], present[1], 0, 0);
+    for (i = 0; i < 16; i++) {
+        g_d3dView[i] = g_d3dWorld[i];
+    }
     if (!DisplayD3dRecreate()) {
         return 0;
     }
@@ -1150,7 +1327,7 @@ static int Display28Apply()
         g_displaySkipDevice = 0;
         return 0;
     }
-    if (!g_displayReady || !g_displayModeReady) {
+    if (!g_d3dPresentWindowed[2] || !g_d3dPresentFull[2]) {
         return 0;
     }
     if (g_displaySkipDevice) {
