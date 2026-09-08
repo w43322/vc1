@@ -5,6 +5,7 @@ namespace vc1 {
 
 extern const char* g_iidAbstract;
 extern const char* g_iidInputStream;
+extern const char* g_iidIdentifiable;
 extern const char* g_iidShutdownable;
 extern const char* g_iidDisplay;
 extern const char* g_iidRenderTarget;

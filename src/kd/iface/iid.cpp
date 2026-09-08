@@ -12,6 +12,11 @@ static const char kIidInputStream[] = "IInputStream";
 // GLOBAL: VC1 0x004d0588
 const char* g_iidInputStream = kIidInputStream;
 
+// STRING: VC1 0x004d4e6c
+static const char kIidIdentifiable[] = "IIdentifiable";
+// GLOBAL: VC1 0x004d0590
+const char* g_iidIdentifiable = kIidIdentifiable;
+
 // STRING: VC1 0x004d4e5c
 static const char kIidShutdownable[] = "IShutdownable";
 // GLOBAL: VC1 0x004d0594

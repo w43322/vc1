@@ -14,6 +14,8 @@ namespace vc1 {
 
 // GLOBAL: VC1 0x004ed620
 IAbstract* g_kdSystem;
+// GLOBAL: VC1 0x004ed6f8
+IUnknown* g_kdServices;
 
 // STRING: VC1 0x004d4be4
 static const char kSystem[] = "System";
@@ -27,6 +29,7 @@ static int InputStreamFinish(IInputStream* self);
 static int InputStreamUnmapped1c(IInputStream* self, void* arg);
 static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a);
 static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key);
+static void InputStreamInsert(IInputStream* self, void* key, void** out);
 
 KdSystem::KdSystem()
 {
@@ -253,8 +256,78 @@ void** KdSystem::Unmapped14(void** out, void* key)
     return out;
 }
 
-// STUB: VC1 0x004631b0
-int KdSystem::Unmapped10() { return 0; }
+// STRING: VC1 0x004d53f4
+static const char kObjectExists[] = "Object %s already exists";
+
+// RET 8. Unmapped18 lookup, error if already in g_kdServices, else insert.
+// FUNCTION: VC1 0x004631b0
+int KdSystem::Unmapped10(void* key, void** out)
+{
+    IUnknown* existing = 0;
+    unsigned char exists;
+    IUnknown* ident;
+    IUnknown* group;
+    void* absExisting;
+    void* absServices;
+
+    Unmapped18(reinterpret_cast<void**>(&existing), key);
+    exists = 0;
+    if (existing) {
+        if (g_kdServices) {
+            absExisting = existing->QueryInterface(&g_iidAbstract);
+            absServices = g_kdServices->QueryInterface(&g_iidAbstract);
+            exists = absExisting != absServices;
+        }
+        else {
+            exists = 1;
+        }
+    }
+    else if (g_kdServices) {
+        exists = 1;
+    }
+    if (existing) {
+        existing->Release();
+    }
+    if (exists) {
+        HostLogError(kObjectExists,
+            *reinterpret_cast<void**>(reinterpret_cast<char*>(key) + 4));
+        return 0;
+    }
+    InputStreamInsert(static_cast<IInputStream*>(this), key, out);
+    Unmapped24();
+    ident = 0;
+    if (out && *out) {
+        ident = static_cast<IUnknown*>(
+            static_cast<IUnknown*>(*out)->QueryInterface(&g_iidIdentifiable));
+        if (ident) {
+            ident->AddRef();
+        }
+    }
+    exists = 0;
+    if (ident) {
+        if (g_kdServices) {
+            absExisting = ident->QueryInterface(&g_iidAbstract);
+            absServices = g_kdServices->QueryInterface(&g_iidAbstract);
+            exists = absExisting != absServices;
+        }
+        else {
+            exists = 1;
+        }
+        ident->Release();
+    }
+    else if (g_kdServices) {
+        exists = 1;
+    }
+    (void)exists;
+    group = *reinterpret_cast<IUnknown**>(tail + 0x18);
+    (void)group;
+    group = *reinterpret_cast<IUnknown**>(tail + 0x14);
+    (void)group;
+    group = *reinterpret_cast<IUnknown**>(tail + 0x1c);
+    (void)group;
+    (void)out;
+    return 0;
+}
 
 // STUB: VC1 0x00472870
 static int InputStreamFinish(IInputStream* self)
@@ -286,6 +359,14 @@ static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
     (void)key;
     *out = 0;
     return out;
+}
+
+// STUB: VC1 0x00472db0
+static void InputStreamInsert(IInputStream* self, void* key, void** out)
+{
+    (void)self;
+    (void)key;
+    (void)out;
 }
 
 // STUB: VC1 0x004964f0
