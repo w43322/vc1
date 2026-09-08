@@ -9,6 +9,8 @@ namespace vc1 {
 
 // GLOBAL: VC1 0x004ed54c
 IAbstract* g_kdDisplay;
+// GLOBAL: VC1 0x004ed65c
+IUnknown* g_kdQueryUnknown;
 
 // STRING: VC1 0x004d4c4c
 static const char kDisplay[] = "Display";
@@ -27,6 +29,8 @@ static void Display1cAtexit();
 static void* DisplayQueryGraphics(void* self, void* a, void* b);
 static void* Display34Construct(void* self);
 static void** Display38Body(void** out);
+static int Display28Apply();
+static int DisplayShutdownPrep(IShutdownable* self);
 
 KdDisplay::KdDisplay()
 {
@@ -102,6 +106,13 @@ void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
     if (name == g_iidAbstract) {
         return reinterpret_cast<char*>(self) + 8;
     }
+    return 0;
+}
+
+// this = IDisplay. Called when Display28 arg is 0 or enabled at IDisplay+0x44.
+// STUB: VC1 0x00465e70
+static int Display28Apply()
+{
     return 0;
 }
 
@@ -221,6 +232,14 @@ void** KdDisplay::Display34(void** out)
     return out;
 }
 
+// this = IShutdownable. Called at the start of Shutdown.
+// STUB: VC1 0x00466400
+static int DisplayShutdownPrep(IShutdownable* self)
+{
+    (void)self;
+    return 0;
+}
+
 // STUB: VC1 0x004664a0
 static void DisplayDtorBase(KdDisplay* self)
 {
@@ -301,10 +320,29 @@ unsigned KdDisplay::AddRef()
 }
 
 // this = IShutdownable (KdDisplay+0x18). Releases target at +0x18, then QI g_iidRenderTarget.
-// STUB: VC1 0x004b1da0
+// FUNCTION: VC1 0x004b1da0
 int KdDisplay::Shutdown()
 {
-    return 0;
+    IShutdownable* self = static_cast<IShutdownable*>(this);
+    IUnknown** ptarget = reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x18);
+    IUnknown* object;
+    IUnknown* queried;
+
+    DisplayShutdownPrep(self);
+    object = *ptarget;
+    if (object) {
+        object->Release();
+    }
+    if (!g_kdQueryUnknown) {
+        *ptarget = 0;
+        return 0;
+    }
+    queried = static_cast<IUnknown*>(g_kdQueryUnknown->QueryInterface(&g_iidRenderTarget));
+    *ptarget = queried;
+    if (!queried) {
+        return 0;
+    }
+    return static_cast<int>(queried->AddRef());
 }
 
 // EAX=this. Calls FUN_004665c0 with this in ESI, then overwrites vptrs/floats.
@@ -378,10 +416,13 @@ void* KdDisplay::Display0c(void* a, void* b)
     return a;
 }
 
-// this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58).
+// this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58). RET 4.
 // STUB: VC1 0x004b2100
-int KdDisplay::Display28()
+int IDisplay::Display28(unsigned char arg)
 {
+    if (arg == 0 || *(reinterpret_cast<unsigned char*>(this) + 0x44) != 0) {
+        return Display28Apply();
+    }
     return 0;
 }
 

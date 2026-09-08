@@ -37,8 +37,8 @@ public:
     int Shutdown();                         // vtable+0x0c
     int Unmapped10();                       // vtable+0x10
     int Unmapped14();                       // vtable+0x14
-    int Unmapped18();                       // vtable+0x18
-    int Unmapped1c();                       // vtable+0x1c
+    void** Unmapped18(void** out, void* a); // vtable+0x18
+    int Unmapped1c(void* arg);             // vtable+0x1c
     void* Unmapped20();                     // vtable+0x20
     int Unmapped24();                       // vtable+0x24
     int Start(IUnknown** object);           // vtable+0x28

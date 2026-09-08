@@ -23,6 +23,9 @@ const char* g_kdNameSystem = kSystem;
 static void SystemDtorBase(KdSystem* self);
 static unsigned char SystemStartBase(KdSystem* self, IUnknown** object);
 static void StartPostMixer();
+static int InputStreamFinish(IInputStream* self);
+static int InputStreamUnmapped1c(IInputStream* self, void* arg);
+static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a);
 
 KdSystem::KdSystem()
 {
@@ -175,11 +178,19 @@ void ConstructKdSystem(KdSystem* self)
     }
 }
 
+// ADD ECX, 0xc; JMP 0x00472870. ISystem vtable+0x24.
 // STUB: VC1 0x00462700
-int KdSystem::Unmapped24() { return 0; }
+int KdSystem::Unmapped24()
+{
+    return InputStreamFinish(static_cast<IInputStream*>(this));
+}
 
+// ADD ECX, 0xc; JMP 0x004728f0. ISystem vtable+0x1c. RET 4 on the target.
 // STUB: VC1 0x00462710
-int KdSystem::Unmapped1c() { return 0; }
+int KdSystem::Unmapped1c(void* arg)
+{
+    return InputStreamUnmapped1c(static_cast<IInputStream*>(this), arg);
+}
 
 // STUB: VC1 0x00462720
 int KdSystem::Shutdown() { return 0; }
@@ -198,14 +209,41 @@ static unsigned char SystemStartBase(KdSystem* self, IUnknown** object)
     return 1;
 }
 
+// ADD ECX, 0xc; CALL 0x00472a70; return first arg. RET 8. ISystem vtable+0x18.
 // STUB: VC1 0x004630d0
-int KdSystem::Unmapped18() { return 0; }
+void** KdSystem::Unmapped18(void** out, void* a)
+{
+    return InputStreamUnmapped18(static_cast<IInputStream*>(this), out, a);
+}
 
 // STUB: VC1 0x004630f0
 int KdSystem::Unmapped14() { return 0; }
 
 // STUB: VC1 0x004631b0
 int KdSystem::Unmapped10() { return 0; }
+
+// STUB: VC1 0x00472870
+static int InputStreamFinish(IInputStream* self)
+{
+    (void)self;
+    return 0;
+}
+
+// STUB: VC1 0x004728f0
+static int InputStreamUnmapped1c(IInputStream* self, void* arg)
+{
+    (void)self;
+    (void)arg;
+    return 0;
+}
+
+// STUB: VC1 0x00472a70
+static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a)
+{
+    (void)self;
+    (void)a;
+    return out;
+}
 
 // STUB: VC1 0x004964f0
 static void StartPostMixer()
@@ -297,7 +335,7 @@ void** CreateKdSystem(void** out)
     return out;
 }
 
-// STUB: VC1 0x004a8eb0
+// FUNCTION: VC1 0x004a8eb0
 int KdSystem::Start(IUnknown** object)
 {
     IDisplay* display;

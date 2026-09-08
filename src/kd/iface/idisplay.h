@@ -15,7 +15,7 @@ struct IDisplay : IUnknown
     virtual void* Display1c() = 0;                         // vtable+0x1c
     virtual int SetSize(unsigned width, unsigned height) = 0; // vtable+0x20
     virtual unsigned char Display24() = 0;                // vtable+0x24
-    virtual int Display28() = 0;                           // vtable+0x28
+    virtual int Display28(unsigned char arg);             // vtable+0x28
     virtual void* GetMixer();                              // vtable+0x2c
     virtual void Display30(int unused) = 0;                // vtable+0x30
     virtual void** Display34(void** out) = 0;              // vtable+0x34

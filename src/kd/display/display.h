@@ -49,7 +49,6 @@ public:
     void* Display1c();                      // vtable+0x1c
     int SetSize(unsigned width, unsigned height); // vtable+0x20
     unsigned char Display24();             // vtable+0x24
-    int Display28();                        // vtable+0x28
     void Display30(int unused);              // vtable+0x30
     void** Display34(void** out);            // vtable+0x34
     void** Display38(void** out, void* a, void* b); // vtable+0x38
