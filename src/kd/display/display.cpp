@@ -15,9 +15,18 @@ static const char kDisplay[] = "Display";
 // GLOBAL: VC1 0x004d0630
 const char* g_kdNameDisplay = kDisplay;
 
+// GLOBAL: VC1 0x004ee284
+static IUnknown* g_display1cObject;
+// GLOBAL: VC1 0x004ee288
+static unsigned g_display1cGuard;
+
 static void DisplayDtorBase(KdDisplay* self);
 static void ConstructDisplayBase(KdDisplay* self);
 static unsigned char Script0cBody(void* a, void* b);
+static void Display1cAtexit();
+static void* DisplayQueryGraphics(void* self, void* a, void* b);
+static void* Display34Construct(void* self);
+static void** Display38Body(void** out);
 
 KdDisplay::KdDisplay()
 {
@@ -34,12 +43,6 @@ KdDisplay::KdDisplay()
     enabled58 = 1;
 }
 
-int KdDisplay::Display1c() { return 0; }
-int KdDisplay::Display34() { return 0; }
-int KdDisplay::Display38() { return 0; }
-int KdDisplay::Display10() { return 0; }
-int KdDisplay::SetSize(unsigned, unsigned) { return 1; }
-
 KdDisplay::~KdDisplay()
 {
     if (target) {
@@ -49,11 +52,34 @@ KdDisplay::~KdDisplay()
     DisplayDtorBase(this);
 }
 
+// this = IRenderTarget (KdDisplay+0x04). IDisplay thunk SUB ECX, 0x10.
+// STUB: VC1 0x0041a500
+static void* DisplayQueryGraphics(void* self, void* a, void* b)
+{
+    (void)self;
+    (void)b;
+    return a;
+}
+
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041a650
 const char* KdDisplay::Script14()
 {
     return kDisplay;
+}
+
+// EAX unused. LTCG passes extra args in EBX/EDI. RET 4.
+// STUB: VC1 0x0045bf40
+static void** Display38Body(void** out)
+{
+    return out;
+}
+
+// EAX=malloc(0x24) block. Sets vptrs; returns this.
+// STUB: VC1 0x0045c0f0
+static void* Display34Construct(void* self)
+{
+    return self;
 }
 
 // this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
@@ -102,9 +128,9 @@ int KdDisplay::Display14()
 
 // this = IDisplay (KdDisplay+0x14). mixer at IDisplay+0x18 = object+0x2c.
 // FUNCTION: VC1 0x004662b0
-void* DisplayFaceGetMixer(IDisplay* self)
+void* IDisplay::GetMixer()
 {
-    return *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x18);
+    return *reinterpret_cast<void**>(reinterpret_cast<char*>(this) + 0x18);
 }
 
 // MOV AL, [0x004e74b6]; RET. IDisplay vtable+0x24.
@@ -112,6 +138,18 @@ void* DisplayFaceGetMixer(IDisplay* self)
 unsigned char KdDisplay::Display24()
 {
     return g_displaySkipDevice;
+}
+
+// Guarded static IUnknown*. IRenderTarget vtable+0x1c; IDisplay thunk SUB ECX, 0x10.
+// FUNCTION: VC1 0x004662e0
+void* KdDisplay::Display1c()
+{
+    if ((g_display1cGuard & 1) == 0) {
+        g_display1cGuard |= 1;
+        g_display1cObject = 0;
+        atexit(Display1cAtexit);
+    }
+    return &g_display1cObject;
 }
 
 // RET 4. IDisplay vtable+0x30.
@@ -146,6 +184,43 @@ void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid)
     return 0;
 }
 
+// malloc 0x24, construct, QI IAbstract at +0x14. RET 4. IDisplay vtable+0x34.
+// FUNCTION: VC1 0x004663b0
+void** KdDisplay::Display34(void** out)
+{
+    void* object;
+    IUnknown* queried;
+    IUnknown* face;
+
+    (void)this;
+    object = malloc(0x24);
+    if (!object) {
+        queried = 0;
+    }
+    else {
+        object = Display34Construct(object);
+        if (!object) {
+            queried = 0;
+        }
+        else {
+            face = reinterpret_cast<IUnknown*>(reinterpret_cast<char*>(object) + 0x14);
+            if (!face) {
+                queried = 0;
+            }
+            else {
+                queried = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
+            }
+        }
+    }
+    *out = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    queried = static_cast<IUnknown*>(*out);
+    queried->Release();
+    return out;
+}
+
 // STUB: VC1 0x004664a0
 static void DisplayDtorBase(KdDisplay* self)
 {
@@ -156,6 +231,17 @@ static void DisplayDtorBase(KdDisplay* self)
 static void ConstructDisplayBase(KdDisplay* self)
 {
     (void)self;
+}
+
+// RET 0xc. IDisplay vtable+0x38. Orig loads 3 stdcall args then cdecl-calls 0x0045bf40.
+// STUB: VC1 0x00466660
+void** KdDisplay::Display38(void** out, void* a, void* b)
+{
+    (void)this;
+    (void)a;
+    (void)b;
+    Display38Body(out);
+    return out;
 }
 
 // STUB: VC1 0x00466b00
@@ -267,12 +353,30 @@ void** CreateKdDisplay(void** out)
     return out;
 }
 
-void* KdDisplay::GetMixer()
+// STUB: VC1 0x004b1f50
+void* KdDisplay::Display10()
 {
-    return mixer;
+    return 0;
 }
 
-int KdDisplay::Display0c() { return 0; }
+// this = IRenderTarget. [ECX+0x2c] is target (object+0x30). RET 8.
+// FUNCTION: VC1 0x004b20c0
+void* KdDisplay::Display0c(void* a, void* b)
+{
+    IUnknown* object;
+    void** vtbl;
+    typedef void* (__thiscall *Fn0c)(void* self, void* a, void* b);
+    IRenderTarget* self = static_cast<IRenderTarget*>(this);
+
+    object = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x2c);
+    if (g_displaySkipDevice == 0 && object) {
+        vtbl = *reinterpret_cast<void***>(object);
+        reinterpret_cast<Fn0c>(vtbl[3])(object, a, b);
+        return a;
+    }
+    DisplayQueryGraphics(self, a, b);
+    return a;
+}
 
 // this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58).
 // STUB: VC1 0x004b2100
@@ -281,10 +385,30 @@ int KdDisplay::Display28()
     return 0;
 }
 
+// this = IDisplay. Calls 0x00466690 then rebuilds the 3x3 at IDisplay+0x20.
+// STUB: VC1 0x004b2120
+int KdDisplay::SetSize(unsigned width, unsigned height)
+{
+    (void)width;
+    (void)height;
+    return 1;
+}
+
 // STUB: VC1 0x004b22e0
 unsigned char KdDisplay::Script0c(void* a, void* b)
 {
     return Script0cBody(a, b) != 0;
+}
+
+// Release the Display1c static if set. Registered with atexit from 0x004662e0.
+// FUNCTION: VC1 0x004cad30
+static void Display1cAtexit()
+{
+    IUnknown* object = g_display1cObject;
+    if (object) {
+        object->Release();
+    }
+    g_display1cObject = 0;
 }
 
 }

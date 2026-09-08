@@ -42,18 +42,17 @@ public:
     unsigned char Script0c(void* a, void* b); // vtable+0x0c
     unsigned char Script10(void* a, void* b); // vtable+0x10
     const char* Script14();                 // vtable+0x14
-    int Display0c();                        // vtable+0x0c
-    int Display10();                        // vtable+0x10
+    void* Display0c(void* a, void* b);      // vtable+0x0c
+    void* Display10();                       // vtable+0x10
     int Display14();                        // vtable+0x14
     int Display18();                        // vtable+0x18
-    int Display1c();                        // vtable+0x1c
+    void* Display1c();                      // vtable+0x1c
     int SetSize(unsigned width, unsigned height); // vtable+0x20
     unsigned char Display24();             // vtable+0x24
     int Display28();                        // vtable+0x28
-    void* GetMixer();                       // vtable+0x2c
     void Display30(int unused);              // vtable+0x30
-    int Display34();                        // vtable+0x34
-    int Display38();                        // vtable+0x38
+    void** Display34(void** out);            // vtable+0x34
+    void** Display38(void** out, void* a, void* b); // vtable+0x38
     int Shutdown();                         // vtable+0x0c
 };
 
@@ -63,22 +62,32 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // vc1::KdDisplay::`scalar deleting destructor'
 // SYNTHETIC: VC1 0x004022e0
 // ?AddRef@KdDisplay@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x004022f0
+// ?Display0c@KdDisplay@vc1@@WBA@AEPAXPAX0@Z
 // SYNTHETIC: VC1 0x00402300
 // ??_EKdDisplay@vc1@@W3AEPAXI@Z
 // SYNTHETIC: VC1 0x00402310
 // ?Release@KdDisplay@vc1@@WBE@AEIXZ
 // SYNTHETIC: VC1 0x00402320
 // ?QueryInterface@KdDisplay@vc1@@WBE@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402330
+// ?Display14@KdDisplay@vc1@@WBA@AEHXZ
 // SYNTHETIC: VC1 0x00402340
 // ?Release@KdDisplay@vc1@@WBI@AEIXZ
 // SYNTHETIC: VC1 0x00402350
 // ?QueryInterface@KdDisplay@vc1@@WBI@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402360
+// ?Display18@KdDisplay@vc1@@WBA@AEHXZ
 // SYNTHETIC: VC1 0x00402370
 // ?Release@KdDisplay@vc1@@WBM@AEIXZ
 // SYNTHETIC: VC1 0x00402380
 // ?QueryInterface@KdDisplay@vc1@@WBM@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402390
+// ?Display10@KdDisplay@vc1@@WBA@AEPAXXZ
 // SYNTHETIC: VC1 0x004023a0
 // ?AddRef@KdDisplay@vc1@@WBE@AEIXZ
+// SYNTHETIC: VC1 0x004023b0
+// ?Display1c@KdDisplay@vc1@@WBA@AEPAXXZ
 // SYNTHETIC: VC1 0x004023c0
 // ??_EKdDisplay@vc1@@WBM@AEPAXI@Z
 // SYNTHETIC: VC1 0x004023d0
@@ -92,8 +101,9 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 
 KdDisplay* ConstructKdDisplay(KdDisplay* self);
 void** CreateKdDisplay(void** out);
+KdDisplay* ConstructKdDisplay(KdDisplay* self);
+void** CreateKdDisplay(void** out);
 void* DisplayFaceQueryInterface(IDisplay* self, const char** iid);
-void* DisplayFaceGetMixer(IDisplay* self);
 void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid);
 
 }

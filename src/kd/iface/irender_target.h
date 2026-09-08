@@ -5,12 +5,19 @@
 
 namespace vc1 {
 
-// SIZE 0x10
+// SIZE 0x10. Display0c..Display1c share bodies with IDisplay; IDisplay vtable
+// uses SUB ECX, 0x10 thunks to this this-pointer (IRenderTarget at KdDisplay+0x04).
 struct IRenderTarget : IUnknown
 {
     unsigned unk04; // 0x04
     unsigned unk08; // 0x08
     void* unk0c;    // 0x0c
+
+    virtual void* Display0c(void* a, void* b) = 0; // vtable+0x0c
+    virtual void* Display10() = 0;                 // vtable+0x10
+    virtual int Display14() = 0;                  // vtable+0x14
+    virtual int Display18() = 0;                  // vtable+0x18
+    virtual void* Display1c() = 0;                // vtable+0x1c
 };
 
 typedef char Vc1IRenderTargetSizeCheck[sizeof(IRenderTarget) == 0x10 ? 1 : -1];

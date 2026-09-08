@@ -94,6 +94,8 @@ struct SQBlob : public SQStream
 	bool EOS() {
 		return _ptr == _size;
 	}
+	// FUNCTION: VC1 0x0041adb0 FOLDED
+	// SQBlob::Flush
 	SQInteger Flush() { return 0; }
 	SQInteger Tell() { return _ptr; }
 	SQInteger Len() { return _size; }

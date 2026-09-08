@@ -30,11 +30,6 @@ void KdFactory::Clear()
     capacity = 0;
 }
 
-unsigned KdFactory::Count()
-{
-    return size >> 3;
-}
-
 static void RegisterOne(const char** nameSlot, KdFactoryFn fn)
 {
     FactoryEntry pair;
@@ -118,6 +113,13 @@ void ReserveFactoryTable(unsigned newCount)
             slot += 1;
         }
     }
+}
+
+// XOR EAX,EAX; RET. ICF-folded return-0; factory vtable+0x08 and SQBlob::Flush.
+// FUNCTION: VC1 0x0041adb0 FOLDED
+unsigned KdFactory::Count()
+{
+    return 0;
 }
 
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
