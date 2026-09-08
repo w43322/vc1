@@ -162,7 +162,7 @@ public:
 // SQFunctionProto::Create
 // FUNCTION: VC1 0x0040f480
 // SQFunctionProto::Release
-// FUNCTION: VC1 0x0040f630
+// SYNTHETIC: VC1 0x0040f630
 // SQFunctionProto::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040f650
 // SQFunctionProto::~SQFunctionProto

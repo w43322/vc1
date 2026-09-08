@@ -13,8 +13,11 @@ class KdDisplay;
 
 extern IAbstract* g_kdDisplay;
 
-// Extra original vftables: 0x004d0b94, 0x004d0be8, 0x004d0c28, 0x004d0c38.
-// VTABLE: VC1 0x004d0b78
+// VTABLE: VC1 0x004d0b78 vc1::IScriptObject
+// VTABLE: VC1 0x004d0b94 vc1::IRenderTarget
+// VTABLE: VC1 0x004d0be8 vc1::IDisplay
+// VTABLE: VC1 0x004d0c28 vc1::IShutdownable
+// VTABLE: VC1 0x004d0c38 vc1::IAbstract
 // SIZE 0x5c
 class KdDisplay : public IScriptObject,
                   public IRenderTarget,
@@ -56,7 +59,7 @@ public:
 
 typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 
-// FUNCTION: VC1 0x00402230
+// SYNTHETIC: VC1 0x00402230
 // vc1::KdDisplay::`scalar deleting destructor'
 
 KdDisplay* ConstructKdDisplay(KdDisplay* self);

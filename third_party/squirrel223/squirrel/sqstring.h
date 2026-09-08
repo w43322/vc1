@@ -27,7 +27,7 @@ public:
 	SQChar _val[1];
 };
 
-// FUNCTION: VC1 0x0040f730 FOLDED
+// SYNTHETIC: VC1 0x0040f730 FOLDED
 // SQString::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040f840
 // _hashstr

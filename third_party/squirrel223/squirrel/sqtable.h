@@ -95,7 +95,7 @@ public:
 // SQTable::~SQTable
 // FUNCTION: VC1 0x00415450
 // SQTable::Release
-// FUNCTION: VC1 0x00415470
+// SYNTHETIC: VC1 0x00415470
 // SQTable::`scalar deleting destructor'
 // FUNCTION: VC1 0x0048ad60
 // SQTable::Mark

@@ -106,7 +106,7 @@ public:
 // ?ShrinkIfNeeded@SQArray@@QAEXXZ
 // FUNCTION: VC1 0x0040d460
 // SQArray::Release
-// FUNCTION: VC1 0x0040d480
+// SYNTHETIC: VC1 0x0040d480
 // SQArray::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040e870
 // ?Get@SQArray@@QAE_NHAAUSQObjectPtr@@@Z

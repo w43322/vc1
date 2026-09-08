@@ -30,7 +30,7 @@ SQUIRREL_API SQRESULT sqstd_register_bloblib(HSQUIRRELVM v);
 // SQBlob::IsValid
 // FUNCTION: VC1 0x0040f120
 // SQBlob::EOS
-// FUNCTION: VC1 0x0040f140
+// SYNTHETIC: VC1 0x0040f140
 // SQBlob::`scalar deleting destructor'
 // FUNCTION: VC1 0x0042f140
 // SQBlob::Tell

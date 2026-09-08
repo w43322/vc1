@@ -13,8 +13,11 @@ class KdSystem;
 
 extern IAbstract* g_kdSystem;
 
-// Extra original vftables: 0x004d1984, 0x004d199c, 0x004d19b4, 0x004d19dc.
-// VTABLE: VC1 0x004d1930
+// VTABLE: VC1 0x004d1930 vc1::ISystem
+// VTABLE: VC1 0x004d1984 vc1::IRenderable
+// VTABLE: VC1 0x004d199c vc1::IScriptObject
+// VTABLE: VC1 0x004d19b4 vc1::IInputStream
+// VTABLE: VC1 0x004d19dc vc1::IAbstract
 // SIZE 0xd8
 class KdSystem : public ISystem,
                  public IRenderable,
@@ -46,7 +49,7 @@ public:
 
 typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];
 
-// FUNCTION: VC1 0x00407470
+// SYNTHETIC: VC1 0x00407470
 // vc1::KdSystem::`scalar deleting destructor'
 
 void ConstructKdSystem(KdSystem* self);

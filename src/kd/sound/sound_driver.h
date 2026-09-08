@@ -10,8 +10,10 @@ namespace vc1 {
 
 extern IAbstract* g_kdSoundDriver;
 
-// Extra original vftables: 0x004d5b74, 0x004d5b84, 0x004d5b9c.
-// VTABLE: VC1 0x004d5b48
+// VTABLE: VC1 0x004d5b48 vc1::ISoundDriver
+// VTABLE: VC1 0x004d5b74 vc1::IShutdownable
+// VTABLE: VC1 0x004d5b84 vc1::IScriptObject
+// VTABLE: VC1 0x004d5b9c vc1::IAbstract
 // SIZE 0x14
 class KdSoundDriver : public ISoundDriver,
                       public IShutdownable,
@@ -37,7 +39,7 @@ public:
 
 typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
 
-// FUNCTION: VC1 0x00419800
+// SYNTHETIC: VC1 0x00419800
 // vc1::KdSoundDriver::`scalar deleting destructor'
 
 void** CreateKdSoundDriver(void** out);

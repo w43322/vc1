@@ -44,7 +44,7 @@ struct SQUserData : SQDelegable
 // SQUserData::Finalize
 // FUNCTION: VC1 0x0040db10
 // SQUserData::Release
-// FUNCTION: VC1 0x0040db70
+// SYNTHETIC: VC1 0x0040db70
 // SQUserData::`scalar deleting destructor'
 // FUNCTION: VC1 0x0048acf0
 // SQUserData::Mark

@@ -130,7 +130,7 @@ public:
 // SQClosure::Clone
 // FUNCTION: VC1 0x0040d640
 // SQClosure::~SQClosure
-// FUNCTION: VC1 0x0040d700
+// SYNTHETIC: VC1 0x0040d700
 // SQClosure::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040d720
 // SQNativeClosure::SQNativeClosure
@@ -144,7 +144,7 @@ public:
 // SQClosure::Finalize
 // FUNCTION: VC1 0x0040d970 FOLDED
 // SQNativeClosure::Finalize
-// FUNCTION: VC1 0x0040d9a0
+// SYNTHETIC: VC1 0x0040d9a0
 // SQNativeClosure::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040e550
 // SQGenerator::SQGenerator
@@ -156,7 +156,7 @@ public:
 // SQGenerator::Release
 // FUNCTION: VC1 0x0040e7e0
 // SQGenerator::Finalize
-// FUNCTION: VC1 0x0040e850
+// SYNTHETIC: VC1 0x0040e850
 // SQGenerator::`scalar deleting destructor'
 // FUNCTION: VC1 0x0048b0e0
 // SQNativeClosure::Mark

@@ -87,7 +87,25 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
 - Game functions: `// FUNCTION: VC1 0x00......` immediately above the definition, **sorted by address within that file**. Reccmp decomplint fails if they are out of order.
 - Empty or dishonest bodies: `// STUB: VC1 0x00......` so asmcmp skips them. Do not mass-convert incomplete-but-honest `FUNCTION`s to stubs to inflate accuracy.
 - Globals with a known original VA: `// GLOBAL: VC1 0x00......` on the **definition** in a `.cpp` (not only a header comment).
-- Classes/structs with a known original vftable: `// VTABLE: VC1 0x00......` immediately above the type.
+- Classes/structs with a known original vftable: `// VTABLE: VC1 0x00......` immediately above the type. Multiple inheritance needs **one `VTABLE` per original table**, with the `{for `Base'}` name after the address so same-module markers do not collide (`DUPLICATE_MODULE`). Example:
+
+```c++
+// VTABLE: VC1 0x004d0b78 vc1::IScriptObject
+// VTABLE: VC1 0x004d0b94 vc1::IRenderTarget
+// VTABLE: VC1 0x004d0be8 vc1::IDisplay
+// VTABLE: VC1 0x004d0c28 vc1::IShutdownable
+// VTABLE: VC1 0x004d0c38 vc1::IAbstract
+class KdDisplay : public IScriptObject, public IRenderTarget, public IDisplay,
+                  public IShutdownable, public IAbstract
+```
+
+  The extra field must match the PDB `{for `...`}` string (include `vc1::` when the demangler does). Do not use a free-form “extra original vftables” comment. Reccmp decomplint rejects two `VTABLE: VC1` lines on one class unless those extras differ. See `vendor/reccmp/docs/annotations.md`.
+- Compiler-generated `scalar deleting destructor` (and similar) use `SYNTHETIC` name comments in a header, not `FUNCTION`. Do not put the marker on `~T()` — that binds the real destructor. Include the `vc1::` prefix so asmcmp binds the MSVC symbol:
+
+```c++
+// SYNTHETIC: VC1 0x00402230
+// vc1::KdDisplay::`scalar deleting destructor'
+```
 - String literals with a known original VA: `// STRING: VC1 0x00......` immediately above the line that contains the text. The same STRING address may repeat if the text matches.
 - `LINE` pins a recompiled instruction to a source line when the asm diff mis-aligns; use it on near-matches, not as a first annotation.
 - Stock Squirrel 2.2.3 (`third_party/squirrel223`): **comments only**, do not rewrite the bodies. `reccmp-project.yml` already has this tree in `source-root`. Prefer `// FUNCTION: VC1 0x...` on the implementation when that `.cpp` is already in original address order. Static functions are fine that way. If source order does not match the original (typical for sqstdlib), use the **name-comment** form from reccmp's annotations docs, and put it in a **header** (`.h` / `.hpp`). Decomplint allows lookup-by-name only in headers (`byname_function_in_cpp` fails `--warnfail` in `.cpp`). Example that matches `_file__typeof`:

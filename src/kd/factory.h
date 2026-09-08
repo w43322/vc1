@@ -38,7 +38,7 @@ public:
 
 typedef char Vc1KdFactorySizeCheck[sizeof(KdFactory) == 0x10 ? 1 : -1];
 
-// FUNCTION: VC1 0x00401f30
+// SYNTHETIC: VC1 0x00401f30
 // vc1::KdFactory::`scalar deleting destructor'
 
 // SIZE 0x08

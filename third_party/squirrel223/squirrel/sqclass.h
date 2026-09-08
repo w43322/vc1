@@ -159,9 +159,9 @@ public:
 // SQInstance::Create
 // FUNCTION: VC1 0x0040fa80
 // SQInstance::Release
-// FUNCTION: VC1 0x0040fae0
+// SYNTHETIC: VC1 0x0040fae0
 // SQClass::`scalar deleting destructor'
-// FUNCTION: VC1 0x0040fb40
+// SYNTHETIC: VC1 0x0040fb40
 // SQInstance::`scalar deleting destructor'
 // FUNCTION: VC1 0x00487540
 // SQInstance::InstanceOf
