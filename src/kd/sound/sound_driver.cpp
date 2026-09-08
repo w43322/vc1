@@ -58,6 +58,30 @@ static int BassGetDevice()
     return 0;
 }
 
+// STUB: VC1 0x0044469e
+static int BassStart()
+{
+    return 0;
+}
+
+// STUB: VC1 0x004446a4
+static int BassPause()
+{
+    return 0;
+}
+
+// STUB: VC1 0x004446aa
+static int BassStop()
+{
+    return 0;
+}
+
+// STUB: VC1 0x004446b0
+static float BassGetCPU()
+{
+    return 0.0f;
+}
+
 // STUB: VC1 0x0045e9b0
 static void Sound14Body()
 {
@@ -71,6 +95,32 @@ static void Sound10Body()
 KdSoundDriver::KdSoundDriver()
 {
     refs = 1;
+}
+
+// CALL IAT; NEG/SBB/NEG EAX. ISoundDriver vtable+0x24 then JMP CRT.
+// STUB: VC1 0x00468100
+float KdSoundDriver::Sound24()
+{
+    return BassGetCPU();
+}
+
+// CALL IAT; NEG/SBB/NEG EAX.
+// STUB: VC1 0x00468110
+unsigned char KdSoundDriver::Sound20()
+{
+    return BassStop() != 0;
+}
+
+// STUB: VC1 0x00468120
+unsigned char KdSoundDriver::Sound1c()
+{
+    return BassPause() != 0;
+}
+
+// STUB: VC1 0x00468130
+unsigned char KdSoundDriver::Sound18()
+{
+    return BassStart() != 0;
 }
 
 // FUNCTION: VC1 0x004681a0
@@ -213,7 +263,7 @@ int KdSoundDriver::Shutdown()
 
 unsigned char KdSoundDriver::Script0c(void*, void*) { return 0; }
 unsigned char KdSoundDriver::Script10(void*, void*) { return 0; }
-int KdSoundDriver::Script14() { return 0; }
+const char* KdSoundDriver::Script14() { return 0; }
 
 KdSoundDriver::~KdSoundDriver()
 {

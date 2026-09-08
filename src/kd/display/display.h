@@ -29,7 +29,7 @@ public:
     unsigned refs;           // 0x20
     unsigned pad24;          // 0x24
     unsigned pad28;          // 0x28
-    void* device;            // 0x2c
+    void* mixer;             // 0x2c  IDisplay+0x18
     IUnknown* target;        // 0x30
     float matrix[9];         // 0x34
     unsigned char enabled58; // 0x58
@@ -41,17 +41,17 @@ public:
     unsigned Release();                     // vtable+0x08
     unsigned char Script0c(void* a, void* b); // vtable+0x0c
     unsigned char Script10(void* a, void* b); // vtable+0x10
-    int Script14();                            // vtable+0x14
+    const char* Script14();                 // vtable+0x14
     int Display0c();                        // vtable+0x0c
     int Display10();                        // vtable+0x10
     int Display14();                        // vtable+0x14
     int Display18();                        // vtable+0x18
     int Display1c();                        // vtable+0x1c
     int SetSize(unsigned width, unsigned height); // vtable+0x20
-    int Display24();                        // vtable+0x24
+    unsigned char Display24();             // vtable+0x24
     int Display28();                        // vtable+0x28
     void* GetMixer();                       // vtable+0x2c
-    int Display30();                        // vtable+0x30
+    void Display30(int unused);              // vtable+0x30
     int Display34();                        // vtable+0x34
     int Display38();                        // vtable+0x38
     int Shutdown();                         // vtable+0x0c
@@ -61,10 +61,39 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 
 // SYNTHETIC: VC1 0x00402230
 // vc1::KdDisplay::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x004022e0
+// ?AddRef@KdDisplay@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x00402300
+// ??_EKdDisplay@vc1@@W3AEPAXI@Z
+// SYNTHETIC: VC1 0x00402310
+// ?Release@KdDisplay@vc1@@WBE@AEIXZ
+// SYNTHETIC: VC1 0x00402320
+// ?QueryInterface@KdDisplay@vc1@@WBE@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402340
+// ?Release@KdDisplay@vc1@@WBI@AEIXZ
+// SYNTHETIC: VC1 0x00402350
+// ?QueryInterface@KdDisplay@vc1@@WBI@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402370
+// ?Release@KdDisplay@vc1@@WBM@AEIXZ
+// SYNTHETIC: VC1 0x00402380
+// ?QueryInterface@KdDisplay@vc1@@WBM@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x004023a0
+// ?AddRef@KdDisplay@vc1@@WBE@AEIXZ
+// SYNTHETIC: VC1 0x004023c0
+// ??_EKdDisplay@vc1@@WBM@AEPAXI@Z
+// SYNTHETIC: VC1 0x004023d0
+// ?AddRef@KdDisplay@vc1@@WBI@AEIXZ
+// SYNTHETIC: VC1 0x004023e0
+// ?Release@KdDisplay@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x004023f0
+// ?QueryInterface@KdDisplay@vc1@@W3AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00402400
+// ?AddRef@KdDisplay@vc1@@WBM@AEIXZ
 
 KdDisplay* ConstructKdDisplay(KdDisplay* self);
 void** CreateKdDisplay(void** out);
 void* DisplayFaceQueryInterface(IDisplay* self, const char** iid);
+void* DisplayFaceGetMixer(IDisplay* self);
 void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid);
 
 }

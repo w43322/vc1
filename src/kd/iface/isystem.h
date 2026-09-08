@@ -12,7 +12,7 @@ struct ISystem : IShutdownable
     virtual int Unmapped14() = 0; // vtable+0x14
     virtual int Unmapped18() = 0; // vtable+0x18
     virtual int Unmapped1c() = 0; // vtable+0x1c
-    virtual int Unmapped20() = 0; // vtable+0x20
+    virtual void* Unmapped20() = 0; // vtable+0x20  returns IInputStream+0x04
     virtual int Unmapped24() = 0; // vtable+0x24
     virtual int Start(IUnknown** object) = 0; // vtable+0x28
 };

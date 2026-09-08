@@ -31,8 +31,12 @@ KdSystem::KdSystem()
     memset(tail, 0, sizeof(tail));
 }
 
-// STUB: VC1 0x00461f60
-int KdSystem::Unmapped20() { return 0; }
+// LEA EAX, [ECX+0x10]; RET. ISystem vtable+0x20. IInputStream starts at +0x0c.
+// FUNCTION: VC1 0x00461f60
+void* KdSystem::Unmapped20()
+{
+    return reinterpret_cast<char*>(this) + 0x10;
+}
 
 // FUNCTION: VC1 0x00462080
 void* SystemBaseQueryInterface(KdSystem* self, const char** iid)
@@ -304,7 +308,7 @@ int KdSystem::Start(IUnknown** object)
 
 unsigned char KdSystem::Script0c(void*, void*) { return 0; }
 unsigned char KdSystem::Script10(void*, void*) { return 0; }
-int KdSystem::Script14() { return 0; }
+const char* KdSystem::Script14() { return 0; }
 
 KdSystem::~KdSystem()
 {

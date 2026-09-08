@@ -39,12 +39,12 @@ public:
     int Unmapped14();                       // vtable+0x14
     int Unmapped18();                       // vtable+0x18
     int Unmapped1c();                       // vtable+0x1c
-    int Unmapped20();                       // vtable+0x20
+    void* Unmapped20();                     // vtable+0x20
     int Unmapped24();                       // vtable+0x24
     int Start(IUnknown** object);           // vtable+0x28
     unsigned char Script0c(void* a, void* b);
     unsigned char Script10(void* a, void* b);
-    int Script14();
+    const char* Script14();
 };
 
 typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];

@@ -34,16 +34,11 @@ KdDisplay::KdDisplay()
     enabled58 = 1;
 }
 
-int KdDisplay::Display14() { return 0; }
-int KdDisplay::SetSize(unsigned, unsigned) { return 1; }
-int KdDisplay::Display24() { return 0; }
 int KdDisplay::Display1c() { return 0; }
 int KdDisplay::Display34() { return 0; }
-int KdDisplay::Display30() { return 0; }
 int KdDisplay::Display38() { return 0; }
-int KdDisplay::Display18() { return 0; }
 int KdDisplay::Display10() { return 0; }
-int KdDisplay::Script14() { return 0; }
+int KdDisplay::SetSize(unsigned, unsigned) { return 1; }
 
 KdDisplay::~KdDisplay()
 {
@@ -52,6 +47,13 @@ KdDisplay::~KdDisplay()
     }
     target = 0;
     DisplayDtorBase(this);
+}
+
+// MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
+// FUNCTION: VC1 0x0041a650
+const char* KdDisplay::Script14()
+{
+    return kDisplay;
 }
 
 // this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
@@ -75,6 +77,48 @@ void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
         return reinterpret_cast<char*>(self) + 8;
     }
     return 0;
+}
+
+// GLOBAL: VC1 0x004e74b6
+unsigned char g_displaySkipDevice;
+// GLOBAL: VC1 0x004e8744
+int g_displayWidth;
+// GLOBAL: VC1 0x004e8998
+int g_displayHeight;
+
+// MOV EAX, [0x004e8998]; RET. IDisplay vtable+0x18 body.
+// FUNCTION: VC1 0x00466290
+int KdDisplay::Display18()
+{
+    return g_displayHeight;
+}
+
+// MOV EAX, [0x004e8744]; RET. IDisplay vtable+0x14 body.
+// FUNCTION: VC1 0x004662a0
+int KdDisplay::Display14()
+{
+    return g_displayWidth;
+}
+
+// this = IDisplay (KdDisplay+0x14). mixer at IDisplay+0x18 = object+0x2c.
+// FUNCTION: VC1 0x004662b0
+void* DisplayFaceGetMixer(IDisplay* self)
+{
+    return *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x18);
+}
+
+// MOV AL, [0x004e74b6]; RET. IDisplay vtable+0x24.
+// FUNCTION: VC1 0x004662c0
+unsigned char KdDisplay::Display24()
+{
+    return g_displaySkipDevice;
+}
+
+// RET 4. IDisplay vtable+0x30.
+// FUNCTION: VC1 0x00466310
+void KdDisplay::Display30(int unused)
+{
+    (void)unused;
 }
 
 // FUNCTION: VC1 0x00466320
@@ -170,6 +214,13 @@ unsigned KdDisplay::AddRef()
     return n;
 }
 
+// this = IShutdownable (KdDisplay+0x18). Releases target at +0x18, then QI g_iidRenderTarget.
+// STUB: VC1 0x004b1da0
+int KdDisplay::Shutdown()
+{
+    return 0;
+}
+
 // EAX=this. Calls FUN_004665c0 with this in ESI, then overwrites vptrs/floats.
 // FUNCTION: VC1 0x004b1e40
 KdDisplay* ConstructKdDisplay(KdDisplay* self)
@@ -218,12 +269,17 @@ void** CreateKdDisplay(void** out)
 
 void* KdDisplay::GetMixer()
 {
-    return 0;
+    return mixer;
 }
 
-int KdDisplay::Display28() { return 0; }
 int KdDisplay::Display0c() { return 0; }
-int KdDisplay::Shutdown() { return 0; }
+
+// this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58).
+// STUB: VC1 0x004b2100
+int KdDisplay::Display28()
+{
+    return 0;
+}
 
 // STUB: VC1 0x004b22e0
 unsigned char KdDisplay::Script0c(void* a, void* b)

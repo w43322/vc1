@@ -31,10 +31,14 @@ public:
     int SetEnabled();                       // vtable+0x0c
     void* Sound10(void* arg);               // vtable+0x10
     void* Sound14(void* arg);               // vtable+0x14
+    unsigned char Sound18();              // vtable+0x18
+    unsigned char Sound1c();              // vtable+0x1c
+    unsigned char Sound20();              // vtable+0x20
+    float Sound24();                       // vtable+0x24
     int Shutdown();                         // vtable+0x0c
     unsigned char Script0c(void* a, void* b);
     unsigned char Script10(void* a, void* b);
-    int Script14();
+    const char* Script14();
 };
 
 typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
