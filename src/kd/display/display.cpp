@@ -22,6 +22,12 @@ static int* g_displayMode;
 static int g_displayWindowX;
 // GLOBAL: VC1 0x004ed594
 static int g_displayWindowY;
+// GLOBAL: VC1 0x004ed598
+static int g_displayWindowRight;
+// GLOBAL: VC1 0x004ed59c
+static int g_displayWindowBottom;
+// GLOBAL: VC1 0x004ed5a0
+static unsigned g_displayWindowStyle;
 // GLOBAL: VC1 0x004ed5d8
 static int g_displayViewLeft;
 // GLOBAL: VC1 0x004ed5dc
@@ -30,6 +36,8 @@ static int g_displayViewTop;
 static int g_displayViewRight;
 // GLOBAL: VC1 0x004ed5e4
 static int g_displayViewBottom;
+// GLOBAL: VC1 0x004ed5e8
+static unsigned g_displayViewStyle;
 // GLOBAL: VC1 0x004ed5f0
 static IUnknown* g_d3dDevice;
 // GLOBAL: VC1 0x004ed5ec
@@ -48,6 +56,10 @@ static void* g_d3dLastMixer;
 static void* g_d3dChain2;
 // GLOBAL: VC1 0x004ed60c
 static unsigned g_d3dInScene;
+// GLOBAL: VC1 0x004ed610
+static unsigned g_d3dGammaRamp;
+// GLOBAL: VC1 0x004ed614
+static unsigned g_d3dGammaKind;
 // GLOBAL: VC1 0x004ed564
 static unsigned g_displayReady;
 // GLOBAL: VC1 0x004ed5ac
@@ -111,7 +123,9 @@ static void* DisplaySceneConstruct(void* self);
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
 static void DisplayReleaseGraphics(IShutdownable* self);
 static int Display28Finish();
-static int Display28Mode();
+static int Display28Mode(unsigned format);
+static const char* DxGetErrorString(int hr);
+static unsigned char DisplayD3dRecreate();
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
 static void DisplayD3dSetBuffers(void* a, int b, int c, int d);
@@ -245,6 +259,14 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
 const char* KdDisplay::Script14()
 {
     return kDisplay;
+}
+
+// EAX=HRESULT. DXGetErrorString-style lookup; huge table, recovered as a stub.
+// STUB: VC1 0x00442e14
+static const char* DxGetErrorString(int hr)
+{
+    (void)hr;
+    return "";
 }
 
 // EAX unused. LTCG passes extra args in EBX/EDI. RET 4.
@@ -475,25 +497,90 @@ static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned he
     return 1;
 }
 
-// JMP 0x00464210 from Display28Apply. Rebuilds present path after skip-device change.
-// STUB: VC1 0x00464210
+// GetWindowLong/SetWindowPos after skip-device change. GWL_STYLE -16, GWL_EXSTYLE -20.
+// FUNCTION: VC1 0x00464210
 static int Display28Finish()
 {
-    return 0;
+    LONG style;
+    LONG ex;
+    int* rect;
+    unsigned extra;
+
+    style = GetWindowLongA(g_kdDisplayWindow, GWL_STYLE);
+    if (g_displaySkipDevice == 0) {
+        rect = &g_displayViewLeft;
+        extra = g_displayViewStyle;
+    }
+    else {
+        rect = &g_displayWindowX;
+        extra = g_displayWindowStyle;
+    }
+    SetWindowLongA(g_kdDisplayWindow, GWL_STYLE, (style & WS_VISIBLE) | extra);
+    ex = GetWindowLongA(g_kdDisplayWindow, GWL_EXSTYLE);
+    if (g_displaySkipDevice != 0) {
+        SetWindowLongA(g_kdDisplayWindow, GWL_EXSTYLE, ex & ~WS_EX_TOPMOST);
+        return SetWindowPos(g_kdDisplayWindow, HWND_NOTOPMOST,
+            rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1], SWP_FRAMECHANGED);
+    }
+    SetWindowLongA(g_kdDisplayWindow, GWL_EXSTYLE, ex | WS_EX_TOPMOST);
+    return SetWindowPos(g_kdDisplayWindow, HWND_TOPMOST,
+        rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1], SWP_FRAMECHANGED);
 }
 
-// EAX=mode record +8. Returns a D3D presentation interval.
-// STUB: VC1 0x004642e0
-static int Display28Mode()
+// EAX=D3DFORMAT from the mode record +8. Maps 0x15..0x19 to present intervals.
+// FUNCTION: VC1 0x004642e0
+static int Display28Mode(unsigned format)
 {
-    return 0;
+    switch (format) {
+    case 0x15:
+        return 5;
+    case 0x16:
+        return 4;
+    case 0x17:
+        return 1;
+    case 0x18:
+        return 2;
+    case 0x19:
+        return 3;
+    default:
+        return 0;
+    }
 }
 
-// cdecl arg=1. Present/flip after Display10's scene setup.
-// STUB: VC1 0x004643f0
+// cdecl arg. EndScene on the swap chain; optional gamma; clear g_d3dInScene if arg!=0.
+// FUNCTION: VC1 0x004643f0
 static void Display10Present(int arg)
 {
-    (void)arg;
+    typedef int (__stdcall *FnEnd)(IUnknown* swap);
+    typedef int (__stdcall *FnGamma)(IUnknown* device, int kind, int unused, unsigned ramp);
+    typedef int (__stdcall *FnGamma4)(IUnknown* device, int a, int b, unsigned c, int d, unsigned e);
+    typedef int (__stdcall *FnGetBack)(IUnknown* swap, int a, int b, unsigned* out, int c);
+
+    if (g_d3dInScene == 0) {
+        return;
+    }
+    reinterpret_cast<FnEnd>((*reinterpret_cast<void***>(g_d3dSwap))[0xc])(g_d3dSwap);
+    if (g_d3dGammaRamp) {
+        if (g_d3dGammaKind == 2) {
+            reinterpret_cast<FnGamma>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
+                g_d3dDevice, 2, 0, g_d3dGammaRamp);
+        }
+        else if (g_d3dGammaKind == 3) {
+            reinterpret_cast<FnGamma>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
+                g_d3dDevice, 4, 0, g_d3dGammaRamp);
+        }
+        else if (g_d3dGammaKind == 4) {
+            reinterpret_cast<FnGamma4>((*reinterpret_cast<void***>(g_d3dDevice))[0x47])(
+                g_d3dDevice, 4, 0, g_d3dGammaRamp * 4, 0, g_d3dGammaRamp * 2);
+        }
+        g_d3dGammaRamp = 0;
+    }
+    if (arg == 0) {
+        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dSwap))[0xb])(
+            g_d3dSwap, 0, 0, &g_d3dInScene, 0);
+        return;
+    }
+    g_d3dInScene = 0;
 }
 
 // Release D3D device, swap chain, surfaces, and linked lists.
@@ -576,19 +663,73 @@ static void DisplayD3dSetBuffers(void* a, int b, int c, int d)
     (void)d;
 }
 
-// EAX=HRESULT, ESI=prefix string, stdcall flag.
-// STUB: VC1 0x00464d60
+// STRING: VC1 0x004d248c
+static const char kPercentS[] = "%s";
+// STRING: VC1 0x004d5f80
+static const char kDxErrorFmt[] = "%s: %s";
+// STRING: VC1 0x004d5f88
+static const char kDirectXError[] = "DirectX Error";
+// STRING: VC1 0x004d5f98
+static const char kSceneAlreadyRendered[] = "Gfx_BeginScene: Scene is already being rendered";
+
+// EAX=HRESULT, ESI=prefix. cdecl flag. Logs via FormatBuffer; optional MB_ICONERROR.
+// FUNCTION: VC1 0x00464d60
 static void DisplayD3dLogHresult(int hr, char flag)
 {
-    (void)hr;
-    (void)flag;
+    char buf[512];
+
+    if (hr == 0) {
+        FormatBuffer(buf, sizeof(buf), kPercentS, g_kdNameDisplay);
+    }
+    else {
+        FormatBuffer(buf, sizeof(buf), kDxErrorFmt, g_kdNameDisplay, DxGetErrorString(hr));
+    }
+    HostLogError(buf);
+    if (flag != 0) {
+        MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
+    }
 }
 
-// Reset the D3D device after DEVICENOTRESET. Returns AL.
-// STUB: VC1 0x00465200
-static unsigned char DisplayD3dReset()
+// Recreate surfaces after IDirect3DDevice8::Reset. Returns AL.
+// STUB: VC1 0x00464de0
+static unsigned char DisplayD3dRecreate()
 {
     return 1;
+}
+
+// Release buffers then Reset(g_displayMode); recreate. Returns AL.
+// FUNCTION: VC1 0x00465200
+static unsigned char DisplayD3dReset()
+{
+    void* node;
+    IUnknown* object;
+    typedef int (__stdcall *Fn154)(IUnknown* device, int a, int b);
+    typedef int (__stdcall *Fn14c)(IUnknown* device, int a, int b, int c);
+    typedef int (__stdcall *FnReset)(IUnknown* device, void* present);
+
+    if (g_d3dBackBuffer) {
+        g_d3dBackBuffer->Release();
+    }
+    for (node = g_d3dChain; node;
+        node = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc)) {
+        object = *reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(node) + 8);
+        if (object) {
+            object->Release();
+        }
+    }
+    if (g_d3dSurface) {
+        reinterpret_cast<Fn154>((*reinterpret_cast<void***>(g_d3dDevice))[0x55])(
+            g_d3dDevice, 0, 0);
+        g_d3dSurface->Release();
+    }
+    if (g_d3dSwap) {
+        reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
+            g_d3dDevice, 0, 0, 0x18);
+        g_d3dSwap->Release();
+    }
+    reinterpret_cast<FnReset>((*reinterpret_cast<void***>(g_d3dDevice))[0xe])(
+        g_d3dDevice, g_displayMode);
+    return DisplayD3dRecreate() != 0;
 }
 
 // Direct3DCreate8 path. Returns AL success.
@@ -597,11 +738,6 @@ static unsigned char DisplayD3DInit()
 {
     return 1;
 }
-
-// STRING: VC1 0x004d248c
-static const char kPercentS[] = "%s";
-// STRING: VC1 0x004d5f98
-static const char kSceneAlreadyRendered[] = "Gfx_BeginScene: Scene is already being rendered";
 
 // D3D TestCooperativeLevel / reset. Returns AL; EBX is the last mixer.
 // FUNCTION: VC1 0x00465cc0
@@ -621,6 +757,7 @@ static unsigned char DisplayQueryReady()
     }
     if (hr == static_cast<int>(0x88760869)) {
         if (!DisplayD3dReset()) {
+            DisplayD3dLogHresult(hr, 0);
             return 0;
         }
     }
@@ -664,7 +801,7 @@ static int Display28Apply()
         GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
     }
     g_displaySkipDevice = 0;
-    interval = Display28Mode();
+    interval = Display28Mode(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
     g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
     DisplayD3dReset();
     return Display28Finish();
