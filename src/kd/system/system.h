@@ -36,7 +36,7 @@ public:
     unsigned Release();                     // vtable+0x08
     int Shutdown();                         // vtable+0x0c
     int Unmapped10();                       // vtable+0x10
-    int Unmapped14();                       // vtable+0x14
+    void** Unmapped14(void** out, void* key); // vtable+0x14
     void** Unmapped18(void** out, void* a); // vtable+0x18
     int Unmapped1c(void* arg);             // vtable+0x1c
     void* Unmapped20();                     // vtable+0x20

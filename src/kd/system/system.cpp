@@ -26,6 +26,7 @@ static void StartPostMixer();
 static int InputStreamFinish(IInputStream* self);
 static int InputStreamUnmapped1c(IInputStream* self, void* arg);
 static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a);
+static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key);
 
 KdSystem::KdSystem()
 {
@@ -216,8 +217,41 @@ void** KdSystem::Unmapped18(void** out, void* a)
     return InputStreamUnmapped18(static_cast<IInputStream*>(this), out, a);
 }
 
-// STUB: VC1 0x004630f0
-int KdSystem::Unmapped14() { return 0; }
+// STRING: VC1 0x004d5424
+static const char kObjectNotFound[] = "Object %s not found";
+
+// RET 8. Looks up key on IInputStream; logs with EAX=g_kdNameSystem on miss.
+// FUNCTION: VC1 0x004630f0
+void** KdSystem::Unmapped14(void** out, void* key)
+{
+    IUnknown* found = 0;
+    IUnknown* object;
+
+    InputStreamFind(static_cast<IInputStream*>(this), &found, key);
+    if (!found) {
+        HostLogError(kObjectNotFound,
+            *reinterpret_cast<void**>(reinterpret_cast<char*>(key) + 4));
+        *out = found;
+        if (found) {
+            found->AddRef();
+            found->Release();
+        }
+        return out;
+    }
+    object = *reinterpret_cast<IUnknown**>(tail + 0x18);
+    (void)object;
+    object = *reinterpret_cast<IUnknown**>(tail + 0x14);
+    (void)object;
+    object = *reinterpret_cast<IUnknown**>(tail + 0x1c);
+    (void)object;
+    Unmapped24();
+    *out = found;
+    if (found) {
+        found->AddRef();
+        found->Release();
+    }
+    return out;
+}
 
 // STUB: VC1 0x004631b0
 int KdSystem::Unmapped10() { return 0; }
@@ -242,6 +276,15 @@ static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a)
 {
     (void)self;
     (void)a;
+    return out;
+}
+
+// STUB: VC1 0x00472bf0
+static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
+{
+    (void)self;
+    (void)key;
+    *out = 0;
     return out;
 }
 
