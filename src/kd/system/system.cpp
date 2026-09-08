@@ -5,6 +5,7 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ishutdownable.h"
+#include "bindings/squirrel_object.h"
 #include "host/runtime.h"
 #include "memory/fixed_pool.h"
 
@@ -41,10 +42,10 @@ static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner);
 static void FactoryDtorTail(void* self);
 static void FactoryClearSlots(void* begin, void* end);
 static void FactoryReleasePointers(void* self);
-static unsigned char RecordEq(void* record);
+static unsigned char RecordEq(void* key, void* record);
 static IUnknown** InsertCountedSlot(void* factory);
 static void AppendCountedRange(void* out, void* begin, void* end, void* factory);
-static unsigned char* LookupCountedRecord(IInputStream* self, void* key);
+static unsigned char* LookupCountedRecord(void* factory, void* key);
 
 KdSystem::KdSystem()
 {
@@ -53,11 +54,31 @@ KdSystem::KdSystem()
     memset(tail, 0, sizeof(tail));
 }
 
-// STUB: VC1 0x00409970
-static unsigned char RecordEq(void* record)
+// EAX=key, ECX=record. MemCompare of +4/+8 string fields; AL = cmp < 0.
+// FUNCTION: VC1 0x00409970
+static unsigned char RecordEq(void* key, void* record)
 {
-    (void)record;
-    return 0;
+    unsigned keyLen;
+    unsigned recLen;
+    unsigned n;
+    int cmp;
+    int lenCmp;
+
+    keyLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(key) + 8);
+    recLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(record) + 8);
+    n = keyLen;
+    if (recLen < n) {
+        n = recLen;
+    }
+    cmp = MemCompare(
+        *reinterpret_cast<void**>(static_cast<unsigned char*>(record) + 4),
+        *reinterpret_cast<void**>(static_cast<unsigned char*>(key) + 4),
+        n);
+    if (cmp == 0) {
+        lenCmp = static_cast<int>(keyLen) - static_cast<int>(recLen);
+        cmp = (lenCmp > 0) - (lenCmp < 0);
+    }
+    return cmp < 0;
 }
 
 // ESI=this. Walk 0x14-byte records then factory Clear. capacity / 20 via 0xcccccccd.
@@ -111,23 +132,84 @@ static IUnknown** InsertCountedSlot(void* factory)
     return 0;
 }
 
-// cdecl out, begin, end, dest factory. Copies a range of 0x14-byte records.
-// STUB: VC1 0x00416280
+// cdecl out, begin, end, dest factory. Copies IUnknown* range into a pointer vector.
+// FUNCTION: VC1 0x00416280
 static void AppendCountedRange(void* out, void* begin, void* end, void* factory)
 {
-    (void)out;
-    (void)begin;
-    (void)end;
-    (void)factory;
+    KdFactory* dest = static_cast<KdFactory*>(factory);
+    IUnknown** src;
+    IUnknown** last;
+    IUnknown** slot;
+    unsigned needed;
+
+    src = static_cast<IUnknown**>(begin);
+    last = static_cast<IUnknown**>(end);
+    for (; src != last; src += 1) {
+        needed = ((dest->size >> 2) + 1) * 4;
+        if (dest->capacity < needed) {
+            GrowCountedBuffer(dest, static_cast<int>(needed), 0);
+        }
+        dest->size = needed;
+        slot = reinterpret_cast<IUnknown**>(
+            reinterpret_cast<unsigned char*>(dest->begin) + needed - 4);
+        if (*src) {
+            (*src)->AddRef();
+        }
+        if (*slot) {
+            (*slot)->Release();
+        }
+        *slot = *src;
+    }
+    *static_cast<void**>(out) = factory;
 }
 
-// EAX=IInputStream, key in EAX/stack. Binary search of 0x14-byte records.
-// STUB: VC1 0x004163d0
-static unsigned char* LookupCountedRecord(IInputStream* self, void* key)
+// EAX=factory, EDX=key. Binary search of 0x14-byte name records.
+// FUNCTION: VC1 0x004163d0
+static unsigned char* LookupCountedRecord(void* factory, void* key)
 {
-    KdFactory* records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
-    (void)key;
-    return reinterpret_cast<unsigned char*>(records->begin) + records->size;
+    KdFactory* records = static_cast<KdFactory*>(factory);
+    unsigned char* lo;
+    unsigned char* hi;
+    unsigned char* rec;
+    unsigned span;
+    unsigned mid;
+    unsigned recLen;
+    unsigned keyLen;
+    unsigned n;
+    int cmp;
+    int lenCmp;
+
+    lo = reinterpret_cast<unsigned char*>(records->begin);
+    hi = lo + records->size;
+    if (lo == hi) {
+        return lo;
+    }
+    while (lo != hi) {
+        span = static_cast<unsigned>(hi - lo);
+        mid = (span / 20) / 2;
+        rec = lo + mid * 20;
+        recLen = *reinterpret_cast<unsigned*>(rec + 8);
+        keyLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(key) + 8);
+        n = recLen;
+        if (keyLen < n) {
+            n = keyLen;
+        }
+        cmp = MemCompare(
+            *reinterpret_cast<void**>(rec + 4),
+            *reinterpret_cast<void**>(static_cast<unsigned char*>(key) + 4),
+            n);
+        if (cmp == 0) {
+            lenCmp = static_cast<int>(recLen) - static_cast<int>(keyLen);
+            cmp = (lenCmp > 0) - (lenCmp < 0);
+        }
+        if (cmp < 0) {
+            lo = rec + 0x14;
+        }
+        else {
+            hi = rec;
+        }
+    }
+    return lo;
 }
 
 // EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
@@ -733,11 +815,89 @@ static int InputStreamUnmapped1c(IInputStream* self, void* arg)
     return reinterpret_cast<int>(extra);
 }
 
-// STUB: VC1 0x00472a70
+// RET 8. Lookup key; on hit return the record's IUnknown* at +0x10.
+// Miss: QI IComponentGroup, vtbl+0x18, keep if Abstract != g_groupNotify.
+// FUNCTION: VC1 0x00472a70
 static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a)
 {
-    (void)self;
-    (void)a;
+    KdFactory* records;
+    unsigned char* pos;
+    unsigned char* end;
+    unsigned char* it;
+    IUnknown* object;
+    IUnknown* group;
+    IUnknown* found;
+    void* absFound;
+    void* absNotify;
+    unsigned char take;
+    typedef void** (__thiscall *Fn18)(IUnknown* group, void** dest, void* key);
+
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    pos = LookupCountedRecord(records, a);
+    end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
+    if (pos < end && RecordEq(a, pos)) {
+        pos = end;
+    }
+    if (pos != end) {
+        object = *reinterpret_cast<IUnknown**>(pos + 0x10);
+        *out = object;
+        if (object) {
+            object->AddRef();
+        }
+        return out;
+    }
+
+    it = reinterpret_cast<unsigned char*>(records->begin);
+    for (; it != end; it += 0x14) {
+        object = *reinterpret_cast<IUnknown**>(it + 0x10);
+        if (!object) {
+            continue;
+        }
+        group = static_cast<IUnknown*>(object->QueryInterface(&g_iidComponentGroup));
+        if (!group) {
+            continue;
+        }
+        group->AddRef();
+        found = 0;
+        reinterpret_cast<Fn18>((*reinterpret_cast<void***>(group))[6])(
+            group, reinterpret_cast<void**>(&found), a);
+        take = 0;
+        if (found) {
+            if (!g_groupNotify) {
+                take = 1;
+            }
+            else {
+                absFound = found->QueryInterface(&g_iidAbstract);
+                absNotify = static_cast<IUnknown*>(g_groupNotify)->QueryInterface(
+                    &g_iidAbstract);
+                if (absFound != absNotify) {
+                    take = 1;
+                }
+                else {
+                    found->Release();
+                    found = 0;
+                }
+            }
+        }
+        else if (g_groupNotify) {
+            take = 1;
+        }
+        if (take) {
+            *out = found;
+            if (found) {
+                found->AddRef();
+                found->Release();
+            }
+            group->Release();
+            return out;
+        }
+        group->Release();
+    }
+    object = static_cast<IUnknown*>(g_groupNotify);
+    *out = object;
+    if (object) {
+        object->AddRef();
+    }
     return out;
 }
 
@@ -752,9 +912,9 @@ static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
     IUnknown* member;
 
     records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
-    pos = LookupCountedRecord(self, key);
+    pos = LookupCountedRecord(records, key);
     end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
-    if (pos < end && RecordEq(pos)) {
+    if (pos < end && RecordEq(key, pos)) {
         pos = end;
     }
     *out = 0;
