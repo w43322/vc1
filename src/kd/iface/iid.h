@@ -13,6 +13,7 @@ extern const char* g_iidGraphics;
 extern const char* g_iidSystem;
 extern const char* g_iidFunctionalGroup;
 extern const char* g_iidComponentGroup;
+extern const char* g_iidGroupMember;
 extern const char* g_iidUpdateable;
 extern const char* g_iidRenderable;
 extern const char* g_iidResourceManager;

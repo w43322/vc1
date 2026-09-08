@@ -4,6 +4,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/idisplay.h"
+#include "kd/iface/ishutdownable.h"
 #include "host/runtime.h"
 #include "memory/fixed_pool.h"
 
@@ -18,6 +19,8 @@ IAbstract* g_kdSystem;
 IUnknown* g_kdServices;
 // GLOBAL: VC1 0x004ed4fc
 static void* g_timedEventHead;
+// GLOBAL: VC1 0x004ed6c0
+static void* g_groupNotify;
 
 // STRING: VC1 0x004d4be4
 static const char kSystem[] = "System";
@@ -36,7 +39,7 @@ static void InputStreamInsert(IInputStream* self, void* key, void** out);
 static void UnlinkCountedNode(KdSystem* self, void* block);
 static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner);
 static void FactoryDtorTail(void* self);
-static void FactoryClearSlots(void* self);
+static void FactoryClearSlots(void* begin, void* end);
 static void FactoryReleasePointers(void* self);
 
 KdSystem::KdSystem()
@@ -46,22 +49,47 @@ KdSystem::KdSystem()
     memset(tail, 0, sizeof(tail));
 }
 
-// ESI=this. KdFactory-shaped dtor; orig may call FUN_00415f10 first.
-// STUB: VC1 0x00415bf0
+// ESI=this. Walk 0x14-byte records then factory Clear. capacity / 20 via 0xcccccccd.
+// FUNCTION: VC1 0x00415bf0
 static void FactoryDtorTail(void* self)
 {
     KdFactory* factory = static_cast<KdFactory*>(self);
-    FactoryClearSlots(self);
+    unsigned n;
+    unsigned char* begin;
+
+    if (factory->capacity) {
+        n = factory->capacity / 20;
+        begin = reinterpret_cast<unsigned char*>(factory->begin);
+        FactoryClearSlots(begin, begin + n * 20);
+    }
     if (factory->capacity) {
         free(factory->begin);
     }
     factory->Clear();
 }
 
-// STUB: VC1 0x00415f10
-static void FactoryClearSlots(void* self)
+// EAX=begin, EDI=end. Each 0x14-byte record Releases +0x10 then nested factory dtor.
+// FUNCTION: VC1 0x00415f10
+static void FactoryClearSlots(void* begin, void* end)
 {
-    (void)self;
+    unsigned char* slot;
+    KdFactory* nested;
+    IUnknown* object;
+
+    for (slot = static_cast<unsigned char*>(begin);
+        slot < static_cast<unsigned char*>(end);
+        slot += 0x14) {
+        object = *reinterpret_cast<IUnknown**>(slot + 0x10);
+        if (object) {
+            object->Release();
+        }
+        *reinterpret_cast<IUnknown**>(slot + 0x10) = 0;
+        nested = reinterpret_cast<KdFactory*>(slot);
+        if (nested->capacity) {
+            free(nested->begin);
+        }
+        nested->Clear();
+    }
 }
 
 // EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
@@ -520,17 +548,86 @@ int KdSystem::Unmapped10(void* key, void** out)
     return 0;
 }
 
-// this=IInputStream. Walks members and Shutdowns them; orig vtbl+0x24 then GrowCountedBuffer.
-// STUB: VC1 0x004727a0
+// this=IInputStream. vtbl+0x24, then QI IGroupMember/IShutdownable on each 0x14 record.
+// FUNCTION: VC1 0x004727a0
 static void InputStreamClear(IInputStream* self)
 {
-    (void)self;
+    KdFactory* records;
+    unsigned char* it;
+    unsigned char* end;
+    IUnknown* object;
+    IUnknown* member;
+    typedef int (__thiscall *Fn24)(IInputStream* stream);
+    typedef void (__thiscall *Fn10)(IUnknown* object, void* arg);
+
+    reinterpret_cast<Fn24>((*reinterpret_cast<void***>(self))[9])(self);
+
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    it = reinterpret_cast<unsigned char*>(records->begin);
+    end = it + records->size;
+    for (; it != end; it += 0x14) {
+        object = *reinterpret_cast<IUnknown**>(it + 0x10);
+        member = 0;
+        if (object) {
+            member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
+            if (member) {
+                member->AddRef();
+                reinterpret_cast<Fn10>((*reinterpret_cast<void***>(member))[4])(
+                    member, &g_groupNotify);
+            }
+        }
+        if (object) {
+            IShutdownable* shutFace;
+            shutFace = static_cast<IShutdownable*>(
+                object->QueryInterface(&g_iidShutdownable));
+            if (shutFace) {
+                shutFace->AddRef();
+                shutFace->Shutdown();
+                shutFace->Release();
+            }
+        }
+        if (member) {
+            member->Release();
+        }
+    }
+    if (records->capacity < records->Count()) {
+        GrowCountedBuffer(records, 0, 1);
+    }
+    records->size = 0;
 }
 
-// STUB: VC1 0x00472870
+// this=IInputStream. QI IComponentGroup on each record, then grow the factory at +0x14.
+// FUNCTION: VC1 0x00472870
 static int InputStreamFinish(IInputStream* self)
 {
-    (void)self;
+    KdFactory* records;
+    KdFactory* extra;
+    unsigned char* it;
+    unsigned char* end;
+    IUnknown* object;
+    IUnknown* group;
+    typedef int (__thiscall *Fn24)(IUnknown* object);
+
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    extra = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 0x14);
+    it = reinterpret_cast<unsigned char*>(records->begin);
+    end = it + records->size;
+    for (; it != end; it += 0x14) {
+        object = *reinterpret_cast<IUnknown**>(it + 0x10);
+        if (!object) {
+            continue;
+        }
+        group = static_cast<IUnknown*>(object->QueryInterface(&g_iidComponentGroup));
+        if (group) {
+            group->AddRef();
+            reinterpret_cast<Fn24>((*reinterpret_cast<void***>(group))[9])(group);
+            group->Release();
+        }
+    }
+    if (extra->capacity < extra->Count()) {
+        GrowCountedBuffer(extra, 0, 1);
+    }
+    extra->size = 0;
     return 0;
 }
 

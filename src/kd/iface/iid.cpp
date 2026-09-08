@@ -52,6 +52,11 @@ static const char kIidComponentGroup[] = "IComponentGroup";
 // GLOBAL: VC1 0x004d05d0
 const char* g_iidComponentGroup = kIidComponentGroup;
 
+// STRING: VC1 0x004d4d90
+static const char kIidGroupMember[] = "IGroupMember";
+// GLOBAL: VC1 0x004d05d4
+const char* g_iidGroupMember = kIidGroupMember;
+
 // STRING: VC1 0x004d4d84
 static const char kIidUpdateable[] = "IUpdateable";
 // GLOBAL: VC1 0x004d05d8

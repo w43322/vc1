@@ -30,6 +30,8 @@ static int g_displayViewBottom;
 static IUnknown* g_d3dDevice;
 // GLOBAL: VC1 0x004ed604
 static unsigned g_d3dPresentFlag;
+// GLOBAL: VC1 0x004ed6ec
+static IUnknown* g_graphicsQuery;
 // GLOBAL: VC1 0x004ed628
 static void* g_displayPyro;
 // GLOBAL: VC1 0x004ed65c
@@ -67,7 +69,9 @@ static void DisplayDtorBase(KdDisplay* self);
 static void ConstructDisplayBase(KdDisplay* self);
 static unsigned char Script0cBody(void* a, void* b);
 static void Display1cAtexit();
-static void* DisplayQueryGraphics(void* self, void* a, void* b);
+static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b);
+static unsigned char DisplayQueryFromTarget(void* mixer, void* args);
+static unsigned char DisplayQueryReady();
 static void RenderTargetInit(IRenderTarget* self);
 static void* Display34Construct(void* self);
 static void Display10Scene(void* self);
@@ -114,13 +118,50 @@ static void RenderTargetInit(IRenderTarget* self)
     (void)self;
 }
 
-// this = IRenderTarget (KdDisplay+0x04). IDisplay thunk SUB ECX, 0x10.
-// STUB: VC1 0x0041a500
-static void* DisplayQueryGraphics(void* self, void* a, void* b)
+// this=IRenderTarget. RET 8. Out[0] is IGraphics; extra is camera/mixer.
+// FUNCTION: VC1 0x0041a500
+static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
 {
-    (void)self;
-    (void)b;
-    return a;
+    IUnknown** out = static_cast<IUnknown**>(a);
+    IUnknown* queried;
+    typedef int (__thiscall *Fn14)(IRenderTarget* object);
+    void** vtbl;
+
+    if (!DisplayQueryReady()) {
+        if (!g_graphicsQuery) {
+            *out = 0;
+            return out;
+        }
+        queried = static_cast<IUnknown*>(g_graphicsQuery->QueryInterface(&g_iidGraphics));
+        *out = queried;
+        if (queried) {
+            queried->AddRef();
+        }
+        return out;
+    }
+
+    vtbl = *reinterpret_cast<void***>(self);
+    reinterpret_cast<Fn14>(vtbl[6])(self);
+    reinterpret_cast<Fn14>(vtbl[5])(self);
+    if (DisplayQueryFromTarget(
+            *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8), b)) {
+        queried = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8);
+        *out = queried;
+        if (queried) {
+            queried->AddRef();
+        }
+        return out;
+    }
+    if (!g_graphicsQuery) {
+        *out = 0;
+        return out;
+    }
+    queried = static_cast<IUnknown*>(g_graphicsQuery->QueryInterface(&g_iidGraphics));
+    *out = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    return out;
 }
 
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
@@ -149,6 +190,15 @@ static void* Display34Construct(void* self)
 static void Display10Scene(void* self)
 {
     (void)self;
+}
+
+// ESI=mixer, EAX=rect locals from DisplayQueryGraphics.
+// STUB: VC1 0x0045ce30
+static unsigned char DisplayQueryFromTarget(void* mixer, void* args)
+{
+    (void)mixer;
+    (void)args;
+    return 0;
 }
 
 // this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
@@ -246,6 +296,13 @@ static void DisplayD3DTeardown()
 static unsigned char DisplayD3DInit()
 {
     return 1;
+}
+
+// D3D TestCooperativeLevel / reset. Returns AL; EBX is the last mixer.
+// STUB: VC1 0x00465cc0
+static unsigned char DisplayQueryReady()
+{
+    return 0;
 }
 
 // this = IDisplay. Called when Display28 arg is 0 or enabled at IDisplay+0x44.
