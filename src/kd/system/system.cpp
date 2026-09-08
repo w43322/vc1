@@ -41,12 +41,23 @@ static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner);
 static void FactoryDtorTail(void* self);
 static void FactoryClearSlots(void* begin, void* end);
 static void FactoryReleasePointers(void* self);
+static unsigned char RecordEq(void* record);
+static IUnknown** InsertCountedSlot(void* factory);
+static void AppendCountedRange(void* out, void* begin, void* end, void* factory);
+static unsigned char* LookupCountedRecord(IInputStream* self, void* key);
 
 KdSystem::KdSystem()
 {
     memset(pad04, 0, sizeof(pad04));
     refs = 0;
     memset(tail, 0, sizeof(tail));
+}
+
+// STUB: VC1 0x00409970
+static unsigned char RecordEq(void* record)
+{
+    (void)record;
+    return 0;
 }
 
 // ESI=this. Walk 0x14-byte records then factory Clear. capacity / 20 via 0xcccccccd.
@@ -90,6 +101,33 @@ static void FactoryClearSlots(void* begin, void* end)
         }
         nested->Clear();
     }
+}
+
+// EAX=factory. Returns slot for a new IUnknown* in the counted buffer.
+// STUB: VC1 0x004161b0
+static IUnknown** InsertCountedSlot(void* factory)
+{
+    (void)factory;
+    return 0;
+}
+
+// cdecl out, begin, end, dest factory. Copies a range of 0x14-byte records.
+// STUB: VC1 0x00416280
+static void AppendCountedRange(void* out, void* begin, void* end, void* factory)
+{
+    (void)out;
+    (void)begin;
+    (void)end;
+    (void)factory;
+}
+
+// EAX=IInputStream, key in EAX/stack. Binary search of 0x14-byte records.
+// STUB: VC1 0x004163d0
+static unsigned char* LookupCountedRecord(IInputStream* self, void* key)
+{
+    KdFactory* records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    (void)key;
+    return reinterpret_cast<unsigned char*>(records->begin) + records->size;
 }
 
 // EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
@@ -631,12 +669,68 @@ static int InputStreamFinish(IInputStream* self)
     return 0;
 }
 
-// STUB: VC1 0x004728f0
+// this=IInputStream. RET 4. Clears factory at +0x14, then QI IComponentGroup per record.
+// FUNCTION: VC1 0x004728f0
 static int InputStreamUnmapped1c(IInputStream* self, void* arg)
 {
-    (void)self;
-    (void)arg;
-    return 0;
+    KdFactory* extra;
+    KdFactory* records;
+    unsigned char* it;
+    unsigned char* end;
+    IUnknown* object;
+    IUnknown* group;
+    IUnknown** slot;
+    unsigned needed;
+    typedef void* (__thiscall *Fn1c)(IUnknown* object, void* key);
+
+    extra = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 0x14);
+    if (extra->capacity < extra->Count()) {
+        GrowCountedBuffer(extra, 0, 1);
+    }
+    extra->size = 0;
+
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    it = reinterpret_cast<unsigned char*>(records->begin);
+    end = it + records->size;
+    for (; it != end; it += 0x14) {
+        object = *reinterpret_cast<IUnknown**>(it + 0x10);
+        group = 0;
+        if (object) {
+            group = static_cast<IUnknown*>(object->QueryInterface(&g_iidComponentGroup));
+            if (group) {
+                group->AddRef();
+                Fn1c fn1c = reinterpret_cast<Fn1c>((*reinterpret_cast<void***>(group))[7]);
+                void* range = fn1c(group, arg);
+                AppendCountedRange(0,
+                    *reinterpret_cast<void**>(static_cast<unsigned char*>(range) + 4),
+                    static_cast<unsigned char*>(
+                        *reinterpret_cast<void**>(static_cast<unsigned char*>(range) + 4))
+                        + *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(range) + 8),
+                    extra);
+                (void)range;
+            }
+        }
+        if (object && object->QueryInterface(reinterpret_cast<const char**>(arg))) {
+            needed = ((extra->size >> 2) + 1) * 4;
+            if (extra->capacity < needed) {
+                GrowCountedBuffer(extra, static_cast<int>(needed), 0);
+            }
+            extra->size = needed;
+            slot = reinterpret_cast<IUnknown**>(
+                reinterpret_cast<unsigned char*>(extra->begin) + needed - 4);
+            if (object) {
+                object->AddRef();
+            }
+            if (*slot) {
+                (*slot)->Release();
+            }
+            *slot = object;
+        }
+        if (group) {
+            group->Release();
+        }
+    }
+    return reinterpret_cast<int>(extra);
 }
 
 // STUB: VC1 0x00472a70
@@ -647,21 +741,79 @@ static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a)
     return out;
 }
 
-// STUB: VC1 0x00472bf0
+// RET 8. Lookup key in the 0x14-byte table; on hit, AddRef and erase the slot.
+// FUNCTION: VC1 0x00472bf0
 static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key)
 {
-    (void)self;
-    (void)key;
+    KdFactory* records;
+    unsigned char* pos;
+    unsigned char* end;
+    IUnknown* object;
+    IUnknown* member;
+
+    records = reinterpret_cast<KdFactory*>(reinterpret_cast<char*>(self) + 4);
+    pos = LookupCountedRecord(self, key);
+    end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
+    if (pos < end && RecordEq(pos)) {
+        pos = end;
+    }
     *out = 0;
+    if (pos != end) {
+        object = *reinterpret_cast<IUnknown**>(pos + 0x10);
+        member = 0;
+        if (object) {
+            member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
+            if (member) {
+                member->AddRef();
+                typedef void (__thiscall *Fn10)(IUnknown* object, void* arg);
+                reinterpret_cast<Fn10>((*reinterpret_cast<void***>(member))[4])(
+                    member, &g_groupNotify);
+            }
+            object->AddRef();
+        }
+        if (*out) {
+            (*out)->Release();
+        }
+        *out = object;
+        EraseCountedBytes(pos);
+        records->size -= 0x14;
+        if (member) {
+            member->Release();
+        }
+        return out;
+    }
     return out;
 }
 
 // STUB: VC1 0x00472db0
 static void InputStreamInsert(IInputStream* self, void* key, void** out)
 {
-    (void)self;
+    IUnknown** slot;
+    IUnknown* object;
+    IUnknown* member;
+
     (void)key;
-    (void)out;
+    slot = InsertCountedSlot(self);
+    object = out ? static_cast<IUnknown*>(*out) : 0;
+    if (object) {
+        object->AddRef();
+    }
+    if (slot) {
+        if (*slot) {
+            (*slot)->Release();
+        }
+        *slot = object;
+    }
+    if (object) {
+        member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
+        if (member) {
+            member->AddRef();
+            typedef void (__thiscall *Fn10)(IUnknown* object, void* arg);
+            reinterpret_cast<Fn10>((*reinterpret_cast<void***>(member))[4])(
+                member, &g_groupNotify);
+            member->Release();
+        }
+    }
 }
 
 // EDX=block. Unlinks the timed/heap node at g_timedEventHead.

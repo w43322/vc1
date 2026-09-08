@@ -132,6 +132,7 @@ FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out);
 FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key);
 void ReserveFactoryTable(unsigned newCount);
 void GrowCountedBuffer(void* self, int bytes, char exact);
+void EraseCountedBytes(void* dest);
 void* InsertCountedBytes(void* self, void* pos, int bytes);
 void AssignCountedString(void* self, const char* text, unsigned len);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);

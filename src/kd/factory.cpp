@@ -4,6 +4,7 @@
 #include "host/runtime.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 namespace vc1 {
 
@@ -122,13 +123,55 @@ unsigned KdFactory::Count()
     return 0;
 }
 
+// EAX=dest, EBX=end, param=src. Byte swap-move used by InputStreamFind erase.
+// STUB: VC1 0x004b8830
+void EraseCountedBytes(void* dest)
+{
+    (void)dest;
+}
+
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
-// STUB: VC1 0x004b8930
+// FUNCTION: VC1 0x004b8930
 void GrowCountedBuffer(void* self, int bytes, char exact)
 {
-    (void)self;
-    (void)bytes;
-    (void)exact;
+    KdFactory* factory = static_cast<KdFactory*>(self);
+    typedef unsigned (__thiscall *FnCount)(void* object);
+    typedef void (__thiscall *FnClear)(void* object);
+    unsigned used;
+    unsigned needed;
+    unsigned aligned;
+    void* old;
+    void* grown;
+    unsigned copy;
+    unsigned saved;
+
+    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+    needed = static_cast<unsigned>(bytes) + used;
+    if (needed <= factory->capacity) {
+        return;
+    }
+
+    old = factory->capacity == 0 ? 0 : factory->begin;
+    aligned = needed;
+    if ((needed & 0x3f) != 0) {
+        aligned = (needed - (needed & 0x3f)) + 0x40;
+    }
+    if (exact == 0) {
+        needed = aligned;
+    }
+    grown = realloc(old, needed);
+    if (old == 0 && factory->begin != 0 && grown) {
+        copy = factory->size + 1;
+        if (needed <= copy) {
+            copy = needed;
+        }
+        memcpy(grown, factory->begin, copy);
+    }
+    saved = factory->size;
+    reinterpret_cast<FnClear>((*reinterpret_cast<void***>(self))[1])(self);
+    factory->size = saved;
+    factory->begin = static_cast<FactoryEntry*>(grown);
+    factory->capacity = needed;
 }
 
 // EAX=counted buffer, stdcall pos + byte count. Grows then memmoves the tail.
