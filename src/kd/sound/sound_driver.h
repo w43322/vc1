@@ -45,6 +45,26 @@ typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
 
 // SYNTHETIC: VC1 0x00419800
 // vc1::KdSoundDriver::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x00419a60
+// ?Release@KdSoundDriver@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x00419a70
+// ?QueryInterface@KdSoundDriver@vc1@@W3AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00419a80
+// ?Release@KdSoundDriver@vc1@@W7AEIXZ
+// SYNTHETIC: VC1 0x00419a90
+// ?QueryInterface@KdSoundDriver@vc1@@W7AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00419aa0
+// ?Release@KdSoundDriver@vc1@@WM@AEIXZ
+// SYNTHETIC: VC1 0x00419ab0
+// ?QueryInterface@KdSoundDriver@vc1@@WM@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00419ac0
+// ?AddRef@KdSoundDriver@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x00419ad0
+// ??_EKdSoundDriver@vc1@@WM@AEPAXI@Z
+// SYNTHETIC: VC1 0x00419ae0
+// ?AddRef@KdSoundDriver@vc1@@W7AEIXZ
+// SYNTHETIC: VC1 0x00419af0
+// ?AddRef@KdSoundDriver@vc1@@WM@AEIXZ
 
 void** CreateKdSoundDriver(void** out);
 

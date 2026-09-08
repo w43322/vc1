@@ -31,6 +31,13 @@ KdSystem::KdSystem()
     memset(tail, 0, sizeof(tail));
 }
 
+// MOV EAX, 0x004d4be4; RET. IScriptObject vtable+0x14.
+// FUNCTION: VC1 0x0041af30
+const char* KdSystem::Script14()
+{
+    return kSystem;
+}
+
 // LEA EAX, [ECX+0x10]; RET. ISystem vtable+0x20. IInputStream starts at +0x0c.
 // FUNCTION: VC1 0x00461f60
 void* KdSystem::Unmapped20()
@@ -205,6 +212,15 @@ static void StartPostMixer()
 {
 }
 
+// XOR AL,AL; RET 8. IScriptObject vtable+0x10.
+// FUNCTION: VC1 0x004a8c30
+unsigned char KdSystem::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
 // FUNCTION: VC1 0x004a8d20
 void* KdSystem::QueryInterface(const char** iid)
 {
@@ -307,8 +323,6 @@ int KdSystem::Start(IUnknown** object)
 }
 
 unsigned char KdSystem::Script0c(void*, void*) { return 0; }
-unsigned char KdSystem::Script10(void*, void*) { return 0; }
-const char* KdSystem::Script14() { return 0; }
 
 KdSystem::~KdSystem()
 {

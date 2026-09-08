@@ -16,6 +16,13 @@ static const char kSoundDriver[] = "SoundDriver";
 // GLOBAL: VC1 0x004d064c
 const char* g_kdNameSoundDriver = kSoundDriver;
 
+// MOV EAX, 0x004d4bfc; RET. IScriptObject vtable+0x14.
+// FUNCTION: VC1 0x004197f0
+const char* KdSoundDriver::Script14()
+{
+    return kSoundDriver;
+}
+
 // STUB: VC1 0x0044467a
 static void BassFree()
 {
@@ -121,6 +128,15 @@ unsigned char KdSoundDriver::Sound1c()
 unsigned char KdSoundDriver::Sound18()
 {
     return BassStart() != 0;
+}
+
+// XOR AL,AL; RET 8. IScriptObject vtable+0x10.
+// FUNCTION: VC1 0x00468150
+unsigned char KdSoundDriver::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
 }
 
 // FUNCTION: VC1 0x004681a0
@@ -262,8 +278,6 @@ int KdSoundDriver::Shutdown()
 }
 
 unsigned char KdSoundDriver::Script0c(void*, void*) { return 0; }
-unsigned char KdSoundDriver::Script10(void*, void*) { return 0; }
-const char* KdSoundDriver::Script14() { return 0; }
 
 KdSoundDriver::~KdSoundDriver()
 {

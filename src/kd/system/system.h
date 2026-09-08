@@ -51,6 +51,32 @@ typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];
 
 // SYNTHETIC: VC1 0x00407470
 // vc1::KdSystem::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x004074d0
+// ?QueryInterface@KdSystem@vc1@@W3AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x004074e0
+// ?QueryInterface@KdSystem@vc1@@W7AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x004074f0
+// ?Release@KdSystem@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x00407500
+// ?QueryInterface@KdSystem@vc1@@WM@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00407510
+// ?Release@KdSystem@vc1@@W7AEIXZ
+// SYNTHETIC: VC1 0x00407530
+// ?Release@KdSystem@vc1@@WM@AEIXZ
+// SYNTHETIC: VC1 0x00407540
+// ?AddRef@KdSystem@vc1@@W3AEIXZ
+// SYNTHETIC: VC1 0x00407550
+// ?QueryInterface@KdSystem@vc1@@WDA@AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x00407580
+// ?AddRef@KdSystem@vc1@@W7AEIXZ
+// SYNTHETIC: VC1 0x00407590
+// ?Release@KdSystem@vc1@@WDA@AEIXZ
+// SYNTHETIC: VC1 0x004075a0
+// ??_EKdSystem@vc1@@WDA@AEPAXI@Z
+// SYNTHETIC: VC1 0x004075b0
+// ?AddRef@KdSystem@vc1@@WM@AEIXZ
+// SYNTHETIC: VC1 0x004075d0
+// ?AddRef@KdSystem@vc1@@WDA@AEIXZ
 
 void ConstructKdSystem(KdSystem* self);
 void** CreateKdSystem(void** out);
