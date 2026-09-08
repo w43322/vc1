@@ -47,6 +47,60 @@ void UnlinkHeapByOwner(void* owner)
     }
 }
 
+// ESI=event. Stamp QPC if the first qword is 0, then link onto DAT_004ed448.
+// FUNCTION: VC1 0x00496430
+void QueueEvent(void* node)
+{
+    LARGE_INTEGER now;
+    unsigned char* const event = static_cast<unsigned char*>(node);
+
+    if (!event) {
+        return;
+    }
+    if (*reinterpret_cast<unsigned*>(event) == 0
+        && *reinterpret_cast<unsigned*>(event + 4) == 0) {
+        QueryPerformanceCounter(&now);
+        *reinterpret_cast<unsigned long long*>(event) =
+            static_cast<unsigned long long>(now.QuadPart);
+    }
+    *reinterpret_cast<HeapNode**>(event + 0x24) = g_heapTail;
+    *reinterpret_cast<HeapNode**>(event + 0x20) = 0;
+    if (!g_heapTail) {
+        g_heapHead = reinterpret_cast<HeapNode*>(event);
+    }
+    else {
+        g_heapTail->next = reinterpret_cast<HeapNode*>(event);
+    }
+    g_heapTail = reinterpret_cast<HeapNode*>(event);
+}
+
+// Walk the 0x30 bump slots, else malloc(0x30). Zero +0/+4/+0xc/+0x28.
+// FUNCTION: VC1 0x004964a0
+void* AllocEvent()
+{
+    unsigned char* slot = g_bumpArena;
+    unsigned char* const end = reinterpret_cast<unsigned char*>(&g_heapHead);
+
+    while (slot < end) {
+        if (*reinterpret_cast<void**>(slot + 8) == 0) {
+            *reinterpret_cast<void**>(slot + 8) = reinterpret_cast<void*>(0xffffffff);
+            break;
+        }
+        slot += 0x30;
+    }
+    if (slot >= end) {
+        slot = static_cast<unsigned char*>(malloc(0x30));
+        if (!slot) {
+            return 0;
+        }
+    }
+    *reinterpret_cast<void**>(slot) = 0;
+    *reinterpret_cast<void**>(slot + 4) = 0;
+    *reinterpret_cast<void**>(slot + 0xc) = 0;
+    *reinterpret_cast<void**>(slot + 0x28) = 0;
+    return slot;
+}
+
 // Free DAT_004ed144 if it is not inside the 0x004ed148..0x004ed447 bump range, then the list.
 // FUNCTION: VC1 0x00496580
 void FreeBumpHeaps()
@@ -76,6 +130,13 @@ void FreeBumpHeaps()
     }
 }
 
+// PeekMessageA drain then timed heap walk. Original returns 0 if a node remains, -1 if empty.
+// STUB: VC1 0x00496740
+static int WaitQueue()
+{
+    return 0;
+}
+
 // QPC wait until 0x00496740 is non-zero, then pop DAT_004ed448 onto DAT_004ed144.
 // FUNCTION: VC1 0x00496840
 void* PopTimedEvent()
@@ -85,15 +146,16 @@ void* PopTimedEvent()
     int pending;
 
     QueryPerformanceCounter(&now);
-    start = UnmappedQpcDelta();
-    pending = UnmappedWaitQueue();
+    start = static_cast<unsigned long long>(now.QuadPart);
+    pending = WaitQueue();
     while (pending == 0) {
         Sleep(1);
         QueryPerformanceCounter(&now);
-        if (UnmappedQpcDelta() - start == static_cast<unsigned long long>(-1)) {
+        if (static_cast<unsigned long long>(now.QuadPart) - start
+            == static_cast<unsigned long long>(-1)) {
             break;
         }
-        pending = UnmappedWaitQueue();
+        pending = WaitQueue();
     }
     (void)now;
 

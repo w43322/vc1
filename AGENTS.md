@@ -46,7 +46,7 @@ Write the C++ for a function as soon as you have that function's evidence. Enoug
 - Assembly for parameter location, return register, stack balance, callee-saved registers, and `RET N`.
 - ABI from **at least one caller**. VC9 LTCG often passes values in EAX, ESI, EDI, EBX instead of the stack. `WinMain` is stdcall (`RET 0x10`).
 
-Do not wait until every callee, string, and sibling in the cluster is fully dumped. Recover the next address after the current body is in `src/` (stubs without `FUNCTION` markers are fine for unmapped callees). Follow-up reads that refine the same body are expected; wholesale “analyze the cluster, then write” is not.
+Do not wait until every callee, string, and sibling in the cluster is fully dumped. Recover the next address after the current body is in `src/` (`STUB` at that VA is fine for unmapped callees). Follow-up reads that refine the same body are expected; wholesale “analyze the cluster, then write” is not.
 
 **Never write Ghidra through MCP.** Do not rename, set comments, set prototypes, create structs, or save the program. Names and types go back through `tools/import-ghidra.ps1` after the GUI is closed.
 
@@ -71,7 +71,7 @@ Leave it unmapped when the original does not have a unique body:
 - LTCG merged several *different* source functions into one blob (`LogicalAndExp` with later binops). Do not pin a single source name to that blob.
 - Identical functions that `/OPT:ICF` combined at one VA: annotate **every** source name with `// FUNCTION: VC1 0x... FOLDED` on that address (see reccmp annotations). All copies must be `FOLDED`; a mix of folded and non-folded on the same VA is a duplicate.
 - The VA uses `g_vm`, `g_sizeClassHeap`, Win32, or sits in the host run after `sq_compilebuffer` (`0x004999c0+`). That is host or CRT, not stock `sq_*`. `0x00497490` is the host size-class heap, not `sq_malloc`.
-- Generic `sqvector` push/pop helpers (`FUN_00415790`, `FUN_0040f8c0`) are not unique source symbols.
+- Generic `sqvector` push/pop helpers (`FUN_00415790`, `FUN_0040f8c0`) are not unique source symbols. A unique instantiation uses a `TEMPLATE` name comment on `sqvector<T>::…` in a header (see reccmp annotations), not a recovered host wrapper.
 
 A **0%** asmcmp hit on a newly named function usually means the wrong overload or the wrong source symbol (`default_delegate_tostring` vs `base_type`), not “LTCG noise”. Check the `Ambiguous match` warning. Two overloads of the same name need the **mangled symbol** as the name comment (see reccmp annotations). Do not give two comments the same source name. Do not put two non-`FOLDED` `FUNCTION` comments on one VA.
 
@@ -100,7 +100,7 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
   Do not also list that VA in `config/verified.csv` or as a `FUNCTION` in `src/`. Host forks of squirrel (KD `getenv` / `OpenKdFile` / `dofile`, extra math, aux printerror strings) stay as recovered bodies in `src/`. Overloads of one C++ name (`AddInstruction`, `Raise_Error`, `GetNumericConstant`) need the mangled PDB symbol as the name comment, or asmcmp binds the wrong one (often 0%).
 - CRT and other libraries **without** source in this tree: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
 - Do not use inline asm. Do not invent a mapping for a function you did not recover.
-- Unmapped callees of a mapped function may live as stubs **without** `FUNCTION` markers (see `src/host/stubs.cpp`) so the TU links.
+- Every original callee has a VA. Put it in the owning `.cpp` with `FUNCTION` or `STUB` at that address, or call an already-mapped / Win32 / CRT symbol. Do not invent unmarked `Unmapped*` helpers. Stock squirrel stays comments-only; templated instantiations use `TEMPLATE` (see reccmp annotations).
 - Prefer improving existing mapped functions over leaving a known-wrong body in place. Layout, names, ABI, call targets, markers, `verified.csv`, flags, and workflow scripts are all in scope when the original supports the change. Do not drop `/GL /LTCG`.
 
 A function is not recovered if it only exists as a Ghidra name, or only as uncommented C++. A `FUNCTION` comment on a stock squirrel implementation or a header name-comment that asmcmp diffs counts.

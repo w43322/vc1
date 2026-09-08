@@ -2,7 +2,6 @@
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
-#include "host/runtime.h"
 
 #include <stdlib.h>
 
@@ -16,25 +15,22 @@ static const char kDisplay[] = "Display";
 // GLOBAL: VC1 0x004d0630
 const char* g_kdNameDisplay = kDisplay;
 
+static void DisplayDtorBase(KdDisplay* self);
+static void ConstructDisplayBase(KdDisplay* self);
+static unsigned char Script0cBody(void* a, void* b);
+
 KdDisplay::KdDisplay()
 {
-    unk04 = 0;
-    unk08 = 0;
-    unk0c = 0;
-    pad20[0] = 0;
-    pad20[1] = 0;
-    pad20[2] = 0;
-    pad20[3] = 0;
-    zero30 = 0.0f;
-    one34 = 1.0f;
-    zero38 = 0.0f;
-    zero3c = 0.0f;
-    zero40 = 0.0f;
-    one44 = 1.0f;
-    zero48 = 0.0f;
-    zero4c = 0.0f;
-    zero50 = 0.0f;
-    one54 = 1.0f;
+    target = 0;
+    matrix[0] = 1.0f;
+    matrix[1] = 0.0f;
+    matrix[2] = 0.0f;
+    matrix[3] = 0.0f;
+    matrix[4] = 1.0f;
+    matrix[5] = 0.0f;
+    matrix[6] = 0.0f;
+    matrix[7] = 0.0f;
+    matrix[8] = 1.0f;
     enabled58 = 1;
 }
 
@@ -47,24 +43,99 @@ int KdDisplay::Display30() { return 0; }
 int KdDisplay::Display38() { return 0; }
 int KdDisplay::Display18() { return 0; }
 int KdDisplay::Display10() { return 0; }
+int KdDisplay::Script14() { return 0; }
+
+KdDisplay::~KdDisplay()
+{
+    if (target) {
+        target->Release();
+    }
+    target = 0;
+    DisplayDtorBase(this);
+}
+
+// this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
+// FUNCTION: VC1 0x00463e60
+void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
+{
+    const char* name = *iid;
+    if (name == g_iidDisplay) {
+        if (reinterpret_cast<char*>(self) - 4 == 0) {
+            return 0;
+        }
+        return self;
+    }
+    if (name == g_iidShutdownable) {
+        if (reinterpret_cast<char*>(self) - 4 == 0) {
+            return 0;
+        }
+        return reinterpret_cast<char*>(self) + 4;
+    }
+    if (name == g_iidAbstract) {
+        return reinterpret_cast<char*>(self) + 8;
+    }
+    return 0;
+}
+
+// FUNCTION: VC1 0x00466320
+void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid)
+{
+    const char* name = *iid;
+    if (name == g_iidScriptObject) {
+        return self;
+    }
+    if (name == g_iidRenderTarget) {
+        if (!self) {
+            return 0;
+        }
+        return static_cast<IRenderTarget*>(self);
+    }
+    {
+        void* found = DisplayFaceQueryInterface(static_cast<IDisplay*>(self), iid);
+        if (found) {
+            return found;
+        }
+        if (name == g_iidAbstract) {
+            return static_cast<IAbstract*>(self);
+        }
+    }
+    return 0;
+}
+
+// STUB: VC1 0x004664a0
+static void DisplayDtorBase(KdDisplay* self)
+{
+    (void)self;
+}
+
+// STUB: VC1 0x004665c0
+static void ConstructDisplayBase(KdDisplay* self)
+{
+    (void)self;
+}
+
+// STUB: VC1 0x00466b00
+static unsigned char Script0cBody(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
+// FUNCTION: VC1 0x004b1d30
+unsigned char KdDisplay::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
 
 // FUNCTION: VC1 0x004b1d40
 void* KdDisplay::QueryInterface(const char** iid)
 {
-    if (!iid) {
-        return 0;
-    }
-    if (*iid == g_iidScriptObject) {
-        return static_cast<IScriptObject*>(this);
-    }
-    if (*iid == g_iidRenderTarget) {
-        return static_cast<IRenderTarget*>(this);
-    }
-    if (*iid == g_iidDisplay) {
-        return static_cast<IDisplay*>(this);
-    }
-    if (*iid == g_iidShutdownable) {
-        return static_cast<IShutdownable*>(this);
+    void* found = DisplayBaseQueryInterface(this, iid);
+    if (found) {
+        return found;
     }
     if (*iid == g_iidAbstract) {
         return static_cast<IAbstract*>(this);
@@ -72,23 +143,38 @@ void* KdDisplay::QueryInterface(const char** iid)
     return 0;
 }
 
-// STUB: VC1 0x004b1d70
+// FUNCTION: VC1 0x004b1d70
 unsigned KdDisplay::Release()
 {
-    return 1;
+    IAbstract* iface = static_cast<IAbstract*>(this);
+    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
+    unsigned n;
+
+    *p -= 1;
+    n = *p;
+    if (n == 0) {
+        delete iface;
+        return 0;
+    }
+    return n;
 }
 
-// STUB: VC1 0x004b1d90
+// FUNCTION: VC1 0x004b1d90
 unsigned KdDisplay::AddRef()
 {
-    return 1;
+    unsigned n = refs;
+    if (n != 0) {
+        n += 1;
+        refs = n;
+    }
+    return n;
 }
 
 // EAX=this. Calls FUN_004665c0 with this in ESI, then overwrites vptrs/floats.
 // FUNCTION: VC1 0x004b1e40
 KdDisplay* ConstructKdDisplay(KdDisplay* self)
 {
-    UnmappedConstructDisplayBase(self);
+    ConstructDisplayBase(self);
     self->KdDisplay::KdDisplay();
     return self;
 }
@@ -138,6 +224,11 @@ void* KdDisplay::GetMixer()
 int KdDisplay::Display28() { return 0; }
 int KdDisplay::Display0c() { return 0; }
 int KdDisplay::Shutdown() { return 0; }
-int KdDisplay::Unmapped0c() { return 0; }
+
+// STUB: VC1 0x004b22e0
+unsigned char KdDisplay::Script0c(void* a, void* b)
+{
+    return Script0cBody(a, b) != 0;
+}
 
 }

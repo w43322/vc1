@@ -27,7 +27,6 @@ include(cmake/squirrel223.cmake)
 add_executable(vc1_recompiled
   src/host/win_main.cpp
   src/host/runtime.cpp
-  src/host/stubs.cpp
   src/host/crash.cpp
   src/host/thread.cpp
   src/host/network.cpp
@@ -90,7 +89,8 @@ add_executable(vc1_recompiled
   src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES})
-target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include)
+target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
+  third_party/squirrel223/squirrel)
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
 target_link_libraries(vc1_recompiled user32 ws2_32 shell32)

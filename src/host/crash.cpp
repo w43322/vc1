@@ -1,8 +1,18 @@
 #include "host/runtime.h"
 
+#include <io.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace vc1 {
+
+// version.dll GetFileVersionInfo* on dbghelp.dll; 1 if file version >= 6.6.7.5.
+// STUB: VC1 0x00476d80
+static int TryLoadDbgHelpSoft()
+{
+    return 1;
+}
 
 // LoadLibraryA("kernel32.dll") + IsDebuggerPresent. Returns 1 if a debugger is attached.
 // FUNCTION: VC1 0x00476e60
@@ -21,11 +31,17 @@ int ProbeDebuggerPresent()
     return 0;
 }
 
+// Command line, OS version, and host info dumped through KdLog.
+// STUB: VC1 0x00476fd0
+static void LogOsInfo()
+{
+}
+
 // Load dbghelp.dll and resolve MiniDump/Sym* exports. Original compares each pointer to 0.
 // FUNCTION: VC1 0x00477240
 int LoadDbgHelp()
 {
-    if (!UnmappedTryLoadDbgHelpSoft()) {
+    if (!TryLoadDbgHelpSoft()) {
         return 0;
     }
 
@@ -81,7 +97,7 @@ void LogCrashHeader()
     version.dwOSVersionInfoSize = sizeof(version);
     GetVersionExA(&version);
     KdLog("");
-    UnmappedLogOsInfo();
+    LogOsInfo();
     KdLog("");
     KdLog("");
     KdLog("");
@@ -94,21 +110,29 @@ void LogCrashHeader()
 // FUNCTION: VC1 0x00477a90
 int WriteCrashDump()
 {
-    void* const file = UnmappedOpenDumpFile("/data/kdCrashDump.dmp");
+    FILE* const file = static_cast<FILE*>(OpenKdFile("/data/kdCrashDump.dmp", "wb"));
+    HANDLE handle;
     if (!file) {
         return 0;
     }
 
+    handle = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
     DWORD threadId = GetCurrentThreadId();
     (void)threadId;
     if (g_MiniDumpWriteDump) {
         typedef int (WINAPI *MiniDumpFn)(HANDLE process, DWORD pid, HANDLE file, unsigned dumpType,
             void* exception, void* user, void* callback);
         reinterpret_cast<MiniDumpFn>(g_MiniDumpWriteDump)(
-            GetCurrentProcess(), GetCurrentProcessId(), GetCurrentProcess(), 0, 0, 0, 0);
+            GetCurrentProcess(), GetCurrentProcessId(), handle, 0, 0, 0, 0);
     }
-    UnmappedDirClose(file);
+    free(file);
     return 1;
+}
+
+// StackWalk64 through the exception context. Original CONTEXT in EAX.
+// STUB: VC1 0x00477b60
+static void LogStackWalk()
+{
 }
 
 // SetUnhandledExceptionFilter target. Original returns 1 after MessageBoxA, else 0.
@@ -121,7 +145,7 @@ LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info)
         KdLog("");
         LogCrashHeader();
         KdLog("");
-        UnmappedLogStackWalk();
+        LogStackWalk();
         KdLog("");
         WriteCrashDump();
         if (g_SymCleanup) {

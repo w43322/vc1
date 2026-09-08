@@ -95,7 +95,7 @@ int RunApp()
     if (abstractDisplay) {
         abstractDisplay->AddRef();
     }
-    if (!system || !system->Start()) {
+    if (!system || !system->Start(reinterpret_cast<IUnknown**>(&abstractDisplay))) {
         if (system) {
             system->Release();
         }

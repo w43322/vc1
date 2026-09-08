@@ -3,6 +3,7 @@
 #include "kd/factory.h"
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
+#include "kd/iface/idisplay.h"
 #include "host/runtime.h"
 #include "memory/fixed_pool.h"
 
@@ -19,10 +20,44 @@ static const char kSystem[] = "System";
 // GLOBAL: VC1 0x004d0658
 const char* g_kdNameSystem = kSystem;
 
+static void SystemDtorBase(KdSystem* self);
+static unsigned char SystemStartBase(KdSystem* self, IUnknown** object);
+static void StartPostMixer();
+
 KdSystem::KdSystem()
 {
     memset(pad04, 0, sizeof(pad04));
+    refs = 0;
     memset(tail, 0, sizeof(tail));
+}
+
+// STUB: VC1 0x00461f60
+int KdSystem::Unmapped20() { return 0; }
+
+// FUNCTION: VC1 0x00462080
+void* SystemBaseQueryInterface(KdSystem* self, const char** iid)
+{
+    const char* name = *iid;
+    if (name == g_iidScriptObject) {
+        if (!self) {
+            return 0;
+        }
+        return static_cast<IScriptObject*>(self);
+    }
+    if (name == g_iidRenderable) {
+        if (!self) {
+            return 0;
+        }
+        return static_cast<IRenderable*>(self);
+    }
+    if (name == g_iidShutdownable || name == g_iidComponentGroup
+        || name == g_iidSystem) {
+        return self;
+    }
+    if (name == g_iidAbstract) {
+        return static_cast<IAbstract*>(self);
+    }
+    return 0;
 }
 
 static void BindNamed(IUnknown** slot, const char** factoryName, const char** iid)
@@ -46,9 +81,6 @@ static void BindNamed(IUnknown** slot, const char** factoryName, const char** ii
     static_cast<IUnknown*>(unknown)->Release();
 }
 
-// STUB: VC1 0x00461f60
-int KdSystem::Unmapped20() { return 0; }
-
 // FUNCTION: VC1 0x00462350
 void ConstructKdSystem(KdSystem* self)
 {
@@ -67,10 +99,10 @@ void ConstructKdSystem(KdSystem* self)
     object[0x16] = 0x3f800000;
     object[0x1b] = 0xff000000;
     QueryPerformanceCounter(&qpc);
-    ticks = UnmappedQpcNow();
+    ticks = static_cast<unsigned long long>(qpc.QuadPart);
     *reinterpret_cast<unsigned long long*>(object + 0x1e) = ticks;
     QueryPerformanceCounter(&qpc);
-    ticks = UnmappedQpcNow();
+    ticks = static_cast<unsigned long long>(qpc.QuadPart);
     object[0x20] = static_cast<unsigned>(ticks);
     object[0x21] = static_cast<unsigned>(ticks >> 32);
     object[0x22] = g_sizeClassHeap.allocatedBytes;
@@ -112,7 +144,7 @@ void ConstructKdSystem(KdSystem* self)
     do {
         unsigned needed = ((object[0x19] >> 2) + 1) * 4;
         if (object[0x1a] < needed) {
-            UnmappedVectorGrow(static_cast<int>(needed), 0);
+            GrowCountedBuffer(object, static_cast<int>(needed), 0);
         }
         object[0x19] = needed;
         if (object[0x18]) {
@@ -141,6 +173,20 @@ int KdSystem::Unmapped1c() { return 0; }
 // STUB: VC1 0x00462720
 int KdSystem::Shutdown() { return 0; }
 
+// STUB: VC1 0x00462900
+static void SystemDtorBase(KdSystem* self)
+{
+    (void)self;
+}
+
+// STUB: VC1 0x00462e80
+static unsigned char SystemStartBase(KdSystem* self, IUnknown** object)
+{
+    (void)self;
+    (void)object;
+    return 1;
+}
+
 // STUB: VC1 0x004630d0
 int KdSystem::Unmapped18() { return 0; }
 
@@ -150,24 +196,17 @@ int KdSystem::Unmapped14() { return 0; }
 // STUB: VC1 0x004631b0
 int KdSystem::Unmapped10() { return 0; }
 
-// STUB: VC1 0x004a8d20
+// STUB: VC1 0x004964f0
+static void StartPostMixer()
+{
+}
+
+// FUNCTION: VC1 0x004a8d20
 void* KdSystem::QueryInterface(const char** iid)
 {
-    if (!iid) {
-        return 0;
-    }
-    if (*iid == g_iidScriptObject) {
-        return static_cast<IScriptObject*>(this);
-    }
-    if (*iid == g_iidRenderable) {
-        return static_cast<IRenderable*>(this);
-    }
-    if (*iid == g_iidShutdownable || *iid == g_iidComponentGroup
-        || *iid == g_iidSystem) {
-        return static_cast<ISystem*>(this);
-    }
-    if (*iid == g_iidInputStream) {
-        return static_cast<IInputStream*>(this);
+    void* found = SystemBaseQueryInterface(this, iid);
+    if (found) {
+        return found;
     }
     if (*iid == g_iidAbstract) {
         return static_cast<IAbstract*>(this);
@@ -175,16 +214,31 @@ void* KdSystem::QueryInterface(const char** iid)
     return 0;
 }
 
-// STUB: VC1 0x004a8d50
+// FUNCTION: VC1 0x004a8d50
 unsigned KdSystem::Release()
 {
-    return 1;
+    IAbstract* iface = static_cast<IAbstract*>(this);
+    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
+    unsigned n;
+
+    *p -= 1;
+    n = *p;
+    if (n == 0) {
+        delete iface;
+        return 0;
+    }
+    return n;
 }
 
-// STUB: VC1 0x004a8d70
+// FUNCTION: VC1 0x004a8d70
 unsigned KdSystem::AddRef()
 {
-    return 1;
+    unsigned n = refs;
+    if (n != 0) {
+        n += 1;
+        refs = n;
+    }
+    return n;
 }
 
 // FUNCTION: VC1 0x004a8de0
@@ -224,14 +278,37 @@ void** CreateKdSystem(void** out)
 }
 
 // STUB: VC1 0x004a8eb0
-int KdSystem::Start()
+int KdSystem::Start(IUnknown** object)
 {
+    IDisplay* display;
+    unsigned char ok;
+
+    ok = SystemStartBase(this, object);
+    if (!ok) {
+        return ok;
+    }
+    if (!object || !*object) {
+        display = 0;
+    }
+    else {
+        display = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
+        if (display) {
+            display->AddRef();
+        }
+    }
+    display->GetMixer();
+    StartPostMixer();
+    display->Release();
     return 1;
 }
 
-int KdSystem::Unmapped0c()
+unsigned char KdSystem::Script0c(void*, void*) { return 0; }
+unsigned char KdSystem::Script10(void*, void*) { return 0; }
+int KdSystem::Script14() { return 0; }
+
+KdSystem::~KdSystem()
 {
-    return 0;
+    SystemDtorBase(this);
 }
 
 }

@@ -21,9 +21,8 @@ unsigned Abstract::Release()
     return 0;
 }
 
-int Abstract::Unmapped0c()
+IAbstract::~IAbstract()
 {
-    return 0;
 }
 
 }

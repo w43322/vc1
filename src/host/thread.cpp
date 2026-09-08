@@ -13,6 +13,14 @@ static int InterlockedCompareExchangeThunk(volatile LONG* dest, LONG exchange, L
     return InterlockedCompareExchange(dest, exchange, comparand);
 }
 
+static int MutexCheck(MutexRef* ref);
+static unsigned long long CurrentThreadId64();
+static int MutexLockInner(MutexRef* ref);
+static LONG WINAPI IceFallback(volatile LONG* dest, LONG exchange, LONG comparand);
+static void TlsMutexDestructor(void* thread);
+static void ResetThreadNode(void* thread);
+static DWORD WINAPI ApcFallback();
+
 // calloc(1, 0x10) + TlsAlloc; destructor at +4 and cookie 0xffffffff when param != 0.
 // Original out pointer lives in EDI (DAT_004ed534 from 0x0047bdf0).
 // FUNCTION: VC1 0x0047a270
@@ -37,6 +45,21 @@ int AllocTlsBlock(void* destructor, TlsBlock** out)
     }
     *out = block;
     return 0;
+}
+
+// Lazy-create the mutex behind a 0xfffffffd/-2/-3 sentinel. Original MutexRef in EBX.
+// STUB: VC1 0x0047a3a0
+static int MutexCheck(MutexRef* ref)
+{
+    (void)ref;
+    return 0;
+}
+
+// Zero the 0x8c thread node and splice it onto DAT_004e89b8. cdecl.
+// STUB: VC1 0x0047a490
+static void ResetThreadNode(void* thread)
+{
+    (void)thread;
 }
 
 // Unlink a waiter node from two intrusive lists then free. Original node in EAX.
@@ -81,6 +104,23 @@ void UnlinkWaiter(void* node)
     free(node);
 }
 
+// GetProcAddress miss for InterlockedCompareExchange. Stored at DAT_004ed528.
+// STUB: VC1 0x0047a720
+static LONG WINAPI IceFallback(volatile LONG* dest, LONG exchange, LONG comparand)
+{
+    (void)dest;
+    (void)exchange;
+    (void)comparand;
+    return 0;
+}
+
+// AllocTlsBlock destructor for g_tlsSecondary.
+// STUB: VC1 0x0047a7a0
+static void TlsMutexDestructor(void* thread)
+{
+    (void)thread;
+}
+
 // Release a simple or recursive mutex. Original MutexRef in EAX.
 // FUNCTION: VC1 0x0047a7c0
 int MutexUnlock(MutexRef* ref)
@@ -102,7 +142,7 @@ int MutexUnlock(MutexRef* ref)
         event = mutex->event;
     }
     else {
-        const unsigned long long tid = UnmappedThreadId64();
+        const unsigned long long tid = CurrentThreadId64();
         const unsigned long long owner =
             (static_cast<unsigned long long>(mutex->ownerHi) << 32) | mutex->ownerLo;
         if (tid != owner) {
@@ -138,7 +178,7 @@ int MutexLock(MutexRef* ref)
     }
 
     if (reinterpret_cast<unsigned>(ref->mutex) >= 0xfffffffd) {
-        status = UnmappedMutexCheck(ref);
+        status = MutexCheck(ref);
         if (status != 0) {
             return status;
         }
@@ -162,7 +202,7 @@ int MutexLock(MutexRef* ref)
         return status;
     }
 
-    const unsigned long long tid = UnmappedThreadId64();
+    const unsigned long long tid = CurrentThreadId64();
     const int exchanged = InterlockedCompareExchangeThunk(&mutex->state, 1, 0);
     if (exchanged == 0) {
         mutex->recursion = 1;
@@ -196,6 +236,21 @@ int MutexLock(MutexRef* ref)
     return status;
 }
 
+// TLS thread record: TlsGetValue then DuplicateHandle. Used as the 64-bit owner id.
+// STUB: VC1 0x0047ad60
+static unsigned long long CurrentThreadId64()
+{
+    return GetCurrentThreadId();
+}
+
+// Try InterlockedCompareExchange on *ref; 0x10 if the mutex is busy.
+// STUB: VC1 0x0047b020
+static int MutexLockInner(MutexRef* ref)
+{
+    (void)ref;
+    return 0;
+}
+
 // Destroy the mutex behind *ref, spinning on 0x10 (busy). Original ref in EDI.
 // FUNCTION: VC1 0x0047b0a0
 int MutexDestroy(MutexRef* ref)
@@ -206,7 +261,7 @@ int MutexDestroy(MutexRef* ref)
 
     Mutex* mutex = ref->mutex;
     if (reinterpret_cast<unsigned>(mutex) < 0xfffffffd) {
-        const int inner = UnmappedMutexLockInner(ref);
+        const int inner = MutexLockInner(ref);
         if (inner == 0) {
             if (mutex->kind == 1 && mutex->recursion != 1) {
                 mutex->recursion -= 1;
@@ -254,7 +309,7 @@ void DestroyThreadLocal(void* thread)
         copy[i] = *reinterpret_cast<HANDLE*>(src);
         src += 1;
     }
-    UnmappedMutexDestroyBody(thread);
+    ResetThreadNode(thread);
     if (copy[0x0f]) {
         CloseHandle(copy[0x0f]);
     }
@@ -441,6 +496,13 @@ int ShutdownApcAndLibraries()
     return 1;
 }
 
+// GetProcAddress miss for QueueUserAPCEx. Stored at DAT_004ed52c.
+// STUB: VC1 0x0047bb80
+static DWORD WINAPI ApcFallback()
+{
+    return 0;
+}
+
 // Count affinity bits, LoadLibrary KERNEL32.DLL / QUSEREX.DLL, bind ICE and QueueUserAPCEx.
 // FUNCTION: VC1 0x0047bc70
 int LoadSyncLibraries()
@@ -470,7 +532,7 @@ int LoadSyncLibraries()
     g_kernel32Sync = LoadLibraryA("KERNEL32.DLL");
     g_interlockedCompareExchange = GetProcAddress(g_kernel32Sync, "InterlockedCompareExchange");
     if (!g_interlockedCompareExchange) {
-        g_interlockedCompareExchange = reinterpret_cast<FARPROC>(&UnmappedSimpleLockFallback);
+        g_interlockedCompareExchange = reinterpret_cast<FARPROC>(&IceFallback);
         FreeLibrary(g_kernel32Sync);
         g_kernel32Sync = 0;
     }
@@ -483,7 +545,7 @@ int LoadSyncLibraries()
         g_queueUserApcEx = GetProcAddress(g_quserex, "QueueUserAPCEx");
     }
     if (!g_queueUserApcEx) {
-        g_queueUserApcEx = reinterpret_cast<FARPROC>(&UnmappedApcFallback);
+        g_queueUserApcEx = reinterpret_cast<FARPROC>(&ApcFallback);
         if (g_quserex) {
             FreeLibrary(g_quserex);
         }
@@ -504,7 +566,7 @@ int LoadSyncLibraries()
         }
     }
 
-    g_queueUserApcEx = reinterpret_cast<FARPROC>(&UnmappedApcFallback);
+    g_queueUserApcEx = reinterpret_cast<FARPROC>(&ApcFallback);
     FreeLibrary(g_quserex);
     g_quserex = 0;
     return ready;
@@ -517,7 +579,7 @@ void AllocPrimaryTls()
     TlsBlock* block;
 
     LoadSyncLibraries();
-    AllocTlsBlock(reinterpret_cast<void*>(&UnmappedMutexDestroyBody), &g_tlsSecondary);
+    AllocTlsBlock(reinterpret_cast<void*>(&TlsMutexDestructor), &g_tlsSecondary);
 
     block = static_cast<TlsBlock*>(calloc(1, sizeof(TlsBlock)));
     if (block) {

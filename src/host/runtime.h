@@ -138,68 +138,8 @@ extern FARPROC g_StackWalk64;
 extern FARPROC g_SymFunctionTableAccess64;
 extern FARPROC g_SymGetModuleBase64;
 
-void* UnmappedAllocEvent();
-void UnmappedVectorGrow(int newSize, char zero);
-void* UnmappedVectorInsert(void* factory, void* pos, int bytes);
-unsigned long long UnmappedQpcNow();
-void UnmappedConstructDisplayBase(void* self);
-void* UnmappedDisplayBaseQueryInterface(void* self, const char** iid);
-void UnmappedConstructCompoundBase(void* self);
-void UnmappedRegisterPrint(HSQUIRRELVM vm, void* fn);
-void UnmappedRegisterPrintAlt(HSQUIRRELVM vm, void* fn);
-void UnmappedRegisterExtra0();
-void UnmappedRegisterExtra1();
-void UnmappedRegisterExtra2();
-void UnmappedRegisterExtra3();
-void UnmappedRegisterExtra4();
-void UnmappedBindHostClasses();
-void UnmappedCompilerError();
-void UnmappedSharedStateCtor(void* ss);
-void __stdcall UnmappedSharedStateInit(void* ss);
-void UnmappedVmCtor(HSQUIRRELVM vm, void* ss);
-int __stdcall UnmappedVmInit(HSQUIRRELVM vm, HSQUIRRELVM friendvm);
-void UnmappedVmDelete(HSQUIRRELVM vm);
-void UnmappedWrongArgType(HSQUIRRELVM vm, HSQOBJECT* obj);
-int UnmappedLoadBytecode(HSQUIRRELVM vm);
-void* UnmappedCreateString(void* strings, const SQChar* name);
-void UnmappedNewSlot(HSQUIRRELVM vm, HSQOBJECT* self, HSQOBJECT* key, HSQOBJECT* val,
-    SQBool bstatic);
-void UnmappedRaiseFmt(const char* text);
-SQInteger UnmappedGetStringIdx(HSQUIRRELVM vm, SQInteger idx, const SQChar** out);
-void UnmappedPrintCallstack(HSQUIRRELVM vm);
-void UnmappedTableCtor(void* table, void* sharedstate, SQInteger initialSize);
-void* UnmappedRefLookup(void* refsTable, HSQOBJECT* obj, unsigned* index, void** prev,
-    int create);
-void UnmappedClearRefSlot(unsigned* slot);
-void UnmappedReleaseRefCounted(int* object);
-int UnmappedSqCall(HSQUIRRELVM vm, SQInteger nparams);
-int UnmappedSqCompile(HSQUIRRELVM vm, SQLEXREADFUNC read, SQUserPointer p,
-    const SQChar* sourcename, int raiseerror);
-SQInteger UnmappedConsoleBufferRead(SQUserPointer p);
-int UnmappedGet(HSQUIRRELVM vm);
-void UnmappedBindHostApi();
-void UnmappedShutdownHost();
-int UnmappedFindFirstFile(const char* path, WIN32_FIND_DATAA* data);
-char* UnmappedCopyExeDir(char* dest);
-void* UnmappedCrtPathSlot();
-int UnmappedKdConstruct(KdObject* object);
-int UnmappedKdConstructNamed(KdObject* object);
-int UnmappedKdConstructFail(KdObject* object);
-void UnmappedDirClose(void* dir);
-int UnmappedTryLoadDbgHelpSoft();
-void UnmappedLogOsInfo();
-void UnmappedLogStackWalk();
-void* UnmappedOpenDumpFile(const char* path);
-int UnmappedMiniDumpCallback();
-int UnmappedMutexCheck(MutexRef* ref);
-unsigned long long UnmappedThreadId64();
-void UnmappedMutexDestroyBody(void* mutex);
-int UnmappedMutexLockInner(MutexRef* ref);
-void UnmappedQueueEvent(void* node);
-int UnmappedWaitQueue();
-unsigned long long UnmappedQpcDelta();
-void UnmappedSimpleLockFallback();
-void UnmappedApcFallback();
+void* AllocEvent();
+void QueueEvent(void* node);
 LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
 // 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
@@ -277,6 +217,8 @@ void KdLog(const char* fmt, ...);
 void HostLogV(const char** prefix, const char* fmt, va_list args);
 // 0x004b7070
 void HostLog(const char* fmt, ...);
+// 0x004b70b0
+void HostLogError(const char* fmt, ...);
 // 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
 void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
 // 0x00499fe0

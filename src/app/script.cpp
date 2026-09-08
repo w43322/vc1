@@ -10,6 +10,47 @@
 
 namespace vc1 {
 
+static void BindHostClasses();
+
+// STUB: VC1 0x00402690
+static void RegisterPrintBinding(HSQUIRRELVM vm, void* fn)
+{
+    (void)vm;
+    (void)fn;
+}
+
+// STUB: VC1 0x00402770
+static void RegisterPrintAltBinding(HSQUIRRELVM vm, void* fn)
+{
+    (void)vm;
+    (void)fn;
+}
+
+// STUB: VC1 0x00402850
+static void RegisterStdExtra0()
+{
+}
+
+// STUB: VC1 0x004028f0
+static void RegisterStdExtra1()
+{
+}
+
+// STUB: VC1 0x00402990
+static void RegisterStdExtra2()
+{
+}
+
+// STUB: VC1 0x00402a30
+static void RegisterStdExtra3()
+{
+}
+
+// STUB: VC1 0x00402ad0
+static void RegisterStdExtra4()
+{
+}
+
 static void EnsureRootTable()
 {
     if (g_rootTable.obj._type == OT_NULL && g_vm) {
@@ -28,7 +69,7 @@ void InitScriptEngine(int argc, char** argv)
 
     InitSizeClassPools();
     OpenScriptVm();
-    UnmappedBindHostClasses();
+    BindHostClasses();
     InitHostServices();
 
     InitSquirrelObject(&scratch);
@@ -66,7 +107,6 @@ void CloseScriptVm()
 
     g_vm = 0;
     if (vm) {
-        UnmappedShutdownHost();
         g_sizeClassHeap.releasedBytes += 0xb4;
         sq_close(vm);
     }
@@ -145,13 +185,19 @@ SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar*
 // FUNCTION: VC1 0x004bdc50
 void RegisterStdBindings()
 {
-    UnmappedRegisterPrint(g_vm, 0);
-    UnmappedRegisterPrintAlt(g_vm, 0);
-    UnmappedRegisterExtra0();
-    UnmappedRegisterExtra1();
-    UnmappedRegisterExtra2();
-    UnmappedRegisterExtra3();
-    UnmappedRegisterExtra4();
+    RegisterPrintBinding(g_vm, 0);
+    RegisterPrintAltBinding(g_vm, 0);
+    RegisterStdExtra0();
+    RegisterStdExtra1();
+    RegisterStdExtra2();
+    RegisterStdExtra3();
+    RegisterStdExtra4();
+}
+
+// Color/Vector/Matrix/Rect native class table. Called from InitScriptEngine.
+// STUB: VC1 0x004bf610
+static void BindHostClasses()
+{
 }
 
 }

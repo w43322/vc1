@@ -26,9 +26,9 @@ typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 class KdFactory
 {
 public:
-    virtual KdFactory* ScalarDelete(unsigned char flags); // vtable+0x00
-    virtual void Clear();                                 // vtable+0x04
-    virtual unsigned Count();                             // vtable+0x08
+    virtual ~KdFactory();     // vtable+0x00
+    virtual void Clear();     // vtable+0x04
+    virtual unsigned Count(); // vtable+0x08
     void** __stdcall QueryNamed(void** out, const char** name);
 
     FactoryEntry* begin; // 0x04
@@ -37,6 +37,9 @@ public:
 };
 
 typedef char Vc1KdFactorySizeCheck[sizeof(KdFactory) == 0x10 ? 1 : -1];
+
+// FUNCTION: VC1 0x00401f30
+// vc1::KdFactory::`scalar deleting destructor'
 
 // SIZE 0x08
 struct FactoryInsert
@@ -128,6 +131,9 @@ void** CreateKdRoadCellsRenderer(void** out);
 FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out);
 FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key);
 void ReserveFactoryTable(unsigned newCount);
+void GrowCountedBuffer(void* self, int bytes, char exact);
+void* InsertCountedBytes(void* self, void* pos, int bytes);
+void AssignCountedString(void* self, const char* text, unsigned len);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);
 KdFactory* GetKdFactory();
 void** QueryKdFactory(void** out, const char** name);

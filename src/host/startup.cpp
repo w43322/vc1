@@ -1,11 +1,44 @@
 #include "host/runtime.h"
 
 #include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 namespace vc1 {
+
+// STUB: VC1 0x0047cb00
+static int KdConstructNamed(KdObject* object)
+{
+    (void)object;
+    return 0;
+}
+
+// SHGetSpecialFolderPathA("Virtual City") when the path starts with a marker.
+// STUB: VC1 0x0047cec0
+static char* CopyExeDir(char* dest)
+{
+    if (dest) {
+        dest[0] = 0;
+    }
+    return dest;
+}
+
+// stdcall KdObject. Writes name 0x004d2f1c and method slots at +0x110.
+// STUB: VC1 0x0047d030
+static int KdConstruct(KdObject* object)
+{
+    (void)object;
+    return 0;
+}
+
+// STUB: VC1 0x0047d650
+static int KdConstructFail(KdObject* object)
+{
+    (void)object;
+    return 0;
+}
 
 // EDI=haystack, EBX=needle, ECX=haystackLen, cdecl needleLen. Uses MemCompare for n>2.
 // FUNCTION: VC1 0x00482160
@@ -167,6 +200,15 @@ KdObject* CreateKdObject(int (*ctor)(KdObject* object))
     }
 }
 
+// Append \*.* and FindFirstFileA. this=path, stdcall FIND_DATA.
+// STUB: VC1 0x00487020
+static HANDLE DirFindFirst(const char* path, WIN32_FIND_DATAA* data)
+{
+    (void)path;
+    (void)data;
+    return INVALID_HANDLE_VALUE;
+}
+
 // cdecl path + mode. Strip leading '.' and '/', remap res/ via KD_LOCALE, then OpenKdPath.
 // FUNCTION: VC1 0x00487140
 void* OpenKdFile(const char* path, const char* mode)
@@ -235,7 +277,7 @@ void DestroyKdObjects()
 unsigned char* DirOpen()
 {
     char path[260];
-    char* const fileName = UnmappedCopyExeDir(path);
+    char* const fileName = CopyExeDir(path);
     DWORD attributes;
 
     if (!fileName || fileName[0] == 0) {
@@ -256,7 +298,8 @@ unsigned char* DirOpen()
             return 0;
         }
         *reinterpret_cast<unsigned char**>(dir + 0x248) = dir;
-        handle = UnmappedFindFirstFile(fileName, reinterpret_cast<WIN32_FIND_DATAA*>(dir + 0x104));
+        handle = reinterpret_cast<int>(DirFindFirst(fileName,
+            reinterpret_cast<WIN32_FIND_DATAA*>(dir + 0x104)));
         *reinterpret_cast<int*>(dir + 0x244) = handle;
         if (handle != -1) {
             char* const name = reinterpret_cast<char*>(dir + 0x130);
@@ -282,16 +325,16 @@ unsigned char* DirOpen()
 void InitKdFilesystem()
 {
     unsigned char* dir;
-    void** path;
+    FILE* iob;
 
-    CreateKdObject(UnmappedKdConstruct);
+    CreateKdObject(KdConstruct);
     g_kdObjectIt0 = g_kdObjects;
     g_kdObjectIt1 = g_kdObjects;
     g_kdObjectIt2 = g_kdObjects;
-    g_kdPath0 = UnmappedCrtPathSlot();
-    path = static_cast<void**>(UnmappedCrtPathSlot());
-    g_kdPath1 = path + 2;
-    g_kdPath2 = static_cast<unsigned char*>(UnmappedCrtPathSlot()) + 0x10;
+    iob = __iob_func();
+    g_kdPath0 = iob;
+    g_kdPath1 = iob + 1;
+    g_kdPath2 = iob + 2;
     dir = DirOpen();
 
     {
@@ -304,7 +347,7 @@ void InitKdFilesystem()
                     length += 1;
                 }
                 if (FindBytes(name, length, ".dll", 4)) {
-                    CreateKdObject(UnmappedKdConstructNamed);
+                    CreateKdObject(KdConstructNamed);
                 }
             }
             entry = static_cast<void**>(DirRead(dir));
@@ -313,14 +356,14 @@ void InitKdFilesystem()
 
     if (!dir) {
         errno = 7;
-        CreateKdObject(UnmappedKdConstructFail);
+        CreateKdObject(KdConstructFail);
         return;
     }
     if (*reinterpret_cast<HANDLE*>(dir + 0x244) != INVALID_HANDLE_VALUE) {
         FindClose(*reinterpret_cast<HANDLE*>(dir + 0x244));
     }
     free(dir);
-    CreateKdObject(UnmappedKdConstructFail);
+    CreateKdObject(KdConstructFail);
 }
 
 }

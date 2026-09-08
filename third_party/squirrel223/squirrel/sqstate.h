@@ -171,6 +171,8 @@ void sq_vm_free(void *p,SQUnsignedInteger size);
 // StringTable::Add
 // FUNCTION: VC1 0x004891e0
 // RefTable::Get
+// FUNCTION: VC1 0x00489320
+// RefTable::Release
 // FUNCTION: VC1 0x00489420
 // SQSharedState::GetScratchPad
 // FUNCTION: VC1 0x00489470

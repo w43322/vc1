@@ -14,18 +14,12 @@ unsigned g_kdFactoryGuard;
 // GLOBAL: VC1 0x004ed6d4
 IUnknown* g_kdDefaultUnknown;
 
-// FUNCTION: VC1 0x00401f30
-KdFactory* KdFactory::ScalarDelete(unsigned char flags)
+KdFactory::~KdFactory()
 {
-    begin = begin;
     if (capacity != 0) {
         free(begin);
     }
     Clear();
-    if (flags & 1) {
-        free(this);
-    }
-    return this;
 }
 
 // FUNCTION: VC1 0x00401f70
@@ -70,7 +64,7 @@ FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out)
     }
 
     ReserveFactoryTable((oldSize >> 3) + 1);
-    found = static_cast<FactoryEntry*>(UnmappedVectorInsert(&g_kdFactory,
+    found = static_cast<FactoryEntry*>(InsertCountedBytes(&g_kdFactory,
         reinterpret_cast<FactoryEntry*>(
             reinterpret_cast<char*>(found) - reinterpret_cast<char*>(oldBegin)
             + reinterpret_cast<char*>(g_kdFactory.begin)),
@@ -112,7 +106,7 @@ FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key)
 void ReserveFactoryTable(unsigned newCount)
 {
     unsigned oldCap = g_kdFactory.capacity >> 3;
-    UnmappedVectorGrow(static_cast<int>(newCount * 8), 0);
+    GrowCountedBuffer(&g_kdFactory, static_cast<int>(newCount * 8), 0);
     if ((g_kdFactory.capacity >> 3) > oldCap) {
         FactoryEntry* slot = g_kdFactory.begin + oldCap;
         FactoryEntry* end = g_kdFactory.begin + (g_kdFactory.capacity >> 3);
@@ -124,6 +118,33 @@ void ReserveFactoryTable(unsigned newCount)
             slot += 1;
         }
     }
+}
+
+// EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
+// STUB: VC1 0x004b8930
+void GrowCountedBuffer(void* self, int bytes, char exact)
+{
+    (void)self;
+    (void)bytes;
+    (void)exact;
+}
+
+// EAX=counted buffer, stdcall pos + byte count. Grows then memmoves the tail.
+// STUB: VC1 0x004b8a20
+void* InsertCountedBytes(void* self, void* pos, int bytes)
+{
+    (void)self;
+    (void)bytes;
+    return pos;
+}
+
+// ECX=counted buffer, EAX=length, EBX=source. Empty string uses DAT_004cfa94.
+// STUB: VC1 0x004b9090
+void AssignCountedString(void* self, const char* text, unsigned len)
+{
+    (void)self;
+    (void)text;
+    (void)len;
 }
 
 // thiscall factory, stdcall out + name slot, RET 8.

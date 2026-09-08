@@ -3,6 +3,8 @@
 #include "host/runtime.h"
 
 #include <sqstdio.h>
+#include <sqpcheader.h>
+#include <sqvm.h>
 #include <stdio.h>
 
 namespace vc1 {
@@ -31,50 +33,32 @@ static void* SharedStateRefs(HSQUIRRELVM vm)
 void ReleaseObjectIfNeeded(HSQOBJECT* obj)
 {
     if (g_vm && (obj->_type & kSqRefCounted) != 0) {
-        ReleaseSharedRef(SharedStateRefs(g_vm), obj);
+        static_cast<RefTable*>(SharedStateRefs(g_vm))->Release(
+            *reinterpret_cast<SQObject*>(obj));
     }
 }
 
-// EAX=refs table (vm->_sharedstate+0x18), stdcall key=[ebp+8], RET 4.
-// Look up the key, drop its extra ref, and if that hits 0 unlink the slot onto the free list.
-// FUNCTION: VC1 0x00489320
-SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj)
+// Host BufState is {buf, ptr, size} (stock buf_lexfeed is {buf, size, ptr}).
+// FUNCTION: VC1 0x00496a90
+static SQInteger ConsoleBufferRead(SQUserPointer p)
 {
-    unsigned index;
-    void* prev;
-    unsigned* slot;
-
-    slot = static_cast<unsigned*>(UnmappedRefLookup(refsTable, obj, &index, &prev, 0));
-    if (!slot) {
-        return SQFalse;
-    }
-    slot[2] -= 1;
-    if (slot[2] != 0) {
-        return SQFalse;
-    }
-
+    struct HostBufState
     {
-        const unsigned type = slot[0];
-        int* const value = reinterpret_cast<int*>(slot[1]);
-        const unsigned held = type & kSqRefCounted;
-        if (held) {
-            value[1] += 1;
-        }
-        if (prev) {
-            *reinterpret_cast<unsigned*>(static_cast<char*>(prev) + 0xc) = slot[3];
-        }
-        else {
-            reinterpret_cast<unsigned**>(static_cast<char*>(refsTable) + 0x10)[index] = reinterpret_cast<unsigned*>(slot[3]);
-        }
-        slot[3] = *reinterpret_cast<unsigned*>(static_cast<char*>(refsTable) + 0xc);
-        *reinterpret_cast<unsigned*>(static_cast<char*>(refsTable) + 4) -= 1;
-        *reinterpret_cast<unsigned**>(static_cast<char*>(refsTable) + 0xc) = slot;
-        UnmappedClearRefSlot(slot);
-        if (held) {
-            UnmappedReleaseRefCounted(value);
-        }
+        const SQChar* buf;
+        SQInteger ptr;
+        SQInteger size;
+    };
+    HostBufState* const buf = static_cast<HostBufState*>(p);
+    const SQInteger ptr = buf->ptr;
+    const SQInteger next = ptr + 1;
+    SQInteger ch;
+
+    if (buf->size < next) {
+        return 0;
     }
-    return SQTrue;
+    ch = static_cast<signed char>(buf->buf[ptr]);
+    buf->ptr = next;
+    return ch;
 }
 
 // DWORD loop then leftover bytes. Mismatch sign is (diff SAR 31) | 1.
@@ -130,7 +114,7 @@ SquirrelObject* InvokeWithRoot(SquirrelObject* script, SquirrelObject* env,
     else {
         sq_pushobject(g_vm, env->obj);
     }
-    if (UnmappedSqCall(g_vm, 1) < 0) {
+    if (sq_call(g_vm, 1, SQTrue, SQTrue) < 0) {
         sq_pop(g_vm, 1);
         return CopySquirrelObject(dest, &local);
     }
@@ -184,16 +168,16 @@ SquirrelObject* CompileString(const SQChar* source, SquirrelObject* dest)
     length = static_cast<SQInteger>(cursor - source);
     {
         struct {
-            const SQChar* ptr;
-            SQInteger pos;
-            SQInteger len;
+            const SQChar* buf;
+            SQInteger ptr;
+            SQInteger size;
         } buf;
         // STRING: VC1 0x004d0ce0
         const SQChar* const sourcename = "console_buffer";
-        buf.ptr = source;
-        buf.pos = 0;
-        buf.len = length;
-        if (UnmappedSqCompile(g_vm, UnmappedConsoleBufferRead, &buf, sourcename, 1) < 0) {
+        buf.buf = source;
+        buf.ptr = 0;
+        buf.size = length;
+        if (sq_compile(g_vm, ConsoleBufferRead, &buf, sourcename, SQTrue) < 0) {
             return CopySquirrelObject(dest, &local);
         }
     }
@@ -227,7 +211,7 @@ SQBool __stdcall HasNamedSlot(SquirrelObject* table, const SQChar* name)
 {
     sq_pushobject(g_vm, table->obj);
     sq_pushstring(g_vm, name, -1);
-    if (UnmappedGet(g_vm)) {
+    if (g_vm->Get(stack_get(g_vm, -2), g_vm->GetUp(-1), g_vm->GetUp(-1), false, false)) {
         return SQTrue;
     }
     sq_pop(g_vm, 1);

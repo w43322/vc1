@@ -2,6 +2,7 @@
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
+#include "kd/factory.h"
 #include "host/runtime.h"
 
 #include <stdlib.h>
@@ -41,7 +42,7 @@ unsigned KdCompoundObject::Release()
 // FUNCTION: VC1 0x00473800
 KdCompoundObject* ConstructKdCompoundObject(KdCompoundObject* self)
 {
-    UnmappedConstructCompoundBase(self);
+    AssignCountedString(self, 0, 0);
     self->KdCompoundObject::KdCompoundObject();
     return self;
 }

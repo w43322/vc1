@@ -23,9 +23,11 @@ class KdSystem : public ISystem,
                  public IAbstract
 {
 public:
-    unsigned char tail[164]; // 0x34
+    unsigned refs;           // 0x34
+    unsigned char tail[160]; // 0x38
 
     KdSystem();
+    ~KdSystem();
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
@@ -36,14 +38,20 @@ public:
     int Unmapped1c();                       // vtable+0x1c
     int Unmapped20();                       // vtable+0x20
     int Unmapped24();                       // vtable+0x24
-    int Start();                            // vtable+0x28
-    int Unmapped0c();                       // vtable+0x0c
+    int Start(IUnknown** object);           // vtable+0x28
+    unsigned char Script0c(void* a, void* b);
+    unsigned char Script10(void* a, void* b);
+    int Script14();
 };
 
 typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];
 
+// FUNCTION: VC1 0x00407470
+// vc1::KdSystem::`scalar deleting destructor'
+
 void ConstructKdSystem(KdSystem* self);
 void** CreateKdSystem(void** out);
+void* SystemBaseQueryInterface(KdSystem* self, const char** iid);
 
 }
 

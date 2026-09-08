@@ -29,9 +29,6 @@ extern HSQUIRRELVM g_vm;
 extern const void* g_squirrelObjectVftable;
 
 void InitSquirrelObject(SquirrelObject* object);
-
-// 0x00489320; EAX=vm->_sharedstate+0x18, stdcall obj=[esp+4], RET 4. Inferred name.
-SQBool __stdcall ReleaseSharedRef(void* refsTable, HSQOBJECT* obj);
 void ReleaseObjectIfNeeded(HSQOBJECT* obj);
 
 // 0x00499d00; original ABI: size=EAX, left=EDX, right=ECX. Returns -1, 0, or 1.

@@ -23,23 +23,22 @@ class KdDisplay : public IScriptObject,
                   public IAbstract
 {
 public:
-    unsigned pad20[4];       // 0x20
-    float zero30;            // 0x30
-    float one34;             // 0x34
-    float zero38;            // 0x38
-    float zero3c;            // 0x3c
-    float zero40;            // 0x40
-    float one44;             // 0x44
-    float zero48;            // 0x48
-    float zero4c;            // 0x4c
-    float zero50;            // 0x50
-    float one54;             // 0x54
+    unsigned refs;           // 0x20
+    unsigned pad24;          // 0x24
+    unsigned pad28;          // 0x28
+    void* device;            // 0x2c
+    IUnknown* target;        // 0x30
+    float matrix[9];         // 0x34
     unsigned char enabled58; // 0x58
 
     KdDisplay();
+    ~KdDisplay();
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
+    unsigned char Script0c(void* a, void* b); // vtable+0x0c
+    unsigned char Script10(void* a, void* b); // vtable+0x10
+    int Script14();                            // vtable+0x14
     int Display0c();                        // vtable+0x0c
     int Display10();                        // vtable+0x10
     int Display14();                        // vtable+0x14
@@ -53,13 +52,17 @@ public:
     int Display34();                        // vtable+0x34
     int Display38();                        // vtable+0x38
     int Shutdown();                         // vtable+0x0c
-    int Unmapped0c();                       // vtable+0x0c
 };
 
 typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 
+// FUNCTION: VC1 0x00402230
+// vc1::KdDisplay::`scalar deleting destructor'
+
 KdDisplay* ConstructKdDisplay(KdDisplay* self);
 void** CreateKdDisplay(void** out);
+void* DisplayFaceQueryInterface(IDisplay* self, const char** iid);
+void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid);
 
 }
 

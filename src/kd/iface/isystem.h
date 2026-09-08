@@ -14,7 +14,7 @@ struct ISystem : IShutdownable
     virtual int Unmapped1c() = 0; // vtable+0x1c
     virtual int Unmapped20() = 0; // vtable+0x20
     virtual int Unmapped24() = 0; // vtable+0x24
-    virtual int Start() = 0;      // vtable+0x28
+    virtual int Start(IUnknown** object) = 0; // vtable+0x28
 };
 
 typedef char Vc1ISystemSizeCheck[sizeof(ISystem) == 0x04 ? 1 : -1];

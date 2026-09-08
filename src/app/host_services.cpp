@@ -10,6 +10,12 @@
 
 namespace vc1 {
 
+// Last instruction of InitHostServices is JMP here.
+// STUB: VC1 0x0042b1e0
+static void BindHostApi()
+{
+}
+
 static float FloatFromBits(unsigned bits)
 {
     float value;
@@ -81,7 +87,7 @@ void InitHostServices()
     EnsureRootTable();
     // STRING: VC1 0x004d7694
     RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_MAX", 0x100);
-    UnmappedBindHostApi();
+    BindHostApi();
 }
 
 // Cache KD_LOCALE or lang_COUNTRY from GetLocaleInfoA into DAT_004ed504.

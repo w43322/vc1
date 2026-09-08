@@ -2,6 +2,7 @@
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
+#include "host/runtime.h"
 
 #include <stdlib.h>
 
@@ -15,6 +16,58 @@ static const char kSoundDriver[] = "SoundDriver";
 // GLOBAL: VC1 0x004d064c
 const char* g_kdNameSoundDriver = kSoundDriver;
 
+// STUB: VC1 0x0044467a
+static void BassFree()
+{
+}
+
+// STUB: VC1 0x00444680
+static unsigned BassGetVersion()
+{
+    return 0;
+}
+
+// STUB: VC1 0x00444686
+static int BassInit(int device, unsigned freq, unsigned flags, void* win, void* clsid)
+{
+    (void)device;
+    (void)freq;
+    (void)flags;
+    (void)win;
+    (void)clsid;
+    return 0;
+}
+
+// STUB: VC1 0x0044468c
+static int BassErrorGetCode()
+{
+    return 0;
+}
+
+// STUB: VC1 0x00444692
+static int BassGetDeviceInfo(unsigned device, void* info)
+{
+    (void)device;
+    (void)info;
+    return 0;
+}
+
+// STUB: VC1 0x00444698
+static int BassGetDevice()
+{
+    return 0;
+}
+
+// STUB: VC1 0x0045e9b0
+static void Sound14Body()
+{
+}
+
+// STUB: VC1 0x0045f960
+static void Sound10Body()
+{
+}
+
 KdSoundDriver::KdSoundDriver()
 {
     refs = 1;
@@ -23,19 +76,20 @@ KdSoundDriver::KdSoundDriver()
 // FUNCTION: VC1 0x004681a0
 void* KdSoundDriver::QueryInterface(const char** iid)
 {
-    const char* name;
-
-    if (!iid) {
-        return 0;
-    }
-    name = *iid;
+    const char* name = *iid;
     if (name == g_iidScriptObject) {
+        if (!this) {
+            return 0;
+        }
         return static_cast<IScriptObject*>(this);
     }
     if (name == g_iidSoundDriver) {
-        return static_cast<ISoundDriver*>(this);
+        return this;
     }
     if (name == g_iidShutdownable) {
+        if (!this) {
+            return 0;
+        }
         return static_cast<IShutdownable*>(this);
     }
     if (name == g_iidAbstract) {
@@ -44,20 +98,45 @@ void* KdSoundDriver::QueryInterface(const char** iid)
     return 0;
 }
 
-// STUB: VC1 0x004681f0
+// FUNCTION: VC1 0x004681f0
 unsigned KdSoundDriver::Release()
 {
-    if (refs) {
-        refs -= 1;
+    IAbstract* iface = static_cast<IAbstract*>(this);
+    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
+    unsigned n;
+
+    *p -= 1;
+    n = *p;
+    if (n == 0) {
+        delete iface;
+        return 0;
     }
-    return refs;
+    return n;
 }
 
-// STUB: VC1 0x00468210
+// FUNCTION: VC1 0x00468210
 unsigned KdSoundDriver::AddRef()
 {
-    refs += 1;
-    return refs;
+    unsigned n = refs;
+    if (n != 0) {
+        n += 1;
+        refs = n;
+    }
+    return n;
+}
+
+// STUB: VC1 0x00468220
+void* KdSoundDriver::Sound14(void* arg)
+{
+    Sound14Body();
+    return arg;
+}
+
+// STUB: VC1 0x00468230
+void* KdSoundDriver::Sound10(void* arg)
+{
+    Sound10Body();
+    return arg;
 }
 
 // FUNCTION: VC1 0x00468280
@@ -97,9 +176,33 @@ void** CreateKdSoundDriver(void** out)
     return out;
 }
 
+// STRING: VC1 0x004d5b18
+static const char kBassVersion[] = "BASS v%d.%d.%d.%d";
+// STRING: VC1 0x004d5b2c
+static const char kBassInit[] = "BASS_Init: %d";
+// STRING: VC1 0x004d5b3c
+static const char kBassDevice[] = "Device: %s\n";
+
 // STUB: VC1 0x00468360
 int KdSoundDriver::SetEnabled()
 {
+    unsigned ver;
+    int device;
+    char* name;
+
+    ver = BassGetVersion();
+    HostLog(kBassVersion,
+        static_cast<int>(static_cast<signed char>(ver >> 24)),
+        static_cast<int>(static_cast<signed char>(ver >> 16)),
+        static_cast<int>(static_cast<signed char>(ver >> 8)),
+        static_cast<int>(static_cast<signed char>(ver)));
+    if (!BassInit(-1, 0xac44, 0, 0, 0)) {
+        HostLogError(kBassInit, BassErrorGetCode());
+        return 0;
+    }
+    device = BassGetDevice();
+    BassGetDeviceInfo(static_cast<unsigned>(device), &name);
+    HostLog(kBassDevice, name);
     return 1;
 }
 
@@ -108,9 +211,14 @@ int KdSoundDriver::Shutdown()
     return 0;
 }
 
-int KdSoundDriver::Unmapped0c()
+unsigned char KdSoundDriver::Script0c(void*, void*) { return 0; }
+unsigned char KdSoundDriver::Script10(void*, void*) { return 0; }
+int KdSoundDriver::Script14() { return 0; }
+
+KdSoundDriver::~KdSoundDriver()
 {
-    return 0;
+    BassFree();
+    g_kdSoundDriver = 0;
 }
 
 }
