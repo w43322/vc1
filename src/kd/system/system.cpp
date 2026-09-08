@@ -24,12 +24,15 @@ const char* g_kdNameSystem = kSystem;
 
 static void SystemDtorBase(KdSystem* self);
 static unsigned char SystemStartBase(KdSystem* self, IUnknown** object);
-static void StartPostMixer();
+void StartPostMixer();
 static int InputStreamFinish(IInputStream* self);
+static void InputStreamClear(IInputStream* self);
 static int InputStreamUnmapped1c(IInputStream* self, void* arg);
 static void** InputStreamUnmapped18(IInputStream* self, void** out, void* a);
 static IUnknown** InputStreamFind(IInputStream* self, IUnknown** out, void* key);
 static void InputStreamInsert(IInputStream* self, void* key, void** out);
+static void UnlinkCountedNode(KdSystem* self, void* block);
+static void* AllocSystemBuffer();
 
 KdSystem::KdSystem()
 {
@@ -196,8 +199,59 @@ int KdSystem::Unmapped1c(void* arg)
     return InputStreamUnmapped1c(static_cast<IInputStream*>(this), arg);
 }
 
-// STUB: VC1 0x00462720
-int KdSystem::Shutdown() { return 0; }
+static void RebindService(IUnknown** slot, const char** iid)
+{
+    IUnknown* queried;
+    if (*slot) {
+        (*slot)->Release();
+    }
+    if (!g_kdServices) {
+        *slot = 0;
+        return;
+    }
+    queried = static_cast<IUnknown*>(g_kdServices->QueryInterface(iid));
+    *slot = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+}
+
+static void CallGroup14(IUnknown* group)
+{
+    typedef int (__thiscall *Fn14)(IUnknown* object);
+    if (!group) {
+        return;
+    }
+    reinterpret_cast<Fn14>((*reinterpret_cast<void***>(group))[5])(group);
+}
+
+// ESI=this. Frees tail[0], clears the input stream, rebinds services from g_kdServices.
+// FUNCTION: VC1 0x00462720
+int KdSystem::Shutdown()
+{
+    IUnknown** slots = reinterpret_cast<IUnknown**>(this);
+    void* block = *reinterpret_cast<void**>(tail);
+
+    if (block) {
+        UnlinkCountedNode(this, block);
+        free(block);
+    }
+    *reinterpret_cast<void**>(tail) = 0;
+    InputStreamClear(static_cast<IInputStream*>(this));
+
+    CallGroup14(slots[0x13]);
+    CallGroup14(slots[0x14]);
+    CallGroup14(slots[0x15]);
+
+    RebindService(slots + 0x13, &g_iidFunctionalGroup);
+    RebindService(slots + 0x14, &g_iidFunctionalGroup);
+    RebindService(slots + 0x15, &g_iidFunctionalGroup);
+    RebindService(slots + 0x10, &g_iidResourceManager);
+    RebindService(slots + 0x0f, &g_iidDisplay);
+    RebindService(slots + 0x12, &g_iidCamera);
+    RebindService(slots + 0x11, &g_iidCamera);
+    return 0;
+}
 
 // STUB: VC1 0x00462900
 static void SystemDtorBase(KdSystem* self)
@@ -205,11 +259,53 @@ static void SystemDtorBase(KdSystem* self)
     (void)self;
 }
 
-// STUB: VC1 0x00462e80
+// this in ECX. Rebinds Display at +0x3c, allocates tail[0], StartPostMixer.
+// FUNCTION: VC1 0x00462e80
 static unsigned char SystemStartBase(KdSystem* self, IUnknown** object)
 {
-    (void)self;
-    (void)object;
+    IUnknown** displaySlot;
+    IDisplay* display;
+    IUnknown* queried;
+
+    displaySlot = reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x3c);
+    if (*displaySlot) {
+        (*displaySlot)->Release();
+    }
+    if (!object || !*object) {
+        *displaySlot = 0;
+    }
+    else {
+        queried = static_cast<IUnknown*>((*object)->QueryInterface(&g_iidDisplay));
+        *displaySlot = queried;
+        if (queried) {
+            queried->AddRef();
+        }
+    }
+
+    *reinterpret_cast<void**>(self->tail) = AllocSystemBuffer();
+    StartPostMixer();
+
+    if (!object || !*object) {
+        display = 0;
+    }
+    else {
+        display = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
+        if (display) {
+            display->AddRef();
+        }
+    }
+    if (display) {
+        display->GetMixer();
+        StartPostMixer();
+        display->Release();
+        display = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
+        if (display) {
+            display->AddRef();
+        }
+        display->GetMixer();
+        StartPostMixer();
+        display->Release();
+    }
     return 1;
 }
 
@@ -329,6 +425,13 @@ int KdSystem::Unmapped10(void* key, void** out)
     return 0;
 }
 
+// this=IInputStream. Walks members and Shutdowns them; orig vtbl+0x24 then GrowCountedBuffer.
+// STUB: VC1 0x004727a0
+static void InputStreamClear(IInputStream* self)
+{
+    (void)self;
+}
+
 // STUB: VC1 0x00472870
 static int InputStreamFinish(IInputStream* self)
 {
@@ -369,8 +472,23 @@ static void InputStreamInsert(IInputStream* self, void* key, void** out)
     (void)out;
 }
 
+// EDX=block. Unlinks the timed/heap node at g_kdObject list head 0x004ed4fc.
+// STUB: VC1 0x00486830
+static void UnlinkCountedNode(KdSystem* self, void* block)
+{
+    (void)self;
+    (void)block;
+}
+
+// Alloc 10000000-byte system scratch; orig EAX=size, stack flags.
+// STUB: VC1 0x00486890
+static void* AllocSystemBuffer()
+{
+    return 0;
+}
+
 // STUB: VC1 0x004964f0
-static void StartPostMixer()
+void StartPostMixer()
 {
 }
 

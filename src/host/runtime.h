@@ -203,6 +203,8 @@ unsigned char* DirOpen();
 void InitKdFilesystem();
 // 0x004963b0; original owner in EBX
 void UnlinkHeapByOwner(void* owner);
+// 0x004964f0; original ESI=callback, EBX=count
+void StartPostMixer();
 // 0x00496580
 void FreeBumpHeaps();
 // 0x00496840
