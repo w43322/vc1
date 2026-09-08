@@ -6,6 +6,8 @@
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ishutdownable.h"
 #include "kd/iface/iabstract.h"
+#include "kd/display/render_target.h"
+#include "kd/display/texture.h"
 
 namespace vc1 {
 
@@ -44,14 +46,14 @@ public:
     const char* Script14();                 // vtable+0x14
     void* Display0c(void* a, void* b);      // vtable+0x0c
     void* Display10();                       // vtable+0x10
-    int Display14();                        // vtable+0x14
-    int Display18();                        // vtable+0x18
+    int GetWidth();                         // vtable+0x14
+    int GetHeight();                        // vtable+0x18
     void* Display1c();                      // vtable+0x1c
     int SetSize(unsigned width, unsigned height); // vtable+0x20
-    unsigned char Display24();             // vtable+0x24
+    unsigned char IsWindowed();            // vtable+0x24
     void Display30(int unused);              // vtable+0x30
-    void** Display34(void** out);            // vtable+0x34
-    void** Display38(void** out, void* a, void* b); // vtable+0x38
+    void** CreateTexture(void** out);       // vtable+0x34
+    void** CreateRenderTarget(void** out, unsigned width, unsigned height); // vtable+0x38
     int Shutdown();                         // vtable+0x0c
 };
 
@@ -70,13 +72,13 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x00402320
 // ?QueryInterface@KdDisplay@vc1@@WBE@AEPAXPAPBD@Z
 // SYNTHETIC: VC1 0x00402330
-// ?Display14@KdDisplay@vc1@@WBA@AEHXZ
+// ?GetWidth@KdDisplay@vc1@@WBA@AEHXZ
 // SYNTHETIC: VC1 0x00402340
 // ?Release@KdDisplay@vc1@@WBI@AEIXZ
 // SYNTHETIC: VC1 0x00402350
 // ?QueryInterface@KdDisplay@vc1@@WBI@AEPAXPAPBD@Z
 // SYNTHETIC: VC1 0x00402360
-// ?Display18@KdDisplay@vc1@@WBA@AEHXZ
+// ?GetHeight@KdDisplay@vc1@@WBA@AEHXZ
 // SYNTHETIC: VC1 0x00402370
 // ?Release@KdDisplay@vc1@@WBM@AEIXZ
 // SYNTHETIC: VC1 0x00402380
@@ -98,8 +100,6 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x00402400
 // ?AddRef@KdDisplay@vc1@@WBM@AEIXZ
 
-KdDisplay* ConstructKdDisplay(KdDisplay* self);
-void** CreateKdDisplay(void** out);
 KdDisplay* ConstructKdDisplay(KdDisplay* self);
 void** CreateKdDisplay(void** out);
 void* DisplayFaceQueryInterface(IDisplay* self, const char** iid);

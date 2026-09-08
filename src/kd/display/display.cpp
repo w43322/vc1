@@ -1,4 +1,7 @@
 #include "kd/display/display.h"
+#include "kd/display/render_target.h"
+#include "kd/display/texture.h"
+#include "kd/factory.h"
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
@@ -70,7 +73,7 @@ static unsigned g_d3dGamma618;
 // GLOBAL: VC1 0x004ed61c
 static unsigned g_d3dGamma61c;
 // GLOBAL: VC1 0x004ed704
-static IUnknown* g_display38Default;
+static IUnknown* g_renderTargetDefault;
 // GLOBAL: VC1 0x004e9788
 static float g_d3dWorld[16];
 // GLOBAL: VC1 0x004e98c0
@@ -102,12 +105,16 @@ static void* g_kdWindowMixer;
 // GLOBAL: VC1 0x004e95a0
 static WNDCLASSA g_kdDisplayClass;
 
+// STRING: VC1 0x004d4c38
+static const char kTexture[] = "Texture";
 // STRING: VC1 0x004d4c4c
 static const char kDisplay[] = "Display";
 // STRING: VC1 0x004d0b38
 static const char kKdParentWindow[] = "KD_PARENT_WINDOW";
 // GLOBAL: VC1 0x004d0630
 const char* g_kdNameDisplay = kDisplay;
+// GLOBAL: VC1 0x004d0638
+const char* g_kdNameTexture = kTexture;
 // STRING: VC1 0x004d5db8
 static const char kInitSize[] = "Init: %dx%d";
 // STRING: VC1 0x004d5dc4
@@ -132,7 +139,6 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b);
 static unsigned char DisplayQueryFromTarget(void* mixer, void* args);
 static unsigned char DisplayQueryReady();
 static void RenderTargetInit(IRenderTarget* self);
-static void* Display34Construct(void* self);
 static void Display10Scene(void* self);
 static void* DisplaySceneConstruct(void* self);
 static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
@@ -140,11 +146,10 @@ static void DisplayReleaseGraphics(IShutdownable* self);
 static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
-static void* Display38Construct(void* self, void* extra);
-static void** Display38Body(void** out, void* a, void* b);
+static void** CreateRenderTargetBody(void** out, unsigned width, unsigned height);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
 static void DisplayD3dClear(unsigned color);
-static void* Display38Lookup(unsigned width, unsigned height);
+static void* LookupRenderTargetTexture(unsigned width, unsigned height);
 static void Display10Present(int arg);
 static void DisplayD3DTeardown();
 static void DisplayD3dSetBuffers(int right, int bottom, int left, int top);
@@ -191,8 +196,8 @@ static void RenderTargetInit(IRenderTarget* self)
     void* block;
 
     *reinterpret_cast<unsigned*>(self) = 0x004d5de0;
-    *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 4) = 0;
-    *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8) = 0;
+    self->extra = 0;
+    self->graphics = 0;
     block = malloc(0x64);
     ident = 0;
     if (block) {
@@ -209,12 +214,12 @@ static void RenderTargetInit(IRenderTarget* self)
     }
     if (ident) {
         ident->Release();
-        graphics = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8);
+        graphics = self->graphics;
         if (graphics) {
             graphics->Release();
         }
         graphics = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
-        *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8) = graphics;
+        self->graphics = graphics;
         if (graphics) {
             graphics->AddRef();
         }
@@ -252,9 +257,8 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
     pack[2] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[5])(self));
     pack[0] = 0;
     pack[1] = 0;
-    if (DisplayQueryFromTarget(
-            *reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8), pack)) {
-        queried = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 8);
+    if (DisplayQueryFromTarget(self->graphics, pack)) {
+        queried = self->graphics;
         *out = queried;
         if (queried) {
             queried->AddRef();
@@ -288,51 +292,65 @@ static const char* DxGetErrorString(int hr)
     return "";
 }
 
-// EAX=malloc(0x20) block, stdcall extra = lookup node. EDI=self for RenderTargetInit. RET 4.
-// FUNCTION: VC1 0x0045bf00
-static void* Display38Construct(void* self, void* extra)
+// MOV EAX, [ECX+0x18]; RET. IRenderTarget vtable+0x18.
+// FUNCTION: VC1 0x0045bbe0
+int KdRenderTarget::GetHeight()
 {
-    unsigned* object = static_cast<unsigned*>(self);
+    return static_cast<int>(height);
+}
 
-    RenderTargetInit(static_cast<IRenderTarget*>(self));
+// MOV EAX, [ECX+0x14]; RET. IRenderTarget vtable+0x14.
+// FUNCTION: VC1 0x0045bbf0
+int KdRenderTarget::GetWidth()
+{
+    return static_cast<int>(width);
+}
+
+// EAX=malloc(0x20) block, stdcall extra = texture node. EDI=self for RenderTargetInit. RET 4.
+// FUNCTION: VC1 0x0045bf00
+KdRenderTarget* ConstructKdRenderTarget(KdRenderTarget* self, void* node)
+{
+    unsigned* object = reinterpret_cast<unsigned*>(self);
+
+    RenderTargetInit(self);
     object[3] = 0x004d1034;
     object[4] = 1;
     object[0] = 0x004d68b4;
     object[3] = 0x004d68d4;
     object[7] = 0;
-    object[1] = reinterpret_cast<unsigned>(extra);
+    object[1] = reinterpret_cast<unsigned>(node);
     return self;
 }
 
-// cdecl out. LTCG extras a/b in EBX/EDI. Lookup miss AddRefs g_display38Default.
+// cdecl out. LTCG extras width/height in EBX/EDI. Lookup miss AddRefs g_renderTargetDefault.
 // FUNCTION: VC1 0x0045bf40
-static void** Display38Body(void** out, void* a, void* b)
+static void** CreateRenderTargetBody(void** out, unsigned width, unsigned height)
 {
     void* node;
-    void* object;
+    KdRenderTarget* object;
     IUnknown* ident;
     IUnknown* iface;
 
-    node = Display38Lookup(reinterpret_cast<unsigned>(a), reinterpret_cast<unsigned>(b));
+    node = LookupRenderTargetTexture(width, height);
     if (!node) {
-        ident = g_display38Default;
+        ident = g_renderTargetDefault;
         *out = ident;
         if (ident) {
             ident->AddRef();
         }
         return out;
     }
-    object = malloc(0x20);
+    object = static_cast<KdRenderTarget*>(malloc(0x20));
     if (object) {
-        object = Display38Construct(object, node);
+        object = ConstructKdRenderTarget(object, node);
     }
     if (!object) {
         *out = 0;
         return out;
     }
-    *reinterpret_cast<void**>(static_cast<char*>(object) + 0x14) = a;
-    *reinterpret_cast<void**>(static_cast<char*>(object) + 0x18) = b;
-    iface = reinterpret_cast<IUnknown*>(static_cast<char*>(object) + 0xc);
+    object->width = width;
+    object->height = height;
+    iface = reinterpret_cast<IUnknown*>(&object->abstract);
     ident = static_cast<IUnknown*>(iface->QueryInterface(&g_iidAbstract));
     if (ident) {
         ident->AddRef();
@@ -346,9 +364,9 @@ static void** Display38Body(void** out, void* a, void* b)
 
 // EAX=malloc(0x24) block. Sets vptrs; returns this.
 // FUNCTION: VC1 0x0045c0f0
-static void* Display34Construct(void* self)
+static KdTexture* ConstructKdTexture(KdTexture* self)
 {
-    unsigned* object = static_cast<unsigned*>(self);
+    unsigned* object = reinterpret_cast<unsigned*>(self);
 
     object[1] = 0x004d1d30;
     object[2] = 0x004d1e68;
@@ -1224,7 +1242,7 @@ static unsigned char DisplayD3DInit()
 
 // cdecl width/height. CreateTexture + GetLevelDesc; link node onto g_d3dChain.
 // FUNCTION: VC1 0x00465bc0
-static void* Display38Lookup(unsigned width, unsigned height)
+static void* LookupRenderTargetTexture(unsigned width, unsigned height)
 {
     typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
         unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
@@ -1342,14 +1360,14 @@ static int Display28Apply()
 
 // MOV EAX, [0x004e8998]; RET. IDisplay vtable+0x18 body.
 // FUNCTION: VC1 0x00466290
-int KdDisplay::Display18()
+int KdDisplay::GetHeight()
 {
     return g_displayHeight;
 }
 
 // MOV EAX, [0x004e8744]; RET. IDisplay vtable+0x14 body.
 // FUNCTION: VC1 0x004662a0
-int KdDisplay::Display14()
+int KdDisplay::GetWidth()
 {
     return g_displayWidth;
 }
@@ -1363,7 +1381,7 @@ void* IDisplay::GetMixer()
 
 // MOV AL, [0x004e74b6]; RET. IDisplay vtable+0x24.
 // FUNCTION: VC1 0x004662c0
-unsigned char KdDisplay::Display24()
+unsigned char KdDisplay::IsWindowed()
 {
     return g_displaySkipDevice;
 }
@@ -1414,24 +1432,24 @@ void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid)
 
 // malloc 0x24, construct, QI IAbstract at +0x14. RET 4. IDisplay vtable+0x34.
 // FUNCTION: VC1 0x004663b0
-void** KdDisplay::Display34(void** out)
+void** KdDisplay::CreateTexture(void** out)
 {
-    void* object;
+    KdTexture* object;
     IUnknown* queried;
     IUnknown* face;
 
     (void)this;
-    object = malloc(0x24);
+    object = static_cast<KdTexture*>(malloc(0x24));
     if (!object) {
         queried = 0;
     }
     else {
-        object = Display34Construct(object);
+        object = ConstructKdTexture(object);
         if (!object) {
             queried = 0;
         }
         else {
-            face = reinterpret_cast<IUnknown*>(reinterpret_cast<char*>(object) + 0x14);
+            face = static_cast<IUnknown*>(static_cast<IAbstract*>(object));
             if (!face) {
                 queried = 0;
             }
@@ -1525,10 +1543,10 @@ static void ConstructDisplayBase(KdDisplay* self)
 
 // RET 0xc. IDisplay vtable+0x38. Loads 3 stdcall args then cdecl-calls 0x0045bf40.
 // FUNCTION: VC1 0x00466660
-void** KdDisplay::Display38(void** out, void* a, void* b)
+void** KdDisplay::CreateRenderTarget(void** out, unsigned width, unsigned height)
 {
     (void)this;
-    Display38Body(out, a, b);
+    CreateRenderTargetBody(out, width, height);
     return out;
 }
 
@@ -1862,7 +1880,7 @@ void* KdDisplay::Display10()
         result = 0;
     }
 
-    Display10Scene(*reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 8));
+    Display10Scene(self->graphics);
     Display10Present(1);
     if (g_d3dDevice) {
         DeviceEnd endScene = reinterpret_cast<DeviceEnd>(
@@ -1898,7 +1916,7 @@ void* KdDisplay::Display0c(void* a, void* b)
 
 // this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58). RET 4.
 // FUNCTION: VC1 0x004b2100
-int IDisplay::Display28(unsigned char arg)
+int IDisplay::SetWindowed(unsigned char arg)
 {
     if (arg == 0 || *(reinterpret_cast<unsigned char*>(this) + 0x44) != 0) {
         return Display28Apply();
@@ -1930,8 +1948,7 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
     }
 
     slot = 0;
-    self->Display38(&slot, reinterpret_cast<void*>(g_displayWidth),
-        reinterpret_cast<void*>(g_displayHeight));
+    self->CreateRenderTarget(&slot, g_displayWidth, g_displayHeight);
     if (slot) {
         static_cast<IUnknown*>(slot)->Release();
     }

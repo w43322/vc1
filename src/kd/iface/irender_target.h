@@ -5,18 +5,18 @@
 
 namespace vc1 {
 
-// SIZE 0x10. Display0c..Display1c share bodies with IDisplay; IDisplay vtable
+// SIZE 0x10. GetGraphics..GetFont share bodies with IDisplay; IDisplay vtable
 // uses SUB ECX, 0x10 thunks to this this-pointer (IRenderTarget at KdDisplay+0x04).
 struct IRenderTarget : IUnknown
 {
-    unsigned unk04; // 0x04
-    unsigned unk08; // 0x08
-    void* unk0c;    // 0x0c
+    void* extra;         // 0x04  texture node on KdRenderTarget
+    IUnknown* graphics;   // 0x08
+    void* abstract;       // 0x0c  IAbstract vptr on KdRenderTarget
 
     virtual void* Display0c(void* a, void* b) = 0; // vtable+0x0c
     virtual void* Display10() = 0;                 // vtable+0x10
-    virtual int Display14() = 0;                  // vtable+0x14
-    virtual int Display18() = 0;                  // vtable+0x18
+    virtual int GetWidth() = 0;                    // vtable+0x14
+    virtual int GetHeight() = 0;                   // vtable+0x18
     virtual void* Display1c() = 0;                // vtable+0x1c
 };
 

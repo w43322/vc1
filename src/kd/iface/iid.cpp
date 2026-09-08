@@ -37,6 +37,21 @@ static const char kIidGraphics[] = "IGraphics";
 // GLOBAL: VC1 0x004d05a0
 const char* g_iidGraphics = kIidGraphics;
 
+// STRING: VC1 0x004d4df8
+static const char kIidLoadable[] = "ILoadable";
+// GLOBAL: VC1 0x004d05b4
+const char* g_iidLoadable = kIidLoadable;
+
+// STRING: VC1 0x004d4de0
+static const char kIidCloneable[] = "ICloneable";
+// GLOBAL: VC1 0x004d05bc
+const char* g_iidCloneable = kIidCloneable;
+
+// STRING: VC1 0x004d4dd4
+static const char kIidTexture[] = "ITexture";
+// GLOBAL: VC1 0x004d05c0
+const char* g_iidTexture = kIidTexture;
+
 // STRING: VC1 0x004d4dcc
 static const char kIidFont[] = "IFont";
 // GLOBAL: VC1 0x004d05c4

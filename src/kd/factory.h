@@ -55,6 +55,7 @@ extern unsigned g_kdFactoryGuard;
 extern IUnknown* g_kdDefaultUnknown;
 
 extern const char* g_kdNameDisplay;
+extern const char* g_kdNameTexture;
 extern const char* g_kdNameSoundDriver;
 extern const char* g_kdNameSystem;
 extern const char* g_kdNameConsole;
