@@ -3,22 +3,41 @@
 
 namespace vc1 {
 
-void* Abstract::QueryInterface(const char** iid)
+// Constructor writes vftable 0x004d1034 and refs=1; it is inlined into users.
+IAbstract::IAbstract()
 {
-    if (iid && *iid == g_iidAbstract) {
-        return this;
+    refs = 1;
+}
+
+// RET 4. Returns this only for the canonical IAbstract IID pointer.
+// FUNCTION: VC1 0x00401ec0
+void* IAbstract::QueryInterface(const char** iid)
+{
+    return *iid == g_iidAbstract ? this : 0;
+}
+
+// Decrements refs; deleting destructor vtable+0x0c(this,1) on zero.
+// FUNCTION: VC1 0x00401ee0
+unsigned IAbstract::Release()
+{
+    unsigned value = --refs;
+    if (value == 0) {
+        delete this;
+        return 0;
     }
-    return 0;
+    return value;
 }
 
-unsigned Abstract::AddRef()
+// Increment only while refs is nonzero.
+// FUNCTION: VC1 0x00401f00
+unsigned IAbstract::AddRef()
 {
-    return 0;
-}
-
-unsigned Abstract::Release()
-{
-    return 0;
+    unsigned value = refs;
+    if (value != 0) {
+        value += 1;
+        refs = value;
+    }
+    return value;
 }
 
 IAbstract::~IAbstract()

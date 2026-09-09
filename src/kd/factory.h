@@ -21,8 +21,8 @@ struct FactoryEntry
 typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
 // Sorted name/create table used by RunApp AcquireNamed.
-// VTABLE: VC1 0x004cfb8c
 // SIZE 0x10
+// VTABLE: VC1 0x004cfb8c
 class KdFactory
 {
 public:

@@ -5,7 +5,9 @@
 
 namespace vc1 {
 
+// Default vftable written by IScriptObject(); most-derived classes replace it.
 // SIZE 0x04
+// VTABLE: VC1 0x004d1e68
 struct IScriptObject : IUnknown
 {
     virtual unsigned char Script0c(void* a, void* b) = 0; // vtable+0x0c

@@ -4,6 +4,14 @@
 
 namespace vc1 {
 
+// XOR AL,AL; RET 4. ITexture vtable+0x0c.
+// FUNCTION: VC1 0x00418000
+unsigned char KdTexture::Texture0c(void* arg)
+{
+    (void)arg;
+    return 0;
+}
+
 // this = ITexture. ITexture or IAbstract at +8. RET 4.
 // FUNCTION: VC1 0x0045bc30
 void* TextureQueryInterface(ITexture* self, const char** iid)
@@ -22,13 +30,45 @@ void* TextureQueryInterface(ITexture* self, const char** iid)
 // FUNCTION: VC1 0x0045bc80
 unsigned TextureAddRef(ITexture* self)
 {
-    unsigned* slot = reinterpret_cast<unsigned*>(reinterpret_cast<char*>(self) + 0xc);
-    unsigned value = *slot;
+    IAbstract* face = reinterpret_cast<IAbstract*>(reinterpret_cast<char*>(self) + 8);
+    unsigned value = face->refs;
     if (value != 0) {
         ++value;
-        *slot = value;
+        face->refs = value;
     }
     return value;
+}
+
+// MOV EAX,[ECX+0x14]; RET. this=ITexture (KdTexture+0x0c).
+// FUNCTION: VC1 0x0045bfe0
+int KdTexture::GetHeight()
+{
+    return static_cast<int>(height);
+}
+
+// MOV EAX,[ECX+0x10]; RET. this=ITexture (KdTexture+0x0c).
+// FUNCTION: VC1 0x0045bff0
+int KdTexture::GetWidth()
+{
+    return static_cast<int>(width);
+}
+
+// XOR AL,AL; RET 8. IScriptObject vtable+0x10.
+// FUNCTION: VC1 0x0045c000
+unsigned char KdTexture::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
+// Calls native texture vtable+0x44(native,0). this=ITexture.
+// FUNCTION: VC1 0x0045c010
+void KdTexture::Unlock()
+{
+    typedef void (__thiscall *Fn)(IUnknown* object, int arg);
+    void** vtbl = *reinterpret_cast<void***>(native);
+    reinterpret_cast<Fn>(vtbl[0x11])(native, 0);
 }
 
 // this = ILoadable. RET 4.
@@ -92,26 +132,51 @@ unsigned KdTexture::AddRef()
     return value;
 }
 
-// EAX=malloc(0x24) block. Sets vptrs; returns this.
+// EAX=this. native from ITexture(), refs=1, width/height=0. Base vptrs then KdTexture tables.
 // FUNCTION: VC1 0x0045c0f0
-KdTexture* ConstructKdTexture(KdTexture* self)
+KdTexture::KdTexture()
 {
-    unsigned* object = reinterpret_cast<unsigned*>(self);
+    width = 0;
+    height = 0;
+}
 
-    object[1] = 0x004d1d30;
-    object[2] = 0x004d1e68;
-    object[3] = 0x004d681c;
-    object[4] = 0;
-    object[5] = 0x004d1034;
-    object[6] = 1;
-    object[0] = 0x004d683c;
-    object[1] = 0x004d684c;
-    object[2] = 0x004d685c;
-    object[3] = 0x004d6874;
-    object[5] = 0x004d6894;
-    object[7] = 0;
-    object[8] = 0;
-    return self;
+const char* KdTexture::Script14()
+{
+    return 0;
+}
+
+// Allocates and constructs a KdTexture, copies its locked pixels, returns IAbstract.
+// STUB: VC1 0x0045c1a0
+void** KdTexture::Clone(void** out)
+{
+    *out = 0;
+    return out;
+}
+
+// Locks native storage and lazily creates it from region width/height.
+// STUB: VC1 0x0045c290
+void* KdTexture::Lock(void* region, int mode)
+{
+    (void)region;
+    (void)mode;
+    return 0;
+}
+
+// Script binding implementation is recovered separately; keep the correct slot.
+// STUB: VC1 0x0045c3c0
+unsigned char KdTexture::Script0c(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
+// Loads native texture data from a named resource and records dimensions.
+// STUB: VC1 0x0045c570
+unsigned char KdTexture::Load(const char* name)
+{
+    (void)name;
+    return 0;
 }
 
 }

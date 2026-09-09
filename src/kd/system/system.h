@@ -13,12 +13,12 @@ class KdSystem;
 
 extern IAbstract* g_kdSystem;
 
+// SIZE 0xd8
 // VTABLE: VC1 0x004d1930 vc1::ISystem
 // VTABLE: VC1 0x004d1984 vc1::IRenderable
 // VTABLE: VC1 0x004d199c vc1::IScriptObject
 // VTABLE: VC1 0x004d19b4 vc1::IInputStream
 // VTABLE: VC1 0x004d19dc vc1::IAbstract
-// SIZE 0xd8
 class KdSystem : public ISystem,
                  public IRenderable,
                  public IScriptObject,
@@ -26,7 +26,6 @@ class KdSystem : public ISystem,
                  public IAbstract
 {
 public:
-    unsigned refs;           // 0x34
     unsigned char tail[160]; // 0x38
 
     KdSystem();

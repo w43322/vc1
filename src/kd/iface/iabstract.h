@@ -5,23 +5,24 @@
 
 namespace vc1 {
 
-// SIZE 0x04
+// Default vftable written by IAbstract(); most-derived classes replace it.
+// SIZE 0x08. Always a C++ base, never a nested member.
+// VTABLE: VC1 0x004d1034
 struct IAbstract : IUnknown
 {
-    virtual ~IAbstract() = 0; // vtable+0x0c
-};
+    unsigned refs; // 0x04
 
-typedef char Vc1IAbstractSizeCheck[sizeof(IAbstract) == 0x04 ? 1 : -1];
-
-// SIZE 0x04
-struct Abstract : IAbstract
-{
+    IAbstract();
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
+    virtual ~IAbstract();                   // vtable+0x0c
 };
 
-typedef char Vc1AbstractSizeCheck[sizeof(Abstract) == 0x04 ? 1 : -1];
+typedef char Vc1IAbstractSizeCheck[sizeof(IAbstract) == 0x08 ? 1 : -1];
+
+// SYNTHETIC: VC1 0x00404bf0
+// vc1::IAbstract::`scalar deleting destructor'
 
 }
 

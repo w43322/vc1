@@ -8,6 +8,7 @@ namespace vc1 {
 // SIZE 0x04
 struct ILoadable : IUnknown
 {
+    virtual unsigned char Load(const char* name) = 0; // vtable+0x0c
 };
 
 typedef char Vc1ILoadableSizeCheck[sizeof(ILoadable) == 0x04 ? 1 : -1];

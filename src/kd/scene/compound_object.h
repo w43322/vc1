@@ -6,16 +6,22 @@
 
 namespace vc1 {
 
-// SIZE 0x70
-class KdCompoundObject : public IUnknown
+// Prefix before IAbstract. Ctor 0x00473800 writes IScriptObject/ICloneable and
+// other vptrs here; recover those bases instead of composing IAbstract.
+// SIZE 0x4c
+struct KdCompoundObjectHead
+{
+    unsigned char data[0x4c];
+};
+
+typedef char Vc1KdCompoundHeadSizeCheck[sizeof(KdCompoundObjectHead) == 0x4c ? 1 : -1];
+
+// SIZE 0x70. IAbstract at +0x4c, refs at +0x50.
+class KdCompoundObject : public KdCompoundObjectHead,
+                         public IAbstract
 {
 public:
-    void* unk04;             // 0x04
-    void* unk08;             // 0x08
-    void* unk0c;             // 0x0c
-    unsigned pad[15];        // 0x10
-    Abstract abstract;       // 0x4c
-    unsigned char tail[32];  // 0x50
+    unsigned char tail[0x1c]; // 0x54
 
     KdCompoundObject();
     void* QueryInterface(const char** iid); // vtable+0x00
@@ -25,7 +31,6 @@ public:
 
 typedef char Vc1KdCompoundObjectSizeCheck[sizeof(KdCompoundObject) == 0x70 ? 1 : -1];
 
-KdCompoundObject* ConstructKdCompoundObject(KdCompoundObject* self);
 void** CreateKdCompoundObject(void** out);
 
 }

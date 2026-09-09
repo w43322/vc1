@@ -101,7 +101,6 @@ static void Sound10Body()
 
 KdSoundDriver::KdSoundDriver()
 {
-    refs = 1;
 }
 
 // CALL IAT; NEG/SBB/NEG EAX. ISoundDriver vtable+0x24 then JMP CRT.
@@ -168,11 +167,10 @@ void* KdSoundDriver::QueryInterface(const char** iid)
 unsigned KdSoundDriver::Release()
 {
     IAbstract* iface = static_cast<IAbstract*>(this);
-    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
     unsigned n;
 
-    *p -= 1;
-    n = *p;
+    iface->refs -= 1;
+    n = iface->refs;
     if (n == 0) {
         delete iface;
         return 0;

@@ -3,6 +3,7 @@
 
 #include "kd/iface/iscript_object.h"
 #include "kd/iface/irender_target.h"
+#include "kd/iface/igraphics.h"
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ishutdownable.h"
 #include "kd/iface/iabstract.h"
@@ -16,20 +17,21 @@ class KdDisplay;
 
 extern IAbstract* g_kdDisplay;
 
+// SIZE 0x5c
 // VTABLE: VC1 0x004d0b78 vc1::IScriptObject
 // VTABLE: VC1 0x004d0b94 vc1::IRenderTarget
+// VTABLE: VC1 0x004d0bb4 vc1::IGraphics
 // VTABLE: VC1 0x004d0be8 vc1::IDisplay
 // VTABLE: VC1 0x004d0c28 vc1::IShutdownable
 // VTABLE: VC1 0x004d0c38 vc1::IAbstract
-// SIZE 0x5c
 class KdDisplay : public IScriptObject,
                   public IRenderTarget,
+                  public IGraphics,
                   public IDisplay,
                   public IShutdownable,
                   public IAbstract
 {
 public:
-    unsigned refs;           // 0x20
     unsigned pad24;          // 0x24
     unsigned pad28;          // 0x28
     void* mixer;             // 0x2c  IDisplay+0x18
@@ -67,7 +69,7 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x004022f0
 // ?Display0c@KdDisplay@vc1@@WBA@AEPAXPAX0@Z
 // SYNTHETIC: VC1 0x00402300
-// ??_EKdDisplay@vc1@@W3AEPAXI@Z
+// ??_EKdDisplay@vc1@@WBA@AEPAXI@Z
 // SYNTHETIC: VC1 0x00402310
 // ?Release@KdDisplay@vc1@@WBE@AEIXZ
 // SYNTHETIC: VC1 0x00402320
@@ -101,7 +103,6 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x00402400
 // ?AddRef@KdDisplay@vc1@@WBM@AEIXZ
 
-KdDisplay* ConstructKdDisplay(KdDisplay* self);
 void** CreateKdDisplay(void** out);
 void* DisplayFaceQueryInterface(IDisplay* self, const char** iid);
 void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid);

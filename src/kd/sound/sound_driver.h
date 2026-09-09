@@ -10,18 +10,17 @@ namespace vc1 {
 
 extern IAbstract* g_kdSoundDriver;
 
+// SIZE 0x14
 // VTABLE: VC1 0x004d5b48 vc1::ISoundDriver
 // VTABLE: VC1 0x004d5b74 vc1::IShutdownable
 // VTABLE: VC1 0x004d5b84 vc1::IScriptObject
 // VTABLE: VC1 0x004d5b9c vc1::IAbstract
-// SIZE 0x14
 class KdSoundDriver : public ISoundDriver,
                       public IShutdownable,
                       public IScriptObject,
                       public IAbstract
 {
 public:
-    unsigned refs; // 0x10
 
     KdSoundDriver();
     ~KdSoundDriver();

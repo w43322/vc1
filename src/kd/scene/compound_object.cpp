@@ -5,6 +5,7 @@
 #include "kd/factory.h"
 #include "host/runtime.h"
 
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,16 +16,18 @@ static const char kCompoundObject[] = "CompoundObject";
 // GLOBAL: VC1 0x004d0674
 const char* g_kdNameCompoundObject = kCompoundObject;
 
+// FUNCTION: VC1 0x00473800
 KdCompoundObject::KdCompoundObject()
 {
-    memset(pad, 0, sizeof(pad));
+    AssignCountedString(this, 0, 0);
+    memset(data, 0, sizeof(data));
     memset(tail, 0, sizeof(tail));
 }
 
 void* KdCompoundObject::QueryInterface(const char** iid)
 {
     if (iid && *iid == g_iidAbstract) {
-        return &abstract;
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
@@ -39,14 +42,6 @@ unsigned KdCompoundObject::Release()
     return 1;
 }
 
-// FUNCTION: VC1 0x00473800
-KdCompoundObject* ConstructKdCompoundObject(KdCompoundObject* self)
-{
-    AssignCountedString(self, 0, 0);
-    self->KdCompoundObject::KdCompoundObject();
-    return self;
-}
-
 // FUNCTION: VC1 0x004738e0
 void** CreateKdCompoundObject(void** out)
 {
@@ -57,8 +52,8 @@ void** CreateKdCompoundObject(void** out)
         *out = 0;
         return out;
     }
-    ConstructKdCompoundObject(memory);
-    queried = static_cast<IUnknown*>(memory->abstract.QueryInterface(&g_iidAbstract));
+    new (memory) KdCompoundObject();
+    queried = static_cast<IUnknown*>(memory->QueryInterface(&g_iidAbstract));
     *out = queried;
     if (queried) {
         queried->AddRef();

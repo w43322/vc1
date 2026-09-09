@@ -52,7 +52,6 @@ static void ReserveRecordTable(void* factory, unsigned newCount);
 KdSystem::KdSystem()
 {
     memset(pad04, 0, sizeof(pad04));
-    refs = 0;
     memset(tail, 0, sizeof(tail));
 }
 
@@ -398,7 +397,7 @@ void ConstructKdSystem(KdSystem* self)
 
     self->KdSystem::KdSystem();
     object = reinterpret_cast<unsigned*>(self);
-    object[0xd] = 1;
+    self->refs = 1;
     object[0x16] = 0x3f800000;
     object[0x1b] = 0xff000000;
     QueryPerformanceCounter(&qpc);
@@ -1164,11 +1163,10 @@ void* KdSystem::QueryInterface(const char** iid)
 unsigned KdSystem::Release()
 {
     IAbstract* iface = static_cast<IAbstract*>(this);
-    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
     unsigned n;
 
-    *p -= 1;
-    n = *p;
+    iface->refs -= 1;
+    n = iface->refs;
     if (n == 0) {
         delete iface;
         return 0;

@@ -2,6 +2,7 @@
 
 #include "kd/iface/iid.h"
 
+#include <new>
 #include <stdlib.h>
 
 namespace vc1 {
@@ -32,7 +33,7 @@ void* KdRenderTarget::QueryInterface(const char** iid)
         return this;
     }
     if (name == g_iidAbstract) {
-        return &abstract;
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
@@ -45,7 +46,7 @@ unsigned KdRenderTarget::Release()
     unsigned result;
     typedef void (__thiscall *Fn0c)(void* object, int arg);
 
-    face = reinterpret_cast<IUnknown*>(&abstract);
+    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
     result = --refs;
     if (result == 0) {
         reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
@@ -66,20 +67,17 @@ unsigned KdRenderTarget::AddRef()
     return value;
 }
 
-// EAX=malloc(0x20) block, stdcall extra = texture node. EDI=self for RenderTargetInit. RET 4.
+// EAX=malloc(0x20) block, stdcall extra = texture node. IRenderTarget() then extra/refs.
 // FUNCTION: VC1 0x0045bf00
-KdRenderTarget* ConstructKdRenderTarget(KdRenderTarget* self, void* node)
+KdRenderTarget::KdRenderTarget(void* node)
 {
-    unsigned* object = reinterpret_cast<unsigned*>(self);
+    extra = node;
+    cachedTexture = 0;
+}
 
-    RenderTargetInit(self);
-    object[3] = 0x004d1034;
-    object[4] = 1;
-    object[0] = 0x004d68b4;
-    object[3] = 0x004d68d4;
-    object[7] = 0;
-    object[1] = reinterpret_cast<unsigned>(node);
-    return self;
+void* KdRenderTarget::Display1c()
+{
+    return 0;
 }
 
 // cdecl out. LTCG extras width/height in EBX/EDI. Lookup miss AddRefs g_renderTargetDefault.
@@ -102,7 +100,7 @@ void** CreateRenderTargetBody(void** out, unsigned width, unsigned height)
     }
     object = static_cast<KdRenderTarget*>(malloc(0x20));
     if (object) {
-        object = ConstructKdRenderTarget(object, node);
+        new (object) KdRenderTarget(node);
     }
     if (!object) {
         *out = 0;
@@ -110,7 +108,7 @@ void** CreateRenderTargetBody(void** out, unsigned width, unsigned height)
     }
     object->width = width;
     object->height = height;
-    iface = reinterpret_cast<IUnknown*>(&object->abstract);
+    iface = static_cast<IUnknown*>(static_cast<IAbstract*>(object));
     ident = static_cast<IUnknown*>(iface->QueryInterface(&g_iidAbstract));
     if (ident) {
         ident->AddRef();

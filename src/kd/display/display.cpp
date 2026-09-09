@@ -10,6 +10,7 @@
 #include "bindings/matrix3.h"
 
 #include <errno.h>
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
@@ -136,7 +137,6 @@ static void DisplayDtorBase(KdDisplay* self);
 static void ConstructDisplayBase(KdDisplay* self);
 static unsigned char Script0cBody(void* a, void* b);
 static void Display1cAtexit();
-static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b);
 static unsigned char DisplayQueryFromTarget(void* mixer, void* args);
 static unsigned char DisplayQueryReady();
 static void Display10Scene(void* self);
@@ -162,11 +162,8 @@ static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
 static float MinFloat(float a, float b);
 
-KdDisplay::KdDisplay()
+IGraphics::~IGraphics()
 {
-    target = 0;
-    matrix = g_matrix3Identity;
-    enabled58 = 1;
 }
 
 KdDisplay::~KdDisplay()
@@ -212,15 +209,14 @@ static float MinFloat(float a, float b)
 
 // EDI=IRenderTarget (KdDisplay+0x04). Allocates a 100-byte helper and QIs IGraphics.
 // FUNCTION: VC1 0x0041a460
-void RenderTargetInit(IRenderTarget* self)
+IRenderTarget::IRenderTarget()
 {
     IUnknown* ident;
-    IUnknown* graphics;
+    IUnknown* blockGraphics;
     void* block;
 
-    *reinterpret_cast<unsigned*>(self) = 0x004d5de0;
-    self->extra = 0;
-    self->graphics = 0;
+    extra = 0;
+    graphics = 0;
     block = malloc(0x64);
     ident = 0;
     if (block) {
@@ -237,14 +233,14 @@ void RenderTargetInit(IRenderTarget* self)
     }
     if (ident) {
         ident->Release();
-        graphics = self->graphics;
-        if (graphics) {
-            graphics->Release();
+        blockGraphics = graphics;
+        if (blockGraphics) {
+            blockGraphics->Release();
         }
-        graphics = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
-        self->graphics = graphics;
-        if (graphics) {
-            graphics->AddRef();
+        blockGraphics = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
+        graphics = blockGraphics;
+        if (blockGraphics) {
+            blockGraphics->AddRef();
         }
         ident->Release();
     }
@@ -252,7 +248,7 @@ void RenderTargetInit(IRenderTarget* self)
 
 // this=IRenderTarget. RET 8. Out[0] is IGraphics; extra is camera/mixer.
 // FUNCTION: VC1 0x0041a500
-static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
+void* IRenderTarget::Display0c(void* a, void* b)
 {
     IUnknown** out = static_cast<IUnknown**>(a);
     IUnknown* queried;
@@ -275,13 +271,13 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
         return out;
     }
 
-    vtbl = *reinterpret_cast<void***>(self);
-    pack[3] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[6])(self));
-    pack[2] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[5])(self));
+    vtbl = *reinterpret_cast<void***>(this);
+    pack[3] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[6])(this));
+    pack[2] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[5])(this));
     pack[0] = 0;
     pack[1] = 0;
-    if (DisplayQueryFromTarget(self->graphics, pack)) {
-        queried = self->graphics;
+    if (DisplayQueryFromTarget(graphics, pack)) {
+        queried = graphics;
         *out = queried;
         if (queried) {
             queried->AddRef();
@@ -298,6 +294,13 @@ static void* DisplayQueryGraphics(IRenderTarget* self, void* a, void* b)
         queried->AddRef();
     }
     return out;
+}
+
+// Uses graphics at +0x08, updates the graphics device, then clears if needed.
+// STUB: VC1 0x0041a600
+void* IRenderTarget::Display10()
+{
+    return 0;
 }
 
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
@@ -441,6 +444,89 @@ static void* DisplaySceneConstruct(void* self)
     return self;
 }
 
+// Inferred IGraphics slot names. These inherited implementations are shared by
+// each concrete graphics/display vtable in the original.
+// FUNCTION: VC1 0x00463c70
+int IGraphics::Graphics2c()
+{
+    return 0;
+}
+
+// STUB: VC1 0x00463c80
+int IGraphics::Graphics28(void* a, void* b, void* c, void* d)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    return 0;
+}
+
+// FUNCTION: VC1 0x00463cb0
+int IGraphics::Graphics20(void* unused, unsigned value)
+{
+    (void)unused;
+    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x14) = value;
+    return 0;
+}
+
+// FUNCTION: VC1 0x00463cc0
+int IGraphics::Graphics1c(void* unused)
+{
+    (void)unused;
+    return 0;
+}
+
+// FUNCTION: VC1 0x00463cd0
+int IGraphics::Graphics10(void* a, void* b, void* c, void* d)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    return 1;
+}
+
+// FUNCTION: VC1 0x00463ce0
+int IGraphics::Graphics04(unsigned mode, unsigned enabled)
+{
+    if (mode == 4 && enabled == 1) {
+        *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x18) = 0;
+        return 0;
+    }
+    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x18) = 2;
+    return 0;
+}
+
+// FUNCTION: VC1 0x00463d10
+int IGraphics::Graphics00(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
+// STUB: VC1 0x00463d20
+int IGraphics::Graphics24(void* a, void* b, void* c, void* d)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    return 0;
+}
+
+// STUB: VC1 0x00463df0
+int IGraphics::Graphics18(void* a, void* b, void* c, void* d, void* e)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    (void)e;
+    return 0;
+}
+
 // this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
 // FUNCTION: VC1 0x00463e60
 void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
@@ -461,6 +547,13 @@ void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
     if (name == g_iidAbstract) {
         return reinterpret_cast<char*>(self) + 8;
     }
+    return 0;
+}
+
+// STUB: VC1 0x00463ed0
+int IGraphics::Graphics14(void* arg)
+{
+    (void)arg;
     return 0;
 }
 
@@ -488,6 +581,28 @@ static void DisplayReleaseGraphics(IShutdownable* self)
         free(g_displayPyro);
         g_displayPyro = 0;
     }
+}
+
+// STUB: VC1 0x004640e0
+int IGraphics::Graphics0c(void* a, void* b, void* c, void* d, void* e)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    (void)e;
+    return 0;
+}
+
+// STUB: VC1 0x00464150
+int IGraphics::Graphics08(void* a, void* b, void* c, void* d, void* e)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    (void)e;
+    return 0;
 }
 
 // this=IDisplay. malloc(0x18) Pyro object into g_displayPyro; RET 8.
@@ -1375,7 +1490,7 @@ void** KdDisplay::CreateTexture(void** out)
         queried = 0;
     }
     else {
-        object = ConstructKdTexture(object);
+        new (object) KdTexture();
         if (!object) {
             queried = 0;
         }
@@ -1462,12 +1577,10 @@ static void DisplayDtorBase(KdDisplay* self)
     *slot = 0;
 }
 
-// ESI=this, EDI=IRenderTarget. refs=1, mixer=0, returns this.
+// ESI=this, EDI=IRenderTarget. IRenderTarget() already ran. refs=1, mixer=0.
 // FUNCTION: VC1 0x004665c0
 static void ConstructDisplayBase(KdDisplay* self)
 {
-    RenderTargetInit(static_cast<IRenderTarget*>(self));
-    self->refs = 1;
     g_displayPyro = 0;
     self->mixer = 0;
 }
@@ -1652,11 +1765,10 @@ void* KdDisplay::QueryInterface(const char** iid)
 unsigned KdDisplay::Release()
 {
     IAbstract* iface = static_cast<IAbstract*>(this);
-    unsigned* p = reinterpret_cast<unsigned*>(iface + 1);
     unsigned n;
 
-    *p -= 1;
-    n = *p;
+    iface->refs -= 1;
+    n = iface->refs;
     if (n == 0) {
         delete iface;
         return 0;
@@ -1701,13 +1813,14 @@ int KdDisplay::Shutdown()
     return static_cast<int>(queried->AddRef());
 }
 
-// EAX=this. Calls FUN_004665c0 with this in ESI, then overwrites vptrs/floats.
+// EAX=this. IRenderTarget() then ConstructDisplayBase, then remaining members.
 // FUNCTION: VC1 0x004b1e40
-KdDisplay* ConstructKdDisplay(KdDisplay* self)
+KdDisplay::KdDisplay()
 {
-    ConstructDisplayBase(self);
-    self->KdDisplay::KdDisplay();
-    return self;
+    ConstructDisplayBase(this);
+    target = 0;
+    matrix = g_matrix3Identity;
+    enabled58 = 1;
 }
 
 // FUNCTION: VC1 0x004b1ea0
@@ -1732,7 +1845,7 @@ void** CreateKdDisplay(void** out)
         *out = 0;
         return out;
     }
-    ConstructKdDisplay(object);
+    new (object) KdDisplay();
     g_kdDisplay = static_cast<IAbstract*>(object);
     queried = static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
     if (queried) {
@@ -1779,7 +1892,7 @@ void* KdDisplay::Display10()
             }
         }
         graphics = 0;
-        DisplayQueryGraphics(self, &graphics, &camera);
+        self->IRenderTarget::Display0c(&graphics, &camera);
         if (camera) {
             camera->Release();
         }
@@ -1841,7 +1954,7 @@ void* KdDisplay::Display0c(void* a, void* b)
         reinterpret_cast<Fn0c>(vtbl[3])(object, a, b);
         return a;
     }
-    DisplayQueryGraphics(self, a, b);
+    self->IRenderTarget::Display0c(a, b);
     return a;
 }
 
