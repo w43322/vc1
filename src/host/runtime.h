@@ -216,6 +216,8 @@ void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x004969f0; EDX=buf, stack fmt then varargs; cap is 0xffffffff
 void FormatBufferOpen(char* buf, const char* fmt, ...);
 extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
+extern const char* g_emptyCountedBegin;
+extern unsigned g_emptyCountedSize;
 // 0x00496a40
 void KdLog(const char* fmt, ...);
 // 0x004b7010

@@ -4,8 +4,7 @@
 
 namespace vc1 {
 
-// Inferred wrapper. Layout: vftable + HSQOBJECT. Recovered vftable storage is a dummy.
-// VTABLE: VC1 0x004cfb98
+// Inferred wrapper. Layout: vftable-like storage + HSQOBJECT.
 struct SquirrelObject
 {
     const void* vftable;

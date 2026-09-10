@@ -26,6 +26,7 @@ typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 class KdFactory
 {
 public:
+    KdFactory() : begin(0), size(0), capacity(0) {}
     virtual ~KdFactory();     // vtable+0x00
     virtual void Clear();     // vtable+0x04
     virtual unsigned Count(); // vtable+0x08

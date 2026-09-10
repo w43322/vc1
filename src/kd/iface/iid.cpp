@@ -1,6 +1,14 @@
 #include "kd/iface/iid.h"
+#include "kd/scene/compound_object.h"
 
 namespace vc1 {
+
+// STRING: VC1 0x004d4ce8
+static const char kIidPositionable[] = "IPositionable";
+// STRING: VC1 0x004d4d08
+static const char kIidScriptLoadable[] = "IScriptLoadable";
+// STRING: VC1 0x004d4d58
+static const char kIidClassifiable[] = "IClassifiable";
 
 // STRING: VC1 0x004d4e9c
 static const char kIidAbstract[] = "IAbstract";
@@ -106,5 +114,35 @@ const char* g_iidSoundDriver = kIidSoundDriver;
 static const char kIidScriptObject[] = "IScriptObject";
 // GLOBAL: VC1 0x004d05f4
 const char* g_iidScriptObject = kIidScriptObject;
+
+// Kept in this translation unit so the recovered function directly compares
+// the canonical IID string objects, as the original does.
+// FUNCTION: VC1 0x00472f00
+void* KdCompoundObject::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidClassifiable) {
+        return static_cast<IClassifiable*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<ICloneable*>(this);
+    }
+    if (name == kIidComponentGroup || name == kIidShutdownable) {
+        return static_cast<CompoundComponentGroup*>(this);
+    }
+    if (name == kIidPositionable) {
+        return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return reinterpret_cast<char*>(this) + 0x4c;
+    }
+    return 0;
+}
 
 }

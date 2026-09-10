@@ -9,6 +9,10 @@ namespace vc1 {
 unsigned g_kdLogTag;
 // GLOBAL: VC1 0x004d062c
 const char* g_kdLogPrefix;
+// GLOBAL: VC1 0x004e9664
+const char* g_emptyCountedBegin = reinterpret_cast<const char*>(&g_kdLogTag);
+// GLOBAL: VC1 0x004e9668
+unsigned g_emptyCountedSize;
 
 // STRING: VC1 0x004d5004
 static const char kHostLogBracket[] = "[%s] %s%s\n";
