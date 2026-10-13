@@ -25,8 +25,7 @@ SquirrelObject::SquirrelObject(HSQOBJECT o)
 void SquirrelObject::Reset(void) {
   if(SquirrelVM::_VM)
     sq_release(SquirrelVM::_VM,&_o);
-  else if( _o._type!=OT_NULL && _o._unVal.pRefCounted )
-    printf( "SquirrelObject::~SquirrelObject - Cannot release\n" ); 
+  // VC1: the engine drops the "Cannot release" printf branch.
   sq_resetobject(&_o);
 } // SquirrelObject::Reset
 

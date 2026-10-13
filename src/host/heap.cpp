@@ -1,5 +1,6 @@
 #include "host/runtime.h"
 
+#include <malloc.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -233,13 +234,22 @@ void FormatBufferOpen(char* buf, const char* fmt, ...)
     va_end(args);
 }
 
-// Thunk onto the alloca vsnprintf logger at 0x00496a10. Original format in EBX.
+// EBX=fmt, EDI=args. Sizes the message, formats it into an alloca buffer and
+// drops it: the release build has no log sink.
+// FUNCTION: VC1 0x00496a10
+void KdLogV(const char* fmt, va_list args)
+{
+    const int size = _vsnprintf(0, 0, fmt, args) + 1;
+    char* const buf = static_cast<char*>(_alloca(size));
+    _vsnprintf(buf, size, fmt, args);
+}
+
 // FUNCTION: VC1 0x00496a40
 void KdLog(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    (void)args;
+    KdLogV(fmt, args);
     va_end(args);
 }
 

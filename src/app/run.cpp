@@ -58,7 +58,7 @@ int RunApp()
     {
         // STRING: VC1 0x004d0c88
         SquirrelObject mainNut = SquirrelVM::CompileScript("scripts/Main.nut");
-        if (mainNut.obj._type == OT_NULL) {
+        if (mainNut.IsNull()) {
             return -1;
         }
 

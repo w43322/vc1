@@ -561,7 +561,7 @@ inline VarRefPtr createVarRef(SquirrelObject & so,const SQChar * scriptVarName) 
   ScriptStringVar256 scriptVarTagName; getVarNameTag(scriptVarTagName,sizeof(scriptVarTagName),scriptVarName);
   if (!so.GetUserData(scriptVarTagName,(SQUserPointer *)&pvr)) {
     so.NewUserData(scriptVarTagName,sizeof(*pvr));
-    if (!so.GetUserData(scriptVarTagName,(SQUserPointer *)&pvr)) throw SquirrelError(_SC("Could not create UserData."));
+    if (!so.GetUserData(scriptVarTagName,(SQUserPointer *)&pvr)) SQPLUS_THROW(_SC("Could not create UserData."));
   } // if
   return pvr;
 } // createVarRef
@@ -575,7 +575,7 @@ void validateConstantType(T constant) {
   case VAR_TYPE_CONST_STRING:
     break;
   default:
-    throw SquirrelError(_SC("validateConstantType(): type must be INT, FLOAT, BOOL, or CONST CHAR *."));
+    SQPLUS_THROW(_SC("validateConstantType(): type must be INT, FLOAT, BOOL, or CONST CHAR *."));
   } // case
 } // validateConstantType
 
@@ -703,7 +703,7 @@ inline SquirrelObject NewClassCopy(HSQUIRRELVM v, const SQChar * className,const
 	  sq_poptop(v);
 	  return obj;
   } else {
-    throw SquirrelError(_SC("NewClassCopy(): could not create class"));
+    SQPLUS_THROW(_SC("NewClassCopy(): could not create class"));
   } // if
   return SquirrelObject();
 } // NewClassCopy
@@ -726,7 +726,7 @@ T * GetInstance(HSQUIRRELVM v,SQInteger idx) {
   }
   if (ExceptionOnError) { // This code block should be compiled out when ExceptionOnError is false. In any case, the compiler should not generate a test condition (include or exclude the enclosed code block).
     if (!up) {
-      throw SquirrelError(_SC("GetInstance: Invalid argument type"));
+      SQPLUS_THROW(_SC("GetInstance: Invalid argument type"));
     }
   } // if
   return (T *)up;
@@ -809,7 +809,7 @@ void Push(HSQUIRRELVM v, const SQUserPointer &value);
 // === END Argument Dependent Overloads ===
 #endif
 
-#define SQPLUS_CHECK_GET(res) if (!SQ_SUCCEEDED(res)) throw SquirrelError(_SC("sq_get*() failed (type error)"))
+#define SQPLUS_CHECK_GET(res) if (!SQ_SUCCEEDED(res)) SQPLUS_THROW(_SC("sq_get*() failed (type error)"))
 
 bool Match(TypeWrapper<bool>, HSQUIRRELVM v, int idx);
 bool Match(TypeWrapper<char>, HSQUIRRELVM v, int idx);
@@ -957,8 +957,8 @@ namespace SqPlus { \
   template<> inline void Push(HSQUIRRELVM v,TYPE * value) { \
     if (!value)  sq_pushnull(v); \
     else if (!CreateNativeClassInstance(v,GetTypeName(*value),value,0)) \
-      throw SquirrelError( _SC( "Push(): could not create INSTANCE (check registration name)")); } \
-  template<> inline void Push(HSQUIRRELVM v,TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) throw SquirrelError( _SC( "Push(): could not create INSTANCE copy (check registration name)")); } \
+      SQPLUS_THROW( _SC( "Push(): could not create INSTANCE (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) SQPLUS_THROW( _SC( "Push(): could not create INSTANCE copy (check registration name)")); } \
 } // nameSpace SqPlus
 
 // Allows for providing custom Push handlers (protos here, impl must be provided by app)
@@ -973,8 +973,8 @@ namespace SqPlus { \
 
 #define DECLARE_INSTANCE_TYPE_NAME_(TYPE,NAME) namespace SqPlus { \
   DECLARE_INSTANCE_TYPEINFO_(TYPE,NAME) \
-  template<> inline void Push(HSQUIRRELVM v,TYPE * value)                 { if (!CreateNativeClassInstance(v,GetTypeName(*value),value,0)) throw SquirrelError( _SC( "Push(): could not create INSTANCE (check registration name)")); } \
-  template<> inline void Push(HSQUIRRELVM v,TYPE & value)                 { if (!CreateCopyInstance(v,GetTypeName(value),value)) throw SquirrelError( _SC( "Push(): could not create INSTANCE copy (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,TYPE * value)                 { if (!CreateNativeClassInstance(v,GetTypeName(*value),value,0)) SQPLUS_THROW( _SC( "Push(): could not create INSTANCE (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,TYPE & value)                 { if (!CreateCopyInstance(v,GetTypeName(value),value)) SQPLUS_THROW( _SC( "Push(): could not create INSTANCE copy (check registration name)")); } \
   template<> inline bool	Match(TypeWrapper<TYPE &>,HSQUIRRELVM v,int idx) { return  GetInstance<TYPE,false>(v,idx) != NULL; } \
   template<> inline bool	Match(TypeWrapper<TYPE *>,HSQUIRRELVM v,int idx) { return  GetInstance<TYPE,false>(v,idx) != NULL; } \
   template<> inline TYPE & Get(TypeWrapper<TYPE &>,HSQUIRRELVM v,int idx) { return *GetInstance<TYPE,true>(v,idx); } \
@@ -1433,10 +1433,14 @@ template<typename Callee,typename Func>
 class DirectCallInstanceMemberFunction {
 public:
   static inline int Dispatch(HSQUIRRELVM v) {
-    DirectCallInstanceFuncPicker<Callee, Func> p(v);
-    return p.instance && p.func ?
-      Call(*(p.instance), *(p.func), v, 2) :
-      sq_throwerror(v, _SC("Invalid Instance Type"));
+    // VC1: the engine reads instance and func directly (no picker, no
+    // "Invalid Instance Type" check) and maps the instance user pointer
+    // to the callee with vc1::ScriptInstance.
+    StackHandler sa(v);
+    Callee * instance = vc1::ScriptInstance<Callee>(sa.GetInstanceUp(1, 0));
+    int paramCount = sa.GetParamCount();
+    Func * func = static_cast<Func*>(sa.GetUserData(paramCount));
+    return Call(*instance, *func, v, 2);
   }
 };
 
@@ -1708,7 +1712,7 @@ inline void RegisterInstanceVarArgs(HSQUIRRELVM v,HSQOBJECT hclass,Callee & call
 //      numParams = 0; // Clear SQ_MATCHTYPEMASKSTRING (does not mean match 0 params. See sq_setparamscheck()).
     } else {
       if (SCSNPRINTF(tm,sizeof(tm),_SC("x%s"),typeMask) < 0) { // Must be an instance.
-        throw SquirrelError(_SC("RegisterInstanceVarArgs: typeMask string too long."));
+        SQPLUS_THROW(_SC("RegisterInstanceVarArgs: typeMask string too long."));
       } // if
     } // if
   } else { // <TODO> Need to check object type on stack: table, class, instance, etc.
@@ -1760,7 +1764,7 @@ struct SquirrelFunction {
     object.Reset();
   } // Reset
 
-#define SQPLUS_CHECK_FNCALL(res) if (!SQ_SUCCEEDED(res)) throw SquirrelError(_SC("SquirrelFunction<> call failed"))
+#define SQPLUS_CHECK_FNCALL(res) if (!SQ_SUCCEEDED(res)) SQPLUS_THROW(_SC("SquirrelFunction<> call failed"))
 
   RT operator()(void) {
     sq_pushobject(v,func.GetObjectHandle());
@@ -2323,5 +2327,38 @@ inline SquirrelObject &SquirrelObject::Set(_ty & val) {
 }
 
 // === END code suggestion from the Wiki ===
+
+// VC1: SqPlus.cpp (and the one Get LTCG kept out of line) in the original.
+// The static helpers have no public symbol, so they go by plain name.
+// CreateClass is only called with baseName == 0; LTCG drops the parameter.
+// FUNCTION: VC1 0x00401af0
+// ?Get@SqPlus@@YAHU?$TypeWrapper@H@1@PAUSQVM@@H@Z
+
+// FUNCTION: VC1 0x004c2920
+// SqPlus::getVar
+
+// FUNCTION: VC1 0x004c2b10
+// SqPlus::setVar
+
+// FUNCTION: VC1 0x004c2de0
+// SqPlus::getInstanceVarInfo
+
+// FUNCTION: VC1 0x004c2f40
+// SqPlus::getVarInfo
+
+// FUNCTION: VC1 0x004c3080
+// ?getInstanceVarFunc@SqPlus@@YAHPAUSQVM@@@Z
+
+// FUNCTION: VC1 0x004c30f0
+// ?setInstanceVarFunc@SqPlus@@YAHPAUSQVM@@@Z
+
+// FUNCTION: VC1 0x004c3160
+// ?getVarFunc@SqPlus@@YAHPAUSQVM@@@Z
+
+// FUNCTION: VC1 0x004c31d0
+// ?setVarFunc@SqPlus@@YAHPAUSQVM@@@Z
+
+// FUNCTION: VC1 0x004c3240
+// ?CreateClass@SqPlus@@YAHPAUSQVM@@AAVSquirrelObject@@PAXPBD3@Z
 
 #endif //_SQ_PLUS_H_

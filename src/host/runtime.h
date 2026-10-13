@@ -224,6 +224,8 @@ void FormatBufferOpen(char* buf, const char* fmt, ...);
 extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
 extern const char* g_emptyCountedBegin;
 extern unsigned g_emptyCountedSize;
+// 0x00496a10; EBX=fmt, EDI=args
+void KdLogV(const char* fmt, va_list args);
 // 0x00496a40
 void KdLog(const char* fmt, ...);
 extern const char* g_kdLogPrefix; // 0x004d062c

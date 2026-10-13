@@ -4,8 +4,6 @@
 
 namespace vc1 {
 
-// GLOBAL: VC1 0x004cfaa4
-extern const char g_sqplusGetError[] = "sq_get*() failed (type error)";
 // GLOBAL: VC1 0x004d12cc
 extern const char kScriptGetWidth[] = "GetWidth";
 // GLOBAL: VC1 0x004d12d8
@@ -88,20 +86,9 @@ void ConstructScriptMethods(ScriptMethod* first, ScriptMethod* last)
     }
 }
 
-// EAX=v, ECX=idx. SqPlus Get(TypeWrapper<int>) with sq_getinteger inlined.
-// FUNCTION: VC1 0x00401af0
-int Get(TypeWrapper<int>, HSQUIRRELVM v, int idx)
-{
-    SQInteger i;
-    if (SQ_FAILED(sq_getinteger(v, idx, &i))) {
-        KdLog(g_sqplusErrorFormat, g_sqplusGetError);
-    }
-    return i;
-}
-
 // ESI=v, EBX=value. Index -> string array.
 // FUNCTION: VC1 0x0041a1c0
-void Push(HSQUIRRELVM v, const KdStringList& value)
+void Push(HSQUIRRELVM v, KdStringList& value)
 {
     const KdString* strings = reinterpret_cast<const KdString*>(value.items.begin);
     unsigned i;

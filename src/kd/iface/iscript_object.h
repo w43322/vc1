@@ -3,9 +3,9 @@
 
 #include "kd/iface/iunknown.h"
 
-namespace vc1 {
-
 class SquirrelObject;
+
+namespace vc1 {
 
 // Default vftable written by IScriptObject(); most-derived classes replace it.
 // SIZE 0x04

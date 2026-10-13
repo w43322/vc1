@@ -145,6 +145,9 @@ BOOL CreateStaticClass(HSQUIRRELVM v,SquirrelClassDecl *cd);
 BOOL CreateStaticNamespace(HSQUIRRELVM v,ScriptNamespaceDecl *sn);
 BOOL CreateClass(HSQUIRRELVM v,SquirrelClassDecl *cd);
 BOOL InitScriptClasses(HSQUIRRELVM v);
+// VC1: v in EAX.
+// FUNCTION: VC1 0x004c2730
+// ?CreateNativeClassInstance@@YAHPAUSQVM@@PBDPAXP6AH2H@Z@Z
 BOOL CreateNativeClassInstance(HSQUIRRELVM v,const SQChar *classname,SQUserPointer ud,SQRELEASEHOOK hook);
 BOOL CreateConstructNativeClassInstance(HSQUIRRELVM v,const SQChar * className);
 

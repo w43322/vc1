@@ -21,8 +21,8 @@ inline const TYPE & Get(TypeWrapper<const TYPE &>,HSQUIRRELVM v,int idx) { retur
   template<> inline void Push(HSQUIRRELVM v,const TYPE * value) { \
     if (!value) sq_pushnull(v); \
     else if (!CreateNativeClassInstance(v,GetTypeName(*value),(TYPE*)value,0)) \
-      throw SquirrelError(_SC("Push(): could not create INSTANCE (check registration name)")); } \
-  template<> inline void Push(HSQUIRRELVM v,const TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) throw SquirrelError(_SC("Push(): could not create INSTANCE copy (check registration name)")); } \
+      SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,const TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) SQPLUS_THROW(_SC("Push(): could not create INSTANCE copy (check registration name)")); } \
   } // nameSpace SqPlus
 
 // Case for custom Push implementation (covariant return type)
@@ -40,8 +40,8 @@ inline const TYPE & Get(TypeWrapper<const TYPE &>,HSQUIRRELVM v,int idx) { retur
 #define DECLARE_INSTANCE_TYPE_NAME_CONST(TYPE,NAME) \
   DECLARE_INSTANCE_TYPE_NAME_(TYPE,NAME) \
   namespace SqPlus { \
-  template<> inline void Push(HSQUIRRELVM v,const TYPE * value) { if (!CreateNativeClassInstance(v,GetTypeName(*value),(TYPE*)value,0)) throw SquirrelError(_SC("Push(): could not create INSTANCE (check registration name)")); } \
-  template<> inline void Push(HSQUIRRELVM v,const TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) throw SquirrelError(_SC("Push(): could not create INSTANCE copy (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,const TYPE * value) { if (!CreateNativeClassInstance(v,GetTypeName(*value),(TYPE*)value,0)) SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)")); } \
+  template<> inline void Push(HSQUIRRELVM v,const TYPE & value) { if (!CreateCopyInstance(v,GetTypeName(value),value)) SQPLUS_THROW(_SC("Push(): could not create INSTANCE copy (check registration name)")); } \
   template<> inline bool	Match(TypeWrapper<const TYPE &>,HSQUIRRELVM v,int idx) { return GetInstance<TYPE,false>(v,idx) != NULL; } \
   template<> inline const TYPE & Get(TypeWrapper<const TYPE &>,HSQUIRRELVM v,int idx) { return *GetInstance<TYPE,true>(v,idx); } \
   } // nameSpace SqPlus

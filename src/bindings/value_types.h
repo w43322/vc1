@@ -52,7 +52,7 @@ __forceinline SquirrelObject RegisterClassType(HSQUIRRELVM vm,
     const SQInteger top = sq_gettop(vm);
     SquirrelObject newClass;
     EnsureTypeInfo(type, ready, spec, typeName);
-    if (CreateClass(vm, newClass, type, className)) {
+    if (SqPlus::CreateClass(vm, newClass, type, className)) {
         BindNamedMethod(newClass, "constructor", ctor);
         BindNamedMethod(newClass, "_typeof", typeOf);
     }
@@ -65,7 +65,7 @@ __forceinline SquirrelObject RegisterClassType(HSQUIRRELVM vm,
 __forceinline NativeClassBinding* CreateValueBinding(NativeClassBinding* self, const SQChar* name,
     SquirrelObject (*registerClass)(HSQUIRRELVM, const SQChar*))
 {
-    self->vm = g_vm;
+    self->vm = SquirrelVM::_VM;
     self->className = name;
     new (&self->obj) SquirrelObject;
     if (!self->className) {

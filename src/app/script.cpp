@@ -70,12 +70,12 @@ void InitScriptEngine(int argc, char** argv)
     SquirrelVM::GetRootTable().SetValue("ARGS", args);
 }
 
-// Original 0x004bdc50 registers print/error closures then five extra stdlib batches on g_vm.
+// Original 0x004bdc50 registers print/error closures then five extra stdlib batches on SquirrelVM::_VM.
 // FUNCTION: VC1 0x004bdc50
 void RegisterStdBindings()
 {
-    RegisterPrintBinding(g_vm, 0);
-    RegisterPrintAltBinding(g_vm, 0);
+    RegisterPrintBinding(SquirrelVM::_VM, 0);
+    RegisterPrintAltBinding(SquirrelVM::_VM, 0);
     RegisterStdExtra0();
     RegisterStdExtra1();
     RegisterStdExtra2();

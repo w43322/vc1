@@ -61,7 +61,7 @@ SQUnsignedInteger Color::GetValue()
     return argb;
 }
 
-// this in ESI. Fills NativeClassBinding {g_vm, "Color", obj} then RegisterClass + Assign.
+// this in ESI. Fills NativeClassBinding {SquirrelVM::_VM, "Color", obj} then RegisterClass + Assign.
 // FUNCTION: VC1 0x0041de10
 NativeClassBinding* Color::CreateBinding(NativeClassBinding* self)
 {

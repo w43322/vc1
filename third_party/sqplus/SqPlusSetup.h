@@ -20,7 +20,8 @@
 // Can also be useful for debugging, as class type information is
 // checked before dispatching instance function calls and before
 // accessing instance member variables.
-#define SQ_USE_CLASS_INHERITANCE
+// VC1: off in the engine (Dispatch and getInstanceVarInfo have no typetag check).
+//#define SQ_USE_CLASS_INHERITANCE
 
 
 // This is a new C++ template based inheritence scheme that uses no
@@ -51,10 +52,12 @@
 
 // === Uncomment to support std::string ===
 // Requires that Squirrel is compiled with SQChar == char
-//#define SQPLUS_SUPPORT_STD_STRING
+// VC1: on in the engine (getVar's std::string message is in the exe).
+#define SQPLUS_SUPPORT_STD_STRING
 
 // === Uncomment to support typedef std::basic_string<SQChar> sq_std_string ===
-#define SQPLUS_SUPPORT_SQ_STD_STRING
+// VC1: off; with SQChar == char it duplicates the std::string overloads.
+//#define SQPLUS_SUPPORT_SQ_STD_STRING
 
 // === Uncomment to support NULL INSTANCE arguments ===
 #define SQPLUS_SUPPORT_NULL_INSTANCES
@@ -71,10 +74,12 @@
 
 // === Uncomment to generate a typeof function for each class  ===
 // This is mostly for displaying function help from inside a Squirrel prompt
-//#define SQPLUS_ENABLE_TYPEOF
+// VC1: on in the engine (each bound class gets a "_typeof" method).
+#define SQPLUS_ENABLE_TYPEOF
 
 // === Uncomment to skip sq_argassert() ===
-//#define SQ_SKIP_ARG_ASSERT
+// VC1: on in the engine ("Incorrect function argument" is not in the exe).
+#define SQ_SKIP_ARG_ASSERT
 
 // === GCC Inline template fix ===
 // Can solve problems when linking if GCC has problems with inline functions
@@ -125,5 +130,18 @@
 // Define to bind to system lib when VM:s are created automatically in 
 // SquirrelVM::Init()
 //#define SQPLUS_SQUIRRELVM_WITH_SYSTEMLIB
+
+// VC1: engine hooks. The game is built without C++ exceptions: every
+// `throw SquirrelError(msg)` is spelled SQPLUS_THROW(msg), which logs
+// "error: %s\n" through KdLog and carries on; the SqPlus.cpp sites then
+// return SQ_ERROR (getVar 0x4c2a3f, setVar 0x4c2b6d). DirectCallInstanceMemberFunction
+// gets the callee from the instance user pointer through ScriptInstance.
+namespace vc1 {
+void KdLog(const char* fmt, ...);
+extern const char g_sqplusErrorFormat[];
+template<typename Callee>
+Callee* ScriptInstance(SQUserPointer up);
+}
+#define SQPLUS_THROW(msg) vc1::KdLog(vc1::g_sqplusErrorFormat, (msg))
 
 #endif // SQPLUSSETUP_H

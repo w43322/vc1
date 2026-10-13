@@ -1,6 +1,7 @@
 #ifndef _SQUIRREL_OBJECT_H_
 #define _SQUIRREL_OBJECT_H_
 
+// VTABLE: VC1 0x004cfb98
 class SquirrelObject
 {
   friend class SquirrelVM;
@@ -131,6 +132,64 @@ private:
   BOOL GetSlot(INT key) const;
   HSQOBJECT _o;
 };
+
+// VC1: SquirrelObject.cpp in the original, out of source order. LTCG
+// passes `this` in EAX/EBX/ESI and the stdcall-style key on the stack;
+// see the asmcmp report for each.
+// SYNTHETIC: VC1 0x00401e00
+// SquirrelObject::`scalar deleting destructor'
+
+// FUNCTION: VC1 0x0049a840
+// ?GetInstanceUP@SquirrelObject@@QBEPAXPAX@Z
+
+// FUNCTION: VC1 0x0049a910
+// ?GetSlot@SquirrelObject@@ABEHPBD@Z
+
+// FUNCTION: VC1 0x0049a9e0
+// ?GetSlot@SquirrelObject@@ABEHH@Z
+
+// FUNCTION: VC1 0x0049aaa0
+// ?AttachToStackObject@SquirrelObject@@QAEXH@Z
+
+// FUNCTION: VC1 0x0049ab30
+// ??4SquirrelObject@@QAEAAV0@ABV0@@Z
+
+// FUNCTION: VC1 0x0049ac30
+// ??0SquirrelObject@@QAE@ABV0@@Z
+
+// FUNCTION: VC1 0x0049ac80
+// ??1SquirrelObject@@UAE@XZ
+
+// FUNCTION: VC1 0x0049acc0
+// ?GetInt@SquirrelObject@@QBEHPBD@Z
+
+// FUNCTION: VC1 0x0049ad30
+// ?GetValue@SquirrelObject@@QBE?AV1@PBD@Z
+
+// FUNCTION: VC1 0x0049ad90
+// ?GetString@SquirrelObject@@QBEPBDH@Z
+
+// FUNCTION: VC1 0x0049ae30
+// ?RawGetUserData@SquirrelObject@@QAEHPBDPAPAX1@Z
+
+// FUNCTION: VC1 0x0049b020
+// ?SetValue@SquirrelObject@@QAEHPBD_N@Z
+
+// FUNCTION: VC1 0x0049b0c0
+// ?SetValue@SquirrelObject@@QAEHPBDM@Z
+
+// FUNCTION: VC1 0x0049b130
+// ?SetValue@SquirrelObject@@QAEHPBDH@Z
+
+// FUNCTION: VC1 0x0049b1d0
+// ?SetValue@SquirrelObject@@QAEHPBDABV1@@Z
+
+// FUNCTION: VC1 0x0049b250
+// ?SetValue@SquirrelObject@@QAEHHPBD@Z
+
+// FUNCTION: VC1 0x0049b2f0
+// ?GetTypeName@SquirrelObject@@QAEPBDXZ
+
 
 struct StackHandler {
   StackHandler(HSQUIRRELVM v) {

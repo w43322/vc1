@@ -44,7 +44,7 @@ static int getInstanceVarInfo(StackHandler & sa,VarRefPtr & vr,SQUserPointer & d
       SquirrelObject typeTable = instance.GetValue(SQ_CLASS_OBJECT_TABLE_NAME);
       up = (char *)typeTable.GetUserPointer(INT((size_t)vr->instanceType)); // <TODO> 64-bit compatible version.
       if (!up) {
-        throw SquirrelError(_SC("Invalid Instance Type"));
+        SQPLUS_THROW(_SC("Invalid Instance Type"));
       }
     } else {
       up = (char *)instance.GetInstanceUP(0);
@@ -59,7 +59,7 @@ static int getInstanceVarInfo(StackHandler & sa,VarRefPtr & vr,SQUserPointer & d
       ctb = ctb->m_pbase;
     }
     if (!ctb) {
-      throw SquirrelError(_SC("Invalid Instance Type"));
+      SQPLUS_THROW(_SC("Invalid Instance Type"));
     }
 #else
     up = (char *)instance.GetInstanceUP(0);
@@ -86,7 +86,8 @@ static int setVar(StackHandler & sa,VarRef * vr,void * data) {
   if (vr->m_access & (VAR_ACCESS_READ_ONLY|VAR_ACCESS_CONSTANT)) {
     const SQChar * el = sa.GetString(2);
     SCSNPRINTF(g_msg_throw.s,sizeof(g_msg_throw),_SC("setVar(): Cannot write to constant: %s"),el);
-    throw SquirrelError(g_msg_throw.s);
+    SQPLUS_THROW(g_msg_throw.s);
+    return SQ_ERROR; // VC1: the engine returns after each SqPlus.cpp throw.
   } // if
   switch (vr->m_type) {
   case TypeInfo<INT>::TypeID: {
@@ -134,7 +135,8 @@ static int setVar(StackHandler & sa,VarRef * vr,void * data) {
     HSQUIRRELVM v = sa.GetVMPtr();
     SQUserPointer src = sa.GetInstanceUp(3,(SQUserPointer)vr->varType); // Effectively performs: ClassType<>::type() == ClassType<>().
     if (!src) {
-      throw SquirrelError(_SC("INSTANCE type assignment mismatch"));
+      SQPLUS_THROW(_SC("INSTANCE type assignment mismatch"));
+      return SQ_ERROR; // VC1
     }
     vr->varType->vgetCopyFunc()(data,src);
     return 0;
@@ -142,7 +144,8 @@ static int setVar(StackHandler & sa,VarRef * vr,void * data) {
   case TypeInfo<SQUserPointer>::TypeID: {
     const SQChar * el = sa.GetString(2);
     SCSNPRINTF(g_msg_throw.s,sizeof(g_msg_throw),_SC("setVar(): Cannot write to an SQUserPointer: %s"),el);
-    throw SquirrelError(g_msg_throw.s);
+    SQPLUS_THROW(g_msg_throw.s);
+    return SQ_ERROR; // VC1
   } // case
   case TypeInfo<ScriptStringVarBase>::TypeID: {
     ScriptStringVarBase * val = (ScriptStringVarBase *)data; // Address
@@ -234,7 +237,8 @@ static int getVar(StackHandler & sa,VarRef * vr,void * data) {
   case VAR_TYPE_INSTANCE:
     if (!CreateNativeClassInstance(sa.GetVMPtr(),vr->varType->GetTypeName(),data,0)) { // data = address. Allocates memory.
       SCSNPRINTF(g_msg_throw.s,sizeof(g_msg_throw),_SC("getVar(): Could not create instance: %s"),vr->varType->GetTypeName());
-      throw SquirrelError(g_msg_throw.s);
+      SQPLUS_THROW(g_msg_throw.s);
+      return SQ_ERROR; // VC1
     } // if
     return 1;
   case TypeInfo<SQUserPointer>::TypeID: 
@@ -246,14 +250,16 @@ static int getVar(StackHandler & sa,VarRef * vr,void * data) {
         return sa.Return(val->s);
       } // if
     } else {
-      throw SquirrelError(_SC("getVar(): Invalid type+access: 'ScriptStringVarBase' with VAR_ACCESS_CONSTANT (use VAR_ACCESS_READ_ONLY instead)"));
+      SQPLUS_THROW(_SC("getVar(): Invalid type+access: 'ScriptStringVarBase' with VAR_ACCESS_CONSTANT (use VAR_ACCESS_READ_ONLY instead)"));
     }
     break;
   } // case
   case TypeInfo<const SQChar *>::TypeID: {
     if (!(vr->m_access & VAR_ACCESS_CONSTANT)) {
-      if( vr->m_access==VAR_ACCESS_READ_WRITE )
-        throw SquirrelError(_SC("getVar(): Invalid type+access: 'const SQChar *' without VAR_ACCESS_CONSTANT"));
+      if( vr->m_access==VAR_ACCESS_READ_WRITE ) {
+        SQPLUS_THROW(_SC("getVar(): Invalid type+access: 'const SQChar *' without VAR_ACCESS_CONSTANT"));
+        return SQ_ERROR; // VC1
+      }
       // It is OK to read from a SQChar* if requested
       return sa.Return(*(const SQChar **)data); // Address
     } else {
@@ -269,7 +275,7 @@ static int getVar(StackHandler & sa,VarRef * vr,void * data) {
         return sa.Return(val->c_str());
       }
     } else {
-      throw SquirrelError(_SC("getVar(): Invalid type+access: 'std::string' with VAR_ACCESS_CONSTANT (use VAR_ACCESS_READ_ONLY instead)"));
+      SQPLUS_THROW(_SC("getVar(): Invalid type+access: 'std::string' with VAR_ACCESS_CONSTANT (use VAR_ACCESS_READ_ONLY instead)"));
     }
     break;
   } // case

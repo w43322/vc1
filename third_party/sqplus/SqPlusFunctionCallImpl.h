@@ -35,7 +35,7 @@ SQINLINE void Push(HSQUIRRELVM v,const SQUserPointer & value) { sq_pushuserpoint
 // === END Argument Dependent Overloads ===
 #endif
 
-#define SQPLUS_CHECK_GET(res) if (!SQ_SUCCEEDED(res)) throw SquirrelError(_SC("sq_get*() failed (type error)"))
+#define SQPLUS_CHECK_GET(res) if (!SQ_SUCCEEDED(res)) SQPLUS_THROW(_SC("sq_get*() failed (type error)"))
 
 //SQINLINE bool	Match(TypeWrapper<bool>,HSQUIRRELVM v,int idx)           { return sq_gettype(v,idx) == OT_BOOL; }
 SQINLINE bool	Match(TypeWrapper<bool>,HSQUIRRELVM v,int idx)           { return true; } // All types can be cast to bool
