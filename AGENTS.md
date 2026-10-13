@@ -86,7 +86,7 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
 - Linker is already `/SUBSYSTEM:WINDOWS` so the CRT entry is `WinMainCRTStartup`, matching the original WinMain path. Do not switch back to a console `main`.
 - Game functions: `// FUNCTION: VC1 0x00......` immediately above the definition, **sorted by address within that file**. Reccmp decomplint fails if they are out of order.
 - Empty or dishonest bodies: `// STUB: VC1 0x00......` so asmcmp skips them. Do not mass-convert incomplete-but-honest `FUNCTION`s to stubs to inflate accuracy.
-- Globals with a known original VA: `// GLOBAL: VC1 0x00......` on the **definition** in a `.cpp` (not only a header comment).
+- Globals with a known original VA: `// GLOBAL: VC1 0x00......` on the **definition** in a `.cpp` (not only a header comment). Give the definition external linkage (no `static`): a `static` symbol shows up without the `vc1::` prefix, so every access counts as an operand mismatch in asmcmp.
 - Classes/structs with a known original vftable: `// VTABLE: VC1 0x00......` immediately above the type. Multiple inheritance needs **one `VTABLE` per original table**, with the `{for `Base'}` name after the address so same-module markers do not collide (`DUPLICATE_MODULE`). Example:
 
 ```c++

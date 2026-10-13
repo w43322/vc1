@@ -46,7 +46,8 @@ public:
     void Translate(const Vector2* offset);
     void FillRect(float x, float y, float width, float height);
     void Graphics54(float a, float b, float c, float d);
-    void Graphics58(void* a, float b, float c, float d, float e, float f, float g);
+    void DrawImage(ITexture* const* texture, float x, float y, float u, float v,
+        float width, float height);
     void Graphics5c(void* a, void* b, unsigned c);
     void DrawString(const char* text, float x, float y);
     void Graphics64(float a, float b, float c, float d);

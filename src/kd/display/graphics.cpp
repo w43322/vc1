@@ -123,7 +123,7 @@ void KdGraphics::DrawString(const char* text, float x, float y)
     (void)y;
 }
 
-// RET 0xc. Batches 0x60-byte records through g_d3dGammaRamp. Body not recovered.
+// RET 0xc. Batches 0x60-byte records through g_batchCount. Body not recovered.
 // STUB: VC1 0x0045c910
 void KdGraphics::Graphics5c(void* a, void* b, unsigned c)
 {
@@ -249,30 +249,104 @@ unsigned KdGraphics::AddRef()
     return value;
 }
 
-// RET 0x1c. First argument is a texture (vtable+0x10/+0x14 width/height).
-// Body not recovered.
-// STUB: VC1 0x0045cb10
-void KdGraphics::Graphics58(void* a, float b, float c, float d, float e, float f, float g)
+// RET 0x1c. Inferred name. Normalizes a negative width/height for the
+// screen rectangle; texture coordinates use the unnormalized size scaled by
+// 1/GetWidth and 1/GetHeight, so a negative size mirrors the image. The quad
+// carries ITexture::native and state.mode into 0x004648b0 (EDI).
+// FUNCTION: VC1 0x0045cb10
+void KdGraphics::DrawImage(ITexture* const* texture, float x, float y, float u, float v,
+    float width, float height)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
-    (void)e;
-    (void)f;
-    (void)g;
+    BatchQuad quad;
+    float sourceWidth;
+    float sourceHeight;
+    float scaleU;
+    float scaleV;
+    float u0;
+    float v0;
+    float u1;
+    float v1;
+
+    sourceWidth = width;
+    sourceHeight = height;
+    if (width < 0.0f) {
+        x += width;
+        width = -width;
+    }
+    if (height < 0.0f) {
+        y += height;
+        height = -height;
+    }
+    quad.texture = (*texture)->native;
+    quad.flags = state.mode;
+    scaleU = 1.0f / static_cast<float>((*texture)->GetWidth());
+    scaleV = 1.0f / static_cast<float>((*texture)->GetHeight());
+    u0 = u * scaleU;
+    v0 = v * scaleV;
+    u1 = (u + sourceWidth) * scaleU;
+    v1 = (v + sourceHeight) * scaleV;
+    quad.vertices[0].x = x;
+    quad.vertices[0].y = y;
+    quad.vertices[0].z = 0.0f;
+    quad.vertices[0].color = state.color;
+    quad.vertices[0].u = u0;
+    quad.vertices[0].v = v0;
+    quad.vertices[1].x = x + width;
+    quad.vertices[1].y = y;
+    quad.vertices[1].z = 0.0f;
+    quad.vertices[1].color = state.color;
+    quad.vertices[1].u = u1;
+    quad.vertices[1].v = v0;
+    quad.vertices[2].x = x + width;
+    quad.vertices[2].y = y + height;
+    quad.vertices[2].z = 0.0f;
+    quad.vertices[2].color = state.color;
+    quad.vertices[2].u = u1;
+    quad.vertices[2].v = v1;
+    quad.vertices[3].x = x;
+    quad.vertices[3].y = y + height;
+    quad.vertices[3].z = 0.0f;
+    quad.vertices[3].color = state.color;
+    quad.vertices[3].u = u0;
+    quad.vertices[3].v = v1;
+    PushQuad(&quad);
 }
 
-// RET 0x10. Inferred name: normalizes a negative width/height, then emits a
-// 4-vertex 0x60-byte quad in the current color through 0x004648b0 (EDI).
-// Body not recovered.
-// STUB: VC1 0x0045ccb0
+// RET 0x10. Inferred name. Normalizes a negative width/height, then emits an
+// untextured quad in state.color / state.mode through 0x004648b0 (EDI). The
+// texture coordinates are left unset.
+// FUNCTION: VC1 0x0045ccb0
 void KdGraphics::FillRect(float x, float y, float width, float height)
 {
-    (void)x;
-    (void)y;
-    (void)width;
-    (void)height;
+    BatchQuad quad;
+
+    if (width < 0.0f) {
+        x += width;
+        width = -width;
+    }
+    if (height < 0.0f) {
+        y += height;
+        height = -height;
+    }
+    quad.vertices[0].x = x;
+    quad.vertices[0].y = y;
+    quad.vertices[0].z = 0.0f;
+    quad.vertices[0].color = state.color;
+    quad.vertices[1].x = x + width;
+    quad.vertices[1].y = y;
+    quad.vertices[1].z = 0.0f;
+    quad.vertices[1].color = state.color;
+    quad.vertices[2].x = x + width;
+    quad.vertices[2].y = y + height;
+    quad.vertices[2].z = 0.0f;
+    quad.vertices[2].color = state.color;
+    quad.vertices[3].x = x;
+    quad.vertices[3].y = y + height;
+    quad.vertices[3].z = 0.0f;
+    quad.vertices[3].color = state.color;
+    quad.texture = 0;
+    quad.flags = state.mode;
+    PushQuad(&quad);
 }
 
 // JMP 0x00418830.

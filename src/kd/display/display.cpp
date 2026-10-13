@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#pragma function(memcpy)
+
 namespace vc1 {
 
 // GLOBAL: VC1 0x004ed54c
@@ -23,79 +25,83 @@ IAbstract* g_kdDisplay;
 // GLOBAL: VC1 0x004ed550
 HWND g_kdDisplayWindow;
 // GLOBAL: VC1 0x004ed554
-static unsigned g_displayBusy;
+unsigned g_displayBusy;
 // GLOBAL: VC1 0x004ed558
-static int* g_displayMode;
+int* g_displayMode;
 // GLOBAL: VC1 0x004ed55c
-static unsigned g_d3dPresentWindowed[13];
+unsigned g_d3dPresentWindowed[13];
 // GLOBAL: VC1 0x004ed5a4
-static unsigned g_d3dPresentFull[13];
+unsigned g_d3dPresentFull[13];
 // GLOBAL: VC1 0x004ed590
-static int g_displayWindowX;
+int g_displayWindowX;
 // GLOBAL: VC1 0x004ed594
-static int g_displayWindowY;
+int g_displayWindowY;
 // GLOBAL: VC1 0x004ed598
-static int g_displayWindowRight;
+int g_displayWindowRight;
 // GLOBAL: VC1 0x004ed59c
-static int g_displayWindowBottom;
+int g_displayWindowBottom;
 // GLOBAL: VC1 0x004ed5a0
-static unsigned g_displayWindowStyle;
+unsigned g_displayWindowStyle;
 // GLOBAL: VC1 0x004ed5d8
-static int g_displayViewLeft;
+int g_displayViewLeft;
 // GLOBAL: VC1 0x004ed5dc
-static int g_displayViewTop;
+int g_displayViewTop;
 // GLOBAL: VC1 0x004ed5e0
-static int g_displayViewRight;
+int g_displayViewRight;
 // GLOBAL: VC1 0x004ed5e4
-static int g_displayViewBottom;
+int g_displayViewBottom;
 // GLOBAL: VC1 0x004ed5e8
-static unsigned g_displayViewStyle;
+unsigned g_displayViewStyle;
 // GLOBAL: VC1 0x004ed5f0
 IUnknown* g_d3dDevice;
 // GLOBAL: VC1 0x004ed5ec
-static IUnknown* g_d3dObject;
+IUnknown* g_d3dObject;
+// Inferred name. CreateVertexBuffer(0x17700, D3DUSAGE_WRITEONLY, FVF 0x142).
 // GLOBAL: VC1 0x004ed5f4
-static IUnknown* g_d3dSwap;
+IUnknown* g_d3dVertexBuffer;
 // GLOBAL: VC1 0x004ed5f8
-static IUnknown* g_d3dSurface;
+IUnknown* g_d3dSurface;
 // GLOBAL: VC1 0x004ed5fc
-static IUnknown* g_d3dBackBuffer;
+IUnknown* g_d3dBackBuffer;
 // GLOBAL: VC1 0x004ed600
-static void* g_d3dChain;
+void* g_d3dChain;
 // GLOBAL: VC1 0x004ed604
-static void* g_d3dLastMixer;
+void* g_d3dLastMixer;
 // GLOBAL: VC1 0x004ed608
-static void* g_d3dChain2;
+void* g_d3dChain2;
+// Inferred names for the 2D batch: locked vertex pointer, queued primitive
+// count, primitive kind (2 lines, 3 triangles, 4 indexed quads), render-state
+// flags and the bound D3D texture.
 // GLOBAL: VC1 0x004ed60c
-static unsigned g_d3dInScene;
+unsigned g_batchVertices;
 // GLOBAL: VC1 0x004ed610
-static unsigned g_d3dGammaRamp;
+int g_batchCount;
 // GLOBAL: VC1 0x004ed614
-static unsigned g_d3dGammaKind;
+unsigned g_batchKind;
 // GLOBAL: VC1 0x004ed618
-static unsigned g_d3dGamma618;
+unsigned g_batchFlags;
 // GLOBAL: VC1 0x004ed61c
-static unsigned g_d3dGamma61c;
+IUnknown* g_batchTexture;
 // GLOBAL: VC1 0x004e960c
-static Matrix3 g_displayMatrixInv;
+Matrix3 g_displayMatrixInv;
 // GLOBAL: VC1 0x004e9788
-static float g_d3dWorld[16];
+float g_d3dWorld[16];
 // GLOBAL: VC1 0x004e98c0
-static float g_d3dView[16];
+float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
-static float g_d3dProj[16];
+float g_d3dProj[16];
 // GLOBAL: VC1 0x004ed700
 IUnknown* g_displayScene;
 // GLOBAL: VC1 0x004ed6ec
-static IUnknown* g_graphicsQuery;
+IUnknown* g_graphicsQuery;
 // GLOBAL: VC1 0x004ed628
-static PyroLibrary* g_displayPyro;
+PyroLibrary* g_displayPyro;
 // GLOBAL: VC1 0x004ed65c
 IUnknown* g_kdQueryUnknown;
 // GLOBAL: VC1 0x004ed6f0
-static IUnknown* g_graphics;
+IUnknown* g_graphics;
 // GLOBAL: VC1 0x004ed6f4
-static IUnknown* g_graphicsHost;
+IUnknown* g_graphicsHost;
 // GLOBAL: VC1 0x004e74b6
 unsigned char g_displaySkipDevice;
 // GLOBAL: VC1 0x004e8744
@@ -103,11 +109,11 @@ int g_displayWidth;
 // GLOBAL: VC1 0x004e8998
 int g_displayHeight;
 // GLOBAL: VC1 0x004e899c
-static int g_displayPresentInterval;
+int g_displayPresentInterval;
 // GLOBAL: VC1 0x004ed450
-static void* g_kdWindowMixer;
+void* g_kdWindowMixer;
 // GLOBAL: VC1 0x004e95a0
-static WNDCLASSA g_kdDisplayClass;
+WNDCLASSA g_kdDisplayClass;
 
 // STRING: VC1 0x004d4c38
 static const char kTexture[] = "Texture";
@@ -131,9 +137,9 @@ static const char kWindowName[] = "Window";
 static const char kCantInitPyro[] = "Can't init Pyro";
 
 // GLOBAL: VC1 0x004ee284
-static IUnknown* g_display1cObject;
+IUnknown* g_display1cObject;
 // GLOBAL: VC1 0x004ee288
-static unsigned g_display1cGuard;
+unsigned g_display1cGuard;
 
 static void Display1cAtexit();
 static unsigned char DisplayQueryReady();
@@ -141,7 +147,7 @@ static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
-static void Display10Present(int arg);
+static void FlushBatch(char final);
 static void DisplayD3DTeardown();
 static void DisplayD3dSetBuffers(int right, int bottom, int left, int top);
 static void DisplayD3dLogHresult(int hr, char flag);
@@ -642,40 +648,87 @@ static int Display28Mode(unsigned format)
     }
 }
 
-// cdecl arg. EndScene on the swap chain; optional gamma; clear g_d3dInScene if arg!=0.
-// FUNCTION: VC1 0x004643f0
-static void Display10Present(int arg)
+// ESI=flags. Inferred name. Applies only the bits that differ from
+// g_batchFlags through device +0xc8/+0xfc: 2 -> D3DRS_DESTBLEND INVSRCALPHA
+// or ONE, 4 -> D3DRS_ZWRITEENABLE, 1 -> stage 0 D3DTSS_COLOROP ADD or MODULATE.
+// FUNCTION: VC1 0x00464330
+static void SetBatchFlags(unsigned flags)
 {
-    typedef int (__stdcall *FnEnd)(IUnknown* swap);
-    typedef int (__stdcall *FnGamma)(IUnknown* device, int kind, int unused, unsigned ramp);
-    typedef int (__stdcall *FnGamma4)(IUnknown* device, int a, int b, unsigned c, int d, unsigned e);
-    typedef int (__stdcall *FnGetBack)(IUnknown* swap, int a, int b, unsigned* out, int c);
+    typedef int (__stdcall *FnRenderState)(IUnknown* device, unsigned state, unsigned value);
+    typedef int (__stdcall *FnStageState)(IUnknown* device, unsigned stage, unsigned type,
+        unsigned value);
 
-    if (g_d3dInScene == 0) {
+    if ((flags & 2) != (g_batchFlags & 2)) {
+        if (flags & 2) {
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 0x14, 6);
+        }
+        else {
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 0x14, 2);
+        }
+    }
+    if ((flags & 4) != (g_batchFlags & 4)) {
+        if (flags & 4) {
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 0xe, 1);
+        }
+        else {
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 0xe, 0);
+        }
+    }
+    if ((flags & 1) != (g_batchFlags & 1)) {
+        if (flags & 1) {
+            reinterpret_cast<FnStageState>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+                g_d3dDevice, 0, 1, 7);
+        }
+        else {
+            reinterpret_cast<FnStageState>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
+                g_d3dDevice, 0, 1, 4);
+        }
+    }
+    g_batchFlags = flags;
+}
+
+// cdecl char. Inferred name. Unlocks the vertex buffer, draws the queued
+// primitives (DrawPrimitive +0x118 for kinds 2/3, DrawIndexedPrimitive +0x11c
+// for quads), then relocks unless this is the final flush before Present.
+// FUNCTION: VC1 0x004643f0
+static void FlushBatch(char final)
+{
+    typedef int (__stdcall *FnUnlock)(IUnknown* buffer);
+    typedef int (__stdcall *FnDraw)(IUnknown* device, int type, int start, unsigned count);
+    typedef int (__stdcall *FnDrawIndexed)(IUnknown* device, int type, int minIndex,
+        unsigned vertices, int start, unsigned count);
+    typedef int (__stdcall *FnLock)(IUnknown* buffer, int offset, int size, unsigned* out,
+        int flags);
+
+    if (g_batchVertices == 0) {
         return;
     }
-    reinterpret_cast<FnEnd>((*reinterpret_cast<void***>(g_d3dSwap))[0xc])(g_d3dSwap);
-    if (g_d3dGammaRamp) {
-        if (g_d3dGammaKind == 2) {
-            reinterpret_cast<FnGamma>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
-                g_d3dDevice, 2, 0, g_d3dGammaRamp);
+    reinterpret_cast<FnUnlock>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xc])(g_d3dVertexBuffer);
+    if (g_batchCount) {
+        if (g_batchKind == 2) {
+            reinterpret_cast<FnDraw>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
+                g_d3dDevice, 2, 0, g_batchCount);
         }
-        else if (g_d3dGammaKind == 3) {
-            reinterpret_cast<FnGamma>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
-                g_d3dDevice, 4, 0, g_d3dGammaRamp);
+        else if (g_batchKind == 3) {
+            reinterpret_cast<FnDraw>((*reinterpret_cast<void***>(g_d3dDevice))[0x46])(
+                g_d3dDevice, 4, 0, g_batchCount);
         }
-        else if (g_d3dGammaKind == 4) {
-            reinterpret_cast<FnGamma4>((*reinterpret_cast<void***>(g_d3dDevice))[0x47])(
-                g_d3dDevice, 4, 0, g_d3dGammaRamp * 4, 0, g_d3dGammaRamp * 2);
+        else if (g_batchKind == 4) {
+            reinterpret_cast<FnDrawIndexed>((*reinterpret_cast<void***>(g_d3dDevice))[0x47])(
+                g_d3dDevice, 4, 0, g_batchCount * 4, 0, g_batchCount * 2);
         }
-        g_d3dGammaRamp = 0;
+        g_batchCount = 0;
     }
-    if (arg == 0) {
-        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dSwap))[0xb])(
-            g_d3dSwap, 0, 0, &g_d3dInScene, 0);
+    if (final == 0) {
+        reinterpret_cast<FnLock>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xb])(
+            g_d3dVertexBuffer, 0, 0, &g_batchVertices, 0);
         return;
     }
-    g_d3dInScene = 0;
+    g_batchVertices = 0;
 }
 
 // EAX=matrix. View = world with the 2D axes/origin of matrix, then
@@ -696,7 +749,7 @@ void DisplayD3dSetView(const Matrix3* matrix)
     g_d3dView[5] = matrix->m[4];
     g_d3dView[12] = matrix->m[6];
     g_d3dView[13] = matrix->m[7];
-    Display10Present(0);
+    FlushBatch(0);
     reinterpret_cast<FnSetTransform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
         g_d3dDevice, 2, g_d3dView);
 }
@@ -752,6 +805,36 @@ static void DisplayD3dPow2Caps(unsigned* w, unsigned* h)
     }
 }
 
+// EDI=quad. Inferred name. Callers: KdGraphics::FillRect (0x0045ccb0) and
+// KdGraphics::DrawImage (0x0045cb10). Flushes when the batch kind, the
+// 1000-quad limit, the texture or the flags change, then appends the four
+// vertices (0x60 bytes) to the locked buffer.
+// FUNCTION: VC1 0x004648b0
+void PushQuad(const BatchQuad* quad)
+{
+    typedef int (__stdcall *FnSetTexture)(IUnknown* device, unsigned stage, IUnknown* texture);
+
+    if (g_batchVertices == 0) {
+        return;
+    }
+    if (g_batchKind != 4 || g_batchCount >= 1000 || g_batchTexture != quad->texture ||
+        g_batchFlags != quad->flags) {
+        FlushBatch(0);
+        g_batchKind = 4;
+        if (g_batchFlags != quad->flags) {
+            SetBatchFlags(quad->flags);
+        }
+        if (g_batchTexture != quad->texture) {
+            reinterpret_cast<FnSetTexture>((*reinterpret_cast<void***>(g_d3dDevice))[0x3d])(
+                g_d3dDevice, 0, quad->texture);
+            g_batchTexture = quad->texture;
+        }
+    }
+    memcpy(reinterpret_cast<unsigned char*>(g_batchVertices) + g_batchCount * 0x60,
+        quad->vertices, 0x60);
+    g_batchCount++;
+}
+
 // Release D3D device, swap chain, surfaces, and linked lists.
 // FUNCTION: VC1 0x00464960
 static void DisplayD3DTeardown()
@@ -800,17 +883,17 @@ static void DisplayD3DTeardown()
         g_d3dSurface->Release();
         g_d3dSurface = 0;
     }
-    if (g_d3dSwap) {
-        if (g_d3dInScene) {
-            reinterpret_cast<Fn30>((*reinterpret_cast<void***>(g_d3dSwap))[0xc])(g_d3dSwap);
-            g_d3dInScene = 0;
+    if (g_d3dVertexBuffer) {
+        if (g_batchVertices) {
+            reinterpret_cast<Fn30>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xc])(g_d3dVertexBuffer);
+            g_batchVertices = 0;
         }
         if (g_d3dDevice) {
             reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
                 g_d3dDevice, 0, 0, 0x18);
         }
-        g_d3dSwap->Release();
-        g_d3dSwap = 0;
+        g_d3dVertexBuffer->Release();
+        g_d3dVertexBuffer = 0;
     }
     if (g_d3dDevice) {
         g_d3dDevice->Release();
@@ -938,7 +1021,7 @@ void DisplayD3dSetClip(int x, int y, int width, int height)
     viewport.height = height < 0 ? 0 : height;
     viewport.minZ = 0.0f;
     viewport.maxZ = 1.0f;
-    Display10Present(0);
+    FlushBatch(0);
     if (viewport.width != 0 && viewport.height != 0) {
         reinterpret_cast<FnSetViewport>((*reinterpret_cast<void***>(g_d3dDevice))[0x28])(
             g_d3dDevice, &viewport);
@@ -1064,7 +1147,7 @@ static unsigned char DisplayD3dRecreate()
         }
     }
     hr = reinterpret_cast<FnCreateVb>((*reinterpret_cast<void***>(g_d3dDevice))[0x17])(
-        g_d3dDevice, 0x17700, 8, 0x142, 0, &g_d3dSwap);
+        g_d3dDevice, 0x17700, 8, 0x142, 0, &g_d3dVertexBuffer);
     if (hr < 0) {
         if (hr == 0) {
             FormatBufferOpen(buf, kPercentS, kCantCreateVb);
@@ -1078,7 +1161,7 @@ static unsigned char DisplayD3dRecreate()
     reinterpret_cast<FnSetFvf>((*reinterpret_cast<void***>(g_d3dDevice))[0x4c])(
         g_d3dDevice, 0x142);
     reinterpret_cast<FnStream>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
-        g_d3dDevice, 0, g_d3dSwap, 0x18);
+        g_d3dDevice, 0, g_d3dVertexBuffer, 0x18);
     hr = reinterpret_cast<FnCreateIb>((*reinterpret_cast<void***>(g_d3dDevice))[0x18])(
         g_d3dDevice, 0x2ee0, 8, 0x65, 0, &g_d3dSurface);
     if (hr < 0) {
@@ -1145,10 +1228,10 @@ static unsigned char DisplayD3dRecreate()
         g_d3dDevice, 0, 0x10, 2);
     reinterpret_cast<FnTss>((*reinterpret_cast<void***>(g_d3dDevice))[0x3f])(
         g_d3dDevice, 0, 0x11, 2);
-    g_d3dGammaRamp = 0;
-    g_d3dGammaKind = 4;
-    g_d3dGamma618 = 2;
-    g_d3dGamma61c = 0;
+    g_batchCount = 0;
+    g_batchKind = 4;
+    g_batchFlags = 2;
+    g_batchTexture = 0;
     reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
         g_d3dDevice, 2, g_d3dView);
     reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
@@ -1181,10 +1264,10 @@ static unsigned char DisplayD3dReset()
             g_d3dDevice, 0, 0);
         g_d3dSurface->Release();
     }
-    if (g_d3dSwap) {
+    if (g_d3dVertexBuffer) {
         reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
             g_d3dDevice, 0, 0, 0x18);
-        g_d3dSwap->Release();
+        g_d3dVertexBuffer->Release();
     }
     reinterpret_cast<FnReset>((*reinterpret_cast<void***>(g_d3dDevice))[0xe])(
         g_d3dDevice, g_displayMode);
@@ -1332,7 +1415,7 @@ static unsigned char DisplayD3DInit()
         return 0;
     }
     Display28Finish();
-    g_d3dInScene = 0;
+    g_batchVertices = 0;
     g_d3dChain2 = 0;
     DisplayD3dSetBuffers(present[0], present[1], 0, 0);
     for (i = 0; i < 16; i++) {
@@ -1407,7 +1490,7 @@ static unsigned char DisplayQueryReady()
             return 0;
         }
     }
-    if (g_d3dInScene) {
+    if (g_batchVertices) {
         FormatBufferOpen(buf, kPercentS, kSceneAlreadyRendered);
         HostLogError(buf);
         return 0;
@@ -1426,9 +1509,9 @@ static unsigned char DisplayQueryReady()
             g_d3dDevice, 2, g_d3dView);
     }
     reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x22])(g_d3dDevice);
-    if (g_d3dSwap) {
-        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dSwap))[0xb])(
-            g_d3dSwap, 0, 0, &g_d3dInScene, 0);
+    if (g_d3dVertexBuffer) {
+        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xb])(
+            g_d3dVertexBuffer, 0, 0, &g_batchVertices, 0);
     }
     return 1;
 }
@@ -1440,7 +1523,7 @@ static int Display28Apply(unsigned char windowed)
 {
     int interval;
 
-    if (g_d3dInScene || g_displayBusy) {
+    if (g_batchVertices || g_displayBusy) {
         return 0;
     }
     if (!g_d3dDevice || g_displaySkipDevice == windowed) {
@@ -1687,7 +1770,7 @@ void* KdDisplayBase::Display10()
         void* d);
 
     static_cast<KdGraphics*>(graphics)->BindScene();
-    Display10Present(1);
+    FlushBatch(1);
     reinterpret_cast<FnEndScene>((*reinterpret_cast<void***>(g_d3dDevice))[0x23])(
         g_d3dDevice);
     if (g_d3dLastMixer == 0) {
@@ -2055,8 +2138,8 @@ void* KdDisplay::Display10()
                 clip = *reinterpret_cast<Rect*>(&g_displayViewLeft);
                 view->SetClipRect(&clip);
                 view->Clear(0xff000000);
-                view->Graphics58(static_cast<IRenderTarget*>(
-                    static_cast<void*>(target))->Display1c(), 0.0f, 0.0f, 0.0f, 0.0f,
+                view->DrawImage(static_cast<ITexture* const*>(static_cast<IRenderTarget*>(
+                    static_cast<void*>(target))->Display1c()), 0.0f, 0.0f, 0.0f, 0.0f,
                     static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
                 view->Release();
             }
@@ -2064,7 +2147,7 @@ void* KdDisplay::Display10()
     }
 
     static_cast<KdGraphics*>(graphics)->BindScene();
-    Display10Present(1);
+    FlushBatch(1);
     reinterpret_cast<FnEndScene>((*reinterpret_cast<void***>(g_d3dDevice))[0x23])(
         g_d3dDevice);
     if (g_d3dLastMixer == 0) {

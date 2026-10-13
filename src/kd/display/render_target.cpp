@@ -8,7 +8,7 @@
 namespace vc1 {
 
 // GLOBAL: VC1 0x004ed704
-static IUnknown* g_renderTargetDefault;
+IUnknown* g_renderTargetDefault;
 
 // MOV EAX, [ECX+0x18]; RET. IRenderTarget vtable+0x18.
 // FUNCTION: VC1 0x0045bbe0

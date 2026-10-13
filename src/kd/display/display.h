@@ -21,6 +21,29 @@ extern IUnknown* g_d3dDevice;
 extern IUnknown* g_displayScene;
 
 void DisplayD3dSetView(const Matrix3* matrix);
+
+// FVF 0x142 (XYZ | DIFFUSE | TEX1).
+// SIZE 0x18
+struct BatchVertex
+{
+    float x;        // 0x00
+    float y;        // 0x04
+    float z;        // 0x08
+    unsigned color; // 0x0c
+    float u;        // 0x10
+    float v;        // 0x14
+};
+
+// Only vertices are copied into the vertex buffer.
+// SIZE 0x68
+struct BatchQuad
+{
+    BatchVertex vertices[4]; // 0x00
+    IUnknown* texture;       // 0x60  D3D texture, 0 for solid fills
+    unsigned flags;          // 0x64  GraphicsState::mode
+};
+
+void PushQuad(const BatchQuad* quad);
 void DisplayD3dSetClip(int x, int y, int width, int height);
 
 // Inferred name. Implements the Pyro device plus the device-level IDisplay

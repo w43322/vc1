@@ -23,7 +23,7 @@ IAbstract* g_kdSystem;
 // GLOBAL: VC1 0x004ed6f8
 IUnknown* g_kdServices;
 // GLOBAL: VC1 0x004ed4fc
-static void* g_timedEventHead;
+void* g_timedEventHead;
 
 // STRING: VC1 0x004d4be4
 static const char kSystem[] = "System";
