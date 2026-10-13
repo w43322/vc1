@@ -86,10 +86,10 @@ NativeClassBinding* Vector3::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ee3e0, type info 0x004ee1d8, spec 0x004d75b8, name 0x004d7588.
 // FUNCTION: VC1 0x0041f150
-SquirrelObject* Vector3::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Vector3::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_vector3Type, &g_vector3TypeReady,
+    return RegisterClassType<Vector3>(vm, className, &g_vector3Type, &g_vector3TypeReady,
         &kVector3TypeSpec, "Vector3", Vector3::Constructor, Vector3::TypeOf);
 }
 

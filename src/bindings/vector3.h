@@ -29,7 +29,7 @@ struct Vector3
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger ReleaseHook(SQUserPointer object, SQInteger size);
     static SQInteger TypeOf(HSQUIRRELVM vm);
-    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    static SquirrelObject RegisterClass(HSQUIRRELVM vm,
         const SQChar* className);
     static NativeClassBinding* CreateBinding(NativeClassBinding* self);
     static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);

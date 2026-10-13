@@ -108,10 +108,10 @@ NativeClassBinding* Matrix3::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ed838, type info 0x004ed824, spec 0x004d1928, name 0x004d1920.
 // FUNCTION: VC1 0x0041f570
-SquirrelObject* Matrix3::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Matrix3::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_matrix3Type, &g_matrix3TypeReady,
+    return RegisterClassType<Matrix3>(vm, className, &g_matrix3Type, &g_matrix3TypeReady,
         &kMatrix3TypeSpec, "Matrix3", Matrix3::Constructor, Matrix3::TypeOf);
 }
 

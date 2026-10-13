@@ -213,12 +213,14 @@ const char* GetKdEnv(const char* name)
 
 // _vsnprintf(buf, cap, fmt, va). Original EDX=cap, stack buf/fmt then varargs; ECX unused.
 // FUNCTION: VC1 0x004969c0
-void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...)
+int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...)
 {
     va_list args;
+    int written;
     va_start(args, fmt);
-    _vsnprintf(buf, cap, fmt, args);
+    written = _vsnprintf(buf, cap, fmt, args);
     va_end(args);
+    return written;
 }
 
 // EDX=buf, stack fmt then varargs. Cap is 0xffffffff.

@@ -56,10 +56,10 @@ NativeClassBinding* Matrix4::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ed870, type info 0x004ed85c, spec 0x004d75c0, name 0x004d7598.
 // FUNCTION: VC1 0x0041f6d0
-SquirrelObject* Matrix4::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Matrix4::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_matrix4Type, &g_matrix4TypeReady,
+    return RegisterClassType<Matrix4>(vm, className, &g_matrix4Type, &g_matrix4TypeReady,
         &kMatrix4TypeSpec, "Matrix4", Matrix4::Constructor, Matrix4::TypeOf);
 }
 

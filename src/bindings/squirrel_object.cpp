@@ -2,41 +2,22 @@
 
 #include "host/runtime.h"
 
+#include <sqstdaux.h>
+#include <sqstdblob.h>
 #include <sqstdio.h>
+#include <sqstdmath.h>
+#include <sqstdstring.h>
+#include <sqstdsystem.h>
 #include <sqpcheader.h>
 #include <sqvm.h>
-#include <stdio.h>
 
 namespace vc1 {
 
-static const unsigned kSqRefCounted = 0x08000000;
-static const unsigned kSqNumeric = 0x04000000;
-
 // GLOBAL: VC1 0x004ed13c
 HSQUIRRELVM g_vm;
-static int g_squirrelObjectVftableStorage;
-const void* g_squirrelObjectVftable = &g_squirrelObjectVftableStorage;
 
-void InitSquirrelObject(SquirrelObject* object)
-{
-    object->vftable = g_squirrelObjectVftable;
-    object->obj._unVal.pUserPointer = 0;
-    object->obj._type = OT_NULL;
-}
-
-static void* SharedStateRefs(HSQUIRRELVM vm)
-{
-    char* const shared = *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x8c);
-    return shared + 0x18;
-}
-
-void ReleaseObjectIfNeeded(HSQOBJECT* obj)
-{
-    if (g_vm && (obj->_type & kSqRefCounted) != 0) {
-        static_cast<RefTable*>(SharedStateRefs(g_vm))->Release(
-            *reinterpret_cast<SQObject*>(obj));
-    }
-}
+// GLOBAL: VC1 0x004cfa98
+const char g_sqplusErrorFormat[] = "error: %s\n";
 
 // Host BufState is {buf, ptr, size} (stock buf_lexfeed is {buf, size, ptr}).
 // FUNCTION: VC1 0x00496a90
@@ -98,74 +79,140 @@ int MemCompare(const void* left, const void* right, unsigned size)
     return (diff >> 31) | 1;
 }
 
-// EAX=script SquirrelObject, ECX=env or 0 (push root), EBX=dest. sq_call nparams=1.
-// On success pop 2 and copy the return; on fail pop 1 and copy the empty local.
-// FUNCTION: VC1 0x0049a270
-SquirrelObject* InvokeWithRoot(SquirrelObject* script, SquirrelObject* env,
-    SquirrelObject* dest)
+// Engine GetRootTable: lazily attaches the root table to g_rootTable.
+// FUNCTION: VC1 0x00499fe0
+SquirrelObject& SquirrelVM::GetRootTable()
 {
-    SquirrelObject local;
-
-    InitSquirrelObject(&local);
-    sq_pushobject(g_vm, script->obj);
-    if (!env) {
+    if (g_rootTable.obj._type == OT_NULL && g_vm) {
         sq_pushroottable(g_vm);
+        g_rootTable.AttachToStackObject(-1);
+        sq_pop(g_vm, 1);
+    }
+    return g_rootTable;
+}
+
+// Release the root table if it is refcounted, then sq_close-style teardown of g_vm.
+// FUNCTION: VC1 0x0049a170
+void SquirrelVM::Shutdown()
+{
+    HSQUIRRELVM vm = g_vm;
+    if (g_rootTable.obj._type != OT_NULL) {
+        if (g_vm) {
+            sq_release(g_vm, &g_rootTable.obj);
+        }
+        g_rootTable.obj._unVal.pUserPointer = 0;
+        g_rootTable.obj._type = OT_NULL;
+    }
+
+    g_vm = 0;
+    if (vm) {
+        g_sizeClassHeap.releasedBytes += 0xb4;
+        sq_close(vm);
+    }
+}
+
+// EAX=script, ECX=_this or 0 (push root), EBX=hidden return. sq_call nparams=1.
+// The failure path stands in for SqPlus's throw and returns the empty object.
+// FUNCTION: VC1 0x0049a270
+SquirrelObject SquirrelVM::RunScript(const SquirrelObject& o, SquirrelObject* _this)
+{
+    SquirrelObject ret;
+    sq_pushobject(g_vm, o.obj);
+    if (_this) {
+        sq_pushobject(g_vm, _this->obj);
     }
     else {
-        sq_pushobject(g_vm, env->obj);
+        sq_pushroottable(g_vm);
     }
-    if (sq_call(g_vm, 1, SQTrue, SQTrue) < 0) {
-        sq_pop(g_vm, 1);
-        return CopySquirrelObject(dest, &local);
+    if (SQ_SUCCEEDED(sq_call(g_vm, 1, SQTrue, SQTrue))) {
+        ret.AttachToStackObject(-1);
+        sq_pop(g_vm, 2);
+        return ret;
     }
-    AttachStackTop(&local);
-    sq_pop(g_vm, 2);
-    CopySquirrelObject(dest, &local);
-    ReleaseObjectIfNeeded(&local.obj);
-    return dest;
+    sq_pop(g_vm, 1);
+    return ret;
 }
 
+// ECX=hidden return, EAX=scriptFuncName, [esp+4]=func, EBX=typeMask.
 // FUNCTION: VC1 0x0049a370
-SquirrelObject* RegisterNativeSlot(SquirrelObject* out, const SQChar* name,
-    SQFUNCTION callback, const SQChar* typemask)
+SquirrelObject SquirrelVM::CreateFunction(SQFUNCTION func, const SQChar* scriptFuncName,
+    const SQChar* typeMask)
 {
-    SQChar mask[0x40];
-    const SQChar* check = 0;
-
-    InitSquirrelObject(out);
-    sq_pushstring(g_vm, name, -1);
-    sq_newclosure(g_vm, callback, 0);
-    AttachStackTop(out);
-
-    if (!typemask) {
-        check = "t|y|x";
+    sq_pushstring(g_vm, scriptFuncName, -1);
+    sq_newclosure(g_vm, func, 0);
+    SquirrelObject ret;
+    ret.AttachToStackObject(-1);
+    SQChar tm[64];
+    SQChar* ptm = tm;
+    SQInteger numParams = SQ_MATCHTYPEMASKSTRING;
+    if (typeMask) {
+        if (typeMask[0] == '*') {
+            ptm = 0;
+            numParams = 0;
+        }
+        else {
+            // STRING: VC1 0x004d2450
+            if (FormatBuffer(tm, sizeof(tm), "t|y|x%s", typeMask) < 0) {
+                // STRING: VC1 0x004d2458
+                KdLog(g_sqplusErrorFormat, "CreateFunction: typeMask string too long.");
+                return ret;
+            }
+        }
     }
-    else if (typemask[0] != '*') {
-        _snprintf(mask, 0x40, "t|y|x%s", typemask);
-        mask[0x3f] = 0;
-        check = mask;
+    else {
+        FormatBuffer(tm, sizeof(tm), kPercentS,
+            // STRING: VC1 0x004d2484
+            "t|y|x");
     }
-    if (check) {
-        sq_setparamscheck(g_vm, SQ_MATCHTYPEMASKSTRING, check);
+    if (ptm) {
+        sq_setparamscheck(g_vm, numParams, ptm);
     }
     sq_newslot(g_vm, -3, SQFalse);
-    return out;
+    return ret;
 }
 
-// EDX=buffer, EDI=dest. strlen then 0x00499820 (reader 0x00496a90, raiseerror=1).
-// FUNCTION: VC1 0x0049a5a0
-SquirrelObject* CompileString(const SQChar* source, SquirrelObject* dest)
+// If g_vm is unset: sq_open, printfunc at sharedstate+0xa4, stdlib batch, store g_vm.
+// FUNCTION: VC1 0x0049a510
+int SquirrelVM::Init()
 {
-    SquirrelObject local;
+    HSQUIRRELVM vm;
+
+    if (g_vm) {
+        return 1;
+    }
+    vm = sq_open(0);
+    if (!vm) {
+        return 0;
+    }
+    *reinterpret_cast<SQPRINTFUNCTION*>(
+        *reinterpret_cast<char**>(reinterpret_cast<char*>(vm) + 0x8c) + 0xa4)
+        = ScriptPrint;
+    sq_pushroottable(vm);
+    sqstd_register_iolib(vm);
+    sqstd_register_bloblib(vm);
+    sqstd_register_mathlib(vm);
+    sqstd_register_stringlib(vm);
+    sqstd_register_systemlib(vm);
+    sqstd_seterrorhandlers(vm);
+    sq_pop(vm, 1);
+    g_vm = vm;
+    return 1;
+}
+
+// EDX=buffer, EDI=hidden return. Host sq_compilebuffer inlined (reader 0x00496a90,
+// sq_compile 0x00499820, raiseerror=1).
+// FUNCTION: VC1 0x0049a5a0
+SquirrelObject SquirrelVM::CompileBuffer(const SQChar* s)
+{
+    SquirrelObject ret;
     SQInteger length;
     const SQChar* cursor;
 
-    InitSquirrelObject(&local);
-    cursor = source;
+    cursor = s;
     while (*cursor) {
         ++cursor;
     }
-    length = static_cast<SQInteger>(cursor - source);
+    length = static_cast<SQInteger>(cursor - s);
     {
         struct {
             const SQChar* buf;
@@ -173,184 +220,193 @@ SquirrelObject* CompileString(const SQChar* source, SquirrelObject* dest)
             SQInteger size;
         } buf;
         // STRING: VC1 0x004d0ce0
-        const SQChar* const sourcename = "console_buffer";
-        buf.buf = source;
+        const SQChar* const debugInfo = "console_buffer";
+        buf.buf = s;
         buf.ptr = 0;
         buf.size = length;
-        if (sq_compile(g_vm, ConsoleBufferRead, &buf, sourcename, SQTrue) < 0) {
-            return CopySquirrelObject(dest, &local);
+        if (SQ_SUCCEEDED(sq_compile(g_vm, ConsoleBufferRead, &buf, debugInfo, SQTrue))) {
+            ret.AttachToStackObject(-1);
+            sq_pop(g_vm, 1);
+            return ret;
         }
     }
-    AttachStackTop(&local);
-    sq_pop(g_vm, 1);
-    CopySquirrelObject(dest, &local);
-    ReleaseObjectIfNeeded(&local.obj);
-    return dest;
+    return ret;
 }
 
-// EAX=path, EDI=dest. PUSH 1; PUSH path; EAX=g_vm; CALL 0x0048fa50.
+// EAX=path, EDI=hidden return. sqstd_loadfile 0x0048fa50 with printerror=1.
 // FUNCTION: VC1 0x0049a670
-SquirrelObject* CompilePath(const SQChar* path, SquirrelObject* dest)
+SquirrelObject SquirrelVM::CompileScript(const SQChar* s)
 {
-    SquirrelObject local;
-
-    InitSquirrelObject(&local);
-    if (sqstd_loadfile(g_vm, path, SQTrue) < 0) {
-        return CopySquirrelObject(dest, &local);
+    SquirrelObject ret;
+    if (SQ_SUCCEEDED(sqstd_loadfile(g_vm, s, SQTrue))) {
+        ret.AttachToStackObject(-1);
+        sq_pop(g_vm, 1);
+        return ret;
     }
-    AttachStackTop(&local);
-    sq_pop(g_vm, 1);
-    CopySquirrelObject(dest, &local);
-    ReleaseObjectIfNeeded(&local.obj);
-    return dest;
+    return ret;
 }
 
-// EAX=table, stdcall name. pushobject+pushstring then 0x004906b0; throw "the index doesn't exist".
+// EAX=this, stdcall name, RET 4. sq_get is inlined (0x004906b0 Get, then
+// "the index doesn't exist").
 // FUNCTION: VC1 0x0049a910
-SQBool __stdcall HasNamedSlot(SquirrelObject* table, const SQChar* name)
+SQBool SquirrelObject::GetSlot(const SQChar* name) const
 {
-    sq_pushobject(g_vm, table->obj);
+    sq_pushobject(g_vm, obj);
     sq_pushstring(g_vm, name, -1);
-    if (g_vm->Get(stack_get(g_vm, -2), g_vm->GetUp(-1), g_vm->GetUp(-1), false, false)) {
+    if (SQ_SUCCEEDED(sq_get(g_vm, -2))) {
         return SQTrue;
     }
-    sq_pop(g_vm, 1);
-    // STRING: VC1 0x004d26a4
-    if (sq_throwerror(g_vm, "the index doesn't exist") < 0) {
-        return SQFalse;
-    }
-    return SQTrue;
+    return SQFalse;
 }
 
-// stdcall; used from RegisterNativeSlot 0x0049a3b9 and CreateNativeClass 0x004c32c4.
+// Stdcall this; idx is always -1.
 // FUNCTION: VC1 0x0049aaa0
-void AttachStackTop(SquirrelObject* dest)
+void SquirrelObject::AttachToStackObject(SQInteger idx)
 {
-    HSQOBJECT top;
-    sq_getstackobj(g_vm, -1, &top);
-    sq_addref(g_vm, &top);
-    sq_release(g_vm, &dest->obj);
-    dest->obj = top;
+    HSQOBJECT t;
+    sq_getstackobj(g_vm, idx, &t);
+    sq_addref(g_vm, &t);
+    sq_release(g_vm, &obj);
+    obj = t;
 }
 
-// dest=EBX, source=EAX. Used from Color/Vector CreateBinding after RegisterClass.
+// this=EBX, o=EAX.
 // FUNCTION: VC1 0x0049ab30
-SquirrelObject* AssignSquirrelObject(SquirrelObject* dest, const SquirrelObject* source)
+SquirrelObject& SquirrelObject::operator=(const SquirrelObject& o)
 {
-    HSQOBJECT copy = source->obj;
-    sq_addref(g_vm, &copy);
-    sq_release(g_vm, &dest->obj);
-    dest->obj = copy;
-    return dest;
+    HSQOBJECT t;
+    t = o.obj;
+    sq_addref(g_vm, &t);
+    sq_release(g_vm, &obj);
+    obj = t;
+    return *this;
 }
 
-// ESI=dest, ECX=source. Writes dummy vftable 0x004cfb98, copies HSQOBJECT, addref via 0x004891e0.
+// this=ESI, o=ECX.
 // FUNCTION: VC1 0x0049ac30
-SquirrelObject* CopySquirrelObject(SquirrelObject* dest, const SquirrelObject* source)
+SquirrelObject::SquirrelObject(const SquirrelObject& o)
 {
-    dest->vftable = g_squirrelObjectVftable;
-    dest->obj = source->obj;
-    if ((dest->obj._type & kSqRefCounted) != 0 && g_vm) {
-        sq_addref(g_vm, &dest->obj);
-    }
-    return dest;
+    obj = o.obj;
+    sq_addref(g_vm, &obj);
 }
 
-// EAX=name, stdcall table. HasNamedSlot then read top as int/float; pop value and table.
+// this=ECX. Also inlined into most owners and the deleting destructor 0x00401e00.
+// FUNCTION: VC1 0x0049ac80
+SquirrelObject::~SquirrelObject()
+{
+    if (g_vm) {
+        sq_release(g_vm, &obj);
+    }
+    obj._unVal.pUserPointer = 0;
+    obj._type = OT_NULL;
+}
+
+// EAX=key, stdcall this, RET 4.
 // FUNCTION: VC1 0x0049acc0
-SQInteger __stdcall ReadIntFromSlot(SquirrelObject* table, const SQChar* name)
+SQInteger SquirrelObject::GetInt(const SQChar* key) const
 {
-    SQInteger value = 0;
-
-    if (HasNamedSlot(table, name)) {
-        HSQOBJECT top;
-        sq_getstackobj(g_vm, -1, &top);
-        if ((top._type & kSqNumeric) != 0) {
-            if (top._type == OT_FLOAT) {
-                value = static_cast<SQInteger>(top._unVal.fFloat);
-            }
-            else {
-                value = top._unVal.nInteger;
-            }
-        }
+    SQInteger ret = 0;
+    if (GetSlot(key)) {
+        sq_getinteger(g_vm, -1, &ret);
         sq_pop(g_vm, 1);
     }
     sq_pop(g_vm, 1);
-    return value;
+    return ret;
 }
 
-// EAX=name, EDI=dest, stdcall table. Init dest, HasNamedSlot, AttachStackTop, always pop table.
+// EAX=key, EDI=hidden return, stdcall this, RET 4.
 // FUNCTION: VC1 0x0049ad30
-SquirrelObject* __stdcall GetNamedObject(SquirrelObject* table, const SQChar* name,
-    SquirrelObject* dest)
+SquirrelObject SquirrelObject::GetValue(const SQChar* key) const
 {
-    InitSquirrelObject(dest);
-    if (HasNamedSlot(table, name)) {
-        AttachStackTop(dest);
+    SquirrelObject ret;
+    if (GetSlot(key)) {
+        ret.AttachToStackObject(-1);
         sq_pop(g_vm, 1);
     }
     sq_pop(g_vm, 1);
-    return dest;
+    return ret;
 }
 
-// EAX=object, stdcall name. pushobject, pushstring, OT_BOOL 0, 0x00498a40, sq_settop.
+#define _SETVALUE_STR_BEGIN \
+    SQBool ret = SQFalse; \
+    SQInteger top = sq_gettop(g_vm); \
+    sq_pushobject(g_vm, obj); \
+    sq_pushstring(g_vm, key, -1);
+
+#define _SETVALUE_STR_END \
+    if (SQ_SUCCEEDED(sq_rawset(g_vm, -3))) { \
+        ret = SQTrue; \
+    } \
+    sq_settop(g_vm, top); \
+    return ret;
+
+#define _SETVALUE_INT_BEGIN \
+    SQBool ret = SQFalse; \
+    SQInteger top = sq_gettop(g_vm); \
+    sq_pushobject(g_vm, obj); \
+    sq_pushinteger(g_vm, key);
+
+#define _SETVALUE_INT_END _SETVALUE_STR_END
+
+// EAX=this, stdcall key, RET 4 (b is always false here).
 // FUNCTION: VC1 0x0049b020
-SQBool __stdcall RegisterBoolFalseSlot(SquirrelObject* object, const SQChar* name)
+SQBool SquirrelObject::SetValue(const SQChar* key, bool b)
 {
-    const SQInteger savedTop = sq_gettop(g_vm);
-    sq_pushobject(g_vm, object->obj);
-    sq_pushstring(g_vm, name, -1);
-    sq_pushbool(g_vm, SQFalse);
-    {
-        const SQBool ok = SQ_SUCCEEDED(sq_rawset(g_vm, -3));
-        sq_settop(g_vm, savedTop);
-        return ok;
-    }
+    _SETVALUE_STR_BEGIN
+    sq_pushbool(g_vm, b);
+    _SETVALUE_STR_END
 }
 
-// EAX=object, stdcall name + float. Same as RegisterIntegerSlot with 0x00496e50.
+// EAX=this, stdcall key + float, RET 8.
 // FUNCTION: VC1 0x0049b0c0
-SQBool __stdcall RegisterFloatSlot(SquirrelObject* object, const SQChar* name, SQFloat value)
+SQBool SquirrelObject::SetValue(const SQChar* key, SQFloat f)
 {
-    const SQInteger savedTop = sq_gettop(g_vm);
-    sq_pushobject(g_vm, object->obj);
-    sq_pushstring(g_vm, name, -1);
-    sq_pushfloat(g_vm, value);
-    {
-        const SQBool ok = SQ_SUCCEEDED(sq_rawset(g_vm, -3));
-        sq_settop(g_vm, savedTop);
-        return ok;
-    }
+    _SETVALUE_STR_BEGIN
+    sq_pushfloat(g_vm, f);
+    _SETVALUE_STR_END
 }
 
-// EAX=class SquirrelObject (NativeClassBinding+8). Stack: name, integer. RET 8.
-// Color registrar 0x004bf610 at 0x004bfac1: "AlphaShift" (0x004d6b84), 0x18. ~155 xrefs.
-// Original newslot helper 0x00498a40, not mapped sq_newslot 0x00499600.
+// EAX=this, stdcall key + integer, RET 8. Color registrar 0x004bf610 at
+// 0x004bfac1: "AlphaShift" (0x004d6b84), 0x18. ~155 xrefs.
 // FUNCTION: VC1 0x0049b130
-SQBool RegisterIntegerSlot(SquirrelObject* object, const SQChar* name, SQInteger value)
+SQBool SquirrelObject::SetValue(const SQChar* key, SQInteger n)
 {
-    const SQInteger savedTop = sq_gettop(g_vm);
-    sq_pushobject(g_vm, object->obj);
-    sq_pushstring(g_vm, name, -1);
-    sq_pushinteger(g_vm, value);
-    const SQBool ok = SQ_SUCCEEDED(sq_rawset(g_vm, -3));
-    sq_settop(g_vm, savedTop);
-    return ok;
+    _SETVALUE_STR_BEGIN
+    sq_pushinteger(g_vm, n);
+    _SETVALUE_STR_END
+}
+
+// EAX=this, EDI=val, stdcall key, RET 4. root["ARGS"] from InitScriptEngine.
+// FUNCTION: VC1 0x0049b1d0
+SQBool SquirrelObject::SetValue(const SQChar* key, const SquirrelObject& val)
+{
+    _SETVALUE_STR_BEGIN
+    sq_pushobject(g_vm, val.obj);
+    _SETVALUE_STR_END
+}
+
+// EAX=this, stdcall key + string, RET 8. ARGS[i] = argv[i].
+// FUNCTION: VC1 0x0049b250
+SQBool SquirrelObject::SetValue(SQInteger key, const SQChar* s)
+{
+    _SETVALUE_INT_BEGIN
+    sq_pushstring(g_vm, s, -1);
+    _SETVALUE_INT_END
 }
 
 // FUNCTION: VC1 0x004c3240
-SQBool CreateNativeClass(HSQUIRRELVM vm, SquirrelObject* out,
-    SQUserPointer typeTag, const SQChar* className)
+SQBool CreateClass(HSQUIRRELVM vm, SquirrelObject& newClass,
+    SQUserPointer classType, const SQChar* name)
 {
-    const SQInteger savedTop = sq_gettop(vm);
+    const SQInteger oldtop = sq_gettop(vm);
     sq_pushroottable(vm);
-    sq_pushstring(vm, className, -1);
+    sq_pushstring(vm, name, -1);
     if (SQ_FAILED(sq_newclass(vm, SQFalse))) {
-        sq_settop(vm, savedTop);
+        sq_settop(vm, oldtop);
         return SQFalse;
     }
-    AttachStackTop(out);
-    sq_settypetag(vm, -1, typeTag);
+    newClass.AttachToStackObject(-1);
+    sq_settypetag(vm, -1, classType);
     sq_newslot(vm, -3, SQFalse);
     sq_pop(vm, 1);
     return SQTrue;

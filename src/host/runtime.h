@@ -122,7 +122,6 @@ extern void* g_kdPath2;           // 0x004ed4f4
 extern char g_resourceLocale[8];  // 0x004ed504
 extern char g_scriptPrintBuf[0x400];  // 0x004ed9d0
 extern HSQOBJECT g_sqNull;        // 0x004e9740
-extern SquirrelObject g_rootTable; // 0x004e96e0, type at 0x004e96e4
 extern char g_windowsVersionText[0x80]; // 0x004eb050
 extern unsigned g_runScratch0;    // 0x004e9d94
 extern unsigned g_runScratch1;    // 0x004e9d98
@@ -217,8 +216,9 @@ void* PopTimedEvent();
 // 0x00496950; original name in ESI
 const char* GetKdEnv(const char* name);
 extern const char kKdParentWindow[]; // "KD_PARENT_WINDOW", display.cpp
+extern const char kPercentS[]; // "%s", display.cpp
 // 0x004969c0; original EDX=cap, stack buf/fmt/varargs; ECX unused leftover
-void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
+int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x004969f0; EDX=buf, stack fmt then varargs; cap is 0xffffffff
 void FormatBufferOpen(char* buf, const char* fmt, ...);
 extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
@@ -235,19 +235,6 @@ void HostLog(const char** prefix, const char* fmt, ...);
 void HostLogError(const char** prefix, const char* fmt, ...);
 // 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
 void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
-// 0x00499fe0
-SquirrelObject* PushRootTable();
-// 0x0049a170
-void CloseScriptVm();
-// 0x0049a510
-int OpenScriptVm();
-// 0x0049ac80; original dest in ECX
-void ResetSquirrelObject(SquirrelObject* object);
-// 0x0049b1d0; EAX=table, EDI=value, stdcall name, RET 4
-SQBool __stdcall RegisterObjectSlot(SquirrelObject* table, const SQChar* name,
-    SquirrelObject* value);
-// 0x0049b250; EAX=table, stdcall index + name, RET 8
-SQBool __stdcall BindIndex(SquirrelObject* table, SQInteger index, const SQChar* name);
 // 0x004b61b0
 void InitHostServices();
 // 0x004bab00

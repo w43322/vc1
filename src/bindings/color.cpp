@@ -78,10 +78,10 @@ NativeClassBinding* Color::BindArgConstructor(NativeClassBinding* self)
 // Creates Color class, binds Constructor (null typemask) and TypeOf. Once-flag 0x004ee3ec,
 // type info 0x004ee214, spec 0x004d74b8, name 0x004d7580. Helper 0x004c3240.
 // FUNCTION: VC1 0x0041eff0
-SquirrelObject* Color::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Color::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_colorType, &g_colorTypeReady,
+    return RegisterClassType<Color>(vm, className, &g_colorType, &g_colorTypeReady,
         &kColorTypeSpec, "Color", Color::Constructor, Color::TypeOf);
 }
 

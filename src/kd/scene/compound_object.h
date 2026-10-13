@@ -40,25 +40,6 @@ public:
 
 typedef char Vc1CompoundTailValueSizeCheck[sizeof(CompoundTailValue) == 0x08 ? 1 : -1];
 
-// Polymorphic script value constructed at KdCompoundObject+0x5c. This is kept
-// separate from the still-partial generic SquirrelObject wrapper.
-// Name is inferred from its HSQOBJECT payload.
-// SIZE 0x0c
-// VTABLE: VC1 0x004cfb98
-class CompoundScriptValue
-{
-public:
-    HSQOBJECT obj;
-
-    virtual ~CompoundScriptValue() {}
-    virtual void ScriptValue04() {}
-    virtual void ScriptValue08() {}
-    virtual void ScriptValue0c() {}
-    virtual void ScriptValue10() {}
-};
-
-typedef char Vc1CompoundScriptValueSizeCheck[sizeof(CompoundScriptValue) == 0x0c ? 1 : -1];
-
 // QI 0x00472f00 establishes the six face offsets below. IComponentGroup also
 // answers IShutdownable at +0x28 through its inheritance contract.
 // SIZE 0x70
@@ -79,7 +60,7 @@ class KdCompoundObject : public IScriptObject,
 {
 public:
     CompoundTailValue tailValue; // 0x54
-    CompoundScriptValue scriptValue; // 0x5c
+    SquirrelObject scriptValue;  // 0x5c
     unsigned tail68;             // 0x68
     void* tail6c;                // 0x6c
 

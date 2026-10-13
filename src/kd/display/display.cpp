@@ -1032,8 +1032,8 @@ void DisplayD3dSetClip(int x, int y, int width, int height)
         g_d3dDevice, 3, g_d3dProj);
 }
 
-// STRING: VC1 0x004d248c
-static const char kPercentS[] = "%s";
+// GLOBAL: VC1 0x004d248c
+extern const char kPercentS[] = "%s";
 // STRING: VC1 0x004d5f80
 static const char kDxErrorFmt[] = "%s: %s";
 // STRING: VC1 0x004d5f88

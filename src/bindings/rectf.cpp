@@ -65,10 +65,10 @@ NativeClassBinding* RectF::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ed858, type info 0x004ed844, spec 0x004cfba4, name 0x004d4ffc.
 // FUNCTION: VC1 0x0041faf0
-SquirrelObject* RectF::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject RectF::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_rectFType, &g_rectFTypeReady,
+    return RegisterClassType<RectF>(vm, className, &g_rectFType, &g_rectFTypeReady,
         &kRectFTypeSpec, "RectF", RectF::Constructor, RectF::TypeOf);
 }
 

@@ -92,10 +92,10 @@ NativeClassBinding* Vector2::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ea818, type info 0x004ea830, spec 0x004cfb9c, name 0x004cfb44.
 // FUNCTION: VC1 0x0041f2b0
-SquirrelObject* Vector2::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Vector2::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_vector2Type, &g_vector2TypeReady,
+    return RegisterClassType<Vector2>(vm, className, &g_vector2Type, &g_vector2TypeReady,
         &kVector2TypeSpec, "Vector2", Vector2::Constructor, Vector2::TypeOf);
 }
 

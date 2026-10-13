@@ -82,7 +82,7 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
 
 ## Write source
 
-- Toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, `/EHsc`. Keep `/GL /LTCG`.
+- Toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, no `/EH` (the original game code has no C++ EH frames; only the CRT sets up `fs:[0]`). Keep `/GL /LTCG`.
 - Linker is already `/SUBSYSTEM:WINDOWS` so the CRT entry is `WinMainCRTStartup`, matching the original WinMain path. Do not switch back to a console `main`.
 - Game functions: `// FUNCTION: VC1 0x00......` immediately above the definition, **sorted by address within that file**. Reccmp decomplint fails if they are out of order.
 - Empty or dishonest bodies: `// STUB: VC1 0x00......` so asmcmp skips them. Do not mass-convert incomplete-but-honest `FUNCTION`s to stubs to inflate accuracy.

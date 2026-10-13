@@ -65,10 +65,10 @@ NativeClassBinding* Rect::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ea844, type info 0x004ea81c, spec 0x004cfba4, name 0x004cfb4c.
 // FUNCTION: VC1 0x0041f990
-SquirrelObject* Rect::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Rect::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_rectType, &g_rectTypeReady,
+    return RegisterClassType<Rect>(vm, className, &g_rectType, &g_rectTypeReady,
         &kRectTypeSpec, "Rect", Rect::Constructor, Rect::TypeOf);
 }
 

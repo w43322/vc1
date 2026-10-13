@@ -72,8 +72,6 @@ unsigned KdCompoundObject::AddRef()
 // FUNCTION: VC1 0x00473800
 KdCompoundObject::KdCompoundObject() throw()
 {
-    scriptValue.obj._unVal.pUserPointer = 0;
-    scriptValue.obj._type = OT_NULL;
     tail6c = 0;
 }
 

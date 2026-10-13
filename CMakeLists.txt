@@ -17,7 +17,7 @@ endif()
 
 # Do not inherit /MD, /Ob1, /RTC or Debug defaults from a CMake release.
 set(CMAKE_C_FLAGS "/nologo /W3 /MT /GS")
-set(CMAKE_CXX_FLAGS "/nologo /W3 /MT /GS /EHsc /GR-")
+set(CMAKE_CXX_FLAGS "/nologo /W3 /MT /GS /GR-")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:NOREF /OPT:NOICF /SAFESEH:NO /LTCG")

@@ -34,10 +34,10 @@ NativeClassBinding* Quaternion::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ee3e4, type info 0x004ee1ec, spec 0x004d75c8, name 0x004d75a0.
 // FUNCTION: VC1 0x0041f830
-SquirrelObject* Quaternion::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Quaternion::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_quaternionType, &g_quaternionTypeReady,
+    return RegisterClassType<Quaternion>(vm, className, &g_quaternionType, &g_quaternionTypeReady,
         &kQuaternionTypeSpec, "Quaternion", Quaternion::Constructor, Quaternion::TypeOf);
 }
 

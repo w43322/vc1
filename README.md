@@ -107,7 +107,7 @@ Place these immediately above the definition (or, for `STRING`, above the line t
 ## Toolchain
 
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.
-- `/MT /GS /EHsc /GR- /O2 /Ob2 /Z7 /GL` and linker `/LTCG`. Do not drop `/GL /LTCG`.
+- `/MT /GS /GR- /O2 /Ob2 /Z7 /GL` (no `/EH`) and linker `/LTCG`. Do not drop `/GL /LTCG`.
 - VC9-era C++ only in `src/` (no `auto`, `nullptr`, range-for, `override`, lambdas).
 - Do not edit `third_party/squirrel223`. Do not add inline asm. Do not invent mappings.
 

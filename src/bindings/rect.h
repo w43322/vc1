@@ -18,7 +18,7 @@ struct Rect
     static SQInteger Constructor(HSQUIRRELVM vm);
     static SQInteger ConstructArgs(HSQUIRRELVM vm);
     static SQInteger TypeOf(HSQUIRRELVM vm);
-    static SquirrelObject* RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+    static SquirrelObject RegisterClass(HSQUIRRELVM vm,
         const SQChar* className);
     static NativeClassBinding* CreateBinding(NativeClassBinding* self);
     static NativeClassBinding* BindArgConstructor(NativeClassBinding* self);

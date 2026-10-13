@@ -37,10 +37,10 @@ NativeClassBinding* Vector4::BindArgConstructor(NativeClassBinding* self)
 
 // Once-flag 0x004ee3e8, type info 0x004ee200, spec 0x004cfba4, name 0x004d7590.
 // FUNCTION: VC1 0x0041f410
-SquirrelObject* Vector4::RegisterClass(SquirrelObject* out, HSQUIRRELVM vm,
+SquirrelObject Vector4::RegisterClass(HSQUIRRELVM vm,
     const SQChar* className)
 {
-    return RegisterValueClass(out, vm, className, &g_vector4Type, &g_vector4TypeReady,
+    return RegisterClassType<Vector4>(vm, className, &g_vector4Type, &g_vector4TypeReady,
         &kVector4TypeSpec, "Vector4", Vector4::Constructor, Vector4::TypeOf);
 }
 

@@ -106,12 +106,9 @@ char g_scriptPrintBuf[0x400];
 // GLOBAL: VC1 0x004e9740
 HSQOBJECT g_sqNull = { OT_NULL, { 0 } };
 
-// Original SquirrelObject at 0x004e96e0: vftable 0x004cfb98, type OT_NULL, value 0.
+// Its atexit destructor is 0x004ca490.
 // GLOBAL: VC1 0x004e96e0
-SquirrelObject g_rootTable = {
-    0,
-    { OT_NULL, { 0 } }
-};
+SquirrelObject g_rootTable;
 // GLOBAL: VC1 0x004eb050
 char g_windowsVersionText[0x80];
 // GLOBAL: VC1 0x004e9d94

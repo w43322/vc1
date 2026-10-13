@@ -23,15 +23,6 @@ static float FloatFromBits(unsigned bits)
     return value;
 }
 
-static void EnsureRootTable()
-{
-    if (g_rootTable.obj._type == OT_NULL && g_vm) {
-        sq_pushroottable(g_vm);
-        AttachStackTop(&g_rootTable);
-        sq_pop(g_vm, 1);
-    }
-}
-
 // floor(x+0.5) unless |x| is +Inf at 0x004e95cc. Host extra used by math_round.
 // FUNCTION: VC1 0x00499bc0
 float RoundToNearest(float value)
@@ -60,33 +51,24 @@ void InitHostServices()
 {
     unsigned infBits = 0x7f800000;
 
-    EnsureRootTable();
     // STRING: VC1 0x004d7620
-    RegisterFloatSlot(&g_rootTable, "INFINITY", FloatFromBits(infBits));
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("INFINITY", FloatFromBits(infBits));
     // STRING: VC1 0x004d762c
-    RegisterIntegerSlot(&g_rootTable, "INT_MAX", 0x7fffffff);
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("INT_MAX", 0x7fffffff);
     // STRING: VC1 0x004d7634
-    RegisterIntegerSlot(&g_rootTable, "INT_MIN", static_cast<SQInteger>(0x80000000));
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("INT_MIN", static_cast<SQInteger>(0x80000000));
     // STRING: VC1 0x004d763c
-    RegisterFloatSlot(&g_rootTable, "FLT_MAX", FloatFromBits(0x7f7fffff));
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("FLT_MAX", FloatFromBits(0x7f7fffff));
     // STRING: VC1 0x004d7644
-    RegisterFloatSlot(&g_rootTable, "FLT_MIN", FloatFromBits(0x00800000));
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("FLT_MIN", FloatFromBits(0x00800000));
     // STRING: VC1 0x004d764c
-    RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_MOVEMENT", 2);
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("UPDATE_LAYER_MOVEMENT", 2);
     // STRING: VC1 0x004d7664
-    RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_DYNAMICS", 4);
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("UPDATE_LAYER_DYNAMICS", 4);
     // STRING: VC1 0x004d767c
-    RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_EFFECTS", 0x40);
-    EnsureRootTable();
+    SquirrelVM::GetRootTable().SetValue("UPDATE_LAYER_EFFECTS", 0x40);
     // STRING: VC1 0x004d7694
-    RegisterIntegerSlot(&g_rootTable, "UPDATE_LAYER_MAX", 0x100);
+    SquirrelVM::GetRootTable().SetValue("UPDATE_LAYER_MAX", 0x100);
     BindHostApi();
 }
 
