@@ -900,10 +900,10 @@ int KdSystemBase::Unmapped10(void* key, void** out)
 
 // RET 8. Script method table (GetObject, AddObject, ...). Not recovered.
 // STUB: VC1 0x00463470
-unsigned char KdSystemBase::Script0c(void* a, void* b)
+unsigned char KdSystemBase::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
+    (void)name;
+    (void)out;
     return 0;
 }
 
@@ -1116,10 +1116,10 @@ int KdSystem::Start(IUnknown** object)
 
 // RET 8. Script method table for the game system. Not recovered.
 // STUB: VC1 0x004a8f20
-unsigned char KdSystem::Script0c(void* a, void* b)
+unsigned char KdSystem::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
+    (void)name;
+    (void)out;
     return 0;
 }
 

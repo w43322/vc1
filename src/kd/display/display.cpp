@@ -1871,10 +1871,10 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
 
 // RET 8. Script method dispatch (CreateRenderTarget, GetWidth, ...). Not recovered.
 // STUB: VC1 0x00466b00
-unsigned char KdDisplayBase::Script0c(void* a, void* b)
+unsigned char KdDisplayBase::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
+    (void)name;
+    (void)out;
     return 0;
 }
 
@@ -2241,9 +2241,9 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
 }
 
 // STUB: VC1 0x004b22e0
-unsigned char KdDisplay::Script0c(void* a, void* b)
+unsigned char KdDisplay::Script0c(const char* name, SquirrelObject* out)
 {
-    return KdDisplayBase::Script0c(a, b);
+    return KdDisplayBase::Script0c(name, out);
 }
 
 // Release the Display1c static if set. Registered with atexit from 0x004662e0.

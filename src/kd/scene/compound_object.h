@@ -69,7 +69,7 @@ public:
     void* QueryInterface(const char** iid);
     unsigned AddRef();
     unsigned Release();
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
     void** Clone(void** out);

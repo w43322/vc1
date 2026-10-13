@@ -5,12 +5,14 @@
 
 namespace vc1 {
 
+class SquirrelObject;
+
 // Default vftable written by IScriptObject(); most-derived classes replace it.
 // SIZE 0x04
 // VTABLE: VC1 0x004d1e68
 struct IScriptObject : IUnknown
 {
-    virtual unsigned char Script0c(void* a, void* b) = 0; // vtable+0x0c
+    virtual unsigned char Script0c(const char* name, SquirrelObject* out) = 0; // vtable+0x0c
     virtual unsigned char Script10(void* a, void* b) = 0; // vtable+0x10
     virtual const char* Script14() = 0;                  // vtable+0x14
 };

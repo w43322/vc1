@@ -35,7 +35,7 @@ public:
     unsigned char Sound20();              // vtable+0x20
     float Sound24();                       // vtable+0x24
     int Shutdown();                         // vtable+0x0c
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
 };

@@ -489,10 +489,10 @@ KdGraphics::KdGraphics()
 
 // RET 8. Script registration body; not recovered.
 // STUB: VC1 0x0045dc20
-unsigned char KdGraphics::Script0c(void* a, void* b)
+unsigned char KdGraphics::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
+    (void)name;
+    (void)out;
     return 0;
 }
 

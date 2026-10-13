@@ -34,7 +34,7 @@ public:
     unsigned Release();                     // vtable+0x08
     unsigned char Load(const char* name);   // ILoadable vtable+0x0c
     void** Clone(void** out);               // ICloneable vtable+0x0c
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
     unsigned char Texture0c(void* arg);

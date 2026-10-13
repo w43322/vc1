@@ -131,7 +131,7 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
     void* Display0c(void* a, void* b);
@@ -212,7 +212,7 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Script0c(void* a, void* b); // vtable+0x0c
+    unsigned char Script0c(const char* name, SquirrelObject* out); // vtable+0x0c
     unsigned char Script10(void* a, void* b); // vtable+0x10
     void* Display0c(void* a, void* b);      // IRenderTarget vtable+0x0c
     void* Display10();                       // IRenderTarget vtable+0x10

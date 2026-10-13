@@ -10,7 +10,7 @@ namespace vc1 {
 // SIZE 0x04
 struct IFont : IUnknown
 {
-    virtual unsigned char HasGlyph(unsigned code) = 0;                      // vtable+0x0c
+    virtual bool HasGlyph(unsigned code) = 0;                               // vtable+0x0c
     virtual int GetTextWidth(const char* text) = 0;                         // vtable+0x10
     virtual int GetHeight() = 0;                                            // vtable+0x14
     virtual KdStringList WrapText(const char* text, int width) = 0;         // vtable+0x18

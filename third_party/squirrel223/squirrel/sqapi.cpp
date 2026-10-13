@@ -627,6 +627,7 @@ SQRESULT sq_getuserpointer(HSQUIRRELVM v, SQInteger idx, SQUserPointer *p)
 SQRESULT sq_setinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer p)
 {
 	SQObjectPtr &o = stack_get(v,idx);
+	// STRING: VC1 0x004d2608
 	if(type(o) != OT_INSTANCE) return sq_throwerror(v,_SC("the object is not a class instance"));
 	_instance(o)->_userpointer = p;
 	return SQ_OK;

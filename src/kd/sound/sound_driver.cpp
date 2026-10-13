@@ -275,7 +275,7 @@ int KdSoundDriver::Shutdown()
     return 0;
 }
 
-unsigned char KdSoundDriver::Script0c(void*, void*) { return 0; }
+unsigned char KdSoundDriver::Script0c(const char*, SquirrelObject*) { return 0; }
 
 KdSoundDriver::~KdSoundDriver()
 {

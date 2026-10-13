@@ -1,5 +1,7 @@
 #include "kd/display/texture.h"
 
+#include "bindings/sqplus.h"
+
 #include "kd/iface/iid.h"
 
 namespace vc1 {
@@ -162,13 +164,18 @@ void* KdTexture::Lock(void* region, int mode)
     return 0;
 }
 
-// Script binding implementation is recovered separately; keep the correct slot.
-// STUB: VC1 0x0045c3c0
-unsigned char KdTexture::Script0c(void* a, void* b)
+// RET 8. Script method lookup over GetWidth/GetHeight (table 0x004ee4bc,
+// guard bit 0x004ee4cc, atexit destructor 0x004cb030).
+// FUNCTION: VC1 0x0045c3c0
+unsigned char KdTexture::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
-    return 0;
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        methods[kScriptGetWidth] = CreateScriptMethod<KdTexture>(&KdTexture::GetWidth);
+        methods[kScriptGetHeight] = CreateScriptMethod<KdTexture>(&KdTexture::GetHeight);
+    }
+    return methods.Find(name, out);
 }
 
 // Loads native texture data from a named resource and records dimensions.

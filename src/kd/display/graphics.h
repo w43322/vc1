@@ -53,7 +53,7 @@ public:
     void Graphics64(float a, float b, float c, float d);
     void Graphics68(void* a, float b, float c, float d);
 
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
 

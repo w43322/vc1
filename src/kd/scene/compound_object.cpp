@@ -75,10 +75,10 @@ KdCompoundObject::KdCompoundObject() throw()
     tail6c = 0;
 }
 
-unsigned char KdCompoundObject::Script0c(void* a, void* b)
+unsigned char KdCompoundObject::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
+    (void)name;
+    (void)out;
     return 0;
 }
 

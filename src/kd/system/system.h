@@ -79,7 +79,7 @@ public:
     int Render(void* graphics);
     int Render14();
 
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
 };
@@ -144,7 +144,7 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
     int Start(IUnknown** object);           // vtable+0x28
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
 };
 

@@ -83,7 +83,7 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
 
-    unsigned char HasGlyph(unsigned code);
+    bool HasGlyph(unsigned code);
     int GetTextWidth(const char* text);
     int GetHeight();
     KdStringList WrapText(const char* text, int width);
@@ -91,7 +91,7 @@ public:
 
     unsigned char Load(const char* name) throw();
 
-    unsigned char Script0c(void* a, void* b);
+    unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
     const char* Script14();
 

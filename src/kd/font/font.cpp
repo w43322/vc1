@@ -1,5 +1,7 @@
 #include "kd/font/font.h"
 
+#include "bindings/sqplus.h"
+
 #include "kd/iface/iid.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/itexture.h"
@@ -332,7 +334,7 @@ int KdFont::GetTextWidth(const char* text)
 
 // RET 4.
 // FUNCTION: VC1 0x004671a0
-unsigned char KdFont::HasGlyph(unsigned code)
+bool KdFont::HasGlyph(unsigned code)
 {
     return Find(code) != GlyphEnd();
 }
@@ -429,14 +431,24 @@ KdStringList KdFont::WrapText(const char* text, int width)
     return lines;
 }
 
-// Script binding table built on first use (guard 0x004ee598). Body not
-// recovered.
-// STUB: VC1 0x004676e0
-unsigned char KdFont::Script0c(void* a, void* b)
+// RET 8. Script method lookup. The table (original 0x004ee588, guard bit
+// 0x004ee598, atexit destructor 0x004cac10) is filled on first use with the
+// four IFont methods under their script names. A GLOBAL marker here would
+// name it vc1::methods, which no recompiled symbol matches.
+// FUNCTION: VC1 0x004676e0
+unsigned char KdFont::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)a;
-    (void)b;
-    return 0;
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        // STRING: VC1 0x004d5bac
+        methods["IsSymbolExists"] = CreateScriptMethod<KdFont>(&KdFont::HasGlyph);
+        methods[kScriptGetWidth] = CreateScriptMethod<KdFont>(&KdFont::GetTextWidth);
+        methods[kScriptGetHeight] = CreateScriptMethod<KdFont>(&KdFont::GetHeight);
+        // STRING: VC1 0x004d5bbc
+        methods["SplitString"] = CreateScriptMethod<KdFont>(&KdFont::WrapText);
+    }
+    return methods.Find(name, out);
 }
 
 // ECX=ILoadable face, RET 4. BMFont text description: an optional

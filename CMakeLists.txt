@@ -93,6 +93,7 @@ add_executable(vc1_recompiled
   src/bindings/quaternion.cpp
   src/bindings/rect.cpp
   src/bindings/rectf.cpp
+  src/bindings/sqplus.cpp
   src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES}
