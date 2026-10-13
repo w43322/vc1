@@ -294,6 +294,27 @@ Matrix3* Matrix3::Add(Matrix3* out, const Matrix3* other)
     return out;
 }
 
+// Inferred name. LTCG ABI: EAX=this (updated in place), ECX=left. Each column
+// of this becomes left * column, i.e. this = left * this. Returns this.
+// FUNCTION: VC1 0x00473cd0
+Matrix3* Matrix3::LeftMultiply(const Matrix3* left)
+{
+    float a;
+    float b;
+    float c;
+    int col;
+
+    for (col = 0; col < 3; col++) {
+        a = m[col];
+        b = m[col + 3];
+        c = m[col + 6];
+        m[col] = left->m[0] * a + left->m[1] * b + left->m[2] * c;
+        m[col + 3] = left->m[3] * a + left->m[4] * b + left->m[5] * c;
+        m[col + 6] = left->m[6] * a + left->m[7] * b + left->m[8] * c;
+    }
+    return this;
+}
+
 // Bound as "Transpose" (0x004d739c) via 0x00421e70 from 0x004c0ded.
 // cdecl; out=[esp+4], src=[esp+8]. Column-major 3x3.
 // FUNCTION: VC1 0x004740d0

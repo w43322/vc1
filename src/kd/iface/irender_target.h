@@ -1,7 +1,7 @@
 #ifndef VC1_KD_IRENDER_TARGET_H
 #define VC1_KD_IRENDER_TARGET_H
 
-#include "kd/iface/iunknown.h"
+#include "kd/iface/igraphics.h"
 
 namespace vc1 {
 
@@ -13,9 +13,16 @@ namespace vc1 {
 struct IRenderTarget : IUnknown
 {
     void* extra;         // 0x04  texture node on KdRenderTarget
-    IUnknown* graphics;   // 0x08
+    IGraphics* graphics; // 0x08  KdGraphics built by IRenderTarget()
 
     IRenderTarget();
+    ~IRenderTarget()
+    {
+        if (graphics) {
+            graphics->Release();
+        }
+        graphics = 0;
+    }
 
     virtual void* Display0c(void* a, void* b);     // vtable+0x0c
     virtual void* Display10();                     // vtable+0x10

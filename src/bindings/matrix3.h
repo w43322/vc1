@@ -32,6 +32,7 @@ struct Matrix3
     Vector3* Mult(Vector3* out, const Vector3* v); // thiscall RET 8; bound as "Mult"
     Vector2* MultInvVect(Vector2* out, const Vector2* v); // thiscall RET 8; "MultInvVect"
     Vector2* MultVect(Vector2* out, const Vector2* v); // thiscall RET 8; "MultVect"
+    Matrix3* LeftMultiply(const Matrix3* left); // this = left * this, in place
     static void Transpose(Matrix3* out, const Matrix3* src); // cdecl; "Transpose"
     static void Inverse(Matrix3* out, const Matrix3* src); // cdecl; "Inverse"
 

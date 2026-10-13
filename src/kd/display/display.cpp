@@ -1,4 +1,6 @@
 #include "kd/display/display.h"
+#include "kd/display/graphics.h"
+#include "kd/display/pyro.h"
 #include "kd/display/render_target.h"
 #include "kd/display/texture.h"
 #include "kd/factory.h"
@@ -49,7 +51,7 @@ static int g_displayViewBottom;
 // GLOBAL: VC1 0x004ed5e8
 static unsigned g_displayViewStyle;
 // GLOBAL: VC1 0x004ed5f0
-static IUnknown* g_d3dDevice;
+IUnknown* g_d3dDevice;
 // GLOBAL: VC1 0x004ed5ec
 static IUnknown* g_d3dObject;
 // GLOBAL: VC1 0x004ed5f4
@@ -83,11 +85,11 @@ static float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
 static float g_d3dProj[16];
 // GLOBAL: VC1 0x004ed700
-static IUnknown* g_displayScene;
+IUnknown* g_displayScene;
 // GLOBAL: VC1 0x004ed6ec
 static IUnknown* g_graphicsQuery;
 // GLOBAL: VC1 0x004ed628
-static void* g_displayPyro;
+static PyroLibrary* g_displayPyro;
 // GLOBAL: VC1 0x004ed65c
 IUnknown* g_kdQueryUnknown;
 // GLOBAL: VC1 0x004ed6f0
@@ -133,16 +135,8 @@ static IUnknown* g_display1cObject;
 // GLOBAL: VC1 0x004ee288
 static unsigned g_display1cGuard;
 
-static void DisplayDtorBase(KdDisplay* self);
-static void ConstructDisplayBase(KdDisplay* self);
-static unsigned char Script0cBody(void* a, void* b);
 static void Display1cAtexit();
-static unsigned char DisplayQueryFromTarget(void* mixer, void* args);
 static unsigned char DisplayQueryReady();
-static void Display10Scene(void* self);
-static void* DisplaySceneConstruct(void* self);
-static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height);
-static void DisplayReleaseGraphics(IShutdownable* self);
 static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
@@ -154,16 +148,26 @@ static void DisplayD3dLogHresult(int hr, char flag);
 static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
-static int Display28Apply();
-static int DisplayShutdownPrep(IShutdownable* self);
-static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned height);
+static int Display28Apply(unsigned char windowed);
 static WNDCLASSA* GetKdWindowClass();
 static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
 static float MinFloat(float a, float b);
 
-IGraphics::~IGraphics()
+IPyroDevice::~IPyroDevice()
 {
+}
+
+// KdDisplayDevice() is inlined into KdDisplayBase() (0x004665c0).
+KdDisplayDevice::KdDisplayDevice()
+{
+    g_displayPyro = 0;
+}
+
+// Inlined into ~KdDisplayBase (0x004664a0) after its vptr resets.
+KdDisplayDevice::~KdDisplayDevice()
+{
+    g_kdDisplay = 0;
 }
 
 KdDisplay::~KdDisplay()
@@ -172,7 +176,6 @@ KdDisplay::~KdDisplay()
         target->Release();
     }
     target = 0;
-    DisplayDtorBase(this);
 }
 
 // ESI=&target, stdcall CreateRenderTarget out. QI IRenderTarget into the slot. RET 4.
@@ -207,56 +210,51 @@ static float MinFloat(float a, float b)
     return b;
 }
 
-// EDI=IRenderTarget (KdDisplay+0x04). Allocates a 100-byte helper and QIs IGraphics.
+// EDI=this. malloc(0x64) KdGraphics, QI IAbstract (+0x48) then IGraphics into
+// graphics. The Release after the AddRef is not null-checked in the original.
 // FUNCTION: VC1 0x0041a460
 IRenderTarget::IRenderTarget()
 {
+    KdGraphics* object;
     IUnknown* ident;
-    IUnknown* blockGraphics;
-    void* block;
+    IUnknown* queried;
 
     extra = 0;
     graphics = 0;
-    block = malloc(0x64);
-    ident = 0;
-    if (block) {
-        block = DisplaySceneConstruct(block);
-        if (block) {
-            ident = static_cast<IUnknown*>(
-                reinterpret_cast<IUnknown*>(
-                    reinterpret_cast<char*>(block) + 0x48)->QueryInterface(
-                    &g_iidAbstract));
-            if (ident) {
-                ident->AddRef();
-            }
+    object = static_cast<KdGraphics*>(malloc(sizeof(KdGraphics)));
+    if (object) {
+        new (object) KdGraphics();
+    }
+    if (!object) {
+        ident = 0;
+    }
+    else {
+        ident = static_cast<IUnknown*>(
+            static_cast<IAbstract*>(object)->QueryInterface(&g_iidAbstract));
+        if (ident) {
+            ident->AddRef();
         }
     }
-    if (ident) {
-        ident->Release();
-        blockGraphics = graphics;
-        if (blockGraphics) {
-            blockGraphics->Release();
-        }
-        blockGraphics = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
-        graphics = blockGraphics;
-        if (blockGraphics) {
-            blockGraphics->AddRef();
-        }
-        ident->Release();
+    ident->Release();
+    if (graphics) {
+        graphics->Release();
     }
+    queried = static_cast<IUnknown*>(ident->QueryInterface(&g_iidGraphics));
+    graphics = static_cast<IGraphics*>(queried);
+    if (queried) {
+        queried->AddRef();
+    }
+    ident->Release();
 }
 
-// this=IRenderTarget. RET 8. Out[0] is IGraphics; extra is camera/mixer.
+// this=IRenderTarget. RET 8. a = IGraphics** out, b = IUnknown** camera.
+// SetView(ECX=b, EAX={0, 0, GetWidth(), GetHeight()}) on graphics.
 // FUNCTION: VC1 0x0041a500
 void* IRenderTarget::Display0c(void* a, void* b)
 {
     IUnknown** out = static_cast<IUnknown**>(a);
     IUnknown* queried;
-    typedef int (__thiscall *Fn14)(IRenderTarget* object);
-    void** vtbl;
-    unsigned pack[4];
-
-    (void)b;
+    Rect rect;
 
     if (!DisplayQueryReady()) {
         if (!g_graphicsQuery) {
@@ -271,12 +269,11 @@ void* IRenderTarget::Display0c(void* a, void* b)
         return out;
     }
 
-    vtbl = *reinterpret_cast<void***>(this);
-    pack[3] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[6])(this));
-    pack[2] = static_cast<unsigned>(reinterpret_cast<Fn14>(vtbl[5])(this));
-    pack[0] = 0;
-    pack[1] = 0;
-    if (DisplayQueryFromTarget(graphics, pack)) {
+    rect.height = GetHeight();
+    rect.x = 0;
+    rect.y = 0;
+    rect.width = GetWidth();
+    if (static_cast<KdGraphics*>(graphics)->SetView(&rect, static_cast<IUnknown**>(b))) {
         queried = graphics;
         *out = queried;
         if (queried) {
@@ -305,9 +302,57 @@ void* IRenderTarget::Display10()
 
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041a650
-const char* KdDisplay::Script14()
+const char* KdDisplayBase::Script14()
 {
     return kDisplay;
+}
+
+// MOV EAX, 1; RET 0x14.
+// FUNCTION: VC1 0x0041aca0
+int IPyroDevice::Pyro08(void** out, void* b, void* c, void* d, void* e)
+{
+    (void)out;
+    (void)b;
+    (void)c;
+    (void)d;
+    (void)e;
+    return 1;
+}
+
+// RET 0x14. Pyro08 into a local (reusing the last argument slot); on success
+// wraps it in an 8-byte object (vftable 0x004d6278, value at +4) into *out.
+// The wrapper class is not recovered yet.
+// STUB: VC1 0x0041acb0
+int IPyroDevice::Pyro0c(void** out, void* b, void* c, void* d, void* e)
+{
+    void* inner;
+    int result;
+
+    result = Pyro08(&inner, b, c, d, e);
+    if (result) {
+        return result;
+    }
+    *out = 0;
+    return 0;
+}
+
+// MOV EAX, 1; RET 0x10.
+// FUNCTION: VC1 0x0041ad10
+int IPyroDevice::Pyro24(void* a, void* b, void* c, void* d)
+{
+    (void)a;
+    (void)b;
+    (void)c;
+    (void)d;
+    return 1;
+}
+
+// RET 0x10. Pyro24(a->+4, b, c, d) through the 0x004d6278 wrapper; the wrapper
+// class is not recovered yet.
+// STUB: VC1 0x0041ad20
+int IPyroDevice::Pyro28(void* a, void* b, void* c, void* d)
+{
+    return Pyro24(a, b, c, d);
 }
 
 // EAX=HRESULT. DXGetErrorString-style lookup; huge table, recovered as a stub.
@@ -318,167 +363,41 @@ static const char* DxGetErrorString(int hr)
     return "";
 }
 
-// ESI=mixer. Rebinds camera at +0x50 and font via vtbl+0x38 from g_displayScene.
-// FUNCTION: VC1 0x0045cda0
-static void Display10Scene(void* self)
-{
-    IUnknown* camera;
-    IUnknown* font;
-    typedef void (__thiscall *Fn38)(void* mixer, IUnknown** fontSlot);
-
-    camera = *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50);
-    if (camera) {
-        camera->Release();
-    }
-    if (!g_displayScene) {
-        *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50) = 0;
-    }
-    else {
-        camera = static_cast<IUnknown*>(g_displayScene->QueryInterface(&g_iidCamera));
-        *reinterpret_cast<IUnknown**>(static_cast<char*>(self) + 0x50) = camera;
-        if (camera) {
-            camera->AddRef();
-        }
-    }
-    font = 0;
-    if (g_displayScene) {
-        font = static_cast<IUnknown*>(g_displayScene->QueryInterface(&g_iidFont));
-        if (font) {
-            font->AddRef();
-        }
-    }
-    reinterpret_cast<Fn38>((*reinterpret_cast<void***>(self))[0xe])(self, &font);
-    if (font) {
-        font->Release();
-    }
-}
-
-// ESI=mixer, EAX=4 dwords, ECX=IUnknown**. Copies rect to mixer+0x54; rebinds camera +0x50.
-// FUNCTION: VC1 0x0045ce30
-static unsigned char DisplayQueryFromTarget(void* mixer, void* args)
-{
-    unsigned* rect = static_cast<unsigned*>(args);
-    IUnknown** cameraSlot;
-    IUnknown* camera;
-    IUnknown* old;
-    void* ident;
-    unsigned char local[0x48];
-    typedef void (__thiscall *Fn10)(void* object, void* arg);
-    typedef void (__thiscall *Fn20)(void* object, void* arg);
-    typedef void (__thiscall *Fn14)(IUnknown* object, void* a, void* b);
-
-    (void)local;
-    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x54) = rect[0];
-    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x58) = rect[1];
-    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x5c) = rect[2];
-    *reinterpret_cast<unsigned*>(static_cast<char*>(mixer) + 0x60) = rect[3];
-    reinterpret_cast<Fn10>((*reinterpret_cast<void***>(mixer))[4])(mixer, local);
-    reinterpret_cast<Fn20>((*reinterpret_cast<void***>(mixer))[8])(
-        mixer, static_cast<char*>(mixer) + 0x54);
-    cameraSlot = static_cast<IUnknown**>(mixer);
-    (void)cameraSlot;
-    camera = 0;
-    if (camera) {
-        camera->AddRef();
-    }
-    old = *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x50);
-    if (old) {
-        old->Release();
-    }
-    *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x50) = camera;
-    if (camera) {
-        ident = *reinterpret_cast<IUnknown**>(static_cast<char*>(mixer) + 0x48);
-        if (ident) {
-            ident = static_cast<IUnknown*>(
-                static_cast<IUnknown*>(ident)->QueryInterface(&g_iidAbstract));
-            if (ident) {
-                ident = static_cast<IUnknown*>(
-                    static_cast<IUnknown*>(ident)->QueryInterface(&g_iidAbstract));
-                if (ident) {
-                    static_cast<IUnknown*>(ident)->AddRef();
-                }
-            }
-        }
-        reinterpret_cast<Fn14>((*reinterpret_cast<void***>(camera))[5])(
-            camera, &ident, static_cast<char*>(mixer) + 0x54);
-        if (ident) {
-            static_cast<IUnknown*>(ident)->Release();
-        }
-    }
-    return 1;
-}
-
-// EAX=malloc(0x64) scene/mixer block. Identity floats and vptrs.
-// FUNCTION: VC1 0x0045cff0
-static void* DisplaySceneConstruct(void* self)
-{
-    unsigned* object = static_cast<unsigned*>(self);
-
-    object[5] = 0xffffffff;
-    object[6] = 2;
-    object[1] = 0;
-    object[2] = 0;
-    object[3] = 0x7fffffff;
-    object[4] = 0x7fffffff;
-    object[7] = 0x3f800000;
-    object[0x10] = 0;
-    object[0xa] = 0;
-    object[0x11] = 0x004d1e68;
-    object[0xd] = 0;
-    object[8] = 0;
-    object[0xe] = 0;
-    object[9] = 0;
-    object[0xc] = 0;
-    object[0xb] = 0x3f800000;
-    object[0xf] = 0x3f800000;
-    object[0x12] = 0x004d1034;
-    object[0x13] = 1;
-    object[0] = 0x004d6770;
-    object[0x11] = 0x004d67dc;
-    object[0x12] = 0x004d67f4;
-    object[0x14] = 0;
-    object[0x18] = 0;
-    object[0x17] = 0;
-    object[0x16] = 0;
-    object[0x15] = 0;
-    return self;
-}
-
-// Inferred IGraphics slot names. These inherited implementations are shared by
-// each concrete graphics/display vtable in the original.
+// XOR EAX, EAX; RET.
 // FUNCTION: VC1 0x00463c70
-int IGraphics::Graphics2c()
+int KdDisplayDevice::Pyro2c()
 {
     return 0;
 }
 
-// STUB: VC1 0x00463c80
-int IGraphics::Graphics28(void* a, void* b, void* c, void* d)
+// RET 0x10. Pyro24(a ? a - 4 : 0, b, c, d) through vtable+0x24.
+// FUNCTION: VC1 0x00463c80
+int KdDisplayDevice::Pyro28(void* a, void* b, void* c, void* d)
+{
+    void* inner = a ? static_cast<char*>(a) - 4 : 0;
+    return Pyro24(inner, b, c, d);
+}
+
+// RET 8. Stores value at +0x14.
+// FUNCTION: VC1 0x00463cb0
+int KdDisplayDevice::Pyro20(void* a, unsigned value)
 {
     (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    value14 = value;
     return 0;
 }
 
-// FUNCTION: VC1 0x00463cb0
-int IGraphics::Graphics20(void* unused, unsigned value)
-{
-    (void)unused;
-    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x14) = value;
-    return 0;
-}
-
+// XOR EAX, EAX; RET 4.
 // FUNCTION: VC1 0x00463cc0
-int IGraphics::Graphics1c(void* unused)
+int KdDisplayDevice::Pyro1c(void* a)
 {
-    (void)unused;
+    (void)a;
     return 0;
 }
 
+// MOV EAX, 1; RET 0x10.
 // FUNCTION: VC1 0x00463cd0
-int IGraphics::Graphics10(void* a, void* b, void* c, void* d)
+int KdDisplayDevice::Pyro10(void* a, void* b, void* c, void* d)
 {
     (void)a;
     (void)b;
@@ -487,27 +406,31 @@ int IGraphics::Graphics10(void* a, void* b, void* c, void* d)
     return 1;
 }
 
+// RET 8. mode18 = 0 for (4, 1), else 2.
 // FUNCTION: VC1 0x00463ce0
-int IGraphics::Graphics04(unsigned mode, unsigned enabled)
+int KdDisplayDevice::Pyro04(unsigned mode, unsigned value)
 {
-    if (mode == 4 && enabled == 1) {
-        *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x18) = 0;
+    if (mode == 4 && value == 1) {
+        mode18 = 0;
         return 0;
     }
-    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(this) + 0x18) = 2;
+    mode18 = 2;
     return 0;
 }
 
+// XOR EAX, EAX; RET 8.
 // FUNCTION: VC1 0x00463d10
-int IGraphics::Graphics00(void* a, void* b)
+int KdDisplayDevice::Pyro00(void* a, void* b)
 {
     (void)a;
     (void)b;
     return 0;
 }
 
+// RET 0x10. Uses g_graphics (0x004ed6f0); returns 1 when it is null. Body not
+// recovered.
 // STUB: VC1 0x00463d20
-int IGraphics::Graphics24(void* a, void* b, void* c, void* d)
+int KdDisplayDevice::Pyro24(void* a, void* b, void* c, void* d)
 {
     (void)a;
     (void)b;
@@ -516,50 +439,85 @@ int IGraphics::Graphics24(void* a, void* b, void* c, void* d)
     return 0;
 }
 
+// RET 0x14. malloc(0x14) object (vftable 0x004d6240) holding b..e; *out = it.
+// The object class is not recovered yet.
 // STUB: VC1 0x00463df0
-int IGraphics::Graphics18(void* a, void* b, void* c, void* d, void* e)
+int KdDisplayDevice::Pyro18(void** out, void* b, void* c, void* d, void* e)
 {
-    (void)a;
     (void)b;
     (void)c;
     (void)d;
     (void)e;
+    *out = 0;
     return 0;
 }
 
-// this = IDisplay (KdDisplay+0x14). IDisplay 0x004d4e50, IShutdownable +4, IAbstract +8.
+// this = IDisplay (+0x04). IDisplay, IShutdownable +4 and IAbstract +8; the
+// IAbstract case has no null check in the original.
 // FUNCTION: VC1 0x00463e60
-void* DisplayFaceQueryInterface(IDisplay* self, const char** iid)
+void* KdDisplayDevice::QueryInterface(const char** iid)
 {
     const char* name = *iid;
     if (name == g_iidDisplay) {
-        if (reinterpret_cast<char*>(self) - 4 == 0) {
-            return 0;
-        }
-        return self;
+        return static_cast<IDisplay*>(this);
     }
     if (name == g_iidShutdownable) {
-        if (reinterpret_cast<char*>(self) - 4 == 0) {
-            return 0;
-        }
-        return reinterpret_cast<char*>(self) + 4;
+        return static_cast<IShutdownable*>(this);
     }
     if (name == g_iidAbstract) {
-        return reinterpret_cast<char*>(self) + 8;
+        return reinterpret_cast<char*>(static_cast<IDisplay*>(this)) + 8;
     }
     return 0;
 }
 
-// STUB: VC1 0x00463ed0
-int IGraphics::Graphics14(void* arg)
+// this = IDisplay. ADD ECX, 8; refs at IAbstract+4; deleting dtor on zero.
+// FUNCTION: VC1 0x00463ea0
+unsigned KdDisplayDevice::Release()
 {
-    (void)arg;
+    unsigned value = --refs;
+    if (value == 0) {
+        delete static_cast<IAbstract*>(this);
+        return 0;
+    }
+    return value;
+}
+
+// this = IDisplay. refs at IDisplay+0x0c.
+// FUNCTION: VC1 0x00463ec0
+unsigned KdDisplayDevice::AddRef()
+{
+    unsigned value = refs;
+    if (value != 0) {
+        ++value;
+        refs = value;
+    }
+    return value;
+}
+
+// RET 0xc. QIs ITexture from the IDisplay CreateTexture result. Body not
+// recovered.
+// STUB: VC1 0x00463ed0
+int KdDisplayDevice::Pyro14(void* a, void* b, void* c)
+{
+    (void)a;
+    (void)b;
+    (void)c;
     return 0;
 }
 
-// this=IShutdownable. Rebind IGraphics, destroy g_displayPyro.
+// RET 4. malloc(0x2c), construct via 0x0045b6e0 (EAX=this), QI IAbstract at
+// +0x10 into *out. That class is not recovered yet.
+// STUB: VC1 0x00463fc0
+void** KdDisplayDevice::Display3c(void** out)
+{
+    *out = 0;
+    return out;
+}
+
+// this = IShutdownable. Rebind g_graphics from g_graphicsHost, clear +0x14,
+// then Done and free the Pyro library.
 // FUNCTION: VC1 0x00464010
-static void DisplayReleaseGraphics(IShutdownable* self)
+int KdDisplayDevice::Shutdown()
 {
     IUnknown* queried;
 
@@ -576,56 +534,61 @@ static void DisplayReleaseGraphics(IShutdownable* self)
             queried->AddRef();
         }
     }
-    *reinterpret_cast<unsigned*>(reinterpret_cast<char*>(self) + 0x0c) = 0;
+    value14 = 0;
+    if (g_displayPyro) {
+        g_displayPyro->Done();
+    }
     if (g_displayPyro) {
         free(g_displayPyro);
-        g_displayPyro = 0;
     }
+    g_displayPyro = 0;
+    return 0;
 }
 
+// RET 0x14. malloc(0x14) buffer object (vftables 0x004d6268 then 0x004d6368)
+// with a b*c byte block; *out = its +4 face. Not recovered yet.
 // STUB: VC1 0x004640e0
-int IGraphics::Graphics0c(void* a, void* b, void* c, void* d, void* e)
+int KdDisplayDevice::Pyro0c(void** out, void* b, void* c, void* d, void* e)
 {
-    (void)a;
     (void)b;
     (void)c;
     (void)d;
     (void)e;
+    *out = 0;
     return 0;
 }
 
+// RET 0x14. Same buffer object as Pyro0c; *out = the object itself.
 // STUB: VC1 0x00464150
-int IGraphics::Graphics08(void* a, void* b, void* c, void* d, void* e)
+int KdDisplayDevice::Pyro08(void** out, void* b, void* c, void* d, void* e)
 {
-    (void)a;
     (void)b;
     (void)c;
     (void)d;
     (void)e;
+    *out = 0;
     return 0;
 }
 
-// this=IDisplay. malloc(0x18) Pyro object into g_displayPyro; RET 8.
+// RET 8. IDisplay vtable+0x20. Builds the Pyro library into g_displayPyro and
+// calls its Init with this IPyroDevice base (ADD ESI, -4).
 // FUNCTION: VC1 0x004641b0
-static unsigned char DisplayInitPyro(IDisplay* self, unsigned width, unsigned height)
+unsigned char KdDisplayDevice::SetSize(unsigned width, unsigned height)
 {
-    unsigned* block;
+    PyroLibrary* pyro;
 
     (void)width;
     (void)height;
-    block = static_cast<unsigned*>(malloc(0x18));
-    if (!block) {
-        g_displayPyro = 0;
+    pyro = static_cast<PyroLibrary*>(malloc(sizeof(PyroLibrary)));
+    if (pyro) {
+        new (pyro) PyroLibrary();
+    }
+    g_displayPyro = pyro;
+    if (!pyro) {
         HostLogError(kCantInitPyro);
         return 0;
     }
-    block[1] = 0;
-    block[2] = 0;
-    block[4] = 0;
-    block[5] = 0;
-    block[3] = 0;
-    g_displayPyro = block;
-    (void)self;
+    pyro->Init(static_cast<IPyroDevice*>(this));
     return 1;
 }
 
@@ -713,6 +676,29 @@ static void Display10Present(int arg)
         return;
     }
     g_d3dInScene = 0;
+}
+
+// EAX=matrix. View = world with the 2D axes/origin of matrix, then
+// SetTransform(D3DTS_VIEW, g_d3dView) via device vtable+0x94.
+// FUNCTION: VC1 0x00464710
+void DisplayD3dSetView(const Matrix3* matrix)
+{
+    typedef int (__stdcall *FnSetTransform)(IUnknown* device, unsigned state,
+        const float* value);
+    int i;
+
+    for (i = 0; i < 16; i++) {
+        g_d3dView[i] = g_d3dWorld[i];
+    }
+    g_d3dView[0] = matrix->m[0];
+    g_d3dView[1] = matrix->m[1];
+    g_d3dView[4] = matrix->m[3];
+    g_d3dView[5] = matrix->m[4];
+    g_d3dView[12] = matrix->m[6];
+    g_d3dView[13] = matrix->m[7];
+    Display10Present(0);
+    reinterpret_cast<FnSetTransform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+        g_d3dDevice, 2, g_d3dView);
 }
 
 // ECX=D3DCOLOR. Clear target, Z=1. Called from DisplayD3DInit with 0.
@@ -888,6 +874,79 @@ static void DisplayD3dSetBuffers(int right, int bottom, int left, int top)
     for (i = 0; i < 16; i++) {
         g_d3dProj[i] = product[i];
     }
+}
+
+// cdecl x, y; ECX=width, EAX=height. Clamps to the mixer texture (level 0 desc)
+// or g_displayMode, SetViewport (+0xa0), rebuilds g_d3dProj and applies it as
+// D3DTS_PROJECTION (+0x94).
+// FUNCTION: VC1 0x00464c10
+void DisplayD3dSetClip(int x, int y, int width, int height)
+{
+    typedef int (__stdcall *FnGetLevelDesc)(IUnknown* texture, unsigned level,
+        unsigned* desc);
+    typedef int (__stdcall *FnSetViewport)(IUnknown* device, const void* viewport);
+    typedef int (__stdcall *FnSetTransform)(IUnknown* device, unsigned state,
+        const float* value);
+    struct Viewport
+    {
+        int x;
+        int y;
+        int width;
+        int height;
+        float minZ;
+        float maxZ;
+    };
+    unsigned desc[8];
+    Viewport viewport;
+    IUnknown* texture;
+    int maxWidth;
+    int maxHeight;
+
+    if (!g_d3dLastMixer) {
+        maxWidth = g_displayMode[0];
+        maxHeight = g_displayMode[1];
+    }
+    else {
+        texture = *reinterpret_cast<IUnknown**>(
+            static_cast<unsigned char*>(g_d3dLastMixer) + 8);
+        maxWidth = reinterpret_cast<FnGetLevelDesc>((*reinterpret_cast<void***>(texture))[0xe])(
+            texture, 0, desc) < 0 ? 0 : static_cast<int>(desc[6]);
+        texture = *reinterpret_cast<IUnknown**>(
+            static_cast<unsigned char*>(g_d3dLastMixer) + 8);
+        maxHeight = reinterpret_cast<FnGetLevelDesc>((*reinterpret_cast<void***>(texture))[0xe])(
+            texture, 0, desc) < 0 ? 0 : static_cast<int>(desc[7]);
+    }
+
+    if (x < 0) {
+        width += x;
+        x = 0;
+    }
+    if (y < 0) {
+        height += y;
+        y = 0;
+    }
+    if (x + width > maxWidth) {
+        width = maxWidth - x;
+    }
+    if (y + height > maxHeight) {
+        height = maxHeight - y;
+    }
+
+    viewport.x = x;
+    viewport.y = y;
+    viewport.width = width < 0 ? 0 : width;
+    viewport.height = height < 0 ? 0 : height;
+    viewport.minZ = 0.0f;
+    viewport.maxZ = 1.0f;
+    Display10Present(0);
+    if (viewport.width != 0 && viewport.height != 0) {
+        reinterpret_cast<FnSetViewport>((*reinterpret_cast<void***>(g_d3dDevice))[0x28])(
+            g_d3dDevice, &viewport);
+    }
+    DisplayD3dSetBuffers(viewport.x + viewport.width, viewport.y + viewport.height,
+        viewport.x, viewport.y);
+    reinterpret_cast<FnSetTransform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
+        g_d3dDevice, 3, g_d3dProj);
 }
 
 // STRING: VC1 0x004d248c
@@ -1374,21 +1433,18 @@ static unsigned char DisplayQueryReady()
     return 1;
 }
 
-// this = IDisplay. Called when Display28 arg is 0 or enabled at IDisplay+0x44.
+// BL=windowed (SetWindowed argument). Switches g_displaySkipDevice and resets
+// the device when the mode actually changes.
 // FUNCTION: VC1 0x00465e70
-static int Display28Apply()
+static int Display28Apply(unsigned char windowed)
 {
     int interval;
 
     if (g_d3dInScene || g_displayBusy) {
         return 0;
     }
-    if (!g_d3dDevice) {
-        g_displaySkipDevice = 0;
-        return 0;
-    }
-    if (g_displaySkipDevice == 0) {
-        g_displaySkipDevice = 0;
+    if (!g_d3dDevice || g_displaySkipDevice == windowed) {
+        g_displaySkipDevice = windowed;
         return 0;
     }
     if (!g_d3dPresentWindowed[2] || !g_d3dPresentFull[2]) {
@@ -1397,44 +1453,77 @@ static int Display28Apply()
     if (g_displaySkipDevice) {
         GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
     }
-    g_displaySkipDevice = 0;
+    g_displaySkipDevice = windowed;
     interval = Display28Mode(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
     g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
     DisplayD3dReset();
     return Display28Finish();
 }
 
-// MOV EAX, [0x004e8998]; RET. IDisplay vtable+0x18 body.
+// Primary vtable+0x18. Centers the window rect on the primary monitor and
+// resets the view rect to the display size.
+// FUNCTION: VC1 0x004661e0
+int KdDisplayBase::FitWindow()
+{
+    int width;
+    int height;
+
+    GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
+    width = g_displayWindowRight - g_displayWindowX;
+    height = g_displayWindowBottom - g_displayWindowY;
+    g_displayWindowX = (GetSystemMetrics(SM_CXSCREEN) - width) / 2;
+    g_displayWindowY = (GetSystemMetrics(SM_CYSCREEN) - height) / 2;
+    g_displayWindowBottom = g_displayWindowY + height;
+    g_displayWindowRight = g_displayWindowX + width;
+    g_displayWindowStyle = 0xca0000;
+    g_displayViewLeft = 0;
+    g_displayViewTop = 0;
+    g_displayViewRight = g_displayWidth;
+    g_displayViewBottom = g_displayHeight;
+    g_displayViewStyle = 0;
+    return g_displayHeight;
+}
+
+// MOV EAX, [0x004e8998]; RET. IRenderTarget vtable+0x18; IDisplay via WBA.
 // FUNCTION: VC1 0x00466290
-int KdDisplay::GetHeight()
+int KdDisplayBase::GetHeight()
 {
     return g_displayHeight;
 }
 
-// MOV EAX, [0x004e8744]; RET. IDisplay vtable+0x14 body.
+// MOV EAX, [0x004e8744]; RET. IRenderTarget vtable+0x14; IDisplay via WBA.
 // FUNCTION: VC1 0x004662a0
-int KdDisplay::GetWidth()
+int KdDisplayBase::GetWidth()
 {
     return g_displayWidth;
 }
 
-// this = IDisplay (KdDisplay+0x14). mixer at IDisplay+0x18 = object+0x2c.
+// this = IDisplay (+0x14). mixer at IDisplay+0x18 = object+0x2c.
 // FUNCTION: VC1 0x004662b0
-void* IDisplay::GetMixer()
+void* KdDisplayBase::GetMixer()
 {
-    return *reinterpret_cast<void**>(reinterpret_cast<char*>(this) + 0x18);
+    return mixer;
 }
 
 // MOV AL, [0x004e74b6]; RET. IDisplay vtable+0x24.
 // FUNCTION: VC1 0x004662c0
-unsigned char KdDisplay::IsWindowed()
+unsigned char KdDisplayBase::IsWindowed()
 {
     return g_displaySkipDevice;
 }
 
+// XOR AL, AL; RET 8. IScriptObject vtable+0x10.
+// FUNCTION: VC1 0x004662d0
+unsigned char KdDisplayBase::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
 // Guarded static IUnknown*. IRenderTarget vtable+0x1c; IDisplay thunk SUB ECX, 0x10.
 // FUNCTION: VC1 0x004662e0
-void* KdDisplay::Display1c()
+void* KdDisplayBase::Display1c()
 {
     if ((g_display1cGuard & 1) == 0) {
         g_display1cGuard |= 1;
@@ -1446,46 +1535,68 @@ void* KdDisplay::Display1c()
 
 // RET 4. IDisplay vtable+0x30.
 // FUNCTION: VC1 0x00466310
-void KdDisplay::Display30(int unused)
+void KdDisplayBase::Display30(int unused)
 {
     (void)unused;
 }
 
+// IScriptObject this, IRenderTarget +4, then KdDisplayDevice QI (IDisplay this),
+// then IAbstract +0x1c.
 // FUNCTION: VC1 0x00466320
-void* DisplayBaseQueryInterface(KdDisplay* self, const char** iid)
+void* KdDisplayBase::QueryInterface(const char** iid)
 {
+    void* found;
     const char* name = *iid;
+
     if (name == g_iidScriptObject) {
-        return self;
+        return static_cast<IScriptObject*>(this);
     }
     if (name == g_iidRenderTarget) {
-        if (!self) {
-            return 0;
-        }
-        return static_cast<IRenderTarget*>(self);
+        return static_cast<IRenderTarget*>(this);
     }
-    {
-        void* found = DisplayFaceQueryInterface(static_cast<IDisplay*>(self), iid);
-        if (found) {
-            return found;
-        }
-        if (name == g_iidAbstract) {
-            return static_cast<IAbstract*>(self);
-        }
+    found = KdDisplayDevice::QueryInterface(iid);
+    if (found) {
+        return found;
+    }
+    if (name == g_iidAbstract) {
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
 
+// ADD ECX, 0x1c; refs at IAbstract+4; deleting dtor on zero.
+// FUNCTION: VC1 0x00466380
+unsigned KdDisplayBase::Release()
+{
+    unsigned value = --refs;
+    if (value == 0) {
+        delete static_cast<IAbstract*>(this);
+        return 0;
+    }
+    return value;
+}
+
+// refs at +0x20.
+// FUNCTION: VC1 0x004663a0
+unsigned KdDisplayBase::AddRef()
+{
+    unsigned value = refs;
+    if (value != 0) {
+        ++value;
+        refs = value;
+    }
+    return value;
+}
+
 // malloc 0x24, construct, QI IAbstract at +0x14. RET 4. IDisplay vtable+0x34.
 // FUNCTION: VC1 0x004663b0
-void** KdDisplay::CreateTexture(void** out)
+void** KdDisplayBase::CreateTexture(void** out)
 {
     KdTexture* object;
     IUnknown* queried;
     IUnknown* face;
 
-    (void)this;
-    object = static_cast<KdTexture*>(malloc(0x24));
+    object = static_cast<KdTexture*>(malloc(sizeof(KdTexture)));
     if (!object) {
         queried = 0;
     }
@@ -1513,23 +1624,22 @@ void** KdDisplay::CreateTexture(void** out)
     return out;
 }
 
-// this = IShutdownable. Called at the start of Shutdown.
+// this = IShutdownable (+0x18). KdDisplayDevice::Shutdown, D3D teardown, then
+// unlink the window from g_heapPageList and destroy it.
 // FUNCTION: VC1 0x00466400
-static int DisplayShutdownPrep(IShutdownable* self)
+int KdDisplayBase::Shutdown() throw()
 {
-    void** mixerSlot;
-    unsigned char* mixer;
+    unsigned char* window;
     HWND hwnd;
     void* node;
     void* next;
     void* prev;
 
-    DisplayReleaseGraphics(self);
+    KdDisplayDevice::Shutdown();
     DisplayD3DTeardown();
 
-    mixerSlot = reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x14);
-    mixer = static_cast<unsigned char*>(*mixerSlot);
-    if (!mixer) {
+    window = static_cast<unsigned char*>(mixer);
+    if (!window) {
         return 0;
     }
 
@@ -1537,7 +1647,7 @@ static int DisplayShutdownPrep(IShutdownable* self)
     while (node) {
         next = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc);
         if (*reinterpret_cast<int*>(static_cast<unsigned char*>(node) + 4) == 0
-            && *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 8) == mixer) {
+            && *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 8) == window) {
             if (g_heapPageList == node) {
                 g_heapPageList = next;
             }
@@ -1551,69 +1661,91 @@ static int DisplayShutdownPrep(IShutdownable* self)
         node = next;
     }
 
-    hwnd = *reinterpret_cast<HWND*>(mixer + 4);
+    hwnd = *reinterpret_cast<HWND*>(window + 4);
     KillTimer(hwnd, 1);
     SetWindowLongA(hwnd, GWL_USERDATA, 0);
-    free(mixer);
+    free(window);
     DestroyWindow(hwnd);
-    *mixerSlot = 0;
+    mixer = 0;
     return 0;
 }
 
-// ESI=this. Reset vptrs, ShutdownPrep(IShutdownable), clear g_kdDisplay, Release [this+0xc].
+// ESI=this. Own vptrs, Shutdown(), then the inlined ~KdDisplayDevice
+// (g_kdDisplay = 0) and ~IRenderTarget (release graphics).
 // FUNCTION: VC1 0x004664a0
-static void DisplayDtorBase(KdDisplay* self)
+KdDisplayBase::~KdDisplayBase()
 {
-    IUnknown** slot;
-    IUnknown* object;
-
-    DisplayShutdownPrep(static_cast<IShutdownable*>(self));
-    g_kdDisplay = 0;
-    slot = reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x0c);
-    object = *slot;
-    if (object) {
-        object->Release();
-    }
-    *slot = 0;
+    KdDisplayBase::Shutdown();
 }
 
-// ESI=this, EDI=IRenderTarget. IRenderTarget() already ran. refs=1, mixer=0.
-// FUNCTION: VC1 0x004665c0
-static void ConstructDisplayBase(KdDisplay* self)
+// IRenderTarget vtable+0x10. Rebind the graphics scene, end and present.
+// FUNCTION: VC1 0x00466570
+void* KdDisplayBase::Display10()
 {
-    g_displayPyro = 0;
-    self->mixer = 0;
+    typedef int (__stdcall *FnEndScene)(IUnknown* device);
+    typedef int (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
+        void* d);
+
+    static_cast<KdGraphics*>(graphics)->BindScene();
+    Display10Present(1);
+    reinterpret_cast<FnEndScene>((*reinterpret_cast<void***>(g_d3dDevice))[0x23])(
+        g_d3dDevice);
+    if (g_d3dLastMixer == 0) {
+        reinterpret_cast<FnPresent>((*reinterpret_cast<void***>(g_d3dDevice))[0xf])(
+            g_d3dDevice, 0, 0, 0, 0);
+    }
+    return 0;
+}
+
+// ESI=this, EDI=IRenderTarget. IRenderTarget() and the inlined KdDisplayDevice()
+// run first; then own vptrs and mixer = 0.
+// FUNCTION: VC1 0x004665c0
+KdDisplayBase::KdDisplayBase()
+{
+    mixer = 0;
+}
+
+// RET 8. IRenderTarget::Display0c(a, b); return a.
+// FUNCTION: VC1 0x00466640
+void* KdDisplayBase::Display0c(void* a, void* b)
+{
+    IRenderTarget::Display0c(a, b);
+    return a;
 }
 
 // RET 0xc. IDisplay vtable+0x38. Loads 3 stdcall args then cdecl-calls 0x0045bf40.
 // FUNCTION: VC1 0x00466660
-void** KdDisplay::CreateRenderTarget(void** out, unsigned width, unsigned height)
+void** KdDisplayBase::CreateRenderTarget(void** out, unsigned width, unsigned height)
 {
-    (void)this;
     CreateRenderTargetBody(out, width, height);
     return out;
 }
 
-// this=IDisplay. HostLog Init, CreateKdWindow into mixer at +0x18, ShowWindow.
-// FUNCTION: VC1 0x00466690
-static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned height)
+// RET 4. BL=arg into Display28Apply.
+// FUNCTION: VC1 0x00466680
+int KdDisplayBase::SetWindowed(unsigned char arg)
 {
-    void** mixerSlot;
-    unsigned char* mixer;
+    return Display28Apply(arg);
+}
+
+// this=IDisplay. HostLog Init, CreateKdWindow into mixer, ShowWindow, D3D init,
+// then KdDisplayDevice::SetSize (Pyro).
+// FUNCTION: VC1 0x00466690
+unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
+{
+    unsigned char* window;
     HWND hwnd;
     RECT client;
-    typedef int (__thiscall *Fn18)(void* object);
 
     HostLog(kInitSize, width, height);
-    mixerSlot = reinterpret_cast<void**>(reinterpret_cast<char*>(self) + 0x18);
-    *mixerSlot = CreateKdWindow();
-    mixer = static_cast<unsigned char*>(*mixerSlot);
-    if (!mixer) {
+    mixer = CreateKdWindow();
+    window = static_cast<unsigned char*>(mixer);
+    if (!window) {
         return 0;
     }
 
-    hwnd = *reinterpret_cast<HWND*>(mixer + 4);
-    if (GetKdEnv("KD_PARENT_WINDOW")) {
+    hwnd = *reinterpret_cast<HWND*>(window + 4);
+    if (GetKdEnv(kKdParentWindow)) {
         if (GetClientRect(hwnd, &client)) {
             width = static_cast<unsigned>(client.right - client.left);
             height = static_cast<unsigned>(client.bottom - client.top);
@@ -1623,8 +1755,8 @@ static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned
         int frameY;
         int caption;
         int frameX;
-        *reinterpret_cast<unsigned*>(mixer + 0x10) = width;
-        *reinterpret_cast<unsigned*>(mixer + 0x14) = height;
+        *reinterpret_cast<unsigned*>(window + 0x10) = width;
+        *reinterpret_cast<unsigned*>(window + 0x14) = height;
         frameY = GetSystemMetrics(SM_CYFIXEDFRAME);
         caption = GetSystemMetrics(SM_CYCAPTION);
         frameX = GetSystemMetrics(SM_CXDLGFRAME);
@@ -1641,10 +1773,8 @@ static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned
     g_displayWidth = static_cast<int>(width);
     g_displayHeight = static_cast<int>(height);
 
-    if (!GetKdEnv("KD_PARENT_WINDOW")) {
-        void* object = reinterpret_cast<char*>(self) - 0x14;
-        void** vtbl = *reinterpret_cast<void***>(object);
-        reinterpret_cast<Fn18>(vtbl[6])(object);
+    if (!GetKdEnv(kKdParentWindow)) {
+        FitWindow();
         SetWindowPos(g_kdDisplayWindow, 0, g_displayWindowX, g_displayWindowY, 0, 0,
             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
@@ -1653,11 +1783,12 @@ static unsigned char DisplaySetSizeBody(IDisplay* self, unsigned width, unsigned
         HostLogError(kCantInit);
         return 0;
     }
-    return DisplayInitPyro(self, width, height);
+    return KdDisplayDevice::SetSize(width, height);
 }
 
+// RET 8. Script method dispatch (CreateRenderTarget, GetWidth, ...). Not recovered.
 // STUB: VC1 0x00466b00
-static unsigned char Script0cBody(void* a, void* b)
+unsigned char KdDisplayBase::Script0c(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -1697,7 +1828,7 @@ static void* CreateKdWindow()
     unsigned char* mixer;
     WNDCLASSA* wnd;
 
-    env = GetKdEnv("KD_PARENT_WINDOW");
+    env = GetKdEnv(kKdParentWindow);
     parent = 0;
     if (env) {
         parent = reinterpret_cast<HWND>(strtoul(env, 0, 16));
@@ -1740,6 +1871,28 @@ static void* CreateKdWindow()
     return mixer;
 }
 
+// Primary vtable+0x18. Base recenter, then enabled58 = window fits the work
+// area at the current desktop mode.
+// FUNCTION: VC1 0x004b1c90
+int KdDisplay::FitWindow()
+{
+    DEVMODEA mode;
+    RECT work;
+
+    KdDisplayBase::FitWindow();
+    EnumDisplaySettingsA(0, ENUM_CURRENT_SETTINGS, &mode);
+    g_displayViewRight = static_cast<int>(mode.dmPelsWidth);
+    g_displayViewBottom = static_cast<int>(mode.dmPelsHeight);
+    SystemParametersInfoA(SPI_GETWORKAREA, 0, &work, 0);
+    if (g_displayWindowRight - g_displayWindowX <= work.right - work.left
+        && g_displayWindowBottom - g_displayWindowY <= work.bottom - work.top) {
+        enabled58 = 1;
+        return 1;
+    }
+    enabled58 = 0;
+    return 0;
+}
+
 // FUNCTION: VC1 0x004b1d30
 unsigned char KdDisplay::Script10(void* a, void* b)
 {
@@ -1751,7 +1904,7 @@ unsigned char KdDisplay::Script10(void* a, void* b)
 // FUNCTION: VC1 0x004b1d40
 void* KdDisplay::QueryInterface(const char** iid)
 {
-    void* found = DisplayBaseQueryInterface(this, iid);
+    void* found = KdDisplayBase::QueryInterface(iid);
     if (found) {
         return found;
     }
@@ -1787,39 +1940,44 @@ unsigned KdDisplay::AddRef()
     return n;
 }
 
-// this = IShutdownable (KdDisplay+0x18). Releases target at +0x18, then QI g_iidRenderTarget.
+// this = IShutdownable (+0x18). KdDisplayBase::Shutdown, then rebind target
+// from g_kdQueryUnknown QI IRenderTarget.
 // FUNCTION: VC1 0x004b1da0
 int KdDisplay::Shutdown()
 {
-    IShutdownable* self = static_cast<IShutdownable*>(this);
-    IUnknown** ptarget = reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x18);
-    IUnknown* object;
     IUnknown* queried;
 
-    DisplayShutdownPrep(self);
-    object = *ptarget;
-    if (object) {
-        object->Release();
+    KdDisplayBase::Shutdown();
+    if (target) {
+        target->Release();
     }
     if (!g_kdQueryUnknown) {
-        *ptarget = 0;
+        target = 0;
         return 0;
     }
     queried = static_cast<IUnknown*>(g_kdQueryUnknown->QueryInterface(&g_iidRenderTarget));
-    *ptarget = queried;
+    target = queried;
     if (!queried) {
         return 0;
     }
     return static_cast<int>(queried->AddRef());
 }
 
-// EAX=this. IRenderTarget() then ConstructDisplayBase, then remaining members.
+// EAX=this. Calls KdDisplayBase() (0x004665c0, ESI=this), own vptrs, then
+// target = 0, identity matrix and enabled58 = 1.
 // FUNCTION: VC1 0x004b1e40
-KdDisplay::KdDisplay()
+KdDisplay::KdDisplay() throw()
 {
-    ConstructDisplayBase(this);
     target = 0;
-    matrix = g_matrix3Identity;
+    matrix.m[0] = 1.0f;
+    matrix.m[1] = 0.0f;
+    matrix.m[2] = 0.0f;
+    matrix.m[3] = 0.0f;
+    matrix.m[4] = 1.0f;
+    matrix.m[5] = 0.0f;
+    matrix.m[6] = 0.0f;
+    matrix.m[7] = 0.0f;
+    matrix.m[8] = 1.0f;
     enabled58 = 1;
 }
 
@@ -1829,150 +1987,121 @@ void** CreateKdDisplay(void** out)
     IUnknown* queried;
     KdDisplay* object;
 
-    if (g_kdDisplay) {
-        queried = static_cast<IUnknown*>(
-            g_kdDisplay->QueryInterface(&g_iidAbstract));
+    if (!g_kdDisplay) {
+        object = static_cast<KdDisplay*>(malloc(sizeof(KdDisplay)));
+        if (object) {
+            object = new (object) KdDisplay();
+        }
+        g_kdDisplay = static_cast<IAbstract*>(object);
+        if (g_kdDisplay) {
+            queried = static_cast<IUnknown*>(g_kdDisplay->QueryInterface(&g_iidAbstract));
+        }
+        else {
+            queried = 0;
+        }
+        if (queried) {
+            queried->AddRef();
+        }
+        KdRelease(queried);
         *out = queried;
         if (queried) {
             queried->AddRef();
         }
+        KdRelease(queried);
         return out;
     }
 
-    object = static_cast<KdDisplay*>(malloc(sizeof(KdDisplay)));
-    if (!object) {
-        g_kdDisplay = 0;
-        *out = 0;
-        return out;
-    }
-    new (object) KdDisplay();
-    g_kdDisplay = static_cast<IAbstract*>(object);
-    queried = static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
-    if (queried) {
-        queried->AddRef();
-    }
-    KdRelease(queried);
+    queried = static_cast<IUnknown*>(g_kdDisplay->QueryInterface(&g_iidAbstract));
     *out = queried;
     if (queried) {
         queried->AddRef();
     }
-    KdRelease(queried);
     return out;
 }
 
-// this=IRenderTarget (WBA from IDisplay). Draws via target then presents D3D.
+// this = IRenderTarget. If target is set, draws it into this display's
+// graphics through matrix, then rebinds and presents like KdDisplayBase.
 // FUNCTION: VC1 0x004b1f50
 void* KdDisplay::Display10()
 {
-    IRenderTarget* self = static_cast<IRenderTarget*>(this);
-    IUnknown* target;
+    typedef int (__stdcall *FnEndScene)(IUnknown* device);
+    typedef int (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
+        void* d);
+    IRenderTarget* source;
     IUnknown* camera;
-    void* graphics;
-    void* result;
-    typedef void (__thiscall *Fn10)(IUnknown* object);
-    typedef void (__thiscall *Fn44)(IUnknown* object, float* matrix);
-    typedef void (__thiscall *Fn20)(IUnknown* object, int* rect);
-    typedef void (__thiscall *Fn3c)(IUnknown* object, unsigned color);
-    typedef void* (__thiscall *Fn1c)(IUnknown* object, float a, float b, float c, float d,
-        float w, float h);
-    typedef void (__thiscall *Fn58)(IUnknown* object, void* value);
-    typedef void (__stdcall *DeviceEnd)(IUnknown* object);
-    typedef void (__stdcall *DeviceClear)(IUnknown* object, unsigned a, unsigned b,
-        unsigned c, unsigned d);
+    IGraphics* view;
+    Rect clip;
 
-    target = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x2c);
-    if (g_displaySkipDevice == 0 && target) {
-        Fn10 fn10 = reinterpret_cast<Fn10>((*reinterpret_cast<void***>(target))[4]);
-        fn10(target);
-        camera = 0;
-        if (g_kdQueryUnknown) {
-            camera = static_cast<IUnknown*>(g_kdQueryUnknown->QueryInterface(&g_iidCamera));
+    if (g_displaySkipDevice == 0) {
+        source = static_cast<IRenderTarget*>(static_cast<void*>(target));
+        if (source) {
+            source->Display10();
+            if (g_kdQueryUnknown) {
+                camera = static_cast<IUnknown*>(
+                    g_kdQueryUnknown->QueryInterface(&g_iidCamera));
+                if (camera) {
+                    camera->AddRef();
+                }
+            }
+            else {
+                camera = 0;
+            }
+            IRenderTarget::Display0c(&view, &camera);
             if (camera) {
-                camera->AddRef();
+                camera->Release();
+            }
+            if (view) {
+                view->SetTransform(&matrix);
+                clip = *reinterpret_cast<Rect*>(&g_displayViewLeft);
+                view->SetClipRect(&clip);
+                view->Clear(0xff000000);
+                view->Graphics58(static_cast<IRenderTarget*>(
+                    static_cast<void*>(target))->Display1c(), 0.0f, 0.0f, 0.0f, 0.0f,
+                    static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
+                view->Release();
             }
         }
-        graphics = 0;
-        self->IRenderTarget::Display0c(&graphics, &camera);
-        if (camera) {
-            camera->Release();
-        }
-        if (graphics) {
-            int rect[4];
-            Fn44 fn44 = reinterpret_cast<Fn44>((*reinterpret_cast<void***>(graphics))[0x11]);
-            fn44(static_cast<IUnknown*>(graphics),
-                reinterpret_cast<KdDisplay*>(reinterpret_cast<char*>(self) - 4)->matrix.m);
-            rect[0] = g_displayViewLeft;
-            rect[1] = g_displayViewTop;
-            rect[2] = g_displayViewRight;
-            rect[3] = g_displayViewBottom;
-            Fn20 fn20 = reinterpret_cast<Fn20>((*reinterpret_cast<void***>(graphics))[8]);
-            fn20(static_cast<IUnknown*>(graphics), rect);
-            Fn3c fn3c = reinterpret_cast<Fn3c>((*reinterpret_cast<void***>(graphics))[0xf]);
-            fn3c(static_cast<IUnknown*>(graphics), 0xff000000);
-            Fn1c fn1c = reinterpret_cast<Fn1c>((*reinterpret_cast<void***>(target))[7]);
-            result = fn1c(target, 0.0f, 0.0f, 0.0f, 0.0f,
-                static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
-            Fn58 fn58 = reinterpret_cast<Fn58>((*reinterpret_cast<void***>(graphics))[0x16]);
-            fn58(static_cast<IUnknown*>(graphics), result);
-            static_cast<IUnknown*>(graphics)->Release();
-        }
-        else {
-            result = 0;
-        }
-    }
-    else {
-        result = 0;
     }
 
-    Display10Scene(self->graphics);
+    static_cast<KdGraphics*>(graphics)->BindScene();
     Display10Present(1);
-    if (g_d3dDevice) {
-        DeviceEnd endScene = reinterpret_cast<DeviceEnd>(
-            (*reinterpret_cast<void***>(g_d3dDevice))[0x23]);
-        endScene(g_d3dDevice);
-        if (g_d3dLastMixer == 0) {
-            DeviceClear present = reinterpret_cast<DeviceClear>(
-                (*reinterpret_cast<void***>(g_d3dDevice))[0xf]);
-            present(g_d3dDevice, 0, 0, 0, 0);
-        }
+    reinterpret_cast<FnEndScene>((*reinterpret_cast<void***>(g_d3dDevice))[0x23])(
+        g_d3dDevice);
+    if (g_d3dLastMixer == 0) {
+        reinterpret_cast<FnPresent>((*reinterpret_cast<void***>(g_d3dDevice))[0xf])(
+            g_d3dDevice, 0, 0, 0, 0);
     }
-    return result;
+    return 0;
 }
 
-// this = IRenderTarget. [ECX+0x2c] is target (object+0x30). RET 8.
+// this = IRenderTarget. RET 8. Forwards to target when drawing offscreen.
 // FUNCTION: VC1 0x004b20c0
 void* KdDisplay::Display0c(void* a, void* b)
 {
-    IUnknown* object;
-    void** vtbl;
-    typedef void* (__thiscall *Fn0c)(void* self, void* a, void* b);
-    IRenderTarget* self = static_cast<IRenderTarget*>(this);
+    IRenderTarget* source = static_cast<IRenderTarget*>(static_cast<void*>(target));
 
-    object = *reinterpret_cast<IUnknown**>(reinterpret_cast<char*>(self) + 0x2c);
-    if (g_displaySkipDevice == 0 && object) {
-        vtbl = *reinterpret_cast<void***>(object);
-        reinterpret_cast<Fn0c>(vtbl[3])(object, a, b);
+    if (g_displaySkipDevice == 0 && source) {
+        source->Display0c(a, b);
         return a;
     }
-    self->IRenderTarget::Display0c(a, b);
+    IRenderTarget::Display0c(a, b);
     return a;
 }
 
-// this = IDisplay. arg in [ESP+8], enabled at IDisplay+0x44 (object+0x58). RET 4.
+// this = IDisplay. Leaving windowed mode needs enabled58 (window fits). RET 4.
 // FUNCTION: VC1 0x004b2100
-int IDisplay::SetWindowed(unsigned char arg)
+int KdDisplay::SetWindowed(unsigned char arg)
 {
-    if (arg == 0 || *(reinterpret_cast<unsigned char*>(this) + 0x44) != 0) {
-        return Display28Apply();
+    if (arg == 0 || enabled58 != 0) {
+        return Display28Apply(arg);
     }
     return 0;
 }
 
 // this = IDisplay. Calls 0x00466690 then rebuilds the Matrix3 at IDisplay+0x20.
 // FUNCTION: VC1 0x004b2120
-int KdDisplay::SetSize(unsigned width, unsigned height)
+unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
 {
-    IDisplay* self = static_cast<IDisplay*>(this);
     int viewW;
     int viewH;
     void* slot;
@@ -1981,7 +2110,7 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
     float scale;
     Matrix3 inverse;
 
-    if (!DisplaySetSizeBody(self, width, height)) {
+    if (!KdDisplayBase::SetSize(width, height)) {
         return 0;
     }
     if (GetKdEnv(kKdParentWindow)) {
@@ -1995,7 +2124,7 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
     }
 
     slot = 0;
-    self->CreateRenderTarget(&slot, g_displayWidth, g_displayHeight);
+    CreateRenderTarget(&slot, g_displayWidth, g_displayHeight);
     DisplayAssignTarget(&slot, &target);
     if (slot) {
         static_cast<IUnknown*>(slot)->Release();
@@ -2031,7 +2160,7 @@ int KdDisplay::SetSize(unsigned width, unsigned height)
 // STUB: VC1 0x004b22e0
 unsigned char KdDisplay::Script0c(void* a, void* b)
 {
-    return Script0cBody(a, b) != 0;
+    return KdDisplayBase::Script0c(a, b);
 }
 
 // Release the Display1c static if set. Registered with atexit from 0x004662e0.
