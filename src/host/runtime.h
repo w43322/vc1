@@ -226,12 +226,13 @@ extern const char* g_emptyCountedBegin;
 extern unsigned g_emptyCountedSize;
 // 0x00496a40
 void KdLog(const char* fmt, ...);
+extern const char* g_kdLogPrefix; // 0x004d062c
 // 0x004b7010
-void HostLogV(const char** prefix, const char* fmt, va_list args);
+void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args);
 // 0x004b7070
-void HostLog(const char* fmt, ...);
+void HostLog(const char** prefix, const char* fmt, ...);
 // 0x004b70b0
-void HostLogError(const char* fmt, ...);
+void HostLogError(const char** prefix, const char* fmt, ...);
 // 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
 void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
 // 0x00499fe0

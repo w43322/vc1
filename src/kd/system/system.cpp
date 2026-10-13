@@ -291,6 +291,27 @@ KdRefList::~KdRefList() throw()
     }
 }
 
+// ECX=this, EAX=count. Grows to count slots and nulls the new ones.
+// FUNCTION: VC1 0x00419ee0
+void KdRefList::Reserve(unsigned count)
+{
+    unsigned old;
+    unsigned now;
+    IUnknown** slot;
+    IUnknown** end;
+
+    old = items.capacity / sizeof(IUnknown*);
+    GrowCountedBuffer(&items, static_cast<int>(count * sizeof(IUnknown*)), 1);
+    now = items.capacity / sizeof(IUnknown*);
+    if (now > old) {
+        slot = reinterpret_cast<IUnknown**>(items.begin) + old;
+        end = reinterpret_cast<IUnknown**>(items.begin) + now;
+        for (; slot < end; ++slot) {
+            new (slot) IUnknown*(0);
+        }
+    }
+}
+
 // XOR EAX,EAX; RET. IRenderable vtable+0x14; ICF-folded return-0.
 // FUNCTION: VC1 0x0041adb0 FOLDED
 int KdSystemBase::Render14()
@@ -784,7 +805,7 @@ void** KdSystemBase::Unmapped14(void** out, void* key)
 
     KdComponentGroup::Unmapped14(reinterpret_cast<void**>(&found), key);
     if (!found) {
-        HostLogError(kObjectNotFound,
+        HostLogError(&g_kdNameSystem, kObjectNotFound,
             *reinterpret_cast<void**>(static_cast<char*>(key) + 4));
         *out = found;
         if (found) {
@@ -836,7 +857,7 @@ int KdSystemBase::Unmapped10(void* key, void** out)
         existing->Release();
     }
     if (flag) {
-        HostLogError(kObjectExists,
+        HostLogError(&g_kdNameSystem, kObjectExists,
             *reinterpret_cast<void**>(static_cast<char*>(key) + 4));
         return 0;
     }

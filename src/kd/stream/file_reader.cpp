@@ -39,6 +39,115 @@ void KdBufferStream::Clear()
     pos = 0;
 }
 
+// ESI=this. Skips bytes found in the first 15 delimiters, refilling one byte
+// at a time; at the end of input sets kStreamEof | kStreamFail and returns 0.
+// Otherwise the first non-delimiter (already consumed).
+// FUNCTION: VC1 0x004ba630
+char KdBufferStream::SkipBlanks()
+{
+    char c;
+    unsigned left;
+
+    c = delimiters[0];
+    while (memchr(delimiters, c, 15)) {
+        if (size - pos == 0 && Fill(1) == 0) {
+            left = size - pos;
+            if (left < 1) {
+                state |= (left == 0 ? kStreamEof : 0) | kStreamFail;
+            }
+            return 0;
+        }
+        c = reinterpret_cast<char*>(begin)[pos];
+        pos += 1;
+    }
+    return c;
+}
+
+// ECX=this, EAX=out. One token: up to a delimiter, or between matching '"' /
+// '\'' quotes (delimiters kept). A backslash escape rewrites the stored
+// backslash (t n r b E " ' \\, anything else as is).
+// FUNCTION: VC1 0x004ba6b0
+void KdBufferStream::ReadToken(KdString& out)
+{
+    char quote;
+    char c;
+    char prev;
+
+    out.Resize(0);
+    quote = 0;
+    c = SkipBlanks();
+    if (c == 0) {
+        return;
+    }
+    if (c == '"' || c == '\'') {
+        quote = c;
+    }
+    else {
+        out.Append(c);
+    }
+    for (;;) {
+        if (size - pos == 0 && Fill(1) == 0) {
+            return;
+        }
+        prev = c;
+        c = reinterpret_cast<char*>(begin)[pos];
+        pos += 1;
+        if (quote == 0 && memchr(delimiters, c, 15)) {
+            return;
+        }
+        if (prev == '\\') {
+            switch (c) {
+            case 't':
+                c = '\t';
+                break;
+            case 'n':
+                c = '\n';
+                break;
+            case 'r':
+                c = '\r';
+                break;
+            case 'b':
+                c = '\b';
+                break;
+            case 'E':
+                c = 0x1b;
+                break;
+            case '"':
+                c = '"';
+                break;
+            case '\'':
+                c = '\'';
+                break;
+            case '\\':
+                c = '\\';
+                break;
+            }
+            out.data()[out.size - 1] = c;
+        }
+        else {
+            if (c == quote) {
+                return;
+            }
+            out.Append(c);
+        }
+    }
+}
+
+// EBX=this, RET 4. ReadToken with '\n' as the only delimiter; the delimiter
+// set is restored afterwards.
+// FUNCTION: VC1 0x004ba8c0
+KdBufferStream& KdBufferStream::ReadLine(KdString& out)
+{
+    unsigned saved[4];
+
+    memcpy(saved, delimiters, sizeof(delimiters));
+    memset(delimiters, 0, sizeof(delimiters));
+    delimiters[0] = '\n';
+    ReadToken(out);
+    memcpy(delimiters, saved, sizeof(delimiters));
+    return *this;
+}
+
 // EBX=this, EDI=buffer, ESI=length. driver->read(driver, buffer, 1, length,
 // native), retried while negative. Zero bytes sets kStreamEof | kStreamFail;
 // no file sets errno 0x11 as well.

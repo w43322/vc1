@@ -255,18 +255,18 @@ int KdSoundDriver::SetEnabled()
     char* name;
 
     ver = BassGetVersion();
-    HostLog(kBassVersion,
+    HostLog(&g_kdNameSoundDriver, kBassVersion,
         static_cast<int>(static_cast<signed char>(ver >> 24)),
         static_cast<int>(static_cast<signed char>(ver >> 16)),
         static_cast<int>(static_cast<signed char>(ver >> 8)),
         static_cast<int>(static_cast<signed char>(ver)));
     if (!BassInit(-1, 0xac44, 0, 0, 0)) {
-        HostLogError(kBassInit, BassErrorGetCode());
+        HostLogError(&g_kdNameSoundDriver, kBassInit, BassErrorGetCode());
         return 0;
     }
     device = BassGetDevice();
     BassGetDeviceInfo(static_cast<unsigned>(device), &name);
-    HostLog(kBassDevice, name);
+    HostLog(&g_kdNameSoundDriver, kBassDevice, name);
     return 1;
 }
 

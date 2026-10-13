@@ -9,20 +9,32 @@
 
 namespace vc1 {
 
-// Inferred name. One bitmap glyph: source rectangle in page texture `page`,
-// pen offset and advance in pixels.
+// Inferred name. One BMFont "char" record: source rectangle in page texture
+// `page`, pen offset and advance in pixels.
+// SIZE 0x20
+struct GlyphInfo
+{
+    int u;       // 0x00
+    int v;       // 0x04
+    int width;   // 0x08
+    int height;  // 0x0c
+    int offsetX; // 0x10
+    int offsetY; // 0x14
+    int advance; // 0x18
+    int page;    // 0x1c
+};
+
+typedef char Vc1GlyphInfoSizeCheck[sizeof(GlyphInfo) == 0x20 ? 1 : -1];
+
+// Inferred name. Glyph table record: code point key plus its GlyphInfo.
 // SIZE 0x24
 struct Glyph
 {
-    unsigned code; // 0x00  Unicode code point, table key
-    int u;         // 0x04
-    int v;         // 0x08
-    int width;     // 0x0c
-    int height;    // 0x10
-    int offsetX;   // 0x14
-    int offsetY;   // 0x18
-    int advance;   // 0x1c
-    int page;      // 0x20
+    unsigned code;  // 0x00  Unicode code point, table key
+    GlyphInfo info; // 0x04
+
+    Glyph() : code(0), info(GlyphInfo()) {}
+    Glyph(unsigned key, const GlyphInfo& value) : code(key), info(value) {}
 };
 
 typedef char Vc1GlyphSizeCheck[sizeof(Glyph) == 0x24 ? 1 : -1];
@@ -37,7 +49,10 @@ struct Utf8Cursor
 };
 
 void DecodeUtf8(Utf8Cursor* cursor);
+GlyphInfo* InsertGlyph(KdFactory* glyphs, const unsigned* code);
 Glyph* __stdcall FindGlyph(KdFactory* glyphs, const unsigned* code);
+void ReserveGlyphs(KdFactory* glyphs, unsigned count);
+void ConstructGlyphs(Glyph* first, Glyph* last);
 extern const char kFont[];
 extern const unsigned g_utf8Limits[6];
 
@@ -56,9 +71,9 @@ class KdFont : public IFont,
 public:
     KdRefList pages;  // 0x14  ITexture* per page
     int lineHeight;   // 0x24
-    int unknown28;    // 0x28
-    int unknown2c;    // 0x2c
-    int unknown30;    // 0x30
+    int base;         // 0x28  BMFont common base
+    int scaleW;       // 0x2c
+    int scaleH;       // 0x30
     KdFactory glyphs; // 0x34  Glyph records sorted by code
 
     KdFont();
@@ -74,7 +89,7 @@ public:
     KdStringList WrapText(const char* text, int width);
     void DrawText(IUnknown* const* graphics, const char* text);
 
-    unsigned char Load(const char* name);
+    unsigned char Load(const char* name) throw();
 
     unsigned char Script0c(void* a, void* b);
     unsigned char Script10(void* a, void* b);

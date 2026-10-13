@@ -20,3 +20,6 @@ address|type|name|symbol
 0x004d7590|string||
 0x004d41d0|string||
 0x004d41e4|string||
+0x0042fea0|library|memchr|_memchr
+0x0043195f|library|isspace|_isspace
+0x00437510|library|_allmul|__allmul

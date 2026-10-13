@@ -73,6 +73,10 @@ public:
 
     void Clear();                         // vtable+0x04
     virtual unsigned Fill(unsigned want); // vtable+0x08
+
+    char SkipBlanks();
+    void ReadToken(KdString& out);
+    KdBufferStream& ReadLine(KdString& out);
 };
 
 typedef char Vc1KdBufferStreamSizeCheck[sizeof(KdBufferStream) == 0x28 ? 1 : -1];

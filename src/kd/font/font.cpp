@@ -3,9 +3,17 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/itexture.h"
+#include "host/runtime.h"
+#include "kd/iface/iresource_manager.h"
+#include "kd/stream/file_reader.h"
 
 #include <new>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+// <windows.h> (via host/runtime.h) maps DrawText to DrawTextA.
+#undef DrawText
 
 namespace vc1 {
 
@@ -83,6 +91,30 @@ const char* KdFont::Script14()
     return kFont;
 }
 
+// ECX=glyphs, EAX=code. Sorted-table operator[]: the record for *code, or a
+// zeroed one inserted at its lower bound; returns the record's info.
+// FUNCTION: VC1 0x00419c10
+GlyphInfo* InsertGlyph(KdFactory* glyphs, const unsigned* code)
+{
+    Glyph* found;
+    unsigned char* oldBegin;
+    Glyph* slot;
+
+    found = FindGlyph(glyphs, code);
+    oldBegin = reinterpret_cast<unsigned char*>(glyphs->begin);
+    if (found != reinterpret_cast<Glyph*>(oldBegin + glyphs->size) && *code >= found->code) {
+        return &found->info;
+    }
+    Glyph record(*code, GlyphInfo());
+    ReserveGlyphs(glyphs, glyphs->size / sizeof(Glyph) + 1);
+    slot = static_cast<Glyph*>(InsertCountedBytes(glyphs,
+        reinterpret_cast<unsigned char*>(glyphs->begin)
+            + (reinterpret_cast<unsigned char*>(found) - oldBegin),
+        sizeof(Glyph)));
+    *slot = record;
+    return &slot->info;
+}
+
 // EAX=glyphs, RET 4. Lower bound of *code in the code-sorted Glyph table.
 // FUNCTION: VC1 0x00419f30
 Glyph* __stdcall FindGlyph(KdFactory* glyphs, const unsigned* code)
@@ -104,6 +136,33 @@ Glyph* __stdcall FindGlyph(KdFactory* glyphs, const unsigned* code)
         }
     }
     return first;
+}
+
+// EAX=glyphs, ECX=count. Grows to count records (inexact) and
+// default-constructs the new tail.
+// FUNCTION: VC1 0x0041a170
+void ReserveGlyphs(KdFactory* glyphs, unsigned count)
+{
+    unsigned old;
+    unsigned now;
+    Glyph* records;
+
+    old = glyphs->capacity / sizeof(Glyph);
+    GrowCountedBuffer(glyphs, static_cast<int>(count * sizeof(Glyph)), 0);
+    now = glyphs->capacity / sizeof(Glyph);
+    if (now > old) {
+        records = reinterpret_cast<Glyph*>(glyphs->begin);
+        ConstructGlyphs(records + old, records + now);
+    }
+}
+
+// EDX=first, cdecl last.
+// FUNCTION: VC1 0x0041a240
+void ConstructGlyphs(Glyph* first, Glyph* last)
+{
+    for (; first < last; ++first) {
+        new (first) Glyph();
+    }
 }
 
 // MOV EAX, [ECX+0x24]; RET.
@@ -169,9 +228,9 @@ unsigned KdFont::AddRef()
 // FUNCTION: VC1 0x00466ee0
 KdFont::KdFont()
     : lineHeight(0),
-      unknown28(0),
-      unknown2c(0),
-      unknown30(0)
+      base(0),
+      scaleW(0),
+      scaleH(0)
 {
 }
 
@@ -234,11 +293,11 @@ void KdFont::DrawText(IUnknown* const* graphics, const char* text)
     while (cursor.code != 0) {
         glyph = Find(cursor.code);
         if (glyph != GlyphEnd()) {
-            target->DrawImage(reinterpret_cast<ITexture* const*>(pages.items.begin) + glyph->page,
-                static_cast<float>(glyph->offsetX + pen), static_cast<float>(glyph->offsetY),
-                static_cast<float>(glyph->u), static_cast<float>(glyph->v),
-                static_cast<float>(glyph->width), static_cast<float>(glyph->height));
-            pen += glyph->advance;
+            target->DrawImage(reinterpret_cast<ITexture* const*>(pages.items.begin) + glyph->info.page,
+                static_cast<float>(glyph->info.offsetX + pen), static_cast<float>(glyph->info.offsetY),
+                static_cast<float>(glyph->info.u), static_cast<float>(glyph->info.v),
+                static_cast<float>(glyph->info.width), static_cast<float>(glyph->info.height));
+            pen += glyph->info.advance;
         }
         ++cursor.text;
         DecodeUtf8(&cursor);
@@ -263,7 +322,7 @@ int KdFont::GetTextWidth(const char* text)
     while (cursor.code != 0) {
         glyph = Find(cursor.code);
         if (glyph != GlyphEnd()) {
-            width += glyph->advance;
+            width += glyph->info.advance;
         }
         ++cursor.text;
         DecodeUtf8(&cursor);
@@ -328,7 +387,7 @@ KdStringList KdFont::WrapText(const char* text, int width)
             if (!ends) {
                 glyph = Find(cursor.code);
                 if (glyph != GlyphEnd()) {
-                    lineWidth += glyph->advance;
+                    lineWidth += glyph->info.advance;
                 }
                 if (lineWidth <= width) {
                     ++cursor.text;
@@ -380,14 +439,111 @@ unsigned char KdFont::Script0c(void* a, void* b)
     return 0;
 }
 
-// ILoadable face. Parses the font description ("charSpacing", page file
-// names relative to the font path, glyph records) and logs "Loaded %s
-// (height: %i glyphs: %i)". Body not recovered.
-// STUB: VC1 0x00467940
-unsigned char KdFont::Load(const char* name)
+// ECX=ILoadable face, RET 4. BMFont text description: an optional
+// "charSpacing=" key on the first line, "common", one "page" line per texture
+// (resolved next to the font file and loaded through the resource manager as
+// ITexture) and one "char" line per glyph, its advance widened by
+// charSpacing. Any malformed line or missing page fails.
+// FUNCTION: VC1 0x00467940
+unsigned char KdFont::Load(const char* name) throw()
 {
-    (void)name;
-    return 0;
+    KdFileReader reader(name);
+    unsigned count;
+    unsigned index;
+    int charSpacing;
+    int* height;
+
+    if (!reader.source.file) {
+        return 0;
+    }
+    KdString line;
+    charSpacing = 0;
+    reader.ReadLine(line);
+    // STRING: VC1 0x004d5bcc
+    int at = line.Find(KdString("charSpacing"));
+    if (at != -1) {
+        KdString tail(line.c_str() + at, line.c_str() + line.size);
+        // STRING: VC1 0x004d5bd8
+        if (sscanf(tail.c_str(), "charSpacing=%d", &charSpacing) != 1) {
+            return 0;
+        }
+    }
+    reader.ReadLine(line);
+    height = &lineHeight;
+    // STRING: VC1 0x004d5be8
+    if (sscanf(line.c_str(), "common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=%d\n",
+            &lineHeight, &base, &scaleW, &scaleH, &count) != 5) {
+        return 0;
+    }
+    pages.Resize(count);
+    for (index = 0; index < count; ++index) {
+        int id;
+        char file[0x44];
+
+        reader.ReadLine(line);
+        // STRING: VC1 0x004d5c24
+        if (sscanf(line.c_str(), "page id=%d file=%64s\n", &id, file) != 2) {
+            return 0;
+        }
+        file[strlen(file) - 1] = 0;
+        KdString path(name);
+        // STRING: VC1 0x004d5c3c
+        path.Assign(path.Slice(0, path.FindLastOf(KdString("/"), static_cast<unsigned>(-1)) + 1));
+        path.Append(file + 1, static_cast<unsigned>(strlen(file + 1)));
+        {
+            KdString full(path.c_str());
+            KdRef<IResourceManager> manager;
+            KdRef<IUnknown> resource;
+            IUnknown** slot;
+            IUnknown* const* loaded;
+
+            IResourceManager* loader = *GetKdResourceManager(&manager.ptr);
+            slot = reinterpret_cast<IUnknown**>(pages.items.begin) + id;
+            loaded = reinterpret_cast<IUnknown* const*>(
+                loader->Resource0c(reinterpret_cast<void**>(&resource.ptr), &full));
+            if (*slot) {
+                (*slot)->Release();
+            }
+            if (*loaded) {
+                *slot = static_cast<IUnknown*>((*loaded)->QueryInterface(&g_iidTexture));
+                if (*slot) {
+                    (*slot)->AddRef();
+                }
+            }
+            else {
+                *slot = 0;
+            }
+        }
+        if (!reinterpret_cast<IUnknown**>(pages.items.begin)[id]) {
+            return 0;
+        }
+    }
+    reader.ReadLine(line);
+    // STRING: VC1 0x004d5c40
+    if (sscanf(line.c_str(), "chars count=%d\n", &count) != 1) {
+        return 0;
+    }
+    for (index = 0; index < count; ++index) {
+        int code;
+        GlyphInfo info;
+        int channel;
+
+        reader.ReadLine(line);
+        if (sscanf(line.c_str(),
+                // STRING: VC1 0x004d5c50
+                "char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=%d chnl=%d\n",
+                &code, &info.u, &info.v, &info.width, &info.height, &info.offsetX,
+                &info.offsetY, &info.advance, &info.page, &channel) != 10) {
+            return 0;
+        }
+        info.advance += charSpacing;
+        const unsigned key = code;
+        *InsertGlyph(&glyphs, &key) = info;
+    }
+    // STRING: VC1 0x004d5cac
+    HostLog(&g_kdNameFont, "Loaded %s (height: %i glyphs: %i)", name, *height,
+        glyphs.size / sizeof(Glyph));
+    return 1;
 }
 
 }

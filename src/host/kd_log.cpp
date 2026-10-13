@@ -21,41 +21,39 @@ static const char kHostLogPlain[] = "%s%s\n";
 // STRING: VC1 0x004d5020
 static const char kHostLogError[] = "error: ";
 
-// ECX=fmt, EAX=va_list, ESI=&g_kdLogTag. Prefix slot is the caller's saved EAX (0x004d062c from RunApp).
+// ECX=fmt, EAX=va_list, ESI=tag, cdecl prefix. "[name] tag text" when the
+// caller's name slot (a factory name such as g_kdNameDisplay, or the app's
+// g_kdLogPrefix) is set.
 // FUNCTION: VC1 0x004b7010
-void HostLogV(const char** prefix, const char* fmt, va_list args)
+void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args)
 {
     char buf[0x400];
-    const char* tag;
 
     _vsnprintf(buf, 0x400, fmt, args);
-    if (prefix && *prefix) {
-        KdLog(kHostLogBracket, *prefix, reinterpret_cast<const char*>(&g_kdLogTag), buf);
+    if (*prefix) {
+        KdLog(kHostLogBracket, *prefix, tag, buf);
         return;
     }
-    (void)tag;
-    KdLog(kHostLogPlain, reinterpret_cast<const char*>(&g_kdLogTag), buf);
+    KdLog(kHostLogPlain, tag, buf);
 }
 
-// cdecl fmt. EAX=prefix slot. ESI forced to 0x004cfa94.
+// EAX=prefix, cdecl fmt and varargs. Tag is the empty string.
 // FUNCTION: VC1 0x004b7070
-void HostLog(const char* fmt, ...)
+void HostLog(const char** prefix, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    HostLogV(&g_kdLogPrefix, fmt, args);
+    HostLogV(prefix, reinterpret_cast<const char*>(&g_kdLogTag), fmt, args);
     va_end(args);
 }
 
-// cdecl fmt. EAX=prefix slot. ESI forced to 0x004d5020.
+// EAX=prefix, cdecl fmt and varargs. Tag "error: ".
 // FUNCTION: VC1 0x004b70b0
-void HostLogError(const char* fmt, ...)
+void HostLogError(const char** prefix, const char* fmt, ...)
 {
     va_list args;
-    const char* tag = kHostLogError;
     va_start(args, fmt);
-    (void)tag;
-    HostLogV(&g_kdLogPrefix, fmt, args);
+    HostLogV(prefix, kHostLogError, fmt, args);
     va_end(args);
 }
 

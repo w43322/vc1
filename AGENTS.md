@@ -117,6 +117,7 @@ class KdDisplay : public IScriptObject, public IRenderTarget, public IDisplay,
 ```
 
   Do not also list that VA in `config/verified.csv` or as a `FUNCTION` in `src/`. Host forks of squirrel (KD `getenv` / `OpenKdFile` / `dofile`, extra math, aux printerror strings) stay as recovered bodies in `src/`. Overloads of one C++ name (`AddInstruction`, `Raise_Error`, `GetNumericConstant`) need the mangled PDB symbol as the name comment, or asmcmp binds the wrong one (often 0%).
+- klibc's scanf family (`third_party/klibc`, upstream files plus one marked VC9 patch, built by `cmake/klibc.cmake`) replaces the CRT `sscanf`. Same comments-only rule as squirrel; name comments live in `third_party/klibc/klibc.h`. Before rewriting a library-looking function by hand, check whether it is a known open-source body and vendor that instead.
 - CRT and other libraries **without** source in this tree: `config/verified.csv` (`address|type|name|symbol`). Do **not** hide mismatches with `report: ignore-functions:` in `reccmp-project.yml`.
 - Do not use inline asm. Do not invent a mapping for a function you did not recover.
 - Every original callee has a VA. Put it in the owning `.cpp` with `FUNCTION` or `STUB` at that address, or call an already-mapped / Win32 / CRT symbol. Do not invent unmarked `Unmapped*` helpers. Stock squirrel stays comments-only; templated instantiations use `TEMPLATE` (see reccmp annotations).

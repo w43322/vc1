@@ -23,6 +23,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:NOREF /OPT:NOICF /SAFESEH:NO /LTCG")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(cmake/squirrel223.cmake)
+include(cmake/klibc.cmake)
 
 add_executable(vc1_recompiled
   src/host/win_main.cpp
@@ -94,7 +95,8 @@ add_executable(vc1_recompiled
   src/bindings/rectf.cpp
   src/bindings/squirrel_object.cpp
   src/memory/fixed_pool.cpp
-  ${SQUIRREL223_SOURCES})
+  ${SQUIRREL223_SOURCES}
+  ${KLIBC_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel)
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)

@@ -1,5 +1,7 @@
 #include "kd/factory.h"
 
+#include "bindings/squirrel_object.h"
+
 #include "kd/iface/iunknown.h"
 #include "host/runtime.h"
 
@@ -341,8 +343,6 @@ KdString::KdString(const char* text)
     size = static_cast<unsigned>(strlen(text));
 }
 
-// EAX=this, stdcall source RET 4. A borrowed source (capacity 0) is shared;
-// an owned one is copied with its NUL.
 // EAX=this, ESI=length. Keeps the bytes, NUL-terminates at length; an empty
 // borrowed string goes back to g_kdLogTag.
 // FUNCTION: VC1 0x004b8b40
@@ -360,6 +360,8 @@ void KdString::Resize(unsigned length) throw()
     reinterpret_cast<char*>(begin)[length] = 0;
 }
 
+// EAX=this, stdcall source RET 4. A borrowed source (capacity 0) is shared;
+// an owned one is copied with its NUL.
 // FUNCTION: VC1 0x004b8bf0
 KdString::KdString(const KdString& source)
     : KdFactory(source.capacity != 0 ? source.size + 1 : 0)
@@ -381,6 +383,87 @@ KdString::KdString(const KdString& source)
         in += 1;
     }
     size -= 1;
+}
+
+// EAX=needle, haystack (this) on the stack, RET 4. Horspool-style: scans for
+// the needle's last byte, compares the whole needle with MemCompare and skips
+// by that byte's distance to its previous occurrence. -1 when absent.
+// FUNCTION: VC1 0x004b8d30
+int KdString::Find(const KdString& needle) const
+{
+    unsigned length;
+    unsigned tail;
+    unsigned i;
+    unsigned j;
+    unsigned skip;
+    char last;
+    const char* pattern;
+    const char* text;
+    const char* end;
+    const char* p;
+    const char* q;
+
+    length = needle.size;
+    if (length == 0 || size < length) {
+        return -1;
+    }
+    pattern = needle.c_str();
+    last = pattern[length - 1];
+    tail = length - 1;
+    i = tail;
+    do {
+        j = i;
+        i -= 1;
+    } while (j != 0 && pattern[i] != last);
+    skip = tail - i;
+    text = c_str();
+    end = text + size;
+    p = text + (0 < size ? 0 : size) + tail;
+    if (p >= end) {
+        return -1;
+    }
+    for (;;) {
+        q = p;
+        while (q != text + size && *q != last) {
+            ++q;
+        }
+        if (q >= end) {
+            return -1;
+        }
+        if (MemCompare(q - tail, pattern, length) == 0) {
+            return static_cast<int>(q - text - tail);
+        }
+        p = q + skip;
+        if (p >= end) {
+            return -1;
+        }
+    }
+}
+
+// EAX=this, RET 4. Resize(size + 1) inlined, then the new last byte.
+// FUNCTION: VC1 0x004b8f70
+void KdString::Append(char c)
+{
+    Resize(size + 1);
+    data()[size - 1] = c;
+}
+
+// ECX=this, EAX=length, RET 4 (text). Trailing NULs of text are dropped.
+// FUNCTION: VC1 0x004b8fe0
+void KdString::Append(const char* text, unsigned length)
+{
+    char* out;
+
+    while (length != 0 && text[length - 1] == 0) {
+        length -= 1;
+    }
+    Resize(size + length);
+    out = data() + size - length;
+    for (; length != 0; length -= 1) {
+        *out = *text;
+        out += 1;
+        text += 1;
+    }
 }
 
 // ECX=counted buffer, EAX=length, EBX=source. Empty string uses g_kdLogTag.
@@ -426,6 +509,25 @@ void AssignCountedString(void* self, const char* text, unsigned len) throw()
             src += 1;
         }
     }
+}
+
+// EDX=this, ECX=set, EAX=pos. Last index at or before pos whose byte is in
+// set, or -1.
+// FUNCTION: VC1 0x004b9140
+int KdString::FindLastOf(const KdString& set, unsigned pos) const
+{
+    int i;
+
+    i = static_cast<int>(size - 1);
+    if (pos < static_cast<unsigned>(i)) {
+        i = static_cast<int>(pos);
+    }
+    for (; i >= 0; --i) {
+        if (set.IndexOf(c_str()[i], 0) != -1) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 // thiscall factory, stdcall out + name slot, RET 8.

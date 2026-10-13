@@ -104,6 +104,15 @@ struct KdRefList
     KdFactory items; // 0x00
 
     ~KdRefList() throw();
+    void Reserve(unsigned count);
+    void Resize(unsigned count)
+    {
+        unsigned bytes = count * sizeof(IUnknown*);
+        if (items.capacity < bytes) {
+            Reserve(count);
+        }
+        items.size = bytes;
+    }
 };
 
 extern unsigned g_kdLogTag;
@@ -144,8 +153,36 @@ public:
     KdString(const KdString& source);
     unsigned Count();
     void Resize(unsigned length) throw();
+    int Find(const KdString& needle) const;
+    void Append(char c);
+    void Append(const char* text, unsigned length);
+    int FindLastOf(const KdString& set, unsigned pos) const;
 
     const char* c_str() const { return reinterpret_cast<const char*>(begin); }
+    char* data() { return reinterpret_cast<char*>(begin); }
+    void Assign(const KdString& source)
+    {
+        AssignCountedString(this, source.c_str(), source.size);
+    }
+    // Offset of c at or after start, or -1.
+    int IndexOf(char c, unsigned start) const
+    {
+        const char* text = c_str();
+        const char* last = text + size;
+        const char* p = text + (start < size ? start : size);
+        while (p != last && *p != c) {
+            ++p;
+        }
+        return p < last ? static_cast<int>(p - text) : -1;
+    }
+    // Copy of [first, last), both clamped; last -1 means the end.
+    KdString Slice(unsigned first, unsigned last) const
+    {
+        const char* text = c_str();
+        const char* stop = last == static_cast<unsigned>(-1)
+            ? text + size : text + (last < size ? last : size);
+        return KdString(text + (first < size ? first : size), stop);
+    }
 
 private:
     KdString& operator=(const KdString&);

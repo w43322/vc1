@@ -187,7 +187,7 @@ int RunApp()
     }
 
     // STRING: VC1 0x004d0d08
-    HostLog("exiting...");
+    HostLog(&g_kdLogPrefix, "exiting...");
     if (g_rootTable.obj._type == OT_NULL && g_vm) {
         sq_pushroottable(g_vm);
         AttachStackTop(&g_rootTable);

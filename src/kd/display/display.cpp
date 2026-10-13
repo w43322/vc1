@@ -591,7 +591,7 @@ unsigned char KdDisplayDevice::SetSize(unsigned width, unsigned height)
     }
     g_displayPyro = pyro;
     if (!pyro) {
-        HostLogError(kCantInitPyro);
+        HostLogError(&g_kdNameDisplay, kCantInitPyro);
         return 0;
     }
     pyro->Init(static_cast<IPyroDevice*>(this));
@@ -1093,7 +1093,7 @@ static void DisplayD3dLogHresult(int hr, char flag)
     else {
         FormatBuffer(buf, sizeof(buf), kDxErrorFmt, g_kdNameDisplay, DxGetErrorString(hr));
     }
-    HostLogError(buf);
+    HostLogError(&g_kdNameDisplay, buf);
     if (flag != 0) {
         MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
     }
@@ -1155,7 +1155,7 @@ static unsigned char DisplayD3dRecreate()
         else {
             FormatBufferOpen(buf, kDxErrorFmt, kCantCreateVb, DxGetErrorString(hr));
         }
-        HostLogError(buf);
+        HostLogError(&g_kdNameDisplay, buf);
         return 0;
     }
     reinterpret_cast<FnSetFvf>((*reinterpret_cast<void***>(g_d3dDevice))[0x4c])(
@@ -1171,7 +1171,7 @@ static unsigned char DisplayD3dRecreate()
         else {
             FormatBufferOpen(buf, kDxErrorFmt, kCantCreateIb, DxGetErrorString(hr));
         }
-        HostLogError(buf);
+        HostLogError(&g_kdNameDisplay, buf);
         return 0;
     }
     hr = reinterpret_cast<FnLock>((*reinterpret_cast<void***>(g_d3dSurface))[0xb])(
@@ -1321,15 +1321,15 @@ static unsigned char DisplayD3DInit()
     if (!g_d3dObject) {
         FormatBufferOpen(buf, kDxErrorFmt, kCantCreateD3d,
             DxGetErrorString(static_cast<int>(0x8876086a)));
-        HostLogError(buf);
+        HostLogError(&g_kdNameDisplay, buf);
         MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
         return 0;
     }
     reinterpret_cast<FnIdent>((*reinterpret_cast<void***>(g_d3dObject))[5])(
         g_d3dObject, 0, 2, ident);
-    HostLog(kD3dDriver, ident);
-    HostLog(kD3dDescription, reinterpret_cast<char*>(ident) + 0x200);
-    HostLog(kD3dVersion,
+    HostLog(&g_kdNameDisplay, kD3dDriver, ident);
+    HostLog(&g_kdNameDisplay, kD3dDescription, reinterpret_cast<char*>(ident) + 0x200);
+    HostLog(&g_kdNameDisplay, kD3dVersion,
         (ident[0x105] >> 16) & 0xffff, ident[0x105] & 0xffff,
         (ident[0x104] >> 16) & 0xffff, ident[0x104] & 0xffff);
     hr = reinterpret_cast<FnMode>((*reinterpret_cast<void***>(g_d3dObject))[8])(
@@ -1379,7 +1379,7 @@ static unsigned char DisplayD3DInit()
             if (format == 0) {
                 FormatBufferOpen(buf, kDxErrorFmt, kCantFindFsMode,
                     DxGetErrorString(static_cast<int>(0x88760866)));
-                HostLogError(buf);
+                HostLogError(&g_kdNameDisplay, buf);
                 if (g_displaySkipDevice == 0) {
                     MessageBoxA(g_kdDisplayWindow, buf, kDirectXError, MB_ICONHAND);
                 }
@@ -1397,7 +1397,7 @@ static unsigned char DisplayD3DInit()
         g_d3dPresentFull[7] = 0;
         g_d3dPresentFull[11] = 0;
         g_d3dPresentFull[12] = 1;
-        HostLog(kFullScreenMode, viewW, viewH,
+        HostLog(&g_kdNameDisplay, kFullScreenMode, viewW, viewH,
             g_d3dFormatNames[Display28Mode(format)]);
         if (g_displaySkipDevice == 0) {
             present = g_d3dPresentFull;
@@ -1455,7 +1455,7 @@ void* LookupRenderTargetTexture(unsigned width, unsigned height)
         else {
             FormatBufferOpen(buf, kDxErrorFmt, kCantCreateRtTexture, DxGetErrorString(hr));
         }
-        HostLogError(buf);
+        HostLogError(&g_kdNameDisplay, buf);
         free(node);
         return 0;
     }
@@ -1492,7 +1492,7 @@ static unsigned char DisplayQueryReady()
     }
     if (g_batchVertices) {
         FormatBufferOpen(buf, kPercentS, kSceneAlreadyRendered);
-        HostLogError(buf);
+        HostLogError(&g_kdNameDisplay, buf);
         return 0;
     }
     if (g_d3dLastMixer) {
@@ -1820,7 +1820,7 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
     HWND hwnd;
     RECT client;
 
-    HostLog(kInitSize, width, height);
+    HostLog(&g_kdNameDisplay, kInitSize, width, height);
     mixer = CreateKdWindow();
     window = static_cast<unsigned char*>(mixer);
     if (!window) {
@@ -1863,7 +1863,7 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
     }
 
     if (!DisplayD3DInit()) {
-        HostLogError(kCantInit);
+        HostLogError(&g_kdNameDisplay, kCantInit);
         return 0;
     }
     return KdDisplayDevice::SetSize(width, height);
@@ -2213,7 +2213,7 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
         static_cast<IUnknown*>(slot)->Release();
     }
     if (!target) {
-        HostLogError(kCantCreateRt);
+        HostLogError(&g_kdNameDisplay, kCantCreateRt);
         return 0;
     }
 

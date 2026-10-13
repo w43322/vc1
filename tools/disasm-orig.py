@@ -5,6 +5,7 @@ Supplementary evidence only; Ghidra decompiler output stays primary.
   disasm-orig.py 0x462720            # until the first RET followed by int3 padding
   disasm-orig.py 0x462720 0x1e0      # fixed byte length
   disasm-orig.py --dwords 0x4d63f0 [count]   # vtable / data dump, default 8 dwords
+  disasm-orig.py --cstr 0x4d5bd8 [0x4d5be8 ...]  # NUL-terminated literals
 """
 import argparse
 import os
@@ -23,12 +24,20 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dwords', action='store_true', help='dump little-endian dwords instead of code')
     ap.add_argument('--keep-int3', action='store_true', help='do not hide int3 padding')
+    ap.add_argument('--cstr', action='store_true', help='print NUL-terminated strings at each address')
     ap.add_argument('address')
-    ap.add_argument('length', nargs='?')
+    ap.add_argument('length', nargs='*')
     args = ap.parse_args()
 
     pe = pefile.PE(EXE, fast_load=True)
     base = pe.OPTIONAL_HEADER.ImageBase
+    if args.cstr:
+        for a in [args.address] + args.length:
+            va = int(a, 16)
+            data = pe.get_data(va - base, 0x200)
+            print('%#010x  %r' % (va, data.split(b'\x00', 1)[0]))
+        return
+    args.length = args.length[0] if args.length else None
     va = int(args.address, 16)
 
     if args.dwords:
