@@ -15,20 +15,19 @@ unsigned g_kdFactoryGuard;
 // GLOBAL: VC1 0x004ed6d4
 IUnknown* g_kdDefaultUnknown;
 
-KdFactory::~KdFactory()
-{
-    if (capacity != 0) {
-        free(begin);
-    }
-    Clear();
-}
-
 // FUNCTION: VC1 0x00401f70
 void KdFactory::Clear()
 {
     begin = 0;
     size = 0;
     capacity = 0;
+}
+
+// MOV EAX, 1; RET. KdString vtable+0x08: one byte reserved for the NUL.
+// FUNCTION: VC1 0x00403aa0
+unsigned KdString::Count()
+{
+    return 1;
 }
 
 // EAX=exclusive end, ECX=first. Byte reverse of [first, last).
@@ -188,7 +187,7 @@ void EraseCountedBytes(void* first, void* middle, void* last)
 
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
 // FUNCTION: VC1 0x004b8930
-void GrowCountedBuffer(void* self, int bytes, char exact)
+void GrowCountedBuffer(void* self, int bytes, char exact) throw()
 {
     KdFactory* factory = static_cast<KdFactory*>(self);
     typedef unsigned (__thiscall *FnCount)(void* object);
@@ -261,56 +260,45 @@ void* InsertCountedBytes(void* self, void* pos, int bytes)
     return reinterpret_cast<unsigned char*>(factory->begin) + offset;
 }
 
-// EAX=dest counted string, stdcall source RET 4. COW if source.capacity==0.
-// FUNCTION: VC1 0x004b8bf0
-void* CopyCountedString(void* dest, void* source)
+// EAX=this, ECX=text. Borrows text (capacity stays 0); null means empty.
+// FUNCTION: VC1 0x004b8af0
+KdString::KdString(const char* text)
 {
-    KdFactory* dst = static_cast<KdFactory*>(dest);
-    KdFactory* src = static_cast<KdFactory*>(source);
-    typedef unsigned (__thiscall *FnCount)(void* object);
-    unsigned needed;
+    if (!text) {
+        text = reinterpret_cast<const char*>(&g_kdLogTag);
+    }
+    begin = reinterpret_cast<FactoryEntry*>(const_cast<char*>(text));
+    size = static_cast<unsigned>(strlen(text));
+}
+
+// EAX=this, stdcall source RET 4. A borrowed source (capacity 0) is shared;
+// an owned one is copied with its NUL.
+// FUNCTION: VC1 0x004b8bf0
+KdString::KdString(const KdString& source)
+    : KdFactory(source.capacity != 0 ? source.size + 1 : 0)
+{
     unsigned left;
     unsigned char* out;
-    unsigned char* in;
-    unsigned used;
+    const unsigned char* in;
 
-    dst->begin = 0;
-    dst->size = 0;
-    *reinterpret_cast<void**>(dest) = *reinterpret_cast<void**>(&g_kdFactory);
-    dst->capacity = 0;
-    needed = src->size + 1;
-    if (src->capacity != 0) {
-        needed = src->size + 1;
+    if (source.capacity == 0) {
+        size = source.size;
+        begin = source.begin;
+        return;
     }
-    else {
-        needed = 0;
-    }
-    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(dest))[2])(dest);
-    if (dst->capacity < used + needed) {
-        GrowCountedBuffer(dest, static_cast<int>(needed), 1);
-    }
-    dst->size = needed;
-    *reinterpret_cast<unsigned*>(dest) = 0x004d0d9c;
-    if (src->capacity == 0) {
-        dst->size = src->size;
-        dst->begin = src->begin;
-        return dest;
-    }
-    out = reinterpret_cast<unsigned char*>(dst->begin);
-    in = reinterpret_cast<unsigned char*>(src->begin);
-    left = needed;
-    for (; left != 0; left -= 1) {
+    out = reinterpret_cast<unsigned char*>(begin);
+    in = reinterpret_cast<const unsigned char*>(source.begin);
+    for (left = size; left != 0; left -= 1) {
         *out = *in;
         out += 1;
         in += 1;
     }
-    dst->size -= 1;
-    return dest;
+    size -= 1;
 }
 
 // ECX=counted buffer, EAX=length, EBX=source. Empty string uses g_kdLogTag.
 // FUNCTION: VC1 0x004b9090
-void AssignCountedString(void* self, const char* text, unsigned len)
+void AssignCountedString(void* self, const char* text, unsigned len) throw()
 {
     KdFactory* dst = static_cast<KdFactory*>(self);
     typedef unsigned (__thiscall *FnCount)(void* object);

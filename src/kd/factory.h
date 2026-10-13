@@ -3,6 +3,8 @@
 
 #include "kd/iface/iunknown.h"
 
+#include <stdlib.h>
+
 namespace vc1 {
 
 class KdFactory;
@@ -20,14 +22,24 @@ struct FactoryEntry
 
 typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
-// Sorted name/create table used by RunApp AcquireNamed.
+void GrowCountedBuffer(void* self, int bytes, char exact) throw();
+
+// Inferred name. Generic counted byte buffer (begin, size in bytes, capacity);
+// g_kdFactory's sorted name/create table is one instance. Count() is the
+// number of reserved bytes past size (0 here, 1 for the NUL of KdString).
 // SIZE 0x10
 // VTABLE: VC1 0x004cfb8c
 class KdFactory
 {
 public:
     KdFactory() : begin(0), size(0), capacity(0) {}
-    virtual ~KdFactory();     // vtable+0x00
+    virtual ~KdFactory()      // vtable+0x00; inlined at every owner
+    {
+        if (capacity != 0) {
+            free(begin);
+        }
+        Clear();
+    }
     virtual void Clear();     // vtable+0x04
     virtual unsigned Count(); // vtable+0x08
     void** __stdcall QueryNamed(void** out, const char** name);
@@ -35,12 +47,57 @@ public:
     FactoryEntry* begin; // 0x04
     unsigned size;       // 0x08
     unsigned capacity;   // 0x0c
+
+protected:
+    // Reserves bytes (+Count() through the KdFactory vptr) and sets size;
+    // inlined into derived constructors before they write their own vptr.
+    explicit KdFactory(unsigned bytes) : begin(0), size(0), capacity(0)
+    {
+        if (capacity < Count() + bytes) {
+            GrowCountedBuffer(this, static_cast<int>(bytes), 1);
+        }
+        size = bytes;
+    }
 };
 
 typedef char Vc1KdFactorySizeCheck[sizeof(KdFactory) == 0x10 ? 1 : -1];
 
 // SYNTHETIC: VC1 0x00401f30
 // vc1::KdFactory::`scalar deleting destructor'
+
+extern unsigned g_kdLogTag;
+void AssignCountedString(void* self, const char* text, unsigned len) throw();
+
+// Inferred name. Counted char string on KdFactory storage. With capacity 0 it
+// borrows its bytes (a literal, or g_kdLogTag as the shared empty string).
+// The original vftable reuses KdFactory's destructor and Clear.
+// SIZE 0x10
+// VTABLE: VC1 0x004d0d9c
+class KdString : public KdFactory
+{
+public:
+    KdString()
+    {
+        begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        size = 0;
+    }
+    KdString(const char* text);
+    KdString(const char* text, unsigned length)
+    {
+        begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        size = 0;
+        AssignCountedString(this, text, length);
+    }
+    KdString(const KdString& source);
+    unsigned Count();
+
+    const char* c_str() const { return reinterpret_cast<const char*>(begin); }
+
+private:
+    KdString& operator=(const KdString&);
+};
+
+typedef char Vc1KdStringSizeCheck[sizeof(KdString) == 0x10 ? 1 : -1];
 
 // SIZE 0x08
 struct FactoryInsert
@@ -133,12 +190,9 @@ void** CreateKdRoadCellsRenderer(void** out);
 FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out);
 FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key);
 void ReserveFactoryTable(unsigned newCount);
-void GrowCountedBuffer(void* self, int bytes, char exact);
 void ReverseCountedBytes(void* first, void* last);
 void EraseCountedBytes(void* first, void* middle, void* last);
 void* InsertCountedBytes(void* self, void* pos, int bytes);
-void* CopyCountedString(void* dest, void* source);
-void AssignCountedString(void* self, const char* text, unsigned len);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);
 KdFactory* GetKdFactory();
 void** QueryKdFactory(void** out, const char** name);

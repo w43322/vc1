@@ -74,12 +74,12 @@ struct IGraphics : IUnknown
     virtual void SetTransform(const Matrix3* matrix) = 0; // vtable+0x44
     virtual Vector2* GetOrigin() = 0;                     // vtable+0x48
     virtual void Translate(const Vector2* offset);        // vtable+0x4c
-    virtual void Graphics50(void* a, float b, float c, float d) = 0;          // vtable+0x50
+    virtual void FillRect(float x, float y, float width, float height) = 0; // vtable+0x50
     virtual void Graphics54(float a, float b, float c, float d) = 0;          // vtable+0x54
     virtual void Graphics58(void* a, float b, float c, float d, float e,
         float f, float g) = 0;                                                // vtable+0x58
     virtual void Graphics5c(void* a, void* b, unsigned c) = 0;                // vtable+0x5c
-    virtual void Graphics60(void* a, void* b, unsigned c) = 0;                // vtable+0x60
+    virtual void DrawString(const char* text, float x, float y) = 0;        // vtable+0x60
     virtual void Graphics64(float a, float b, float c, float d) = 0;          // vtable+0x64
     virtual void Graphics68(void* a, float b, float c, float d) = 0;          // vtable+0x68
 };

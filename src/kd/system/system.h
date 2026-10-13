@@ -6,6 +6,8 @@
 #include "kd/iface/iscript_object.h"
 #include "kd/iface/iabstract.h"
 #include "kd/iface/ifunctional_group.h"
+#include "kd/iface/idisplay.h"
+#include "kd/iface/ifont.h"
 #include "kd/component_group.h"
 
 namespace vc1 {
@@ -29,7 +31,7 @@ class KdSystemBase : public ISystem,
 {
 public:
     void* heapBlock;            // 0x38  AllocSystemBuffer node from Start
-    KdRef<IUnknown> display;          // 0x3c  IDisplay
+    KdRef<IDisplay> display;          // 0x3c
     KdRef<IUnknown> resourceManager;  // 0x40
     KdRef<IUnknown> camera;           // 0x44  default camera
     KdRef<IUnknown> activeCamera;     // 0x48
@@ -45,9 +47,8 @@ public:
     __int64 startTicks;         // 0x80  ns
     unsigned heapBytes;         // 0x88
     unsigned field8c;           // 0x8c
-    unsigned char showConsole;  // 0x90
-    unsigned char pad91[0x3f];  // 0x91
-    KdRef<IUnknown> consoleFont;      // 0xd0
+    char consoleText[0x40];     // 0x90  overlay line; drawn while non-empty
+    KdRef<IFont> consoleFont;   // 0xd0  res/fonts/console.fnt, loaded on first draw
     unsigned paddingd4;         // 0xd4
 
     KdSystemBase() throw();
@@ -65,7 +66,7 @@ public:
     int Unmapped24();
     int Start(IUnknown** object);
     void Update();
-    void Render();
+    void Render() throw();
     void Frame();
     void ResetClock();
     unsigned GetTime();

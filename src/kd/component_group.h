@@ -6,6 +6,23 @@
 
 namespace vc1 {
 
+// Inferred name. One 0x14-byte entry of KdComponentGroup::records.
+// SIZE 0x14
+struct NamedRecord
+{
+    KdString name;          // 0x00
+    KdRef<IUnknown> object; // 0x10
+
+    NamedRecord() {}
+    explicit NamedRecord(const KdString& key) : name(key) {}
+
+private:
+    NamedRecord(const NamedRecord&);
+    NamedRecord& operator=(const NamedRecord&);
+};
+
+typedef char Vc1NamedRecordSizeCheck[sizeof(NamedRecord) == 0x14 ? 1 : -1];
+
 // Inferred name. Shared concrete IComponentGroup: a sorted name -> IUnknown*
 // record table (0x14-byte records) plus a scratch IUnknown* list. Embedded in
 // KdSystemBase at +0x0c and KdCompoundObject at +0x28. QueryInterface, AddRef
@@ -36,7 +53,7 @@ extern void* g_groupNotify;
 unsigned char RecordEq(void* key, void* record);
 void FactoryDtorTail(void* self);
 void FactoryReleasePointers(void* self);
-IUnknown** InsertCountedSlot(void* key, void* factory);
+IUnknown** InsertCountedSlot(void* key, void* factory) throw();
 void AppendCountedRange(void* out, void* begin, void* end, void* factory);
 unsigned char* LookupCountedRecord(void* factory, void* key);
 

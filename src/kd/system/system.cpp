@@ -5,6 +5,9 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/idisplay.h"
 #include "kd/iface/iupdateable.h"
+#include "kd/iface/igraphics.h"
+#include "kd/iface/iresource_manager.h"
+#include "bindings/matrix3.h"
 #include "bindings/squirrel_object.h"
 #include "host/runtime.h"
 #include "memory/fixed_pool.h"
@@ -123,35 +126,19 @@ static void FactoryClearSlots(void* begin, void* end)
 
 // EAX=key, EBX=factory. Lookup then copy-insert a 0x14-byte name record.
 // FUNCTION: VC1 0x004161b0
-IUnknown** InsertCountedSlot(void* key, void* factory)
+IUnknown** InsertCountedSlot(void* key, void* factory) throw()
 {
-    unsigned char rec[0x14];
     KdFactory* records = static_cast<KdFactory*>(factory);
     unsigned char* pos;
     unsigned char* end;
-    IUnknown* extra;
-    KdFactory* local;
 
     pos = LookupCountedRecord(factory, key);
     end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
     if (pos != end && RecordEq(key, pos) == 0) {
         return reinterpret_cast<IUnknown**>(pos + 0x10);
     }
-    CopyCountedString(rec, key);
-    extra = 0;
-    *reinterpret_cast<IUnknown**>(rec + 0x10) = extra;
-    pos = InsertCountedRecord(factory, pos, rec);
-    extra = *reinterpret_cast<IUnknown**>(rec + 0x10);
-    if (extra) {
-        extra->Release();
-    }
-    *reinterpret_cast<IUnknown**>(rec + 0x10) = 0;
-    local = reinterpret_cast<KdFactory*>(rec);
-    *reinterpret_cast<void**>(rec) = *reinterpret_cast<void**>(&g_kdFactory);
-    if (local->capacity) {
-        free(local->begin);
-    }
-    local->Clear();
+    NamedRecord rec(*static_cast<KdString*>(key));
+    pos = InsertCountedRecord(factory, pos, &rec);
     return reinterpret_cast<IUnknown**>(pos + 0x10);
 }
 
@@ -281,13 +268,7 @@ static void ReserveRecordTable(void* factory, unsigned newCount)
         end = reinterpret_cast<unsigned char*>(records->begin)
             + (records->capacity / 20) * 20;
         for (; slot < end; slot += 0x14) {
-            if (slot) {
-                *reinterpret_cast<unsigned*>(slot + 0xc) = 0;
-                *reinterpret_cast<unsigned*>(slot) = 0x004d0d9c;
-                *reinterpret_cast<void**>(slot + 4) = &g_kdLogTag;
-                *reinterpret_cast<unsigned*>(slot + 8) = 0;
-                *reinterpret_cast<IUnknown**>(slot + 0x10) = 0;
-            }
+            new (slot) NamedRecord();
         }
     }
 }
@@ -429,7 +410,7 @@ void** KdSystemBase::GetCamera(void** out)
 // FUNCTION: VC1 0x00462030
 void** KdSystemBase::GetDisplay(void** out)
 {
-    IUnknown* value = display;
+    IDisplay* value = display;
 
     *out = value;
     if (value) {
@@ -611,7 +592,7 @@ KdSystemBase::KdSystemBase() throw()
     consoleFont = 0;
     clearColor = 0xff000000;
     heapBlock = 0;
-    showConsole = 0;
+    consoleText[0] = 0;
     time = 0;
     lastTicks = SystemNow();
     field8c = 0;
@@ -729,7 +710,7 @@ int KdSystemBase::Shutdown() throw()
     RebindService(reinterpret_cast<IUnknown**>(&updateGroup.ptr), &g_iidFunctionalGroup);
     RebindService(reinterpret_cast<IUnknown**>(&inputGroup.ptr), &g_iidFunctionalGroup);
     RebindService(&resourceManager.ptr, &g_iidResourceManager);
-    RebindService(&display.ptr, &g_iidDisplay);
+    RebindService(reinterpret_cast<IUnknown**>(&display.ptr), &g_iidDisplay);
     RebindService(&activeCamera.ptr, &g_iidCamera);
     RebindService(&camera.ptr, &g_iidCamera);
     return 0;
@@ -749,7 +730,6 @@ KdSystemBase::~KdSystemBase() throw()
 int KdSystemBase::Start(IUnknown** object)
 {
     IDisplay* face;
-    IUnknown* queried;
 
     if (display) {
         display->Release();
@@ -758,10 +738,10 @@ int KdSystemBase::Start(IUnknown** object)
         display = 0;
     }
     else {
-        queried = static_cast<IUnknown*>((*object)->QueryInterface(&g_iidDisplay));
-        display = queried;
-        if (queried) {
-            queried->AddRef();
+        face = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
+        display = face;
+        if (face) {
+            face->AddRef();
         }
     }
 
@@ -914,11 +894,46 @@ unsigned char KdSystemBase::Script0c(void* a, void* b)
     return 0;
 }
 
-// ISystem vtable+0x30. Draws through display's graphics, optional console
-// overlay (res/fonts/console.fnt), then presents. Not recovered.
-// STUB: VC1 0x00463980
-void KdSystemBase::Render()
+// STRING: VC1 0x004d5780
+static const char kConsoleFont[] = "res/fonts/console.fnt";
+
+// ISystem vtable+0x30. Begins a frame on the display for the active camera,
+// renders through the IRenderable face, overlays consoleText on a black
+// backdrop sized by the console font, then presents (display vtable+0x10).
+// FUNCTION: VC1 0x00463980
+void KdSystemBase::Render() throw()
 {
+    IGraphics* graphics;
+    IFont* font;
+
+    display->Display0c(&graphics, &activeCamera);
+    if (!graphics) {
+        return;
+    }
+    static_cast<IRenderable*>(this)->Render(&graphics);
+    if (consoleText[0]) {
+        if (!consoleFont) {
+            KdString path(kConsoleFont);
+            KdRef<IResourceManager> manager;
+            KdRef<IUnknown> loaded;
+
+            AssignFont(&consoleFont, reinterpret_cast<IUnknown**>(
+                (*GetKdResourceManager(&manager.ptr))->LoadFont(
+                    reinterpret_cast<void**>(&loaded.ptr), &path)));
+        }
+        graphics->SetTransform(&g_matrix3Identity);
+        graphics->SetFont(reinterpret_cast<IUnknown* const*>(&consoleFont.ptr));
+        graphics->SetColor(0xff000000);
+        font = consoleFont;
+        graphics->FillRect(0.0f, 0.0f, static_cast<float>(font->GetTextWidth(consoleText)),
+            static_cast<float>(font->GetHeight()));
+        graphics->SetColor(0xffffffff);
+        graphics->DrawString(consoleText, 0.0f, 0.0f);
+    }
+    display->Display10();
+    if (graphics) {
+        graphics->Release();
+    }
 }
 
 // EDX=block. Unlinks the timed/heap node at g_timedEventHead.

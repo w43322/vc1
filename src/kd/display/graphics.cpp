@@ -113,13 +113,14 @@ void KdGraphics::Graphics64(float a, float b, float c, float d)
     (void)d;
 }
 
-// RET 0xc. Uses state.font (+0x40). Body not recovered.
+// RET 0xc. Inferred name: draws text at (x, y) with state.font (+0x40);
+// KdSystemBase::Render passes the console line. Body not recovered.
 // STUB: VC1 0x0045c850
-void KdGraphics::Graphics60(void* a, void* b, unsigned c)
+void KdGraphics::DrawString(const char* text, float x, float y)
 {
-    (void)a;
-    (void)b;
-    (void)c;
+    (void)text;
+    (void)x;
+    (void)y;
 }
 
 // RET 0xc. Batches 0x60-byte records through g_d3dGammaRamp. Body not recovered.
@@ -262,14 +263,16 @@ void KdGraphics::Graphics58(void* a, float b, float c, float d, float e, float f
     (void)g;
 }
 
-// RET 0x10. Body not recovered.
+// RET 0x10. Inferred name: normalizes a negative width/height, then emits a
+// 4-vertex 0x60-byte quad in the current color through 0x004648b0 (EDI).
+// Body not recovered.
 // STUB: VC1 0x0045ccb0
-void KdGraphics::Graphics50(void* a, float b, float c, float d)
+void KdGraphics::FillRect(float x, float y, float width, float height)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)x;
+    (void)y;
+    (void)width;
+    (void)height;
 }
 
 // JMP 0x00418830.

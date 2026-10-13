@@ -16,12 +16,6 @@ static const char kCompoundObject[] = "CompoundObject";
 // GLOBAL: VC1 0x004d0674
 const char* g_kdNameCompoundObject = kCompoundObject;
 
-IdentifiableName::IdentifiableName()
-    : begin(&g_kdLogTag), size(0), capacity(0)
-{
-    AssignCountedString(this, g_emptyCountedBegin, g_emptyCountedSize);
-}
-
 void* CompoundTailValue::QueryInterface(const char** iid)
 {
     if (*iid == g_iidCloneable) {
@@ -120,7 +114,7 @@ void KdCompoundObject::Position10(const void* valueArg)
 
 const char* KdCompoundObject::GetName()
 {
-    return static_cast<const char*>(name.begin);
+    return name.c_str();
 }
 
 void KdCompoundObject::SetName(const char* valueArg)

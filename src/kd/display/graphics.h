@@ -44,11 +44,11 @@ public:
     void SetTransform(const Matrix3* matrix);
     Vector2* GetOrigin();
     void Translate(const Vector2* offset);
-    void Graphics50(void* a, float b, float c, float d);
+    void FillRect(float x, float y, float width, float height);
     void Graphics54(float a, float b, float c, float d);
     void Graphics58(void* a, float b, float c, float d, float e, float f, float g);
     void Graphics5c(void* a, void* b, unsigned c);
-    void Graphics60(void* a, void* b, unsigned c);
+    void DrawString(const char* text, float x, float y);
     void Graphics64(float a, float b, float c, float d);
     void Graphics68(void* a, float b, float c, float d);
 
