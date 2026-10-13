@@ -23,6 +23,16 @@ private:
 
 typedef char Vc1NamedRecordSizeCheck[sizeof(NamedRecord) == 0x14 ? 1 : -1];
 
+// Inferred name. NamedRecord array in a KdFactory buffer (no vftable of its
+// own). The out-of-line destructor destroys every record up to capacity.
+// SIZE 0x10
+struct KdRecordList
+{
+    KdFactory items; // 0x00
+
+    ~KdRecordList() throw();
+};
+
 // Inferred name. Shared concrete IComponentGroup: a sorted name -> IUnknown*
 // record table (0x14-byte records) plus a scratch IUnknown* list. Embedded in
 // KdSystemBase at +0x0c and KdCompoundObject at +0x28. QueryInterface, AddRef
@@ -32,8 +42,8 @@ typedef char Vc1NamedRecordSizeCheck[sizeof(NamedRecord) == 0x14 ? 1 : -1];
 class KdComponentGroup : public IComponentGroup
 {
 public:
-    KdFactory records; // 0x04  0x14-byte records: counted name (0x10) + IUnknown*
-    KdFactory extra;   // 0x14  IUnknown* list filled by Unmapped1c
+    KdRecordList records; // 0x04  sorted by name
+    KdRefList extra;      // 0x14  IUnknown* list filled by Unmapped1c
 
     ~KdComponentGroup();
 
@@ -51,8 +61,6 @@ typedef char Vc1KdComponentGroupSizeCheck[sizeof(KdComponentGroup) == 0x24 ? 1 :
 extern void* g_groupNotify;
 
 unsigned char RecordEq(void* key, void* record);
-void FactoryDtorTail(void* self);
-void FactoryReleasePointers(void* self);
 IUnknown** InsertCountedSlot(void* key, void* factory) throw();
 void AppendCountedRange(void* out, void* begin, void* end, void* factory);
 unsigned char* LookupCountedRecord(void* factory, void* key);

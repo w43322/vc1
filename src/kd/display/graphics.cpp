@@ -2,6 +2,7 @@
 #include "kd/display/display.h"
 
 #include "kd/iface/iid.h"
+#include "kd/iface/ifont.h"
 
 namespace vc1 {
 
@@ -113,14 +114,42 @@ void KdGraphics::Graphics64(float a, float b, float c, float d)
     (void)d;
 }
 
-// RET 0xc. Inferred name: draws text at (x, y) with state.font (+0x40);
-// KdSystemBase::Render passes the console line. Body not recovered.
-// STUB: VC1 0x0045c850
+// RET 0xc. Inferred name. Without state.font (+0x40) nothing is drawn.
+// Saves the transform, translates to (x, y), hands the IAbstract face to
+// IFont::DrawText and restores the transform.
+// FUNCTION: VC1 0x0045c850
 void KdGraphics::DrawString(const char* text, float x, float y)
 {
-    (void)text;
-    (void)x;
-    (void)y;
+    Matrix3 saved;
+    Vector2 origin;
+    IFont* font;
+    IUnknown* face;
+    IUnknown* self;
+
+    if (!state.font) {
+        return;
+    }
+    saved = *GetTransform();
+    origin.x = x;
+    origin.y = y;
+    Translate(&origin);
+    font = static_cast<IFont*>(state.font);
+    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this)->QueryInterface(
+        &g_iidAbstract));
+    if (!face) {
+        self = 0;
+    }
+    else {
+        self = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
+        if (self) {
+            self->AddRef();
+        }
+    }
+    font->DrawText(&self, text);
+    if (self) {
+        self->Release();
+    }
+    SetTransform(&saved);
 }
 
 // RET 0xc. Batches 0x60-byte records through g_batchCount. Body not recovered.

@@ -3,6 +3,7 @@
 #include "kd/iface/iunknown.h"
 #include "host/runtime.h"
 
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,11 +24,55 @@ void KdFactory::Clear()
     capacity = 0;
 }
 
+// FUNCTION: VC1 0x00401fa0
+void KdRange::Clear()
+{
+    begin = 0;
+    size = 0;
+}
+
 // MOV EAX, 1; RET. KdString vtable+0x08: one byte reserved for the NUL.
 // FUNCTION: VC1 0x00403aa0
 unsigned KdString::Count()
 {
     return 1;
+}
+
+// EBX=this. Destroys every KdString up to capacity through its virtual
+// destructor; the KdFactory member destructor is inlined after it.
+// FUNCTION: VC1 0x00408d40
+KdStringList::~KdStringList() throw()
+{
+    KdString* item;
+    KdString* end;
+
+    if (items.capacity) {
+        item = reinterpret_cast<KdString*>(items.begin);
+        end = item + (items.capacity >> 4);
+        for (; item < end; ++item) {
+            item->~KdString();
+        }
+    }
+}
+
+// EAX=count, EDX=this, CL=exact. Grows to count strings and default-constructs
+// the new slots.
+// FUNCTION: VC1 0x00408da0
+void KdStringList::Reserve(unsigned count, char exact) throw()
+{
+    unsigned old;
+    KdString* slot;
+    KdString* end;
+
+    old = items.capacity >> 4;
+    GrowCountedBuffer(&items, static_cast<int>(count << 4), exact);
+    if ((items.capacity >> 4) > old) {
+        slot = reinterpret_cast<KdString*>(items.begin) + old;
+        end = reinterpret_cast<KdString*>(items.begin) + (items.capacity >> 4);
+        for (; slot < end; ++slot) {
+            new (slot) KdString();
+        }
+    }
 }
 
 // EAX=exclusive end, ECX=first. Byte reverse of [first, last).
@@ -142,6 +187,31 @@ void ReserveFactoryTable(unsigned newCount)
 }
 
 // XOR EAX,EAX; RET. ICF-folded return-0; factory vtable+0x08 and SQBlob::Flush.
+// EAX=source, EDI=this. Exact-size copy; every string is copied, not shared.
+// FUNCTION: VC1 0x00419e70
+KdStringList::KdStringList(const KdStringList& source)
+{
+    unsigned count;
+    unsigned bytes;
+    KdString* to;
+    const KdString* from;
+    const KdString* last;
+
+    count = source.items.size >> 4;
+    bytes = count << 4;
+    if (items.capacity < bytes) {
+        Reserve(count, 1);
+    }
+    to = reinterpret_cast<KdString*>(items.begin);
+    items.size = bytes;
+    from = reinterpret_cast<const KdString*>(source.items.begin);
+    last = reinterpret_cast<const KdString*>(
+        reinterpret_cast<const unsigned char*>(source.items.begin) + source.items.size);
+    for (; from != last; ++from, ++to) {
+        AssignCountedString(to, from->c_str(), from->size);
+    }
+}
+
 // FUNCTION: VC1 0x0041adb0 FOLDED
 unsigned KdFactory::Count()
 {

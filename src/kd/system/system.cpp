@@ -81,23 +81,19 @@ unsigned char RecordEq(void* key, void* record)
     return cmp < 0;
 }
 
-// ESI=this. Walk 0x14-byte records then factory Clear. capacity / 20 via 0xcccccccd.
+// ESI=this. Destroys the records up to capacity (capacity / 20 via
+// 0xcccccccd); the KdFactory member destructor is inlined after it.
 // FUNCTION: VC1 0x00415bf0
-void FactoryDtorTail(void* self)
+KdRecordList::~KdRecordList() throw()
 {
-    KdFactory* factory = static_cast<KdFactory*>(self);
     unsigned n;
     unsigned char* begin;
 
-    if (factory->capacity) {
-        n = factory->capacity / 20;
-        begin = reinterpret_cast<unsigned char*>(factory->begin);
+    if (items.capacity) {
+        n = items.capacity / 20;
+        begin = reinterpret_cast<unsigned char*>(items.begin);
         FactoryClearSlots(begin, begin + n * 20);
     }
-    if (factory->capacity) {
-        free(factory->begin);
-    }
-    factory->Clear();
 }
 
 // EAX=begin, EDI=end. Each 0x14-byte record Releases +0x10 then nested factory dtor.
@@ -273,18 +269,18 @@ static void ReserveRecordTable(void* factory, unsigned newCount)
     }
 }
 
-// EBX=this. Release each IUnknown* in the counted buffer, then factory Clear.
+// EBX=this. Releases each IUnknown* up to capacity; the KdFactory member
+// destructor is inlined after it. Owners: KdComponentGroup::extra, KdFont.
 // FUNCTION: VC1 0x00419bb0
-void FactoryReleasePointers(void* self)
+KdRefList::~KdRefList() throw()
 {
-    KdFactory* factory = static_cast<KdFactory*>(self);
     IUnknown** slot;
     IUnknown** end;
     IUnknown* object;
 
-    if (factory->capacity) {
-        slot = reinterpret_cast<IUnknown**>(factory->begin);
-        end = slot + (factory->capacity / sizeof(IUnknown*));
+    if (items.capacity) {
+        slot = reinterpret_cast<IUnknown**>(items.begin);
+        end = slot + (items.capacity / sizeof(IUnknown*));
         for (; slot < end; slot += 1) {
             object = *slot;
             if (object) {
@@ -293,10 +289,6 @@ void FactoryReleasePointers(void* self)
             *slot = 0;
         }
     }
-    if (factory->capacity) {
-        free(factory->begin);
-    }
-    factory->Clear();
 }
 
 // XOR EAX,EAX; RET. IRenderable vtable+0x14; ICF-folded return-0.

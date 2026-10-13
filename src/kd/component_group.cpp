@@ -13,15 +13,13 @@ void* g_groupNotify;
 // Inlined into ~KdSystemBase (0x00462900): extra then records.
 KdComponentGroup::~KdComponentGroup()
 {
-    FactoryReleasePointers(&extra);
-    FactoryDtorTail(&records);
 }
 
 // LEA EAX, [ECX+4]; RET.
 // FUNCTION: VC1 0x00472790
 void* KdComponentGroup::Unmapped20()
 {
-    return &records;
+    return &records.items;
 }
 
 // Unmapped24 (virtual), then every record: notify IGroupMember with
@@ -38,8 +36,8 @@ int KdComponentGroup::Shutdown()
 
     Unmapped24();
 
-    it = reinterpret_cast<unsigned char*>(records.begin);
-    end = it + records.size;
+    it = reinterpret_cast<unsigned char*>(records.items.begin);
+    end = it + records.items.size;
     for (; it != end; it += 0x14) {
         object = *reinterpret_cast<IUnknown**>(it + 0x10);
         member = 0;
@@ -63,10 +61,10 @@ int KdComponentGroup::Shutdown()
             member->Release();
         }
     }
-    if (records.capacity < records.Count()) {
-        GrowCountedBuffer(&records, 0, 1);
+    if (records.items.capacity < records.items.Count()) {
+        GrowCountedBuffer(&records.items, 0, 1);
     }
-    records.size = 0;
+    records.items.size = 0;
     return 0;
 }
 
@@ -79,8 +77,8 @@ int KdComponentGroup::Unmapped24()
     IUnknown* object;
     IComponentGroup* group;
 
-    it = reinterpret_cast<unsigned char*>(records.begin);
-    end = it + records.size;
+    it = reinterpret_cast<unsigned char*>(records.items.begin);
+    end = it + records.items.size;
     for (; it != end; it += 0x14) {
         object = *reinterpret_cast<IUnknown**>(it + 0x10);
         if (!object) {
@@ -93,15 +91,15 @@ int KdComponentGroup::Unmapped24()
             group->Release();
         }
     }
-    if (extra.capacity < extra.Count()) {
-        GrowCountedBuffer(&extra, 0, 1);
+    if (extra.items.capacity < extra.items.Count()) {
+        GrowCountedBuffer(&extra.items, 0, 1);
     }
-    extra.size = 0;
+    extra.items.size = 0;
     return 0;
 }
 
 // RET 4. Collects into extra every record (and nested group member) that
-// answers iid; returns &extra.
+// answers iid; returns &extra.items (the KdFactory).
 // FUNCTION: VC1 0x004728f0
 KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
 {
@@ -117,13 +115,13 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
     IUnknown** fill;
     IUnknown** fillEnd;
 
-    if (extra.capacity < extra.Count()) {
-        GrowCountedBuffer(&extra, 0, 1);
+    if (extra.items.capacity < extra.items.Count()) {
+        GrowCountedBuffer(&extra.items, 0, 1);
     }
-    extra.size = 0;
+    extra.items.size = 0;
 
-    for (it = reinterpret_cast<unsigned char*>(records.begin);
-        it != reinterpret_cast<unsigned char*>(records.begin) + records.size;
+    for (it = reinterpret_cast<unsigned char*>(records.items.begin);
+        it != reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size;
         it += 0x14) {
         object = *reinterpret_cast<IUnknown**>(it + 0x10);
         group = object
@@ -133,18 +131,18 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
             group->AddRef();
             nested = group->Unmapped1c(iid);
             AppendCountedRange(&appended, nested->begin,
-                reinterpret_cast<unsigned char*>(nested->begin) + nested->size, &extra);
+                reinterpret_cast<unsigned char*>(nested->begin) + nested->size, &extra.items);
         }
         name = *iid;
         object = *reinterpret_cast<IUnknown**>(it + 0x10);
         if (object && object->QueryInterface(&name)) {
-            needed = ((extra.size >> 2) + 1) * 4;
-            if (extra.capacity < needed) {
-                oldCount = extra.capacity >> 2;
-                GrowCountedBuffer(&extra, static_cast<int>(needed), 0);
-                if ((extra.capacity >> 2) > oldCount) {
-                    fill = reinterpret_cast<IUnknown**>(extra.begin) + oldCount;
-                    fillEnd = reinterpret_cast<IUnknown**>(extra.begin) + (extra.capacity >> 2);
+            needed = ((extra.items.size >> 2) + 1) * 4;
+            if (extra.items.capacity < needed) {
+                oldCount = extra.items.capacity >> 2;
+                GrowCountedBuffer(&extra.items, static_cast<int>(needed), 0);
+                if ((extra.items.capacity >> 2) > oldCount) {
+                    fill = reinterpret_cast<IUnknown**>(extra.items.begin) + oldCount;
+                    fillEnd = reinterpret_cast<IUnknown**>(extra.items.begin) + (extra.items.capacity >> 2);
                     for (; fill < fillEnd; fill++) {
                         if (fill) {
                             *fill = 0;
@@ -152,9 +150,9 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
                     }
                 }
             }
-            extra.size = needed;
+            extra.items.size = needed;
             slot = reinterpret_cast<IUnknown**>(
-                reinterpret_cast<unsigned char*>(extra.begin) + needed - 4);
+                reinterpret_cast<unsigned char*>(extra.items.begin) + needed - 4);
             object = *reinterpret_cast<IUnknown**>(it + 0x10);
             if (object) {
                 object->AddRef();
@@ -168,7 +166,7 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
             group->Release();
         }
     }
-    return &extra;
+    return &extra.items;
 }
 
 // RET 8. Lookup key; on hit return the record's IUnknown*. On a miss ask each
@@ -187,8 +185,8 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
     void* absNotify;
     unsigned char take;
 
-    pos = LookupCountedRecord(&records, key);
-    end = reinterpret_cast<unsigned char*>(records.begin) + records.size;
+    pos = LookupCountedRecord(&records.items, key);
+    end = reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size;
     if (pos < end && RecordEq(key, pos)) {
         pos = end;
     }
@@ -201,7 +199,7 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
         return out;
     }
 
-    it = reinterpret_cast<unsigned char*>(records.begin);
+    it = reinterpret_cast<unsigned char*>(records.items.begin);
     for (; it != end; it += 0x14) {
         object = *reinterpret_cast<IUnknown**>(it + 0x10);
         if (!object) {
@@ -265,8 +263,8 @@ void** KdComponentGroup::Unmapped14(void** out, void* key)
     IUnknown* member;
     typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
-    pos = LookupCountedRecord(&records, key);
-    end = reinterpret_cast<unsigned char*>(records.begin) + records.size;
+    pos = LookupCountedRecord(&records.items, key);
+    end = reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size;
     if (pos < end && RecordEq(key, pos)) {
         pos = end;
     }
@@ -288,8 +286,8 @@ void** KdComponentGroup::Unmapped14(void** out, void* key)
         }
         *out = object;
         EraseCountedBytes(pos, pos + 0x14,
-            reinterpret_cast<unsigned char*>(records.begin) + records.size);
-        records.size -= 0x14;
+            reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size);
+        records.items.size -= 0x14;
         if (member) {
             member->Release();
         }
@@ -307,7 +305,7 @@ int KdComponentGroup::Unmapped10(void* key, void** out)
     void* ident;
     typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
-    slot = InsertCountedSlot(key, &records);
+    slot = InsertCountedSlot(key, &records.items);
     object = out ? static_cast<IUnknown*>(*out) : 0;
     if (object) {
         object->AddRef();

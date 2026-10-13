@@ -24,15 +24,35 @@ typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
 void GrowCountedBuffer(void* self, int bytes, char exact) throw();
 
+// Inferred name. Borrowed (begin, size) view; KdFactory adds ownership. Every
+// inlined KdFactory destructor ends by storing this vftable.
+// SIZE 0x0c
+// VTABLE: VC1 0x004cfb84
+class KdRange
+{
+public:
+    KdRange() : begin(0), size(0) {}
+    virtual ~KdRange() {}  // vtable+0x00
+    virtual void Clear();  // vtable+0x04
+
+    FactoryEntry* begin; // 0x04
+    unsigned size;       // 0x08
+};
+
+typedef char Vc1KdRangeSizeCheck[sizeof(KdRange) == 0x0c ? 1 : -1];
+
+// SYNTHETIC: VC1 0x00401f80
+// vc1::KdRange::`scalar deleting destructor'
+
 // Inferred name. Generic counted byte buffer (begin, size in bytes, capacity);
 // g_kdFactory's sorted name/create table is one instance. Count() is the
 // number of reserved bytes past size (0 here, 1 for the NUL of KdString).
 // SIZE 0x10
 // VTABLE: VC1 0x004cfb8c
-class KdFactory
+class KdFactory : public KdRange
 {
 public:
-    KdFactory() : begin(0), size(0), capacity(0) {}
+    KdFactory() : capacity(0) {}
     virtual ~KdFactory()      // vtable+0x00; inlined at every owner
     {
         if (capacity != 0) {
@@ -44,14 +64,12 @@ public:
     virtual unsigned Count(); // vtable+0x08
     void** __stdcall QueryNamed(void** out, const char** name);
 
-    FactoryEntry* begin; // 0x04
-    unsigned size;       // 0x08
     unsigned capacity;   // 0x0c
 
 protected:
     // Reserves bytes (+Count() through the KdFactory vptr) and sets size;
     // inlined into derived constructors before they write their own vptr.
-    explicit KdFactory(unsigned bytes) : begin(0), size(0), capacity(0)
+    explicit KdFactory(unsigned bytes) : capacity(0)
     {
         if (capacity < Count() + bytes) {
             GrowCountedBuffer(this, static_cast<int>(bytes), 1);
@@ -64,6 +82,17 @@ typedef char Vc1KdFactorySizeCheck[sizeof(KdFactory) == 0x10 ? 1 : -1];
 
 // SYNTHETIC: VC1 0x00401f30
 // vc1::KdFactory::`scalar deleting destructor'
+
+// Inferred name. Owning IUnknown* array in a KdFactory buffer (no vftable of
+// its own). The out-of-line destructor releases every slot up to capacity,
+// then destroys the buffer.
+// SIZE 0x10
+struct KdRefList
+{
+    KdFactory items; // 0x00
+
+    ~KdRefList() throw();
+};
 
 extern unsigned g_kdLogTag;
 void AssignCountedString(void* self, const char* text, unsigned len) throw();
@@ -88,6 +117,11 @@ public:
         size = 0;
         AssignCountedString(this, text, length);
     }
+    // Range copy: starts from a zeroed buffer, not g_kdLogTag.
+    KdString(const char* first, const char* last)
+    {
+        AssignCountedString(this, first, static_cast<unsigned>(last - first));
+    }
     KdString(const KdString& source);
     unsigned Count();
 
@@ -98,6 +132,33 @@ private:
 };
 
 typedef char Vc1KdStringSizeCheck[sizeof(KdString) == 0x10 ? 1 : -1];
+
+// Inferred name. KdString array in a KdFactory buffer (no vftable of its
+// own); IFont::WrapText returns one by value.
+// SIZE 0x10
+struct KdStringList
+{
+    KdFactory items; // 0x00
+
+    KdStringList() {}
+    KdStringList(const KdStringList& source);
+    ~KdStringList() throw();
+
+    void Reserve(unsigned count, char exact) throw();
+    void PushBack(const KdString& value)
+    {
+        unsigned bytes = ((items.size >> 4) + 1) << 4;
+        if (items.capacity < bytes) {
+            Reserve(bytes >> 4, 0);
+        }
+        items.size = bytes;
+        AssignCountedString(reinterpret_cast<unsigned char*>(items.begin) + bytes - 0x10,
+            value.c_str(), value.size);
+    }
+
+private:
+    KdStringList& operator=(const KdStringList&);
+};
 
 // SIZE 0x08
 struct FactoryInsert
