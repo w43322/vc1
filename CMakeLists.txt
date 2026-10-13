@@ -51,6 +51,7 @@ add_executable(vc1_recompiled
   src/kd/scene/compound_object.cpp
   src/kd/console/console.cpp
   src/kd/font/font.cpp
+  src/kd/stream/file_reader.cpp
   src/kd/scene/layer.cpp
   src/kd/group/update_group.cpp
   src/kd/group/render_group.cpp

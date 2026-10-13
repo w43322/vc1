@@ -343,6 +343,23 @@ KdString::KdString(const char* text)
 
 // EAX=this, stdcall source RET 4. A borrowed source (capacity 0) is shared;
 // an owned one is copied with its NUL.
+// EAX=this, ESI=length. Keeps the bytes, NUL-terminates at length; an empty
+// borrowed string goes back to g_kdLogTag.
+// FUNCTION: VC1 0x004b8b40
+void KdString::Resize(unsigned length) throw()
+{
+    if ((capacity | length) == 0) {
+        begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        size = 0;
+        return;
+    }
+    if (capacity < Count() + length) {
+        GrowCountedBuffer(this, static_cast<int>(length), 1);
+    }
+    size = length;
+    reinterpret_cast<char*>(begin)[length] = 0;
+}
+
 // FUNCTION: VC1 0x004b8bf0
 KdString::KdString(const KdString& source)
     : KdFactory(source.capacity != 0 ? source.size + 1 : 0)

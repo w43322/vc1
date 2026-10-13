@@ -47,7 +47,12 @@ struct KdObject
     KdObject* next; // +0x04
     unsigned pad[0x42];
     void (*destructor)(KdObject* self); // +0x110, index 0x44 of int*
-    unsigned tail[0x12];
+    int (*open)(KdObject* self, const char* path, const char* mode); // +0x114
+    int (*close)(KdObject* self, int handle);                         // +0x118
+    unsigned unknown11c;                                              // +0x11c
+    int (*read)(KdObject* self, void* buffer, unsigned size, unsigned count,
+        int handle);                                                  // +0x120
+    unsigned tail[0x0e];
 };
 
 typedef char Vc1KdObjectSizeCheck[sizeof(KdObject) == 0x15c ? 1 : -1];

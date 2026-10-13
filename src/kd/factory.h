@@ -4,6 +4,7 @@
 #include "kd/iface/iunknown.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 namespace vc1 {
 
@@ -23,6 +24,7 @@ struct FactoryEntry
 typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
 void GrowCountedBuffer(void* self, int bytes, char exact) throw();
+void EraseCountedBytes(void* first, void* middle, void* last);
 
 // Inferred name. Borrowed (begin, size) view; KdFactory adds ownership. Every
 // inlined KdFactory destructor ends by storing this vftable.
@@ -34,6 +36,9 @@ public:
     KdRange() : begin(0), size(0) {}
     virtual ~KdRange() {}  // vtable+0x00
     virtual void Clear();  // vtable+0x04
+
+    // Deleting destructors of this hierarchy call free() directly.
+    static void operator delete(void* p) { free(p); }
 
     FactoryEntry* begin; // 0x04
     unsigned size;       // 0x08
@@ -53,18 +58,25 @@ class KdFactory : public KdRange
 {
 public:
     KdFactory() : capacity(0) {}
-    virtual ~KdFactory()      // vtable+0x00; inlined at every owner
+    virtual __forceinline ~KdFactory() throw() // vtable+0x00; inlined at every owner
     {
-        if (capacity != 0) {
-            free(begin);
-        }
-        Clear();
+        Release();
     }
     virtual void Clear();     // vtable+0x04
     virtual unsigned Count(); // vtable+0x08
     void** __stdcall QueryNamed(void** out, const char** name);
 
     unsigned capacity;   // 0x0c
+
+    // Out of the destructor body so Clear() stays a virtual call, as in the
+    // original's inlined destructors.
+    __forceinline void Release()
+    {
+        if (capacity != 0) {
+            free(begin);
+        }
+        Clear();
+    }
 
 protected:
     // Reserves bytes (+Count() through the KdFactory vptr) and sets size;
@@ -117,6 +129,13 @@ public:
         size = 0;
         AssignCountedString(this, text, length);
     }
+    // length copies of fill plus the NUL.
+    KdString(unsigned length, char fill) : KdFactory(length + 1)
+    {
+        size = length;
+        memset(begin, fill, length);
+        reinterpret_cast<char*>(begin)[length] = 0;
+    }
     // Range copy: starts from a zeroed buffer, not g_kdLogTag.
     KdString(const char* first, const char* last)
     {
@@ -124,6 +143,7 @@ public:
     }
     KdString(const KdString& source);
     unsigned Count();
+    void Resize(unsigned length) throw();
 
     const char* c_str() const { return reinterpret_cast<const char*>(begin); }
 

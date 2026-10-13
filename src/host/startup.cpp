@@ -148,11 +148,9 @@ void* OpenKdPath(const char* path, const char* mode)
     KdObject* node = g_kdObjects;
     int handle;
     void* wrap;
-    typedef int (*KdOpenFn)(KdObject* self, const char* openPath, const char* openMode);
 
     while (node) {
-        handle = (*reinterpret_cast<KdOpenFn*>(reinterpret_cast<char*>(node) + 0x114))(
-            node, path, mode);
+        handle = node->open(node, path, mode);
         if (handle) {
             wrap = malloc(8);
             reinterpret_cast<KdObject**>(wrap)[0] = node;
