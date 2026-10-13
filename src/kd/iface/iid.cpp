@@ -134,13 +134,13 @@ void* KdCompoundObject::QueryInterface(const char** iid)
         return static_cast<ICloneable*>(this);
     }
     if (name == kIidComponentGroup || name == kIidShutdownable) {
-        return static_cast<CompoundComponentGroup*>(this);
+        return static_cast<KdComponentGroup*>(this);
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
     }
     if (name == kIidAbstract) {
-        return reinterpret_cast<char*>(this) + 0x4c;
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }

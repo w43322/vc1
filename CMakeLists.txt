@@ -46,6 +46,7 @@ add_executable(vc1_recompiled
   src/kd/display/render_target.cpp
   src/kd/display/texture.cpp
   src/kd/system/system.cpp
+  src/kd/component_group.cpp
   src/kd/sound/sound_driver.cpp
   src/kd/scene/compound_object.cpp
   src/kd/console/console.cpp

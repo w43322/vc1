@@ -17,6 +17,36 @@ void* KdQueryInterface(IUnknown* object, const char** iid);
 void KdAddRef(IUnknown* object);
 void KdRelease(IUnknown* object);
 
+// Inferred name. Owning interface pointer member: the original destructors
+// inline "if (p) p->Release(); p = 0;" per member in reverse declaration order.
+// Assignment does not touch the reference count.
+template <class T>
+class KdRef
+{
+public:
+    T* ptr;
+
+    KdRef() : ptr(0) {}
+    ~KdRef()
+    {
+        if (ptr) {
+            ptr->Release();
+        }
+        ptr = 0;
+    }
+    KdRef& operator=(T* value)
+    {
+        ptr = value;
+        return *this;
+    }
+    operator T*() const { return ptr; }
+    T* operator->() const { return ptr; }
+
+private:
+    KdRef(const KdRef&);
+    KdRef& operator=(const KdRef&);
+};
+
 }
 
 #endif

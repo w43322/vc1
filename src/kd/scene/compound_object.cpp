@@ -22,66 +22,6 @@ IdentifiableName::IdentifiableName()
     AssignCountedString(this, g_emptyCountedBegin, g_emptyCountedSize);
 }
 
-void* CompoundComponentGroup::QueryInterface(const char** iid)
-{
-    if (*iid == g_iidComponentGroup || *iid == g_iidShutdownable) {
-        return this;
-    }
-    return 0;
-}
-
-unsigned CompoundComponentGroup::AddRef()
-{
-    return 0;
-}
-
-unsigned CompoundComponentGroup::Release()
-{
-    return 0;
-}
-
-int CompoundComponentGroup::Shutdown()
-{
-    return Unmapped24();
-}
-
-int CompoundComponentGroup::Unmapped10(void* key, void** out)
-{
-    (void)key;
-    *out = 0;
-    return 0;
-}
-
-void** CompoundComponentGroup::Unmapped14(void** out, void* key)
-{
-    (void)key;
-    *out = 0;
-    return out;
-}
-
-void** CompoundComponentGroup::Unmapped18(void** out, void* key)
-{
-    (void)key;
-    *out = 0;
-    return out;
-}
-
-int CompoundComponentGroup::Unmapped1c(void* key)
-{
-    (void)key;
-    return 0;
-}
-
-void* CompoundComponentGroup::Unmapped20()
-{
-    return &extra;
-}
-
-int CompoundComponentGroup::Unmapped24()
-{
-    return 0;
-}
-
 void* CompoundTailValue::QueryInterface(const char** iid)
 {
     if (*iid == g_iidCloneable) {
@@ -218,17 +158,17 @@ int KdCompoundObject::Shutdown()
 
 int KdCompoundObject::Unmapped10(void* key, void** out)
 {
-    return CompoundComponentGroup::Unmapped10(key, out);
+    return KdComponentGroup::Unmapped10(key, out);
 }
 
 void** KdCompoundObject::Unmapped14(void** out, void* key)
 {
-    return CompoundComponentGroup::Unmapped14(out, key);
+    return KdComponentGroup::Unmapped14(out, key);
 }
 
 void** KdCompoundObject::Unmapped18(void** out, void* key)
 {
-    return CompoundComponentGroup::Unmapped18(out, key);
+    return KdComponentGroup::Unmapped18(out, key);
 }
 
 // FUNCTION: VC1 0x004738e0

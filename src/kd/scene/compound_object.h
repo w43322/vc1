@@ -4,7 +4,7 @@
 #include "kd/iface/iabstract.h"
 #include "kd/iface/iclassifiable.h"
 #include "kd/iface/icloneable.h"
-#include "kd/iface/icomponent_group.h"
+#include "kd/component_group.h"
 #include "kd/iface/iidentifiable.h"
 #include "kd/iface/ipositionable.h"
 #include "kd/iface/iscript_object.h"
@@ -12,32 +12,6 @@
 #include "bindings/squirrel_object.h"
 
 namespace vc1 {
-
-// Shared concrete component-group storage. The original constructor writes
-// this vftable at KdCompoundObject+0x28, followed by two KdFactory subobjects.
-// The name is inferred.
-// SIZE 0x24
-// VTABLE: VC1 0x004d4f2c
-class CompoundComponentGroup : public IComponentGroup
-{
-public:
-    KdFactory records; // 0x04
-    KdFactory extra;   // 0x14
-
-    void* QueryInterface(const char** iid);
-    unsigned AddRef();
-    unsigned Release();
-    int Shutdown();
-    int Unmapped10(void* key, void** out);
-    void** Unmapped14(void** out, void* key);
-    void** Unmapped18(void** out, void* key);
-    int Unmapped1c(void* key);
-    void* Unmapped20();
-    int Unmapped24();
-};
-
-typedef char Vc1CompoundComponentGroupSizeCheck[
-    sizeof(CompoundComponentGroup) == 0x24 ? 1 : -1];
 
 // Inferred member type at KdCompoundObject+0x54. Its secondary ICloneable
 // vptr is initialized at +0x58, exactly as the original constructor shows.
@@ -93,14 +67,14 @@ typedef char Vc1CompoundScriptValueSizeCheck[sizeof(CompoundScriptValue) == 0x0c
 // VTABLE: VC1 0x004d4f7c vc1::IPositionable
 // VTABLE: VC1 0x004d4f90 vc1::IIdentifiable
 // VTABLE: VC1 0x004d4fa8 vc1::IClassifiable
-// VTABLE: VC1 0x004d4fc4 vc1::CompoundComponentGroup
+// VTABLE: VC1 0x004d4fc4 vc1::KdComponentGroup
 // VTABLE: VC1 0x004d4fec vc1::IAbstract
 class KdCompoundObject : public IScriptObject,
                          public ICloneable,
                          public IPositionable,
                          public IIdentifiable,
                          public IClassifiable,
-                         public CompoundComponentGroup,
+                         public KdComponentGroup,
                          public IAbstract
 {
 public:

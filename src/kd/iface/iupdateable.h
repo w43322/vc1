@@ -10,6 +10,7 @@ struct IUpdateable : IUnknown
 {
     virtual int Unmapped0c() = 0;              // vtable+0x0c
     virtual int SetLayer(unsigned layer) = 0; // vtable+0x10
+    virtual void Update(unsigned sliceBit, int dt) = 0; // vtable+0x14
 };
 
 typedef char Vc1IUpdateableSizeCheck[sizeof(IUpdateable) == 0x04 ? 1 : -1];
