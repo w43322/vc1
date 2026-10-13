@@ -106,7 +106,8 @@ class KdDisplay : public IScriptObject, public IRenderTarget, public IDisplay,
 // SYNTHETIC: VC1 0x00402230
 // vc1::KdDisplay::`scalar deleting destructor'
 ```
-- String literals with a known original VA: `// STRING: VC1 0x00......` immediately above the line that contains the text. The same STRING address may repeat if the text matches.
+- Owning interface-pointer members whose destructor the original inlines as `if (p) p->Release(); p = 0;` in reverse member order are `KdRef<T>` (`kd/iface/iunknown.h`), not raw pointers released by hand in the destructor body; the member order then reproduces the original teardown order.
+- String literals with a known original VA: `// STRING: VC1 0x00......` immediately above the line that contains the text. Each STRING address may appear once: reccmp drops a repeated address with `[ERROR] Dropped duplicate address`. When several functions use the same original literal, define it once as an `extern const char` array marked `GLOBAL` (not `STRING`; a named array is a data symbol, so a `STRING` marker leaves asmcmp comparing STRING vs DATA) and reference that symbol elsewhere (`kKdParentWindow`).
 - `LINE` pins a recompiled instruction to a source line when the asm diff mis-aligns; use it on near-matches, not as a first annotation.
 - Stock Squirrel 2.2.3 (`third_party/squirrel223`): **comments only**, do not rewrite the bodies. `reccmp-project.yml` already has this tree in `source-root`. Prefer `// FUNCTION: VC1 0x...` on the implementation when that `.cpp` is already in original address order. Static functions are fine that way. If source order does not match the original (typical for sqstdlib), use the **name-comment** form from reccmp's annotations docs, and put it in a **header** (`.h` / `.hpp`). Decomplint allows lookup-by-name only in headers (`byname_function_in_cpp` fails `--warnfail` in `.cpp`). Example that matches `_file__typeof`:
 
@@ -132,11 +133,17 @@ tools/build-vc9.cmd
 tools/compare-reccmp.ps1
 ```
 
-`tools/compare-reccmp.ps1` is the full pass: decomplint, asmcmp (JSON/HTML/SVG), aggregate diff against `reports/VC1.prev.json`, datacmp, vtable, and roadmap. Only decomplint and asmcmp fail the script. Data/vtable/roadmap mismatches are expected this early; still read those reports when you added `GLOBAL` or `VTABLE` markers.
+`tools/compare-reccmp.ps1` is the full pass: decomplint, asmcmp (JSON/HTML/SVG), aggregate diffs, datacmp, vtable, roadmap, and `tools/report-progress.py`. Only decomplint and asmcmp fail the script. Full tool output goes to `build/vc9/reports/` (`VC1-asmcmp.txt`, `VC1-data.txt`, `VC1-vtable.txt`, ...); the console shows only errors/warnings, the diff **since the previous run** (`VC1.diff.txt`) and **since the round baseline** (`VC1.base-diff.txt`), and progress. Run it with `-ResetBaseline` at the start of a round (or right after a commit) so the baseline diff lists every regression of the round, not just the last iteration. `-Full` echoes everything. Search the report files with Grep instead of re-running with filters. Data/vtable/roadmap mismatches are expected this early; still read those reports when you added `GLOBAL` or `VTABLE` markers.
+
+The link uses `/OPT:NOICF`, so the copies of a `FOLDED` original stay separate in the recompiled exe and asmcmp binds only one of them; `Match (...) collides with previous staged match` on a `FOLDED` address is expected. On any other address it means two markers claim one VA.
 
 Compare reports per-function similarity. Report those numbers. Do not call them overall game completion. If asmcmp prints `Ambiguous match` on a name you just added, fix the name comment in the same round (mangled symbol) — do not leave a 0% overlay as “mapped”.
 
-For a function that is close but not matching, check stack slots with `tools/stackcmp-reccmp.ps1 <original-offset>`. For a single asm diff: from `build/vc9`, `reccmp-reccmp --target VC1 --verbose 0x...`.
+For a function that is close but not matching, check stack slots with `tools/stackcmp-reccmp.ps1 <original-offset>`. For asm diffs use `tools/diff-reccmp.ps1 0x... [0x...]` (runs `reccmp-reccmp --verbose` from `build/vc9` without the PDB-parsing noise).
+
+Supplementary raw views of the original (Ghidra stays primary evidence): `.venv/Scripts/python.exe tools/disasm-orig.py 0x...` disassembles up to the function's final `RET` (or pass a hex length), and `--dwords 0x... [count]` dumps a vtable or data block.
+
+Shell notes (Windows PowerShell): do not pass Python with embedded double quotes through `python -c` (PowerShell mangles the quoting); write a temp `.py` and run it. Do not write sources with `Set-Content -Encoding utf8` (adds a BOM) or through PowerShell pipes (CRLF); sources are LF without BOM.
 
 `reccmp-project.yml` target `VC1` points at `VirtualCity.Unwrapped.exe` and the README SHA-256. Do not use `reccmp-verexp` (this target is an EXE, not a DLL).
 

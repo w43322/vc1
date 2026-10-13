@@ -113,8 +113,8 @@ static WNDCLASSA g_kdDisplayClass;
 static const char kTexture[] = "Texture";
 // STRING: VC1 0x004d4c4c
 static const char kDisplay[] = "Display";
-// STRING: VC1 0x004d0b38
-static const char kKdParentWindow[] = "KD_PARENT_WINDOW";
+// GLOBAL: VC1 0x004d0b38
+extern const char kKdParentWindow[] = "KD_PARENT_WINDOW";
 // GLOBAL: VC1 0x004d0630
 const char* g_kdNameDisplay = kDisplay;
 // GLOBAL: VC1 0x004d0638

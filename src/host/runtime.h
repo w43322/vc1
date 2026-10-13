@@ -211,6 +211,7 @@ void FreeBumpHeaps();
 void* PopTimedEvent();
 // 0x00496950; original name in ESI
 const char* GetKdEnv(const char* name);
+extern const char kKdParentWindow[]; // "KD_PARENT_WINDOW", display.cpp
 // 0x004969c0; original EDX=cap, stack buf/fmt/varargs; ECX unused leftover
 void FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x004969f0; EDX=buf, stack fmt then varargs; cap is 0xffffffff

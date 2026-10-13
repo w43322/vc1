@@ -10,8 +10,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, in
     (void)cmdLine;
     (void)show;
 
-    // STRING: VC1 0x004d0b38
-    if (!vc1::GetKdEnv("KD_PARENT_WINDOW")) {
+    if (!vc1::GetKdEnv(vc1::kKdParentWindow)) {
         // STRING: VC1 0x004d0c48
         CreateMutexA(0, 0, "Virtual City");
         if (GetLastError() != ERROR_ALREADY_EXISTS && GetLastError() != ERROR_ACCESS_DENIED) {
