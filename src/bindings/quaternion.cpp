@@ -1,4 +1,5 @@
 #include "quaternion.h"
+#include "vector2.h"
 #include "vector4.h"
 #include "value_types.h"
 #include "memory/fixed_pool.h"
@@ -259,7 +260,7 @@ void Quaternion::Slerp(const Quaternion* a, const Quaternion* b, SQFloat t)
         s0 = 1.0f - t;
         s1 = t * sign;
     } else {
-        const SQFloat omega = acosf(dot);
+        const SQFloat omega = ClampedACos(dot);
         const SQFloat so = sinf(omega);
         s0 = sinf((1.0f - t) * omega) / so;
         s1 = (sinf(t * omega) * sign) / so;

@@ -385,6 +385,39 @@ KdString::KdString(const KdString& source)
     size -= 1;
 }
 
+// ECX=this, EAX=args, fmt on the stack, RET 4. Grows and reformats until the
+// text fits below capacity, then truncates to it. Returns _vsnprintf's count
+// clamped to capacity.
+// FUNCTION: VC1 0x004b8c90
+unsigned KdString::FormatV(const char* fmt, va_list args)
+{
+    unsigned written = size;
+    unsigned length;
+
+    do {
+        GrowCountedBuffer(this, static_cast<int>(written), 1);
+        written = static_cast<unsigned>(_vsnprintf(data(), capacity, fmt, args));
+        if (written >= capacity) {
+            written = capacity;
+        }
+    } while (written > capacity - (capacity != 0));
+    length = written;
+    if (length >= capacity - (capacity != 0)) {
+        length = capacity - (capacity != 0);
+    }
+    if ((capacity | length) == 0) {
+        begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        size = 0;
+        return written;
+    }
+    if (capacity < Count() + length) {
+        GrowCountedBuffer(this, static_cast<int>(length), 1);
+    }
+    size = length;
+    data()[length] = 0;
+    return written;
+}
+
 // EAX=needle, haystack (this) on the stack, RET 4. Horspool-style: scans for
 // the needle's last byte, compares the whole needle with MemCompare and skips
 // by that byte's distance to its previous occurrence. -1 when absent.
@@ -509,6 +542,15 @@ void AssignCountedString(void* self, const char* text, unsigned len) throw()
             src += 1;
         }
     }
+}
+
+// ECX=this; fmt and the varargs on the stack.
+// FUNCTION: VC1 0x004b9130
+unsigned KdString::Format(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    return FormatV(fmt, args);
 }
 
 // EDX=this, ECX=set, EAX=pos. Last index at or before pos whose byte is in

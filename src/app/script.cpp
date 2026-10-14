@@ -10,8 +10,6 @@
 
 namespace vc1 {
 
-static void BindHostClasses();
-
 // STUB: VC1 0x00402690
 static void RegisterPrintBinding(HSQUIRRELVM vm, void* fn)
 {
@@ -81,12 +79,6 @@ void RegisterStdBindings()
     RegisterStdExtra2();
     RegisterStdExtra3();
     RegisterStdExtra4();
-}
-
-// Color/Vector/Matrix/Rect native class table. Called from InitScriptEngine.
-// STUB: VC1 0x004bf610
-static void BindHostClasses()
-{
 }
 
 }

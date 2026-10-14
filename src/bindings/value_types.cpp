@@ -26,7 +26,9 @@ SQInteger NumericInt(HSQUIRRELVM vm, SQInteger idx)
     return value;
 }
 
-// FUNCTION: VC1 0x0041e3b0
+// SqPlus PostConstruct<T> (no class inheritance); the original folds every
+// instantiation here.
+// FUNCTION: VC1 0x0041e3b0 FOLDED
 SQInteger BindNativeInstance(HSQUIRRELVM vm, SQUserPointer nativeObject,
     SQRELEASEHOOK releaseHook)
 {

@@ -1,6 +1,8 @@
 #ifndef VC1_MEMORY_FIXED_POOL_H
 #define VC1_MEMORY_FIXED_POOL_H
 
+#include <stddef.h>
+
 namespace vc1 {
 
 // Original size-class heap at 0x004ed454:
@@ -67,6 +69,23 @@ inline unsigned SizeClassIndex(unsigned bytes)
 {
     return (bytes + 3) >> 2;
 }
+
+// Class-level new/delete of the script value types on the size-class heap
+// (SqPlus ConstructReleaseClass<T> news and deletes them). A macro rather
+// than a base so the types stay aggregates.
+#define VC1_SIZE_CLASS_NEW(T) \
+    static void* operator new(size_t) \
+    { \
+        g_sizeClassHeap.allocatedBytes += sizeof(T); \
+        return g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->Allocate(); \
+    } \
+    static void operator delete(void* p) \
+    { \
+        if (p) { \
+            g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->Release(p); \
+            g_sizeClassHeap.releasedBytes += sizeof(T); \
+        } \
+    }
 
 }
 

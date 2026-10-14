@@ -48,7 +48,9 @@
 
 
 // === Function overloading support ===
-#define SQPLUS_OVERLOAD_OPT
+// VC1: off in the engine (SQClassDefBase is 0x14 bytes: v, name, newClass;
+// SQClassDef<Vector3> at 0x41dea0 has no overload name tables).
+//#define SQPLUS_OVERLOAD_OPT
 
 // === Uncomment to support std::string ===
 // Requires that Squirrel is compiled with SQChar == char
@@ -134,13 +136,10 @@
 // VC1: engine hooks. The game is built without C++ exceptions: every
 // `throw SquirrelError(msg)` is spelled SQPLUS_THROW(msg), which logs
 // "error: %s\n" through KdLog and carries on; the SqPlus.cpp sites then
-// return SQ_ERROR (getVar 0x4c2a3f, setVar 0x4c2b6d). DirectCallInstanceMemberFunction
-// gets the callee from the instance user pointer through ScriptInstance.
+// return SQ_ERROR (getVar 0x4c2a3f, setVar 0x4c2b6d).
 namespace vc1 {
 void KdLog(const char* fmt, ...);
 extern const char g_sqplusErrorFormat[];
-template<typename Callee>
-Callee* ScriptInstance(SQUserPointer up);
 }
 #define SQPLUS_THROW(msg) vc1::KdLog(vc1::g_sqplusErrorFormat, (msg))
 

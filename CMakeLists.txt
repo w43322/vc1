@@ -86,6 +86,7 @@ add_executable(vc1_recompiled
   src/kd/road/road_cells_renderer.cpp
   src/bindings/value_types.cpp
   src/bindings/color.cpp
+  src/bindings/host_classes.cpp
   src/bindings/vector2.cpp
   src/bindings/vector3.cpp
   src/bindings/vector4.cpp

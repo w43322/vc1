@@ -3,6 +3,8 @@
 
 #include "kd/iface/iunknown.h"
 
+#include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -138,8 +140,9 @@ public:
         size = 0;
         AssignCountedString(this, text, length);
     }
-    // length copies of fill plus the NUL.
-    KdString(unsigned length, char fill) : KdFactory(length + 1)
+    // length copies of fill plus the NUL. Inlined into the Vector2/Vector3
+    // ToString statics (0x00428780, 0x004289a0).
+    __forceinline KdString(unsigned length, char fill) : KdFactory(length + 1)
     {
         size = length;
         memset(begin, fill, length);
@@ -157,6 +160,8 @@ public:
     void Append(char c);
     void Append(const char* text, unsigned length);
     int FindLastOf(const KdString& set, unsigned pos) const;
+    unsigned FormatV(const char* fmt, va_list args);
+    unsigned Format(const char* fmt, ...);
 
     const char* c_str() const { return reinterpret_cast<const char*>(begin); }
     char* data() { return reinterpret_cast<char*>(begin); }

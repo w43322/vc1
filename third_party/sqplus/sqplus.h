@@ -1433,14 +1433,10 @@ template<typename Callee,typename Func>
 class DirectCallInstanceMemberFunction {
 public:
   static inline int Dispatch(HSQUIRRELVM v) {
-    // VC1: the engine reads instance and func directly (no picker, no
-    // "Invalid Instance Type" check) and maps the instance user pointer
-    // to the callee with vc1::ScriptInstance.
-    StackHandler sa(v);
-    Callee * instance = vc1::ScriptInstance<Callee>(sa.GetInstanceUp(1, 0));
-    int paramCount = sa.GetParamCount();
-    Func * func = static_cast<Func*>(sa.GetUserData(paramCount));
-    return Call(*instance, *func, v, 2);
+    DirectCallInstanceFuncPicker<Callee, Func> p(v);
+    return p.instance && p.func ?
+      Call(*(p.instance), *(p.func), v, 2) :
+      sq_throwerror(v, _SC("Invalid Instance Type"));
   }
 };
 
@@ -1589,6 +1585,7 @@ template<typename Func>
 inline void Register(HSQUIRRELVM v,Func func,const SQChar * name) {
   sq_pushstring(v,name,-1);
   sq_pushdirectclosure(v,func,0);
+  sq_setnativeclosurename(v,-1,name); // VC1: named in release too (0x423930).
   sq_createslot(v,-3); // Stack is restored after this call (same state as before Register() call).
 } // Register
 
@@ -1656,6 +1653,7 @@ inline void RegisterInstance(HSQUIRRELVM v,HSQOBJECT hclass,Callee & callee,Func
   sq_pushobject(v,hclass);
   sq_pushstring(v,name,-1);
   sq_pushdirectinstanceclosure(v,callee,func,0);
+  sq_setnativeclosurename(v,-1,name); // VC1: named in release too (0x422550).
   sq_createslot(v,-3);
   sq_poptop(v); // Remove hclass.
 } // RegisterInstance
@@ -2183,7 +2181,9 @@ struct SQClassDefBase {
   // Register a constant (read-only in script, passed by value (only INT, FLOAT, or BOOL types)).
   template<typename ConstantType>
   SQClassDefBase & constant(ConstantType constant,const SQChar * name) {
-    RegisterInstanceConstant(newClass,ClassType<TClassType>::type(),constant,name);
+    // VC1: a plain class slot. INT goes through SetValue(key,INT); an
+    // instance through SquirrelObject(const T &) (0x41e5a0 for Vector3).
+    newClass.SetValue(name,constant);
     return *this;
   } // constant
 
@@ -2333,6 +2333,19 @@ inline SquirrelObject &SquirrelObject::Set(_ty & val) {
 // CreateClass is only called with baseName == 0; LTCG drops the parameter.
 // FUNCTION: VC1 0x00401af0
 // ?Get@SqPlus@@YAHU?$TypeWrapper@H@1@PAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00420660
+// ??$RegisterInstanceVariable@M@SqPlus@@YAXAAVSquirrelObject@@PAUClassTypeBase@0@PAMPBDW4VarAccessType@0@@Z
+
+// FUNCTION: VC1 0x00426f20
+// ?createInstanceSetGetHandlers@SqPlus@@YAXAAVSquirrelObject@@@Z
+
+// access is always VAR_ACCESS_READ_WRITE, so LTCG folds it to a constant.
+// FUNCTION: VC1 0x004270b0
+// ??0VarRef@SqPlus@@QAE@PAXW4ScriptVarType@1@PAUClassTypeBase@1@2HW4VarAccessType@1@@Z
+
+// FUNCTION: VC1 0x00427280
+// ?createVarRef@SqPlus@@YAPAUVarRef@1@AAVSquirrelObject@@PBD@Z
 
 // FUNCTION: VC1 0x004c2920
 // SqPlus::getVar

@@ -148,6 +148,8 @@ LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
 // 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
 void InitScriptEngine(int argc, char** argv);
+// 0x004bf610; the value-type SQClassDefs (bindings/host_classes.cpp)
+void BindHostClasses();
 // 0x00482160; EDI=haystack, EBX=needle, ECX=haystackLen, cdecl needleLen
 char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
     unsigned needleLen);

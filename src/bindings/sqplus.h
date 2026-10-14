@@ -12,10 +12,11 @@
 namespace vc1 {
 
 // Engine side of the SqPlus call layer (third_party/sqplus, the 20080713
-// snapshot). The script instance's user pointer is an IUnknown that Dispatch
-// QIs to IScriptObject (ScriptInstance), and each class keeps its methods in a
-// ScriptMethodTable handed out by IScriptObject::Script0c instead of
-// registering them on a SQClassDef.
+// snapshot). Value types (Vector3, Color, ...) are plain SQClassDef classes
+// on the stock DirectCallInstanceMemberFunction. Kd objects instead keep
+// their methods in a ScriptMethodTable handed out by IScriptObject::Script0c;
+// those closures use ScriptMethodCall, whose instance user pointer is an
+// IUnknown QI'd to IScriptObject (ScriptInstance).
 
 // Script method names shared by several Script0c tables.
 extern const char kScriptGetWidth[];
@@ -32,12 +33,36 @@ Callee* ScriptInstance(SQUserPointer up)
 // over SqPlus's generic Push(HSQUIRRELVM, T&).
 void Push(HSQUIRRELVM v, KdStringList& value);
 
+// Engine overload for the value types' "_tostring" (inlined into the
+// Dispatch, e.g. 0x00424470).
+inline void Push(HSQUIRRELVM v, KdString& value)
+{
+    sq_pushstring(v, value.c_str(), -1);
+}
+
+// Inferred name. SqPlus DirectCallInstanceMemberFunction without the picker
+// and without the "Invalid Instance Type" check.
+template<typename Callee, typename Func>
+struct ScriptMethodCall
+{
+    static int Dispatch(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        Callee* instance = ScriptInstance<Callee>(sa.GetInstanceUp(1, 0));
+        int paramCount = sa.GetParamCount();
+        Func* func = static_cast<Func*>(sa.GetUserData(paramCount));
+        return SqPlus::Call(*instance, *func, v, 2);
+    }
+};
+
 // Inferred name. The closure for one method, as stored in a class's
-// ScriptMethodTable.
+// ScriptMethodTable (SqPlus sq_pushdirectinstanceclosure on ScriptMethodCall).
 template<typename Callee, typename Func>
 SquirrelObject CreateScriptMethod(Func func)
 {
-    SqPlus::sq_pushdirectinstanceclosure(SquirrelVM::_VM, *static_cast<Callee*>(0), func, 0);
+    SQUserPointer up = sq_newuserdata(SquirrelVM::_VM, sizeof(func));
+    memcpy(up, &func, sizeof(func));
+    sq_newclosure(SquirrelVM::_VM, ScriptMethodCall<Callee, Func>::Dispatch, 1);
     SquirrelObject so;
     so.AttachToStackObject(-1);
     sq_pop(SquirrelVM::_VM, 1);
@@ -118,7 +143,7 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // ??$CreateScriptMethod@VKdTexture@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdTexture@0@AEHXZ@Z
 
 // TEMPLATE: VC1 0x0045c2f0
-// ?Dispatch@?$DirectCallInstanceMemberFunction@VKdTexture@vc1@@P812@AEHXZ@SqPlus@@SAHPAUSQVM@@@Z
+// ?Dispatch@?$ScriptMethodCall@VKdTexture@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x00419cb0
 // ??$CreateScriptMethod@VKdFont@vc1@@P812@AE_NI@Z@vc1@@YA?AVSquirrelObject@@P8KdFont@0@AE_NI@Z@Z
@@ -142,16 +167,16 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // ??$Call@VKdFont@vc1@@PBDH@?$ReturnSpecialization@UKdStringList@vc1@@@SqPlus@@SAHAAVKdFont@vc1@@P823@AE?AUKdStringList@3@PBDH@ZPAUSQVM@@H@Z
 
 // TEMPLATE: VC1 0x004671e0
-// ?Dispatch@?$DirectCallInstanceMemberFunction@VKdFont@vc1@@P812@AEHXZ@SqPlus@@SAHPAUSQVM@@@Z
+// ?Dispatch@?$ScriptMethodCall@VKdFont@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x004672b0
-// ?Dispatch@?$DirectCallInstanceMemberFunction@VKdFont@vc1@@P812@AE_NI@Z@SqPlus@@SAHPAUSQVM@@@Z
+// ?Dispatch@?$ScriptMethodCall@VKdFont@vc1@@P812@AE_NI@Z@vc1@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x00467350
-// ?Dispatch@?$DirectCallInstanceMemberFunction@VKdFont@vc1@@P812@AE?AUKdStringList@2@PBDH@Z@SqPlus@@SAHPAUSQVM@@@Z
+// ?Dispatch@?$ScriptMethodCall@VKdFont@vc1@@P812@AE?AUKdStringList@2@PBDH@Z@vc1@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x004673f0
-// ?Dispatch@?$DirectCallInstanceMemberFunction@VKdFont@vc1@@P812@AEHPBD@Z@SqPlus@@SAHPAUSQVM@@@Z
+// ?Dispatch@?$ScriptMethodCall@VKdFont@vc1@@P812@AEHPBD@Z@vc1@@SAHPAUSQVM@@@Z
 
 }
 
