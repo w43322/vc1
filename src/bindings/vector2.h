@@ -69,6 +69,9 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Vector2, Vector2)
 // TEMPLATE: VC1 0x004015b0
 // ??$Set@UVector2@vc1@@@SquirrelObject@@QAEAAV0@AAUVector2@vc1@@@Z
 
+// TEMPLATE: VC1 0x00403a20
+// ??$GetInstance@UVector2@vc1@@$00@SqPlus@@YAPAUVector2@vc1@@PAUSQVM@@H@Z
+
 // TEMPLATE: VC1 0x0041dd00
 // ?release@?$ConstructReleaseClass@UVector2@vc1@@@SqPlus@@SAHPAXH@Z
 

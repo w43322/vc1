@@ -3,6 +3,7 @@
 #include "squirrel_object.h"
 #include "memory/fixed_pool.h"
 #include "kd/iface/iabstract.h"
+#include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
 
 namespace vc1 {
@@ -49,6 +50,12 @@ SQInteger ComponentGet(HSQUIRRELVM vm);      // "_get"
 extern unsigned char* g_componentCursor;
 bool ComponentCursorIs(const char* key);
 
+template <>
+struct KdIid<IGraphics>
+{
+    static const char** Get() { return &g_iidGraphics; }
+};
+
 }
 
 // The instance type of the userpointer; only the name, Push is custom.
@@ -65,6 +72,14 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
     return vc1::KdPtr<vc1::IAbstract>(self
         ? static_cast<vc1::IAbstract*>(self->QueryInterface(&vc1::g_iidAbstract))
         : 0);
+}
+// A const KdPtr<IGraphics>& argument: the IAbstract face, converted to
+// IGraphics in the Call expression, so both temporaries outlive the native
+// (Calls 0x00403120, 0x00403240).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGraphics>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 }
 

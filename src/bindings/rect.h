@@ -104,4 +104,7 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Rect, Rect)
 // TEMPLATE: VC1 0x00428d50
 // ??$GetInstance@URect@vc1@@$0A@@SqPlus@@YAPAURect@vc1@@PAUSQVM@@H@Z
 
+// TEMPLATE: VC1 0x00401a70
+// ??$GetInstance@URect@vc1@@$00@SqPlus@@YAPAURect@vc1@@PAUSQVM@@H@Z
+
 #endif

@@ -153,7 +153,6 @@ static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
 static int Display28Apply(unsigned char windowed);
-static WNDCLASSA* GetKdWindowClass();
 static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
 static float MinFloat(float a, float b);
@@ -1879,7 +1878,7 @@ unsigned char KdDisplayBase::Script0c(const char* name, SquirrelObject* out)
 
 // RegisterClassA for the display window; hInstance at +0x10, class name at +0x24.
 // FUNCTION: VC1 0x00496020
-static WNDCLASSA* GetKdWindowClass()
+WNDCLASSA* GetKdWindowClass()
 {
     if (!g_kdDisplayClass.hInstance) {
         g_kdDisplayClass.hInstance = GetModuleHandleA(0);

@@ -49,6 +49,7 @@ struct Utf8Cursor
 };
 
 void DecodeUtf8(Utf8Cursor* cursor);
+char** EncodeUtf8(char** out, unsigned code);
 GlyphInfo* InsertGlyph(KdFactory* glyphs, const unsigned* code);
 Glyph* __stdcall FindGlyph(KdFactory* glyphs, const unsigned* code);
 void ReserveGlyphs(KdFactory* glyphs, unsigned count);

@@ -222,6 +222,62 @@ private:
     KdStringList& operator=(const KdStringList&);
 };
 
+// Inferred name. Array of 4-byte PODs in a KdFactory buffer (no vftable of
+// its own); the script natives take and return int / code-point lists by
+// value. The copy constructor is out of line (0x00402480).
+// SIZE 0x10
+template <class T>
+struct KdArray
+{
+    KdFactory items; // 0x00
+
+    KdArray() {}
+    explicit KdArray(unsigned count)
+    {
+        unsigned bytes = count * sizeof(T);
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 1);
+        }
+        items.size = bytes;
+    }
+    __declspec(noinline) KdArray(const KdArray& source)
+    {
+        unsigned bytes = source.items.size & ~(sizeof(T) - 1);
+        const T* from;
+        const T* last;
+        T* to;
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 1);
+        }
+        to = Data();
+        items.size = bytes;
+        from = source.Data();
+        last = reinterpret_cast<const T*>(reinterpret_cast<const char*>(from) + source.items.size);
+        for (; from != last; ++from, ++to) {
+            *to = *from;
+        }
+    }
+
+    unsigned Count() const { return items.size / sizeof(T); }
+    T* Data() const { return reinterpret_cast<T*>(items.begin); }
+    T& operator[](unsigned i) const { return Data()[i]; }
+    void PushBack(T value)
+    {
+        unsigned bytes = (Count() + 1) * sizeof(T);
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 0);
+        }
+        items.size = bytes;
+        reinterpret_cast<T*>(reinterpret_cast<char*>(items.begin) + bytes)[-1] = value;
+    }
+
+private:
+    KdArray& operator=(const KdArray&);
+};
+
+// TEMPLATE: VC1 0x00402480
+// ??0?$KdArray@I@vc1@@QAE@ABU01@@Z
+
 // SIZE 0x08
 struct FactoryInsert
 {
@@ -315,7 +371,7 @@ FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key);
 void ReserveFactoryTable(unsigned newCount);
 void ReverseCountedBytes(void* first, void* last);
 void EraseCountedBytes(void* first, void* middle, void* last);
-void* InsertCountedBytes(void* self, void* pos, int bytes);
+__declspec(noinline) void* InsertCountedBytes(void* self, void* pos, int bytes);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);
 KdFactory* GetKdFactory();
 void** QueryKdFactory(void** out, const char** name);

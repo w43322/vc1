@@ -29,6 +29,36 @@ extern const unsigned g_utf8Limits[6] = {
     0x7f, 0x7ff, 0xffff, 0x1fffff, 0x3ffffff, 0x7fffffff
 };
 
+// ESI=out, RET 4. Appends code as UTF-8 at *out and advances it. The length
+// search compares only the low 16 bits; the lead byte keeps six payload bits
+// under its length prefix.
+// FUNCTION: VC1 0x00402540
+char** EncodeUtf8(char** out, unsigned code)
+{
+    unsigned length;
+    unsigned short shift;
+
+    if (static_cast<unsigned short>(code) >= 0x80) {
+        length = 0;
+        while (g_utf8Limits[length++] < static_cast<unsigned short>(code)) {
+        }
+        if (length > 1) {
+            shift = static_cast<unsigned short>(length * 6 - 6);
+            **out = static_cast<char>((0xff << (8 - length)) | ((code >> shift) & 0x3f));
+            ++*out;
+            while (shift) {
+                shift -= 6;
+                **out = static_cast<char>(((code >> shift) & 0x3f) | 0x80);
+                ++*out;
+            }
+            return out;
+        }
+    }
+    **out = static_cast<char>(code);
+    ++*out;
+    return out;
+}
+
 // EAX=cursor. Decodes one UTF-8 sequence at cursor->text into cursor->code:
 // the lead byte's leading ones give the length, continuation bytes add six
 // bits each, and a NUL ends the sequence early.

@@ -2334,6 +2334,9 @@ inline SquirrelObject &SquirrelObject::Set(_ty & val) {
 // FUNCTION: VC1 0x00401af0
 // ?Get@SqPlus@@YAHU?$TypeWrapper@H@1@PAUSQVM@@H@Z
 
+// FUNCTION: VC1 0x00401b50
+// ?Get@SqPlus@@YA_NU?$TypeWrapper@_N@1@PAUSQVM@@H@Z
+
 // TEMPLATE: VC1 0x00420660
 // ??$RegisterInstanceVariable@M@SqPlus@@YAXAAVSquirrelObject@@PAUClassTypeBase@0@PAMPBDW4VarAccessType@0@@Z
 

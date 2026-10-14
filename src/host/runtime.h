@@ -103,6 +103,7 @@ extern SocketNode* g_socketHead;  // 0x004ed510
 extern SocketNode* g_socketCursor; // 0x004ed50c
 extern HWND g_kdNetworkWindow;    // 0x004ed514
 extern WNDCLASSA g_kdNetworkClass; // 0x004e89d8; hInstance at +0x10 is 0x004e89e8
+WNDCLASSA* GetKdWindowClass(); // 0x00496020, registers the display class once
 
 extern double g_nsPerTick;        // 0x004f0a20, 1e9 / QPC frequency
 extern HeapNode* g_heapHead;      // 0x004ed448

@@ -47,6 +47,11 @@ private:
     KdRef& operator=(const KdRef&);
 };
 
+// Inferred name. Interface IID lookup for KdPtr conversions; specialised next
+// to each interface with a static Get() returning its g_iid* slot.
+template <class T>
+struct KdIid;
+
 // Inferred name. Copyable counted interface pointer, the by-value form of
 // KdRef: construction from a raw pointer and copies AddRef. Script bindings
 // pass it through SqPlus Push/Get (0x0040c970, 0x0041b830).
@@ -64,6 +69,15 @@ public:
         }
     }
     KdPtr(const KdPtr& source) : ptr(source.ptr)
+    {
+        if (ptr) {
+            ptr->AddRef();
+        }
+    }
+    // Counted T face of another interface, QI'd through KdIid<T>.
+    template<class U>
+    KdPtr(const KdPtr<U>& source)
+        : ptr(source.ptr ? static_cast<T*>(source.ptr->QueryInterface(KdIid<T>::Get())) : 0)
     {
         if (ptr) {
             ptr->AddRef();
