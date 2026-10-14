@@ -118,7 +118,7 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Vector4, Vector4)
 // TEMPLATE: VC1 0x00424060 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UVector4@vc1@@P812@AEXXZ@SqPlus@@SAHPAUSQVM@@@Z
 
-// TEMPLATE: VC1 0x004241f0
+// TEMPLATE: VC1 0x004241f0 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UVector4@vc1@@P812@BE?AU12@ABU12@@Z@SqPlus@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x00424240

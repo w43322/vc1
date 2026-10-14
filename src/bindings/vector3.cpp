@@ -7,6 +7,11 @@
 
 namespace vc1 {
 
+static inline SQFloat AbsFloat(SQFloat value)
+{
+    return value < 0.0f ? -value : value;
+}
+
 // GLOBAL: VC1 0x004e9940
 Vector3 Vector3::AxisX(1.0f, 0.0f, 0.0f);
 // GLOBAL: VC1 0x004e994c
@@ -140,6 +145,23 @@ Vector3 Vector3::Sub(const Vector3& other) const
 Vector3 Vector3::Add(const Vector3& other) const
 {
     return Vector3(x + other.x, y + other.y, z + other.z);
+}
+
+// Inferred name; not a script binding. Only caller is the Matrix4(x, origin)
+// constructor (0x004159c0). Crosses v with the axis it is least aligned with.
+// LTCG ABI: ECX=v, EDX=out. The absolute values branch on < 0 (no FABS).
+// FUNCTION: VC1 0x004bc570
+Vector3 Vector3::GetOrthogonal(const Vector3& v)
+{
+    if (AbsFloat(v.x) < AbsFloat(v.y)) {
+        if (AbsFloat(v.x) < AbsFloat(v.z)) {
+            return GetCrossProduct(v, AxisX);
+        }
+    }
+    else if (AbsFloat(v.y) < AbsFloat(v.z)) {
+        return GetCrossProduct(v, AxisY);
+    }
+    return GetCrossProduct(v, AxisZ);
 }
 
 // Registered from 0x0041e4c0 as "constructor" (0x004d2f10) with typemask "*"

@@ -33,6 +33,13 @@ struct Vector3
     Vector3 Unm() const;                        // "_unm"
     Vector3 Div(SQFloat scalar) const;          // "_div"
     Vector3 Mul(SQFloat scalar) const;          // "_mul"
+    Vector3& operator*=(SQFloat scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        z *= scalar;
+        return *this;
+    }
     Vector3 Sub(const Vector3& other) const;    // "_sub"
     Vector3 Add(const Vector3& other) const;    // "_add"
     SQFloat GetSquareMagnitude() const;
@@ -42,6 +49,7 @@ struct Vector3
     static Vector3 GetCrossProduct(const Vector3& a, const Vector3& b);
     static SQFloat GetDotProduct(const Vector3& a, const Vector3& b);
     static Vector3 Lerp(const Vector3& a, const Vector3& b, SQFloat t);
+    static Vector3 GetOrthogonal(const Vector3& v);
 
     static SQInteger ConstructArgs(HSQUIRRELVM vm); // "constructor" with typemask "*"
 };

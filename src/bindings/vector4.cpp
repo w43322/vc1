@@ -84,8 +84,8 @@ KdString& Vector4::ToString() const
 }
 
 // Bound as "_cmp" (0x004d36e0) from 0x00421430. this in ECX; other on stack.
-// Also reused by another 16-byte binder at 0x00422960.
-// FUNCTION: VC1 0x00428590
+// /OPT:ICF folded with Quaternion::Cmp (binder 0x00422960).
+// FUNCTION: VC1 0x00428590 FOLDED
 SQInteger Vector4::Cmp(const Vector4& other) const
 {
     return MemCompare(this, &other, sizeof(Vector4));

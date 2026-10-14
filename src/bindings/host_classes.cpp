@@ -5,6 +5,8 @@
 #include "bindings/vector3.h"
 #include "bindings/vector4.h"
 #include "bindings/matrix3.h"
+#include "bindings/matrix4.h"
+#include "bindings/quaternion.h"
 
 namespace vc1 {
 
@@ -14,9 +16,9 @@ namespace vc1 {
 // last class built by 0x0041e320. LTCG pushes every by-value argument of a
 // chain before its first call.
 // Partial: only the Vector3 (0x004c04b2-0x004c06fa), Vector2
-// (0x004c06ff-0x004c093f), Vector4 (0x004c093f-0x004c0af0) and Matrix3
-// (0x004c0af0-0x004c0e06) chains are
-// written so far.
+// (0x004c06ff-0x004c093f), Vector4 (0x004c093f-0x004c0af0), Matrix3
+// (0x004c0af0-0x004c0e06), Matrix4 (0x004c0e06-0x004c11e0) and Quaternion
+// (0x004c11e0-0x004c1398) chains are written so far.
 // STUB: VC1 0x004bf610
 void BindHostClasses()
 {
@@ -122,6 +124,71 @@ void BindHostClasses()
         .staticFunc(&Matrix3::Inverse, "Inverse")
         .staticFunc(&Matrix3::Transpose, "Transpose")
         .constant(Matrix3::Identity, "Identity")
-        .constant(Matrix3::Null, "Null");}
+        .constant(Matrix3::Null, "Null");
+    SqPlus::SQClassDef<Matrix4>("Matrix4")
+        .staticFuncVarArgs(&Matrix4::ConstructArgs, "constructor")
+        .var(&Matrix4::_11, "_11")
+        .var(&Matrix4::_12, "_12")
+        .var(&Matrix4::_13, "_13")
+        .var(&Matrix4::_14, "_14")
+        .var(&Matrix4::_21, "_21")
+        .var(&Matrix4::_22, "_22")
+        .var(&Matrix4::_23, "_23")
+        .var(&Matrix4::_24, "_24")
+        .var(&Matrix4::_31, "_31")
+        .var(&Matrix4::_32, "_32")
+        .var(&Matrix4::_33, "_33")
+        .var(&Matrix4::_34, "_34")
+        .var(&Matrix4::_41, "_41")
+        .var(&Matrix4::_42, "_42")
+        .var(&Matrix4::_43, "_43")
+        .var(&Matrix4::_44, "_44")
+        .func(&Matrix4::Add, "_add")
+        .func(&Matrix4::Sub, "_sub")
+        .func(&Matrix4::Mul, "_mul")
+        .func(&Matrix4::Div, "_div")
+        .func(&Matrix4::Unm, "_unm")
+        .func(&Matrix4::Cmp, "_cmp")
+        .func(&Matrix4::ToString, "_tostring")
+        .func(&Matrix4::GetXVec, "GetXVec")
+        .func(&Matrix4::GetYVec, "GetYVec")
+        .func(&Matrix4::GetZVec, "GetZVec")
+        .func(&Matrix4::GetOrigin, "GetOrigin")
+        .func(&Matrix4::SetXVec, "SetXVec")
+        .func(&Matrix4::SetYVec, "SetYVec")
+        .func(&Matrix4::SetZVec, "SetZVec")
+        .func(&Matrix4::SetOrigin, "SetOrigin")
+        .func(&Matrix4::Normalize, "Normalize")
+        .func(&Matrix4::GetNormalized, "GetNormalized")
+        .func(&Matrix4::Mult, "Mult")
+        .func(&Matrix4::MultInvVect, "MultInvVect")
+        .func(&Matrix4::MultInvVrt, "MultInvVrt")
+        .func(&Matrix4::MultVect, "MultVect")
+        .func(&Matrix4::MultVecs, "MultVecs")
+        .func(&Matrix4::MultVrt, "MultVrt")
+        .staticFunc(&Matrix4::Inverse, "Inverse")
+        .staticFunc(&Matrix4::Transpose, "Transpose")
+        .constant(Matrix4::Identity, "Identity")
+        .constant(Matrix4::Null, "Null");
+    SqPlus::SQClassDef<Quaternion>("Quaternion")
+        .staticFuncVarArgs(&Quaternion::ConstructArgs, "constructor")
+        .var(&Quaternion::v, "v")
+        .var(&Quaternion::w, "w")
+        .func(&Quaternion::Add, "_add")
+        .func(&Quaternion::Sub, "_sub")
+        .func(&Quaternion::Mul, "_mul")
+        .func(&Quaternion::Div, "_div")
+        .func(&Quaternion::Unm, "_unm")
+        .func(&Quaternion::Cmp, "_cmp")
+        .func(&Quaternion::ToString, "_tostring")
+        .func(&Quaternion::Normalize, "Normalize")
+        .func(&Quaternion::GetNormalized, "GetNormalized")
+        .func(&Quaternion::GetMagnitude, "GetMagnitude")
+        .func(&Quaternion::GetSquareMagnitude, "GetSquareMagnitude")
+        .func(&Quaternion::FromMatrix, "FromMatrix")
+        .func(&Quaternion::ToMatrix, "ToMatrix")
+        .func(&Quaternion::Slerp, "Slerp")
+        .staticFunc(&Quaternion::Inverse, "Inverse");
+}
 
 }

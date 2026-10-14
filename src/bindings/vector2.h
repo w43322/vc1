@@ -32,6 +32,12 @@ struct Vector2
     Vector2 Unm() const;                        // "_unm"
     Vector2 Div(SQFloat scalar) const;          // "_div"
     Vector2 Mul(SQFloat scalar) const;          // "_mul"
+    Vector2& operator*=(SQFloat scalar)
+    {
+        x *= scalar;
+        y *= scalar;
+        return *this;
+    }
     Vector2 Sub(const Vector2& other) const;    // "_sub"
     Vector2 Add(const Vector2& other) const;    // "_add"
     SQFloat GetSquareMagnitude() const;

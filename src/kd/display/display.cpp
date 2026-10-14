@@ -84,8 +84,6 @@ unsigned g_batchFlags;
 IUnknown* g_batchTexture;
 // GLOBAL: VC1 0x004e960c
 Matrix3 g_displayMatrixInv;
-// GLOBAL: VC1 0x004e9788
-float g_d3dWorld[16];
 // GLOBAL: VC1 0x004e98c0
 float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
@@ -741,7 +739,7 @@ void DisplayD3dSetView(const Matrix3* matrix)
     int i;
 
     for (i = 0; i < 16; i++) {
-        g_d3dView[i] = g_d3dWorld[i];
+        g_d3dView[i] = Matrix4::Identity.m[i];
     }
     g_d3dView[0] = matrix->m[0];
     g_d3dView[1] = matrix->m[1];
@@ -953,7 +951,8 @@ static void DisplayD3dSetBuffers(int right, int bottom, int left, int top)
     ortho[13] = (static_cast<float>(top) * 2.0f) / static_cast<float>(height) + 1.0f;
     ortho[14] = 0.0f;
     ortho[15] = 1.0f;
-    MulMatrix4(product, ortho, g_d3dProj);
+    *reinterpret_cast<Matrix4*>(product) =
+        *reinterpret_cast<const Matrix4*>(ortho) * *reinterpret_cast<const Matrix4*>(g_d3dProj);
     for (i = 0; i < 16; i++) {
         g_d3dProj[i] = product[i];
     }
@@ -1419,7 +1418,7 @@ static unsigned char DisplayD3DInit()
     g_d3dChain2 = 0;
     DisplayD3dSetBuffers(present[0], present[1], 0, 0);
     for (i = 0; i < 16; i++) {
-        g_d3dView[i] = g_d3dWorld[i];
+        g_d3dView[i] = Matrix4::Identity.m[i];
     }
     if (!DisplayD3dRecreate()) {
         return 0;
@@ -1503,7 +1502,7 @@ static unsigned char DisplayQueryReady()
         reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
             g_d3dDevice, 3, g_d3dProj);
         for (i = 0; i < 16; i++) {
-            g_d3dView[i] = g_d3dWorld[i];
+            g_d3dView[i] = Matrix4::Identity.m[i];
         }
         reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
             g_d3dDevice, 2, g_d3dView);

@@ -41,8 +41,8 @@ Vector2& Matrix3::GetYVec()
 }
 
 // Bound as "GetXVec" (0x004d731c) via 0x00421b00 from 0x004c0c5e.
-// Returns this as a Vector2. this in ECX.
-// FUNCTION: VC1 0x004060b0
+// Returns this as a Vector2. this in ECX. /OPT:ICF folded with Matrix4::GetXVec.
+// FUNCTION: VC1 0x004060b0 FOLDED
 Vector2& Matrix3::GetXVec()
 {
     return *reinterpret_cast<Vector2*>(&_11);
@@ -71,8 +71,8 @@ void Matrix3::SetXVec(const Vector2& axis)
 // FUNCTION: VC1 0x00427dc0
 void Matrix3::MultVecs(const Vector2& scale)
 {
-    GetXVec() = GetXVec().Mul(scale.x);
-    GetYVec() = GetYVec().Mul(scale.y);
+    GetXVec() *= scale.x;
+    GetYVec() *= scale.y;
 }
 
 // Bound as "MultInvVrt" (0x004d7368) via 0x00421dc0 from 0x004c0d5c.
