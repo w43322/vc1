@@ -83,7 +83,7 @@ SQInteger Rect::Constructor(HSQUIRRELVM vm)
     if (rect) {
         ZeroRect(rect);
     }
-    return BindNativeInstance(vm, rect, Vector4::ReleaseHook);
+    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
 }
 
 // FUNCTION: VC1 0x00423720
@@ -117,7 +117,7 @@ SQInteger Rect::ConstructArgs(HSQUIRRELVM vm)
             rect->height = NumericInt(vm, 5);
         }
     }
-    return BindNativeInstance(vm, rect, Vector4::ReleaseHook);
+    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
 }
 
 }

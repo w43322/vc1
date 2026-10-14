@@ -2047,21 +2047,11 @@ int KdDisplay::Shutdown()
 }
 
 // EAX=this. Calls KdDisplayBase() (0x004665c0, ESI=this), own vptrs, then
-// target = 0, identity matrix and enabled58 = 1.
+// target = 0, identity matrix (Matrix3()) and enabled58 = 1.
 // FUNCTION: VC1 0x004b1e40
 KdDisplay::KdDisplay() throw()
+    : target(0), enabled58(1)
 {
-    target = 0;
-    matrix.m[0] = 1.0f;
-    matrix.m[1] = 0.0f;
-    matrix.m[2] = 0.0f;
-    matrix.m[3] = 0.0f;
-    matrix.m[4] = 1.0f;
-    matrix.m[5] = 0.0f;
-    matrix.m[6] = 0.0f;
-    matrix.m[7] = 0.0f;
-    matrix.m[8] = 1.0f;
-    enabled58 = 1;
 }
 
 // FUNCTION: VC1 0x004b1ea0
@@ -2191,7 +2181,6 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
     float scaleX;
     float scaleY;
     float scale;
-    Matrix3 inverse;
 
     if (!KdDisplayBase::SetSize(width, height)) {
         return 0;
@@ -2220,7 +2209,7 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
     scaleX = static_cast<float>(viewW) / static_cast<float>(g_displayWidth);
     scaleY = static_cast<float>(viewH) / static_cast<float>(g_displayHeight);
     scale = MinFloat(scaleX, scaleY);
-    matrix = g_matrix3Identity;
+    matrix = Matrix3::Identity;
     matrix.m[0] *= scale;
     matrix.m[1] *= scale;
     matrix.m[3] *= scale;
@@ -2235,8 +2224,7 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
         matrix.m[7] = (static_cast<float>(viewH) - static_cast<float>(g_displayHeight) * scale)
             * 0.5f;
     }
-    Matrix3::Inverse(&inverse, &matrix);
-    g_displayMatrixInv = inverse;
+    g_displayMatrixInv = Matrix3::Inverse(matrix);
     return 1;
 }
 

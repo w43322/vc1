@@ -934,7 +934,7 @@ void KdSystemBase::Render() throw()
                 (*GetKdResourceManager(&manager.ptr))->LoadFont(
                     reinterpret_cast<void**>(&loaded.ptr), &path)));
         }
-        graphics->SetTransform(&g_matrix3Identity);
+        graphics->SetTransform(&Matrix3::Identity);
         graphics->SetFont(reinterpret_cast<IUnknown* const*>(&consoleFont.ptr));
         graphics->SetColor(0xff000000);
         font = consoleFont;

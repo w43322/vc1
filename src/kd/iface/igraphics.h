@@ -28,15 +28,6 @@ struct GraphicsState
         clip.y = 0;
         clip.width = 0x7fffffff;
         clip.height = 0x7fffffff;
-        transform.m[0] = 1.0f;
-        transform.m[1] = 0.0f;
-        transform.m[2] = 0.0f;
-        transform.m[3] = 0.0f;
-        transform.m[4] = 1.0f;
-        transform.m[5] = 0.0f;
-        transform.m[6] = 0.0f;
-        transform.m[7] = 0.0f;
-        transform.m[8] = 1.0f;
         font = 0;
     }
 

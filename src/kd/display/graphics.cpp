@@ -32,17 +32,8 @@ void IGraphics::SetState(const GraphicsState* value)
 // FUNCTION: VC1 0x00418830
 void IGraphics::Translate(const Vector2* offset)
 {
-    Matrix3 move;
+    Matrix3 move(*offset);
 
-    move.m[0] = 1.0f;
-    move.m[1] = 0.0f;
-    move.m[2] = 0.0f;
-    move.m[3] = 0.0f;
-    move.m[4] = 1.0f;
-    move.m[5] = 0.0f;
-    move.m[6] = offset->x;
-    move.m[7] = offset->y;
-    move.m[8] = 1.0f;
     SetTransform(state.transform.LeftMultiply(&move));
 }
 
@@ -120,7 +111,6 @@ void KdGraphics::Graphics64(float a, float b, float c, float d)
 // FUNCTION: VC1 0x0045c850
 void KdGraphics::DrawString(const char* text, float x, float y)
 {
-    Matrix3 saved;
     Vector2 origin;
     IFont* font;
     IUnknown* face;
@@ -129,7 +119,7 @@ void KdGraphics::DrawString(const char* text, float x, float y)
     if (!state.font) {
         return;
     }
-    saved = *GetTransform();
+    Matrix3 saved(*GetTransform());
     origin.x = x;
     origin.y = y;
     Translate(&origin);
@@ -464,7 +454,7 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
 // FUNCTION: VC1 0x0045cfa0
 Vector2* KdGraphics::GetOrigin()
 {
-    return GetTransform()->GetOrigin();
+    return &GetTransform()->GetOrigin();
 }
 
 // RET 4. Copies the clip rect, then 0x00464c10(x, y; ECX=width, EAX=height).

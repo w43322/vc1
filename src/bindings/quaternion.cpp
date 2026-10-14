@@ -53,7 +53,7 @@ SQInteger Quaternion::Constructor(HSQUIRRELVM vm)
     if (quaternion) {
         ZeroQuaternion(quaternion);
     }
-    return BindNativeInstance(vm, quaternion, Vector4::ReleaseHook);
+    return BindNativeInstance(vm, quaternion, SqPlus::ConstructReleaseClass<Vector4>::release);
 }
 
 // FUNCTION: VC1 0x00423700
@@ -295,7 +295,7 @@ SQInteger Quaternion::ConstructArgs(HSQUIRRELVM vm)
             quaternion->w = NumericFloat(vm, 5);
         }
     }
-    return BindNativeInstance(vm, quaternion, Vector4::ReleaseHook);
+    return BindNativeInstance(vm, quaternion, SqPlus::ConstructReleaseClass<Vector4>::release);
 }
 
 }
