@@ -47,6 +47,41 @@ private:
     KdRef& operator=(const KdRef&);
 };
 
+// Inferred name. Copyable counted interface pointer, the by-value form of
+// KdRef: construction from a raw pointer and copies AddRef. Script bindings
+// pass it through SqPlus Push/Get (0x0040c970, 0x0041b830).
+template <class T>
+class KdPtr
+{
+public:
+    T* ptr;
+
+    KdPtr() : ptr(0) {}
+    explicit KdPtr(T* value) : ptr(value)
+    {
+        if (ptr) {
+            ptr->AddRef();
+        }
+    }
+    KdPtr(const KdPtr& source) : ptr(source.ptr)
+    {
+        if (ptr) {
+            ptr->AddRef();
+        }
+    }
+    ~KdPtr()
+    {
+        if (ptr) {
+            ptr->Release();
+        }
+        ptr = 0;
+    }
+    T* operator->() const { return ptr; }
+
+private:
+    KdPtr& operator=(const KdPtr&);
+};
+
 }
 
 #endif

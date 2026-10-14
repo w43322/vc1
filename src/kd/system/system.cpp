@@ -138,6 +138,22 @@ IUnknown** InsertCountedSlot(void* key, void* factory) throw()
     return reinterpret_cast<IUnknown**>(pos + 0x10);
 }
 
+// EAX=factory, EBX=key. LookupCountedRecord, then end unless the hit equals key.
+// FUNCTION: VC1 0x00416250
+unsigned char* FindCountedRecord(void* factory, void* key)
+{
+    KdFactory* records = static_cast<KdFactory*>(factory);
+    unsigned char* pos;
+    unsigned char* end;
+
+    pos = LookupCountedRecord(factory, key);
+    end = reinterpret_cast<unsigned char*>(records->begin) + records->size;
+    if (pos < end && RecordEq(key, pos)) {
+        return end;
+    }
+    return pos;
+}
+
 // cdecl out, begin, end, dest factory. Copies IUnknown* range into a pointer vector.
 // FUNCTION: VC1 0x00416280
 void AppendCountedRange(void* out, void* begin, void* end, void* factory)

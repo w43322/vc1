@@ -84,7 +84,6 @@ add_executable(vc1_recompiled
   src/kd/route/tsp_solver.cpp
   src/kd/render/group_renderer.cpp
   src/kd/road/road_cells_renderer.cpp
-  src/bindings/value_types.cpp
   src/bindings/color.cpp
   src/bindings/host_classes.cpp
   src/bindings/vector2.cpp
@@ -96,6 +95,7 @@ add_executable(vc1_recompiled
   src/bindings/rect.cpp
   src/bindings/rectf.cpp
   src/bindings/integral.cpp
+  src/bindings/component.cpp
   src/bindings/sqplus.cpp
   src/bindings/squirrel_object.cpp
   src/sqplus/SquirrelVM.cpp

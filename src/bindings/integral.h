@@ -77,7 +77,7 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::IntegralF, IntegralF)
 // TEMPLATE: VC1 0x00424060 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UIntegralF@vc1@@P812@AEXXZ@SqPlus@@SAHPAUSQVM@@@Z
 
-// TEMPLATE: VC1 0x00424af0
+// TEMPLATE: VC1 0x00424af0 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UIntegralF@vc1@@P812@AEXI@Z@SqPlus@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x00424b40

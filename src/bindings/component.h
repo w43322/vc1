@@ -1,0 +1,100 @@
+#ifndef VC1_BINDINGS_COMPONENT_H
+#define VC1_BINDINGS_COMPONENT_H
+#include "squirrel_object.h"
+#include "memory/fixed_pool.h"
+#include "kd/iface/iabstract.h"
+#include "kd/iface/iid.h"
+
+namespace vc1 {
+
+// Inferred name. Script class "Component" (0x004cfb54), registered first by
+// BindHostClasses through a temporary SQClassDef (0x0041dd80). Its SqPlus
+// ClassType (0x004ee26c, vftable 0x004d74a8) has no type name, so this type
+// has no TypeInfo. A script-side construct (0x0041fdd0) news a null handle in
+// pools[1]; the release hook (0x004201b0) Releases it. Engine objects are
+// pushed instead with an AddRef'd IAbstract* as the userpointer (Push
+// 0x0040c970) and read back as IUnknown* (GetInstance 0x00401820).
+struct ComponentRef
+{
+    IUnknown* ptr;
+
+    ComponentRef() : ptr(0) {}
+    ~ComponentRef()
+    {
+        if (ptr) {
+            ptr->Release();
+        }
+        ptr = 0;
+    }
+
+    VC1_SIZE_CLASS_NEW(ComponentRef)
+};
+
+typedef char Vc1ComponentRefSizeCheck[sizeof(ComponentRef) == 4 ? 1 : -1];
+
+// Release hook of pushed engine objects (Push 0x0040c970).
+SQInteger ReleaseComponent(SQUserPointer p, SQInteger size);
+
+// Component metamethods, all registered with typemask "*". Names are the
+// script names; the C++ names are inferred.
+SQInteger ComponentCloned(HSQUIRRELVM vm);   // "_cloned"
+SQInteger ComponentToString(HSQUIRRELVM vm); // "_tostring"
+SQInteger ComponentCmp(HSQUIRRELVM vm);      // "_cmp"
+SQInteger ComponentTypeOf(HSQUIRRELVM vm);   // "_typeof"
+SQInteger ComponentNextI(HSQUIRRELVM vm);    // "_nexti"
+SQInteger ComponentSet(HSQUIRRELVM vm);      // "_set"
+SQInteger ComponentGet(HSQUIRRELVM vm);      // "_get"
+
+// _nexti cursor into the iterated group's 0x14-byte name records.
+extern unsigned char* g_componentCursor;
+bool ComponentCursorIs(const char* key);
+
+}
+
+// The instance type of the userpointer; only the name, Push is custom.
+DECLARE_INSTANCE_TYPEINFO_NAME(vc1::IUnknown, Component)
+
+namespace SqPlus {
+template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IUnknown>& value);
+// Inlined into SquirrelObject::Get (0x0041b830): the userpointer's IAbstract
+// face, AddRef'd.
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
+    HSQUIRRELVM v, int idx)
+{
+    vc1::IUnknown* self = GetInstance<vc1::IUnknown, false>(v, idx);
+    return vc1::KdPtr<vc1::IAbstract>(self
+        ? static_cast<vc1::IAbstract*>(self->QueryInterface(&vc1::g_iidAbstract))
+        : 0);
+}
+}
+
+// SqPlus instantiations for Component.
+
+// TEMPLATE: VC1 0x00401820
+// ??$GetInstance@UIUnknown@vc1@@$0A@@SqPlus@@YAPAUIUnknown@vc1@@PAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004014a0
+// ??$Set@V?$KdPtr@UIUnknown@vc1@@@vc1@@@SquirrelObject@@QAEAAV0@AAV?$KdPtr@UIUnknown@vc1@@@vc1@@@Z
+
+// TEMPLATE: VC1 0x0041b830
+// ??$Get@V?$KdPtr@UIAbstract@vc1@@@vc1@@@SquirrelObject@@QAE?AV?$KdPtr@UIAbstract@vc1@@@vc1@@XZ
+
+// TEMPLATE: VC1 0x0041dd80
+// ??0?$SQClassDef@UComponentRef@vc1@@USQNoBaseClass@SqPlus@@@SqPlus@@QAE@PBD@Z
+
+// TEMPLATE: VC1 0x0041ee90
+// ??$RegisterClassType@UComponentRef@vc1@@@SqPlus@@YA?AVSquirrelObject@@PAUSQVM@@PBD1@Z
+
+// TEMPLATE: VC1 0x0041fdd0
+// ?construct@?$ConstructReleaseClass@UComponentRef@vc1@@@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004201b0
+// ?release@?$ConstructReleaseClass@UComponentRef@vc1@@@SqPlus@@SAHPAXH@Z
+
+// TEMPLATE: VC1 0x00423620
+// ??$sq_typeof@UComponentRef@vc1@@@SqPlus@@YAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x00423780
+// ??$PostConstruct@UComponentRef@vc1@@@SqPlus@@YAHPAUSQVM@@PAUComponentRef@vc1@@P6AHPAXH@Z@Z
+
+#endif

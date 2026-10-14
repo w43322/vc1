@@ -60,10 +60,11 @@ typedef char Vc1KdComponentGroupSizeCheck[sizeof(KdComponentGroup) == 0x24 ? 1 :
 
 extern void* g_groupNotify;
 
-unsigned char RecordEq(void* key, void* record);
+__declspec(noinline) unsigned char RecordEq(void* key, void* record);
 IUnknown** InsertCountedSlot(void* key, void* factory) throw();
 void AppendCountedRange(void* out, void* begin, void* end, void* factory);
 unsigned char* LookupCountedRecord(void* factory, void* key);
+unsigned char* FindCountedRecord(void* factory, void* key);
 
 }
 
