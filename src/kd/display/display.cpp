@@ -2102,7 +2102,6 @@ void* KdDisplay::Display10()
     IRenderTarget* source;
     IUnknown* camera;
     IGraphics* view;
-    Rect clip;
 
     if (g_displaySkipDevice == 0) {
         source = static_cast<IRenderTarget*>(static_cast<void*>(target));
@@ -2124,7 +2123,7 @@ void* KdDisplay::Display10()
             }
             if (view) {
                 view->SetTransform(&matrix);
-                clip = *reinterpret_cast<Rect*>(&g_displayViewLeft);
+                Rect clip(*reinterpret_cast<Rect*>(&g_displayViewLeft));
                 view->SetClipRect(&clip);
                 view->Clear(0xff000000);
                 view->DrawImage(static_cast<ITexture* const*>(static_cast<IRenderTarget*>(

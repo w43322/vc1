@@ -159,7 +159,7 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Vector2, Vector2)
 // TEMPLATE: VC1 0x00424580 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UVector2@vc1@@P812@BE?AU12@ABU12@@Z@SqPlus@@SAHPAUSQVM@@@Z
 
-// TEMPLATE: VC1 0x00424a50
+// TEMPLATE: VC1 0x00424a50 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UVector2@vc1@@P812@BE_NXZ@SqPlus@@SAHPAUSQVM@@@Z
 
 // TEMPLATE: VC1 0x00424b90 FOLDED

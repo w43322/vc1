@@ -1,122 +1,90 @@
 #include "rectf.h"
-#include "vector4.h"
 #include "value_types.h"
-#include "memory/fixed_pool.h"
+#include "kd/factory.h"
+
+#include <new>
 
 namespace vc1 {
 
-static NativeTypeInfo g_rectFType;
-static unsigned g_rectFTypeReady;
-static const int kRectFTypeSpec = 0;
-
-static void ZeroRectF(RectF* rect)
+// Bound as "Intersect" (0x004d7420) via 0x00423360 from 0x004c150d
+// (dispatcher 0x00424aa0). this in ECX, other on the stack; RET 4.
+// FUNCTION: VC1 0x0040a480
+bool RectF::Intersect(const RectF& other)
 {
-    rect->x = 0.0f;
-    rect->y = 0.0f;
-    rect->width = 0.0f;
-    rect->height = 0.0f;
-}
-
-// Bound as "Union" (0x004d7418) via 0x00423360 from 0x004c14f1.
-// In-place xywh union. Returns 1 if the result has positive width and height.
-// FUNCTION: VC1 0x00415ad0
-SQBool RectF::Union(const RectF* other)
-{
-    SQFloat left = other->x;
-    SQFloat top = other->y;
-    SQFloat right = other->width + left;
-    SQFloat bottom = other->height + top;
-    const SQFloat thisRight = width + x;
-    const SQFloat thisBottom = height + y;
-    if (right < thisRight) {
-        right = thisRight;
-    }
-    if (bottom < thisBottom) {
-        bottom = thisBottom;
-    }
-    if (x < left) {
-        left = x;
-    }
-    if (y < top) {
-        top = y;
-    }
+    const SQFloat right = KdMin(other.width + other.x, x + width);
+    const SQFloat bottom = KdMin(other.height + other.y, y + height);
+    const SQFloat left = KdMax(other.x, x);
+    const SQFloat top = KdMax(other.y, y);
     x = left;
     y = top;
     width = right - left;
     height = bottom - top;
-    if (width > 0.0f && height > 0.0f) {
-        return 1;
-    }
-    return 0;
+    return !IsEmpty();
 }
 
-// this in ESI. Name 0x004d4ffc.
-// FUNCTION: VC1 0x0041e290
-NativeClassBinding* RectF::CreateBinding(NativeClassBinding* self)
+// Bound as "IsEmpty" (0x004d17dc) via 0x004232b0 (dispatcher 0x00424a50).
+// FUNCTION: VC1 0x0040a5a0
+bool RectF::IsEmpty() const
 {
-    return CreateValueBinding(self, "RectF", RectF::RegisterClass);
+    return width <= 0.0f || height <= 0.0f;
 }
 
-// FUNCTION: VC1 0x0041ed40
-NativeClassBinding* RectF::BindArgConstructor(NativeClassBinding* self)
+// Bound as "Union" (0x004d7418) via 0x00423360 from 0x004c14f1. In-place
+// xywh union.
+// FUNCTION: VC1 0x00415ad0
+bool RectF::Union(const RectF& other)
 {
-    return BindStarConstructor(self, RectF::ConstructArgs);
+    const SQFloat right = KdMax(other.width + other.x, x + width);
+    const SQFloat bottom = KdMax(other.height + other.y, y + height);
+    const SQFloat left = KdMin(other.x, x);
+    const SQFloat top = KdMin(other.y, y);
+    x = left;
+    y = top;
+    width = right - left;
+    height = bottom - top;
+    return !IsEmpty();
 }
 
-// Once-flag 0x004ed858, type info 0x004ed844, spec 0x004cfba4, name 0x004d4ffc.
-// FUNCTION: VC1 0x0041faf0
-SquirrelObject RectF::RegisterClass(HSQUIRRELVM vm,
-    const SQChar* className)
+// Bound as "_tostring" via 0x00423200 (dispatcher 0x00424470). this in ECX.
+// Function-local static KdString (0x004ee494, guard 0x004ee4a4) with 0x40
+// reserved characters. Reuses Rect's integer format (0x004d7478), truncating
+// every field with _ftol (0x004c4060).
+// FUNCTION: VC1 0x0041dae0
+KdString& RectF::ToString() const
 {
-    return RegisterClassType<RectF>(vm, className, &g_rectFType, &g_rectFTypeReady,
-        &kRectFTypeSpec, "RectF", RectF::Constructor, RectF::TypeOf);
-}
-
-// Registered from 0x0041faf0 as "constructor" (0x004d2f10) with null typemask.
-// Zeros four floats. Release hook 0x0041dd60 (Vector4). Factory 0x004bdd60.
-// FUNCTION: VC1 0x004200c0
-SQInteger RectF::Constructor(HSQUIRRELVM vm)
-{
-    g_sizeClassHeap.allocatedBytes += sizeof(RectF);
-    RectF* const rect = static_cast<RectF*>(
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(RectF))]->Allocate());
-    if (rect) {
-        ZeroRectF(rect);
-    }
-    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
-}
-
-// FUNCTION: VC1 0x00423740
-SQInteger RectF::TypeOf(HSQUIRRELVM vm)
-{
-    sq_pushstring(vm, "RectF", -1);
-    return 1;
+    // GLOBAL: VC1 0x004ee494
+    static KdString text(0x40, '\0');
+    text.Format("Rect(%d, %d, %d, %d)", static_cast<int>(x), static_cast<int>(y),
+        static_cast<int>(width), static_cast<int>(height));
+    return text;
 }
 
 // Registered from 0x0041ed40 as "constructor" with typemask "*" (0x004d6b14).
-// extra = gettop-1; extra==1 copies another RectF; extra==4 four floats. Error 0x004d6af0.
+// gettop 1: zeros, 2: copy of a RectF, 5: four floats; anything else throws.
+// Error 0x004d6af0.
 // FUNCTION: VC1 0x004bdd60
 SQInteger RectF::ConstructArgs(HSQUIRRELVM vm)
 {
-    g_sizeClassHeap.allocatedBytes += sizeof(RectF);
-    RectF* const rect = static_cast<RectF*>(
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(RectF))]->Allocate());
-    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
-    if (extra != 0 && extra != 1 && extra != 4) {
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(RectF))]->Release(rect);
-        g_sizeClassHeap.releasedBytes += sizeof(RectF);
-        return sq_throwerror(vm, "constructRectF: invalid arguments");
+    StackHandler sa(vm);
+    RectF* const rect = static_cast<RectF*>(RectF::operator new(sizeof(RectF)));
+    const int count = sa.GetParamCount();
+    if (count == 1) {
+        ::new (rect) RectF();
+        return SqPlus::PostConstruct<RectF>(vm, rect, SqPlus::ConstructReleaseClass<RectF>::release);
     }
-    if (rect) {
-        ZeroRectF(rect);
-        if (extra == 4) {
-            rect->x = NumericFloat(vm, 2);
-            rect->y = NumericFloat(vm, 3);
-            rect->width = NumericFloat(vm, 4);
-            rect->height = NumericFloat(vm, 5);
+    if (count == 2) {
+        RectF* const source = SqPlus::GetInstance<RectF, false>(vm, 2);
+        if (source) {
+            ::new (rect) RectF(*source);
+            return SqPlus::PostConstruct<RectF>(vm, rect, SqPlus::ConstructReleaseClass<RectF>::release);
         }
     }
-    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
+    else if (count == 5) {
+        ::new (rect) RectF(sa.GetFloat(2), sa.GetFloat(3), sa.GetFloat(4), sa.GetFloat(5));
+        return SqPlus::PostConstruct<RectF>(vm, rect, SqPlus::ConstructReleaseClass<RectF>::release);
+    }
+    RectF::operator delete(rect);
+    return sa.ThrowError("constructRectF: invalid arguments");
 }
 
 }

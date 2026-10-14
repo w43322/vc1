@@ -25,7 +25,7 @@ struct FactoryEntry
 
 typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
-void GrowCountedBuffer(void* self, int bytes, char exact) throw();
+__declspec(noinline) void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw();
 void EraseCountedBytes(void* first, void* middle, void* last);
 
 // Inferred name. Borrowed (begin, size) view; KdFactory adds ownership. Every

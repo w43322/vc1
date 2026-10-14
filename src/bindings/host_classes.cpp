@@ -7,18 +7,19 @@
 #include "bindings/matrix3.h"
 #include "bindings/matrix4.h"
 #include "bindings/quaternion.h"
+#include "bindings/rect.h"
+#include "bindings/rectf.h"
+#include "bindings/integral.h"
 
 namespace vc1 {
 
 // Called from InitScriptEngine. Seven root-table natives, then one temporary
 // SqPlus SQClassDef per value type: Color (with its named colour constants),
-// Vector3, Vector2, Vector4, Matrix3, Matrix4, Quaternion, Rect, RectF and a
-// last class built by 0x0041e320. LTCG pushes every by-value argument of a
-// chain before its first call.
-// Partial: only the Vector3 (0x004c04b2-0x004c06fa), Vector2
-// (0x004c06ff-0x004c093f), Vector4 (0x004c093f-0x004c0af0), Matrix3
-// (0x004c0af0-0x004c0e06), Matrix4 (0x004c0e06-0x004c11e0) and Quaternion
-// (0x004c11e0-0x004c1398) chains are written so far.
+// Vector3, Vector2, Vector4, Matrix3, Matrix4, Quaternion, Rect, RectF and
+// IntegralF. LTCG pushes every by-value argument of a chain before its first
+// call.
+// Partial: the natives and the Color chain are missing; the Vector3
+// (0x004c04b2) through IntegralF (0x004c153b-0x004c15ab) chains are written.
 // STUB: VC1 0x004bf610
 void BindHostClasses()
 {
@@ -189,6 +190,33 @@ void BindHostClasses()
         .func(&Quaternion::ToMatrix, "ToMatrix")
         .func(&Quaternion::Slerp, "Slerp")
         .staticFunc(&Quaternion::Inverse, "Inverse");
+    SqPlus::SQClassDef<Rect>("Rect")
+        .staticFuncVarArgs(&Rect::ConstructArgs, "constructor")
+        .var(&Rect::x, "X")
+        .var(&Rect::y, "Y")
+        .var(&Rect::width, "Width")
+        .var(&Rect::height, "Height")
+        .func(&Rect::ToString, "_tostring")
+        .func(&Rect::IsEmpty, "IsEmpty")
+        .func(&Rect::Union, "Union")
+        .func(&Rect::Intersect, "Intersect")
+        .func(&Rect::IsPointIn, "IsPointIn");
+    SqPlus::SQClassDef<RectF>("RectF")
+        .staticFuncVarArgs(&RectF::ConstructArgs, "constructor")
+        .var(&RectF::x, "X")
+        .var(&RectF::y, "Y")
+        .var(&RectF::width, "Width")
+        .var(&RectF::height, "Height")
+        .func(&RectF::ToString, "_tostring")
+        .func(&RectF::IsEmpty, "IsEmpty")
+        .func(&RectF::Union, "Union")
+        .func(&RectF::Intersect, "Intersect");
+    SqPlus::SQClassDef<IntegralF>("IntegralF")
+        .func(&IntegralF::SetIntegralSize, "SetIntegralSize")
+        .func(&IntegralF::PushValue, "PushValue")
+        .func(&IntegralF::GetAverageValue, "GetAverageValue")
+        .func(&IntegralF::GetIntegralValue, "GetIntegralValue")
+        .func(&IntegralF::Clear, "Clear");
 }
 
 }

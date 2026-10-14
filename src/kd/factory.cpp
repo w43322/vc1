@@ -258,8 +258,9 @@ void EraseCountedBytes(void* first, void* middle, void* last)
 }
 
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.
+// Callee pops bytes and exact (RET 8).
 // FUNCTION: VC1 0x004b8930
-void GrowCountedBuffer(void* self, int bytes, char exact) throw()
+void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw()
 {
     KdFactory* factory = static_cast<KdFactory*>(self);
     typedef unsigned (__thiscall *FnCount)(void* object);

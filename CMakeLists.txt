@@ -95,6 +95,7 @@ add_executable(vc1_recompiled
   src/bindings/quaternion.cpp
   src/bindings/rect.cpp
   src/bindings/rectf.cpp
+  src/bindings/integral.cpp
   src/bindings/sqplus.cpp
   src/bindings/squirrel_object.cpp
   src/sqplus/SquirrelVM.cpp

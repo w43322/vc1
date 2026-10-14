@@ -1,123 +1,105 @@
 #include "rect.h"
-#include "vector4.h"
 #include "value_types.h"
-#include "memory/fixed_pool.h"
+#include "kd/factory.h"
+
+#include <new>
 
 namespace vc1 {
 
-static NativeTypeInfo g_rectType;
-static unsigned g_rectTypeReady;
-static const int kRectTypeSpec = 0;
-
-static void ZeroRect(Rect* rect)
-{
-    rect->x = 0;
-    rect->y = 0;
-    rect->width = 0;
-    rect->height = 0;
-}
-
-// Bound as "Union" (0x004d7418) via 0x004230a0 from 0x004c1419.
-// In-place xywh union. Returns 1 if the result has positive width and height.
+// Bound as "Union" (0x004d7418) via 0x004230a0 from 0x004c1419 (dispatcher
+// 0x004249b0). this in ECX, other on the stack; RET 4. In-place xywh union.
 // FUNCTION: VC1 0x00409b10
-SQBool Rect::Union(const Rect* other)
+bool Rect::Union(const Rect& other)
 {
-    SQInteger left = other->x;
-    SQInteger top = other->y;
-    SQInteger right = other->width + left;
-    SQInteger bottom = other->height + top;
+    const SQInteger otherRight = other.width + other.x;
     const SQInteger thisRight = width + x;
+    const SQInteger right = otherRight < thisRight ? thisRight : otherRight;
+    const SQInteger otherBottom = other.height + other.y;
     const SQInteger thisBottom = height + y;
-    if (right < thisRight) {
-        right = thisRight;
-    }
-    if (bottom < thisBottom) {
-        bottom = thisBottom;
-    }
-    if (x < left) {
-        left = x;
-    }
-    if (y < top) {
-        top = y;
-    }
-    x = left;
+    const SQInteger bottom = otherBottom < thisBottom ? thisBottom : otherBottom;
+    const SQInteger left = x < other.x ? x : other.x;
+    const SQInteger top = y < other.y ? y : other.y;
     y = top;
+    x = left;
     width = right - left;
     height = bottom - top;
-    if (width > 0 && height > 0) {
-        return 1;
-    }
-    return 0;
+    return !IsEmpty();
 }
 
-// this in ESI. Name 0x004cfb4c.
-// FUNCTION: VC1 0x0041e200
-NativeClassBinding* Rect::CreateBinding(NativeClassBinding* self)
+// Bound as "IsEmpty" (0x004d17dc) via 0x00422ff0 (dispatcher 0x00424a50).
+// FUNCTION: VC1 0x00409b90
+bool Rect::IsEmpty() const
 {
-    return CreateValueBinding(self, "Rect", Rect::RegisterClass);
+    return width <= 0 || height <= 0;
 }
 
-// FUNCTION: VC1 0x0041ec60
-NativeClassBinding* Rect::BindArgConstructor(NativeClassBinding* self)
+// Bound as "IsPointIn" (0x004d742c) via 0x00423150 (dispatcher 0x00424a00).
+// this in ECX; px, py on the stack; RET 8. Right and bottom edges exclusive.
+// FUNCTION: VC1 0x0040aa30
+bool Rect::IsPointIn(SQInteger px, SQInteger py) const
 {
-    return BindStarConstructor(self, Rect::ConstructArgs);
+    return x <= px && px < x + width && y <= py && py < y + height;
 }
 
-// Once-flag 0x004ea844, type info 0x004ea81c, spec 0x004cfba4, name 0x004cfb4c.
-// FUNCTION: VC1 0x0041f990
-SquirrelObject Rect::RegisterClass(HSQUIRRELVM vm,
-    const SQChar* className)
+// Bound as "Intersect" (0x004d7420) via 0x004230a0 from 0x004c1435. No
+// Ghidra function at this VA. In-place xywh intersection.
+// FUNCTION: VC1 0x0041d9a0
+bool Rect::Intersect(const Rect& other)
 {
-    return RegisterClassType<Rect>(vm, className, &g_rectType, &g_rectTypeReady,
-        &kRectTypeSpec, "Rect", Rect::Constructor, Rect::TypeOf);
+    const SQInteger otherRight = other.width + other.x;
+    const SQInteger thisRight = width + x;
+    const SQInteger right = thisRight < otherRight ? thisRight : otherRight;
+    const SQInteger otherBottom = other.height + other.y;
+    const SQInteger thisBottom = height + y;
+    const SQInteger bottom = thisBottom < otherBottom ? thisBottom : otherBottom;
+    const SQInteger left = other.x < x ? x : other.x;
+    const SQInteger top = other.y < y ? y : other.y;
+    y = top;
+    x = left;
+    width = right - left;
+    height = bottom - top;
+    return !IsEmpty();
 }
 
-// Registered from 0x0041f990 as "constructor" (0x004d2f10) with null typemask.
-// Zeros four ints. Release hook 0x0041dd60 (Vector4). Factory 0x004bdf10.
-// FUNCTION: VC1 0x00420070
-SQInteger Rect::Constructor(HSQUIRRELVM vm)
+// Bound as "_tostring" via 0x00422f40 (dispatcher 0x00424470). this in ECX.
+// Function-local static KdString (0x004ee4a8, guard 0x004ee4b8) with 0x40
+// reserved characters. The format is shared with RectF::ToString.
+// FUNCTION: VC1 0x0041da20
+KdString& Rect::ToString() const
 {
-    g_sizeClassHeap.allocatedBytes += sizeof(Rect);
-    Rect* const rect = static_cast<Rect*>(
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Rect))]->Allocate());
-    if (rect) {
-        ZeroRect(rect);
-    }
-    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
-}
-
-// FUNCTION: VC1 0x00423720
-SQInteger Rect::TypeOf(HSQUIRRELVM vm)
-{
-    sq_pushstring(vm, "Rect", -1);
-    return 1;
+    // GLOBAL: VC1 0x004ee4a8
+    static KdString text(0x40, '\0');
+    // STRING: VC1 0x004d7478
+    text.Format("Rect(%d, %d, %d, %d)", x, y, width, height);
+    return text;
 }
 
 // Registered from 0x0041ec60 as "constructor" with typemask "*" (0x004d6b14).
-// extra = gettop-1; extra==1 copies another Rect (unmapped helper); extra==4 four ints.
-// Other extras throw. Error string 0x004d6acc.
+// gettop 1: zeros, 2: copy of a Rect, 5: four ints; anything else throws.
+// Error string 0x004d6acc.
 // FUNCTION: VC1 0x004bdf10
 SQInteger Rect::ConstructArgs(HSQUIRRELVM vm)
 {
-    g_sizeClassHeap.allocatedBytes += sizeof(Rect);
-    Rect* const rect = static_cast<Rect*>(
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Rect))]->Allocate());
-    const unsigned extra = static_cast<unsigned>(sq_gettop(vm) - 1);
-    if (extra != 0 && extra != 1 && extra != 4) {
-        g_sizeClassHeap.pools[SizeClassIndex(sizeof(Rect))]->Release(rect);
-        g_sizeClassHeap.releasedBytes += sizeof(Rect);
-        return sq_throwerror(vm, "constructRect: invalid arguments");
+    StackHandler sa(vm);
+    Rect* const rect = static_cast<Rect*>(Rect::operator new(sizeof(Rect)));
+    const int count = sa.GetParamCount();
+    if (count == 1) {
+        ::new (rect) Rect();
+        return SqPlus::PostConstruct<Rect>(vm, rect, SqPlus::ConstructReleaseClass<Rect>::release);
     }
-    if (rect) {
-        ZeroRect(rect);
-        if (extra == 4) {
-            rect->x = NumericInt(vm, 2);
-            rect->y = NumericInt(vm, 3);
-            rect->width = NumericInt(vm, 4);
-            rect->height = NumericInt(vm, 5);
+    if (count == 2) {
+        Rect* const source = SqPlus::GetInstance<Rect, false>(vm, 2);
+        if (source) {
+            ::new (rect) Rect(*source);
+            return SqPlus::PostConstruct<Rect>(vm, rect, SqPlus::ConstructReleaseClass<Rect>::release);
         }
     }
-    return BindNativeInstance(vm, rect, SqPlus::ConstructReleaseClass<Vector4>::release);
+    else if (count == 5) {
+        ::new (rect) Rect(sa.GetInt(2), sa.GetInt(3), sa.GetInt(4), sa.GetInt(5));
+        return SqPlus::PostConstruct<Rect>(vm, rect, SqPlus::ConstructReleaseClass<Rect>::release);
+    }
+    Rect::operator delete(rect);
+    return sa.ThrowError("constructRect: invalid arguments");
 }
 
 }
