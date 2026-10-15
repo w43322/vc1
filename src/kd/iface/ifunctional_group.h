@@ -5,7 +5,7 @@
 
 namespace vc1 {
 
-// Slot names inferred from KdSystemBase::Unmapped10 / Unmapped14 / Shutdown.
+// Slot names inferred from KdSystemBase::RegisterObject / UnregisterObject / Shutdown.
 // Add returns 0 for a null object or one the group refuses.
 // SIZE 0x04
 struct IFunctionalGroup : IUnknown

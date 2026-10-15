@@ -40,6 +40,66 @@ static SQInteger ConsoleBufferRead(SQUserPointer p)
 
 }
 
+// GLOBAL: VC1 0x004e95d0
+int SquirrelVM::_CallState = -1;
+
+namespace vc1 {
+
+// GLOBAL: VC1 0x004d2438
+extern const char kSqCallNotInitialized[] = "call not initialized";
+
+}
+
+// EDI=i.
+// FUNCTION: VC1 0x00499e40
+void SquirrelVM::PushParam(SQInteger i)
+{
+    if (_CallState == -1) {
+        SQPLUS_THROW(vc1::kSqCallNotInitialized);
+        return;
+    }
+    sq_pushinteger(_VM, i);
+    _CallState++;
+}
+
+// EAX=o.
+// FUNCTION: VC1 0x00499ea0
+void SquirrelVM::PushParam(const SquirrelObject& o)
+{
+    if (_CallState == -1) {
+        SQPLUS_THROW(vc1::kSqCallNotInitialized);
+        return;
+    }
+    sq_pushobject(_VM, o._o);
+    _CallState++;
+}
+
+// No body of its own: LTCG inlines it (ScriptedObject 0x00471730).
+void SquirrelVM::PushParam(const SQChar* s)
+{
+    if (_CallState == -1) {
+        SQPLUS_THROW(vc1::kSqCallNotInitialized);
+        return;
+    }
+    sq_pushstring(_VM, s, -1);
+    _CallState++;
+}
+
+// EAX=func, ESI=_this.
+// FUNCTION: VC1 0x00499ef0
+BOOL SquirrelVM::BeginCall(const SquirrelObject& func, SquirrelObject& _this)
+{
+    if (_CallState != -1) {
+        // STRING: VC1 0x004d241c
+        SQPLUS_THROW(_SC("call already initialized"));
+        return FALSE;
+    }
+    _CallState = 1;
+    sq_pushobject(_VM, func._o);
+    sq_pushobject(_VM, _this._o);
+    return TRUE;
+}
+
 // Engine GetRootTable: lazily attaches the root table to g_rootTable.
 // FUNCTION: VC1 0x00499fe0
 SquirrelObject& SquirrelVM::GetRootTable()
@@ -50,6 +110,23 @@ SquirrelObject& SquirrelVM::GetRootTable()
         sq_pop(_VM, 1);
     }
     return vc1::g_rootTable;
+}
+
+// EAX=oclass, EBX=hidden return. On failure the stack is restored and the
+// empty object returned in place of SqPlus's throw.
+// FUNCTION: VC1 0x0049a0a0
+SquirrelObject SquirrelVM::CreateInstance(SquirrelObject& oclass)
+{
+    SquirrelObject ret;
+    int oldtop = sq_gettop(_VM);
+    sq_pushobject(_VM, oclass._o);
+    if (SQ_FAILED(sq_createinstance(_VM, -1))) {
+        sq_settop(_VM, oldtop);
+        return ret;
+    }
+    ret.AttachToStackObject(-1);
+    sq_pop(_VM, 2);
+    return ret;
 }
 
 // Release the root table if it is refcounted, then sq_close-style teardown of _VM.
@@ -70,6 +147,27 @@ void SquirrelVM::Shutdown()
         vc1::g_sizeClassHeap.releasedBytes += 0xb4;
         sq_close(vm);
     }
+}
+
+// EBX=hidden return. On failure the stack is unwound and the empty object
+// returned in place of SqPlus's throw.
+// FUNCTION: VC1 0x0049a1f0
+SquirrelObject SquirrelVM::EndCall()
+{
+    SquirrelObject ret;
+    if (_CallState >= 0) {
+        int oldtop = sq_gettop(_VM);
+        int nparams = _CallState;
+        _CallState = -1;
+        if (SQ_SUCCEEDED(sq_call(_VM, nparams, SQTrue, SQTrue))) {
+            ret.AttachToStackObject(-1);
+            sq_pop(_VM, 2);
+        }
+        else {
+            sq_settop(_VM, oldtop - (nparams + 1));
+        }
+    }
+    return ret;
 }
 
 // EAX=script, ECX=_this or 0 (push root), EBX=hidden return. sq_call nparams=1.

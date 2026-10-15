@@ -1,5 +1,6 @@
 #include "kd/iface/iid.h"
 #include "kd/scene/compound_object.h"
+#include "kd/scene/scripted_object.h"
 
 namespace vc1 {
 
@@ -151,15 +152,56 @@ const char* g_iidPositionableUser = "IPositionableUser";
 // GLOBAL: VC1 0x004d0608
 // STRING: VC1 0x004d4cc4
 const char* g_iidBoundingInfo = "IBoundingInfo";
-// GLOBAL: VC1 0x004d0610
 // STRING: VC1 0x004d4cac
-const char* g_iidInputHandler = "IInputHandler";
+static const char kIidInputHandler[] = "IInputHandler";
+// GLOBAL: VC1 0x004d0610
+const char* g_iidInputHandler = kIidInputHandler;
 // GLOBAL: VC1 0x004d0614
 // STRING: VC1 0x004d4c9c
 const char* g_iidObjectControl = "IObjectControl";
 // GLOBAL: VC1 0x004d0620
 // STRING: VC1 0x004d4c74
 const char* g_iidAnimateable = "IAnimateable";
+// STRING: VC1 0x004d4c64
+static const char kIidStateProvider[] = "IStateProvider";
+// GLOBAL: VC1 0x004d0624
+const char* g_iidStateProvider = kIidStateProvider;
+
+// RET 4. A face only when the script defines its member (the input face
+// also when LoadFromScript cached a pointer handler), then the compound's.
+// FUNCTION: VC1 0x00471040
+void* KdScriptedObject::QueryInterface(const char** iid)
+{
+    void* face;
+
+    if (*iid == kIidUpdateable && !script.GetValue(kScriptUpdate).IsNull()) {
+        return static_cast<IUpdateable*>(this);
+    }
+    if (*iid == kIidRenderable && !script.GetValue(kScriptRender).IsNull()) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (*iid == kIidInputHandler
+        && (!script.GetValue(kScriptOnInputChar).IsNull()
+            || !script.GetValue(kScriptOnKeyPressed).IsNull()
+            || !script.GetValue(kScriptOnKeyReleased).IsNull()
+            || !pointerHandlers[0].IsNull()
+            || !pointerHandlers[1].IsNull()
+            || !pointerHandlers[2].IsNull()
+            || !pointerHandlers[3].IsNull())) {
+        return static_cast<IInputHandler*>(this);
+    }
+    if (*iid == kIidStateProvider && !script.GetValue(kScriptGetStateWeight).IsNull()) {
+        return static_cast<IStateProvider*>(this);
+    }
+    face = KdCompoundObject::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
 
 // Kept in this translation unit so the recovered function directly compares
 // the canonical IID string objects, as the original does.
@@ -177,7 +219,7 @@ void* KdCompoundObject::QueryInterface(const char** iid)
         return static_cast<IClassifiable*>(this);
     }
     if (name == kIidScriptLoadable) {
-        return static_cast<ICloneable*>(this);
+        return static_cast<IScriptLoadable*>(this);
     }
     if (name == kIidComponentGroup || name == kIidShutdownable) {
         return static_cast<KdComponentGroup*>(this);

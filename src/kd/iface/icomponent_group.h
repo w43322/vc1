@@ -6,13 +6,19 @@
 namespace vc1 {
 
 class KdFactory;
+class KdString;
+struct IAbstract;
 
+// Slots 0x10..0x18 are the script methods "RegisterObject",
+// "UnregisterObject" and "GetObject" (Script0c tables 0x00463470 and
+// 0x00473a90 bind them through vcall thunks); FindObject is renamed to stay
+// clear of the Win32 GetObject macro.
 // SIZE 0x04
 struct IComponentGroup : IShutdownable
 {
-    virtual int Unmapped10(void* key, void** out) = 0;   // vtable+0x10
-    virtual void** Unmapped14(void** out, void* key) = 0; // vtable+0x14
-    virtual void** Unmapped18(void** out, void* key) = 0; // vtable+0x18
+    virtual void RegisterObject(const KdString& name, const KdPtr<IAbstract>& object) = 0; // vtable+0x10
+    virtual KdPtr<IUnknown> UnregisterObject(const KdString& name) = 0; // vtable+0x14
+    virtual KdPtr<IUnknown> FindObject(const KdString& name) = 0;       // vtable+0x18
     virtual KdFactory* Unmapped1c(const char** iid) = 0;  // vtable+0x1c
     virtual void* Unmapped20() = 0;                      // vtable+0x20
     virtual int Unmapped24() = 0;                        // vtable+0x24

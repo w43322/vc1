@@ -48,9 +48,9 @@ public:
     ~KdComponentGroup();
 
     int Shutdown();                         // vtable+0x0c
-    int Unmapped10(void* key, void** out);  // vtable+0x10
-    void** Unmapped14(void** out, void* key); // vtable+0x14
-    void** Unmapped18(void** out, void* key); // vtable+0x18
+    void RegisterObject(const KdString& name, const KdPtr<IAbstract>& object); // vtable+0x10
+    KdPtr<IUnknown> UnregisterObject(const KdString& name); // vtable+0x14
+    KdPtr<IUnknown> FindObject(const KdString& name);       // vtable+0x18
     KdFactory* Unmapped1c(const char** iid);  // vtable+0x1c
     void* Unmapped20();                     // vtable+0x20
     int Unmapped24();                       // vtable+0x24

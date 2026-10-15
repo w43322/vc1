@@ -32,8 +32,45 @@ namespace SqPlus {
 // "Component" instance holds the object's IAbstract face, AddRef'd after the
 // instance exists. On failure SQPLUS_THROW logs "error: %s\n" (0x004cfa98)
 // with 0x004cfac4.
+// The same body for the IScriptObject face (KdScriptInstance::Load's `this`).
+// FUNCTION: VC1 0x00403de0
+template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IScriptObject>& value)
+{
+    vc1::IAbstract* face;
+
+    if (!value.ptr) {
+        sq_pushnull(v);
+        return;
+    }
+    face = static_cast<vc1::IAbstract*>(value->QueryInterface(&vc1::g_iidAbstract));
+    if (!CreateNativeClassInstance(v, GetTypeName(*face), face, vc1::ReleaseComponent)) {
+        SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)"));
+        return;
+    }
+    face->AddRef();
+}
+
 // FUNCTION: VC1 0x0040c970
 template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IUnknown>& value)
+{
+    vc1::IAbstract* face;
+
+    if (!value.ptr) {
+        sq_pushnull(v);
+        return;
+    }
+    face = static_cast<vc1::IAbstract*>(value->QueryInterface(&vc1::g_iidAbstract));
+    if (!CreateNativeClassInstance(v, GetTypeName(*face), face, vc1::ReleaseComponent)) {
+        SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)"));
+        return;
+    }
+    face->AddRef();
+}
+
+// EAX=&value. The same body for a graphics argument (ScriptedObject's
+// "Render").
+// FUNCTION: VC1 0x004165b0
+template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IGraphics>& value)
 {
     vc1::IAbstract* face;
 
@@ -201,16 +238,12 @@ SQInteger ComponentSet(HSQUIRRELVM vm)
     }
     {
         KdString name(key);
-        IUnknown* removed;
-        group->Unmapped14(reinterpret_cast<void**>(&removed), &name);
-        if (removed) {
-            removed->Release();
-        }
+        group->UnregisterObject(name);
     }
     {
         KdString name(key);
         KdPtr<IAbstract> object = value.Get<KdPtr<IAbstract> >();
-        group->Unmapped10(&name, reinterpret_cast<void**>(&object.ptr));
+        group->RegisterObject(name, object);
     }
     return 0;
 }
@@ -243,11 +276,7 @@ SQInteger ComponentGet(HSQUIRRELVM vm)
     if (!group) {
         return -1;
     }
-    KdPtr<IUnknown> child;
-    {
-        KdString name(key);
-        group->Unmapped18(reinterpret_cast<void**>(&child.ptr), &name);
-    }
+    KdPtr<IUnknown> child = group->FindObject(KdString(key));
     if (!child.ptr) {
         return -1;
     }

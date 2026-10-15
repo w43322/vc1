@@ -39,6 +39,7 @@ extern const char* g_iidPositionableUser;
 extern const char* g_iidBoundingInfo;
 extern const char* g_iidObjectControl;
 extern const char* g_iidAnimateable;
+extern const char* g_iidStateProvider;
 extern const char* g_iidInputHandler;
 
 // isIdentifiable (0x004b4970) QIs with a local copy of the name literal.

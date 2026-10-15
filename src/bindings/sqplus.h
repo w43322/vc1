@@ -21,6 +21,9 @@ namespace vc1 {
 // Script method names shared by several Script0c tables.
 extern const char kScriptGetWidth[];
 extern const char kScriptGetHeight[];
+extern const char kScriptRegisterObject[];
+extern const char kScriptUnregisterObject[];
+extern const char kScriptGetObject[];
 
 template<typename Callee>
 Callee* ScriptInstance(SQUserPointer up)

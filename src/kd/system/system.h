@@ -59,9 +59,9 @@ public:
     unsigned AddRef();
     unsigned Release();
     int Shutdown() throw();
-    int Unmapped10(void* key, void** out);
-    void** Unmapped14(void** out, void* key);
-    void** Unmapped18(void** out, void* key);
+    void RegisterObject(const KdString& name, const KdPtr<IAbstract>& object);
+    KdPtr<IUnknown> UnregisterObject(const KdString& name);
+    KdPtr<IUnknown> FindObject(const KdString& name);
     KdFactory* Unmapped1c(const char** iid);
     void* Unmapped20();
     int Unmapped24();
@@ -72,8 +72,8 @@ public:
     void ResetClock();
     unsigned GetTime();
     void** GetDisplay(void** out);
-    void** GetCamera(void** out);
-    void SetCamera(IUnknown** value);
+    KdPtr<IAbstract> GetCamera();
+    void SetCamera(const KdPtr<IAbstract>& value);
     float GetTimeScale();
     void SetTimeScale(float scale);
 
@@ -122,13 +122,13 @@ typedef char Vc1KdSystemBaseSizeCheck[sizeof(KdSystemBase) == 0xd8 ? 1 : -1];
 // SYNTHETIC: VC1 0x00407560
 // ?Unmapped24@KdSystemBase@vc1@@WM@AEHXZ
 // SYNTHETIC: VC1 0x00407570
-// ?Unmapped10@KdSystemBase@vc1@@WM@AEHPAXPAPAX@Z
+// ?RegisterObject@KdSystemBase@vc1@@WM@AEXABVKdString@2@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z
 // SYNTHETIC: VC1 0x004075c0
-// ?Unmapped14@KdSystemBase@vc1@@WM@AEPAPAXPAPAXPAX@Z
+// ?UnregisterObject@KdSystemBase@vc1@@WM@AE?AV?$KdPtr@UIUnknown@vc1@@@2@ABVKdString@2@@Z
 // SYNTHETIC: VC1 0x004075e0
 // ?Shutdown@KdSystemBase@vc1@@WM@AEHXZ
 // SYNTHETIC: VC1 0x004075f0
-// ?Unmapped18@KdSystemBase@vc1@@WM@AEPAPAXPAPAXPAX@Z
+// ?FindObject@KdSystemBase@vc1@@WM@AE?AV?$KdPtr@UIUnknown@vc1@@@2@ABVKdString@2@@Z
 
 // SIZE 0xd8
 // VTABLE: VC1 0x004d1930 vc1::ISystem

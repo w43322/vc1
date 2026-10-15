@@ -10,6 +10,8 @@
 #include "kd/iface/iinput_handler.h"
 #include "bindings/matrix3.h"
 #include "bindings/squirrel_object.h"
+#include "bindings/component.h"
+#include "bindings/sqplus.h"
 #include "host/runtime.h"
 #include "memory/fixed_pool.h"
 
@@ -410,19 +412,19 @@ void* KdSystemBase::Unmapped20()
 
 // RET 4. Null selects the default camera; otherwise QI ICamera.
 // FUNCTION: VC1 0x00461f70
-void KdSystemBase::SetCamera(IUnknown** value)
+void KdSystemBase::SetCamera(const KdPtr<IAbstract>& value)
 {
     IUnknown* queried;
 
-    if (*value) {
+    if (value.ptr) {
         if (activeCamera) {
             activeCamera->Release();
         }
-        if (!*value) {
+        if (!value.ptr) {
             activeCamera = 0;
             return;
         }
-        queried = static_cast<IUnknown*>((*value)->QueryInterface(&g_iidCamera));
+        queried = static_cast<IUnknown*>(value.ptr->QueryInterface(&g_iidCamera));
         activeCamera = queried;
         if (queried) {
             queried->AddRef();
@@ -440,20 +442,12 @@ void KdSystemBase::SetCamera(IUnknown** value)
 
 // RET 4. Active camera as IAbstract.
 // FUNCTION: VC1 0x00461ff0
-void** KdSystemBase::GetCamera(void** out)
+KdPtr<IAbstract> KdSystemBase::GetCamera()
 {
-    IUnknown* queried;
-
     if (!activeCamera) {
-        *out = 0;
-        return out;
+        return KdPtr<IAbstract>();
     }
-    queried = static_cast<IUnknown*>(activeCamera->QueryInterface(&g_iidAbstract));
-    *out = queried;
-    if (queried) {
-        queried->AddRef();
-    }
-    return out;
+    return KdPtr<IAbstract>(static_cast<IAbstract*>(activeCamera->QueryInterface(&g_iidAbstract)));
 }
 
 // RET 4.
@@ -854,12 +848,11 @@ unsigned char KdSystemBase::Start(IUnknown** object)
     return 1;
 }
 
-// RET 8. KdComponentGroup::Unmapped18 (0x00472a70).
+// RET 8. KdComponentGroup::FindObject (0x00472a70).
 // FUNCTION: VC1 0x004630d0
-void** KdSystemBase::Unmapped18(void** out, void* key)
+KdPtr<IUnknown> KdSystemBase::FindObject(const KdString& name)
 {
-    KdComponentGroup::Unmapped18(out, key);
-    return out;
+    return KdComponentGroup::FindObject(name);
 }
 
 // STRING: VC1 0x004d5424
@@ -868,31 +861,19 @@ static const char kObjectNotFound[] = "Object %s not found";
 // RET 8. Removes key; on success also removes it from the update, render and
 // input groups and runs Unmapped24.
 // FUNCTION: VC1 0x004630f0
-void** KdSystemBase::Unmapped14(void** out, void* key)
+KdPtr<IUnknown> KdSystemBase::UnregisterObject(const KdString& name)
 {
-    IUnknown* found;
-
-    KdComponentGroup::Unmapped14(reinterpret_cast<void**>(&found), key);
-    if (!found) {
+    KdPtr<IUnknown> found = KdComponentGroup::UnregisterObject(name);
+    if (!found.ptr) {
         HostLogError(&g_kdNameSystem, kObjectNotFound,
-            *reinterpret_cast<void**>(static_cast<char*>(key) + 4));
-        *out = found;
-        if (found) {
-            found->AddRef();
-            found->Release();
-        }
-        return out;
+            *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(&name) + 4));
+        return found;
     }
-    updateGroup->Remove(reinterpret_cast<void**>(&found));
-    renderGroup->Remove(reinterpret_cast<void**>(&found));
-    inputGroup->Remove(reinterpret_cast<void**>(&found));
+    updateGroup->Remove(reinterpret_cast<void**>(&found.ptr));
+    renderGroup->Remove(reinterpret_cast<void**>(&found.ptr));
+    inputGroup->Remove(reinterpret_cast<void**>(&found.ptr));
     Unmapped24();
-    *out = found;
-    if (found) {
-        found->AddRef();
-        found->Release();
-    }
-    return out;
+    return found;
 }
 
 // STRING: VC1 0x004d53f4
@@ -913,24 +894,23 @@ static unsigned char IsRealService(IUnknown* object)
 // RET 8. Refuses an existing key; otherwise inserts, names an IIdentifiable
 // object after key and adds it to the update, render and input groups.
 // FUNCTION: VC1 0x004631b0
-int KdSystemBase::Unmapped10(void* key, void** out)
+void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& object)
 {
-    typedef void (__thiscall *FnSetName)(IUnknown* object, void* name);
-    IUnknown* existing;
+    typedef void (__thiscall *FnSetName)(IUnknown* object, const void* name);
+    void** out = reinterpret_cast<void**>(const_cast<IAbstract**>(&object.ptr));
     IUnknown* ident;
     unsigned char flag;
 
-    Unmapped18(reinterpret_cast<void**>(&existing), key);
-    flag = IsRealService(existing);
-    if (existing) {
-        existing->Release();
+    {
+        KdPtr<IUnknown> existing = FindObject(name);
+        flag = IsRealService(existing.ptr);
     }
     if (flag) {
         HostLogError(&g_kdNameSystem, kObjectExists,
-            *reinterpret_cast<void**>(static_cast<char*>(key) + 4));
-        return 0;
+            *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(&name) + 4));
+        return;
     }
-    KdComponentGroup::Unmapped10(key, out);
+    KdComponentGroup::RegisterObject(name, object);
     Unmapped24();
 
     if (*out) {
@@ -958,22 +938,44 @@ int KdSystemBase::Unmapped10(void* key, void** out)
         else {
             ident = 0;
         }
-        reinterpret_cast<FnSetName>((*reinterpret_cast<void***>(ident))[4])(ident, key);
+        reinterpret_cast<FnSetName>((*reinterpret_cast<void***>(ident))[4])(ident, &name);
         ident->Release();
     }
     updateGroup->Add(out);
     renderGroup->Add(out);
     inputGroup->Add(out);
-    return 0;
 }
 
-// RET 8. Script method table (GetObject, AddObject, ...). Not recovered.
-// STUB: VC1 0x00463470
+// RET 8. Script method lookup (table 0x004ee5d8, guard bit 0x004ee5e8),
+// every entry a vcall thunk on the ISystem face.
+// FUNCTION: VC1 0x00463470
 unsigned char KdSystemBase::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)name;
-    (void)out;
-    return 0;
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        methods[kScriptRegisterObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::RegisterObject);
+        methods[kScriptUnregisterObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::UnregisterObject);
+        methods[kScriptGetObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::FindObject);
+        // STRING: VC1 0x004d5910
+        methods["GetCamera"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetCamera);
+        // STRING: VC1 0x004cf8c8
+        methods["SetCamera"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::SetCamera);
+        // STRING: VC1 0x004d638c
+        methods["UpdateFrame"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::Update);
+        // STRING: VC1 0x004d6398
+        methods["RenderFrame"] = CreateScriptMethod<KdSystemBase>(
+            static_cast<void (KdSystemBase::*)()>(&KdSystemBase::Render));
+        // STRING: VC1 0x004d63a4
+        methods["GetUpdateSpeed"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetTimeScale);
+        // STRING: VC1 0x004d63b4
+        methods["SetUpdateSpeed"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::SetTimeScale);
+        // STRING: VC1 0x004d63c4
+        methods["ResetTime"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::ResetClock);
+        // STRING: VC1 0x004d63d0
+        methods["GetTime"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetTime);
+    }
+    return methods.Find(name, out);
 }
 
 // STRING: VC1 0x004d5780
@@ -1140,13 +1142,11 @@ unsigned char KdSystem::Start(IUnknown** object)
     return 1;
 }
 
-// RET 8. Script method table for the game system. Not recovered.
-// STUB: VC1 0x004a8f20
+// RET 8. KdSystemBase::Script0c.
+// FUNCTION: VC1 0x004a8f20
 unsigned char KdSystem::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)name;
-    (void)out;
-    return 0;
+    return KdSystemBase::Script0c(name, out) != 0;
 }
 
 }

@@ -23,6 +23,15 @@ public:
     // Upstream's default debugInfo "console_buffer" is folded into the body.
     static SquirrelObject CompileBuffer(const SQChar* s);
     static SquirrelObject RunScript(const SquirrelObject& o, SquirrelObject* _this = 0);
+    static SquirrelObject CreateInstance(SquirrelObject& oclass);
+
+    // Upstream's BeginCall / PushParam / EndCall, with SQPLUS_THROW in place
+    // of SquirrelError. _CallState is the parameter count, -1 when idle.
+    static BOOL BeginCall(const SquirrelObject& func, SquirrelObject& _this);
+    static void PushParam(SQInteger i);
+    static void PushParam(const SquirrelObject& o);
+    static void PushParam(const SQChar* s);
+    static SquirrelObject EndCall();
 
     // Inlined into VarRef::VarRef (0x004270b0).
     static SquirrelObject CreateTable()
@@ -60,6 +69,7 @@ public:
     }
 
     static HSQUIRRELVM _VM;
+    static int _CallState;
 };
 
 #endif

@@ -6,6 +6,7 @@
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/irender_target.h"
+#include "kd/iface/iscript_object.h"
 
 namespace vc1 {
 
@@ -67,8 +68,16 @@ DECLARE_INSTANCE_TYPEINFO_NAME(vc1::IUnknown, Component)
 
 namespace SqPlus {
 template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IUnknown>& value);
+template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IScriptObject>& value);
+template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IGraphics>& value);
 // A returned render target goes out as a counted IUnknown (0x0041a890).
 inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IRenderTarget>& value)
+{
+    vc1::KdPtr<vc1::IUnknown> object(value.ptr);
+    Push(v, object);
+}
+// A returned IAbstract face (GetCamera's Call, 0x0041b390) likewise.
+inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IAbstract>& value)
 {
     vc1::KdPtr<vc1::IUnknown> object(value.ptr);
     Push(v, object);
@@ -117,6 +126,12 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGraphic
 
 // TEMPLATE: VC1 0x004014a0
 // ??$Set@V?$KdPtr@UIUnknown@vc1@@@vc1@@@SquirrelObject@@QAEAAV0@AAV?$KdPtr@UIUnknown@vc1@@@vc1@@@Z
+
+// TEMPLATE: VC1 0x00403d30
+// ??$Set@V?$KdPtr@UIScriptObject@vc1@@@vc1@@@SquirrelObject@@QAEAAV0@AAV?$KdPtr@UIScriptObject@vc1@@@vc1@@@Z
+
+// TEMPLATE: VC1 0x00416550
+// ??$Set@V?$KdPtr@UIGraphics@vc1@@@vc1@@@SquirrelObject@@QAEAAV0@AAV?$KdPtr@UIGraphics@vc1@@@vc1@@@Z
 
 // TEMPLATE: VC1 0x0041b830
 // ??$Get@V?$KdPtr@UIAbstract@vc1@@@vc1@@@SquirrelObject@@QAE?AV?$KdPtr@UIAbstract@vc1@@@vc1@@XZ

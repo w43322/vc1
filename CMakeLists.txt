@@ -43,6 +43,7 @@ add_executable(vc1_recompiled
   src/kd/iface/iunknown.cpp
   src/kd/iface/iabstract.cpp
   src/kd/factory.cpp
+  src/kd/script_instance.cpp
   src/kd/display/display.cpp
   src/kd/display/graphics.cpp
   src/kd/display/pyro.cpp

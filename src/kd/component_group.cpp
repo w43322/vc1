@@ -1,5 +1,6 @@
 #include "kd/component_group.h"
 
+#include "kd/iface/iabstract.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/ishutdownable.h"
 
@@ -173,8 +174,9 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
 // nested IComponentGroup (vtable+0x18) and keep the first result whose
 // IAbstract differs from g_groupNotify.
 // FUNCTION: VC1 0x00472a70
-void** KdComponentGroup::Unmapped18(void** out, void* key)
+KdPtr<IUnknown> KdComponentGroup::FindObject(const KdString& name)
 {
+    void* key = const_cast<KdString*>(&name);
     unsigned char* pos;
     unsigned char* end;
     unsigned char* it;
@@ -191,12 +193,7 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
         pos = end;
     }
     if (pos != end) {
-        object = *reinterpret_cast<IUnknown**>(pos + 0x10);
-        *out = object;
-        if (object) {
-            object->AddRef();
-        }
-        return out;
+        return KdPtr<IUnknown>(*reinterpret_cast<IUnknown**>(pos + 0x10));
     }
 
     it = reinterpret_cast<unsigned char*>(records.items.begin);
@@ -210,8 +207,8 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
             continue;
         }
         group->AddRef();
-        found = 0;
-        group->Unmapped18(reinterpret_cast<void**>(&found), key);
+        KdPtr<IUnknown> nested = group->FindObject(name);
+        found = nested.ptr;
         take = 0;
         if (found) {
             if (!g_groupNotify) {
@@ -225,7 +222,6 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
                     take = 1;
                 }
                 else {
-                    found->Release();
                     found = 0;
                 }
             }
@@ -234,29 +230,21 @@ void** KdComponentGroup::Unmapped18(void** out, void* key)
             take = 1;
         }
         if (take) {
-            *out = found;
-            if (found) {
-                found->AddRef();
-                found->Release();
-            }
             group->Release();
-            return out;
+            return nested;
         }
         group->Release();
     }
-    object = static_cast<IUnknown*>(g_groupNotify);
-    *out = object;
-    if (object) {
-        object->AddRef();
-    }
-    return out;
+    return KdPtr<IUnknown>(static_cast<IUnknown*>(g_groupNotify));
 }
 
 // RET 8. Removes key from the table; the object (IGroupMember notified with
 // g_groupNotify) is returned AddRef'd.
 // FUNCTION: VC1 0x00472bf0
-void** KdComponentGroup::Unmapped14(void** out, void* key)
+KdPtr<IUnknown> KdComponentGroup::UnregisterObject(const KdString& name)
 {
+    void* key = const_cast<KdString*>(&name);
+    KdPtr<IUnknown> result;
     unsigned char* pos;
     unsigned char* end;
     IUnknown* object;
@@ -268,7 +256,6 @@ void** KdComponentGroup::Unmapped14(void** out, void* key)
     if (pos < end && RecordEq(key, pos)) {
         pos = end;
     }
-    *out = 0;
     if (pos != end) {
         object = *reinterpret_cast<IUnknown**>(pos + 0x10);
         member = 0;
@@ -281,10 +268,10 @@ void** KdComponentGroup::Unmapped14(void** out, void* key)
             }
             object->AddRef();
         }
-        if (*out) {
-            static_cast<IUnknown*>(*out)->Release();
+        if (result.ptr) {
+            result.ptr->Release();
         }
-        *out = object;
+        result.ptr = object;
         EraseCountedBytes(pos, pos + 0x14,
             reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size);
         records.items.size -= 0x14;
@@ -292,13 +279,14 @@ void** KdComponentGroup::Unmapped14(void** out, void* key)
             member->Release();
         }
     }
-    return out;
+    return result;
 }
 
 // RET 8. Insert-or-replace key -> *out; an IGroupMember is told its new group.
 // FUNCTION: VC1 0x00472db0
-int KdComponentGroup::Unmapped10(void* key, void** out)
+void KdComponentGroup::RegisterObject(const KdString& name, const KdPtr<IAbstract>& value)
 {
+    void* key = const_cast<KdString*>(&name);
     IUnknown** slot;
     IUnknown* object;
     IUnknown* member;
@@ -306,7 +294,7 @@ int KdComponentGroup::Unmapped10(void* key, void** out)
     typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
     slot = InsertCountedSlot(key, &records.items);
-    object = out ? static_cast<IUnknown*>(*out) : 0;
+    object = value.ptr;
     if (object) {
         object->AddRef();
     }
@@ -315,11 +303,11 @@ int KdComponentGroup::Unmapped10(void* key, void** out)
     }
     *slot = object;
     if (!object) {
-        return 0;
+        return;
     }
     member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
     if (!member) {
-        return 0;
+        return;
     }
     member->AddRef();
     ident = QueryInterface(&g_iidAbstract);
@@ -334,7 +322,6 @@ int KdComponentGroup::Unmapped10(void* key, void** out)
         static_cast<IUnknown*>(ident)->Release();
     }
     member->Release();
-    return 0;
 }
 
 }

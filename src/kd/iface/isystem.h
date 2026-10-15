@@ -5,6 +5,8 @@
 
 namespace vc1 {
 
+struct IAbstract;
+
 // Slot names after IComponentGroup are inferred from the KdSystemBase bodies.
 // SIZE 0x04
 struct ISystem : IComponentGroup
@@ -16,8 +18,8 @@ struct ISystem : IComponentGroup
     virtual void ResetClock() = 0;                  // vtable+0x38
     virtual unsigned GetTime() = 0;                 // vtable+0x3c
     virtual void** GetDisplay(void** out) = 0;      // vtable+0x40
-    virtual void** GetCamera(void** out) = 0;       // vtable+0x44
-    virtual void SetCamera(IUnknown** camera) = 0;  // vtable+0x48
+    virtual KdPtr<IAbstract> GetCamera() = 0;                // vtable+0x44
+    virtual void SetCamera(const KdPtr<IAbstract>& camera) = 0; // vtable+0x48
     virtual float GetTimeScale() = 0;               // vtable+0x4c
     virtual void SetTimeScale(float scale) = 0;     // vtable+0x50
 };

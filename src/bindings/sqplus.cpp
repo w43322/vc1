@@ -8,6 +8,12 @@ namespace vc1 {
 extern const char kScriptGetWidth[] = "GetWidth";
 // GLOBAL: VC1 0x004d12d8
 extern const char kScriptGetHeight[] = "GetHeight";
+// GLOBAL: VC1 0x004d10bc
+extern const char kScriptRegisterObject[] = "RegisterObject";
+// GLOBAL: VC1 0x004d1e44
+extern const char kScriptUnregisterObject[] = "UnregisterObject";
+// GLOBAL: VC1 0x004d4ea8
+extern const char kScriptGetObject[] = "GetObject";
 
 // ECX=table, EAX=name. Map operator[]: the closure stored under name, or a
 // null one inserted at its lower bound.
