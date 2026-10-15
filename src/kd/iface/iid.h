@@ -24,6 +24,25 @@ extern const char* g_iidResourceManager;
 extern const char* g_iidCamera;
 extern const char* g_iidSoundDriver;
 extern const char* g_iidScriptObject;
+extern const char* g_iidOutputStream;
+extern const char* g_iidReadable;
+extern const char* g_iidWriteable;
+extern const char* g_iidSaveable;
+extern const char* g_iidWithLifeTime;
+extern const char* g_iidClassifiable;
+extern const char* g_iidVisible;
+extern const char* g_iidManualControl;
+extern const char* g_iidScriptLoadable;
+extern const char* g_iidScriptSaveable;
+extern const char* g_iidPositionable;
+extern const char* g_iidPositionableUser;
+extern const char* g_iidBoundingInfo;
+extern const char* g_iidObjectControl;
+extern const char* g_iidAnimateable;
+extern const char* g_iidInputHandler;
+
+// isIdentifiable (0x004b4970) QIs with a local copy of the name literal.
+extern const char kIidIdentifiable[];
 
 }
 

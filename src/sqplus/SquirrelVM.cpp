@@ -141,7 +141,7 @@ int SquirrelVM::Init()
     if (_VM) {
         return 1;
     }
-    vm = sq_open(0);
+    vm = sq_open(1024);
     if (!vm) {
         return 0;
     }

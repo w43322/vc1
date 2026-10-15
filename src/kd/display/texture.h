@@ -46,8 +46,42 @@ public:
 
 typedef char Vc1KdTextureSizeCheck[sizeof(KdTexture) == 0x24 ? 1 : -1];
 
-void* TextureQueryInterface(ITexture* self, const char** iid);
-unsigned TextureAddRef(ITexture* self);
+// Inferred name. Texture face of a render target (KdRenderTarget::Display1c):
+// borrows the target's D3D texture; native is refreshed on every Display1c.
+// SIZE 0x1c
+// VTABLE: VC1 0x004d68e4 vc1::ITexture
+// VTABLE: VC1 0x004d6904 vc1::IAbstract
+class KdRenderTexture : public ITexture,
+                        public IAbstract
+{
+public:
+    unsigned width;     // 0x10
+    unsigned height;    // 0x14
+    IUnknown* readback; // 0x18  surface held by Lock
+
+    explicit KdRenderTexture(IUnknown* texture);
+    void* QueryInterface(const char** iid); // vtable+0x00
+    unsigned AddRef();                      // vtable+0x04
+    unsigned Release();                     // vtable+0x08
+    unsigned char Texture0c(void* arg);
+    int GetWidth();
+    int GetHeight();
+    void* Lock(void* region, int mode);
+    void Unlock();
+};
+
+typedef char Vc1KdRenderTextureSizeCheck[sizeof(KdRenderTexture) == 0x1c ? 1 : -1];
+
+// SYNTHETIC: VC1 0x0041d580
+// vc1::KdRenderTexture::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0041d5f0
+// ?Release@KdRenderTexture@vc1@@W7AEIXZ
+// SYNTHETIC: VC1 0x0041d600
+// ?QueryInterface@KdRenderTexture@vc1@@W7AEPAXPAPBD@Z
+// SYNTHETIC: VC1 0x0041d610
+// ??_EKdRenderTexture@vc1@@W7AEPAXI@Z
+// SYNTHETIC: VC1 0x0041d620
+// ?AddRef@KdRenderTexture@vc1@@W7AEIXZ
 
 }
 

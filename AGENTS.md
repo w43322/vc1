@@ -106,7 +106,11 @@ class KdDisplay : public IScriptObject, public IRenderTarget, public IDisplay,
 // SYNTHETIC: VC1 0x00402230
 // vc1::KdDisplay::`scalar deleting destructor'
 ```
+
+- Recovered constructors are `T::T(...)` with a `FUNCTION` marker on that definition. Do not add a separate `ConstructT` that takes a `malloc` block and pokes it. `SYNTHETIC` is only for symbols the compiler emits that you must not write: `scalar deleting destructor`, compiler default copy/assign, and MI adjustor thunks (`W3A` / `WBA` / `?AddRef@T@vc1@@W3AEIXZ`). A user `T::T()` or `T::AddRef` is `FUNCTION`.
+- Do not store vptrs or subobjects as `unsigned*` integer writes (`object[0] = 0x004d...`). Give the type a constructor and `VTABLE` markers; the compiler writes vptrs. Put fields on the interface or class that owns that offset (`ITexture::native`, `IRenderTarget::extra` / `graphics`). `IAbstract` is always inherited (`refs` at IAbstract+4, SIZE 0x08), never composed as a nested `Abstract` / `void* abstract`. After `malloc`, placement-`new` the constructor.
 - Owning interface-pointer members whose destructor the original inlines as `if (p) p->Release(); p = 0;` in reverse member order are `KdRef<T>` (`kd/iface/iunknown.h`), not raw pointers released by hand in the destructor body; the member order then reproduces the original teardown order.
+- Do not give `IUnknown` a default `AddRef` / `Release` / `QueryInterface`. Those stay pure. Write one implementation per class (`FUNCTION`). Other bases are compiler adjustor thunks (`SYNTHETIC` in the header). A second full copy at its own VA (e.g. `TextureAddRef` with ITexture `this`) is also `FUNCTION`, not a thunk and not a copy-paste onto every class.
 - String literals with a known original VA: `// STRING: VC1 0x00......` immediately above the line that contains the text. Each STRING address may appear once: reccmp drops a repeated address with `[ERROR] Dropped duplicate address`. When several functions use the same original literal, define it once as an `extern const char` array marked `GLOBAL` (not `STRING`; a named array is a data symbol, so a `STRING` marker leaves asmcmp comparing STRING vs DATA) and reference that symbol elsewhere (`kKdParentWindow`).
 - `LINE` pins a recompiled instruction to a source line when the asm diff mis-aligns; use it on near-matches, not as a first annotation.
 - Stock Squirrel 2.2.3 (`third_party/squirrel223`): **comments only**, do not rewrite the bodies. `reccmp-project.yml` already has this tree in `source-root`. Prefer `// FUNCTION: VC1 0x...` on the implementation when that `.cpp` is already in original address order. Static functions are fine that way. If source order does not match the original (typical for sqstdlib), use the **name-comment** form from reccmp's annotations docs, and put it in a **header** (`.h` / `.hpp`). Decomplint allows lookup-by-name only in headers (`byname_function_in_cpp` fails `--warnfail` in `.cpp`). Example that matches `_file__typeof`:
@@ -152,9 +156,37 @@ Shell notes (Windows PowerShell): do not pass Python with embedded double quotes
 
 Follow the original call graph from `WinMain` (`0x00486b00`) and from existing `FUNCTION` markers. Prefer a cluster of callers/callees over scattered 100% matches. Low match on a newly mapped function is acceptable if the control flow and calls are honest; raise match in a later round with more ABI evidence.
 
+## Run the game (runtime goal)
+
+The current goal beyond per-function matching is a recompiled exe that runs: first a window that renders the loading screen, then the game. Run it from the game data directory `Virtual-City_Win_EN_Full/VirtualCity` (scripts and `res/` are relative to it; the original exe and `bass.dll` sit one level up).
+
+- `.venv/Scripts/python.exe tools/run-debug.py --timeout 20 [--nolog] [--bp HEX ...]`: Win32 debugger over the recompiled exe. Prints `KdLog`/script errors, and on a fatal exception the registers, code bytes and a symbolized stack scan (symbols from `build/vc9/bin/VirtualCity.Unwrapped.map`). `--bp` takes **recompiled** VAs (look them up in the `.map`); each hit prints regs + stack. Blank `<empty fmt ... %s%s\n>` lines are empty prints.
+- `.venv/Scripts/python.exe tools/run-screenshot.py [out.png] [seconds] [exe]`: run for N seconds, screenshot, kill. Pass `Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe` as `exe` to capture the original for comparison (at 8 s it shows the "Loading... Please wait" screen).
+- Loop: run, read the first error or crash, find the responsible function in the original (Ghidra), recover it (usually a `STUB` or an unrecovered factory), rebuild, rerun. Each fix is still a normal recovered function with markers and a reccmp diff.
+
+### Game scripts
+
+The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-nut.ps1` clones and builds the decompiler ([w43322/NutCracker](https://github.com/w43322/NutCracker), branch `sq2-vc1`) into `build/NutCracker` and writes readable sources to `Virtual-City_Win_EN_Full/nut-src/` (same tree as `VirtualCity/`). Use them to see which engine components, methods and natives a script needs (`getComponent("X")`, `createFromScript`, `System.RegisterObject`, method names looked up through `IScriptObject::Script0c`). Script call stacks in the log name the file and line.
+
+`Virtual-City_Win_EN_Full/` is deliberately **not** in `.gitignore` so Cursor Grep/Read can see `nut-src/`. Grep only accepts it with an uppercase drive path (`D:\vc1\Virtual-City_Win_EN_Full\nut-src`). Never stage anything under it: add files by name, not `git add -A` / `git add .`.
+
+### Runtime status (update when it changes)
+
+- Works: CRT/WinMain, script VM and natives, `Main.nut` `initApp`/`startApp`, window class + `KdWindowProc`, D3D8 device, main loop with Begin/EndScene/Present per frame, System/UpdateGroup/RenderGroup/InputGroup, Display script methods.
+- Screen is black: the loading screen is not drawn yet. `createFromScript` fails ("can't cast to IScriptLoadable") because the `ScriptedObject` (`0x00471430`) and `TileManager` (`0x004a1aa0`) factories are stubs; `ResourceManager` (`0x0046d7a0`), `Camera`, `Layer`, `Scene` and most other component factories in `KdFactory` registration (`src/kd/factory.cpp`) are also stubs; texture loading (`KdTexture::Load` `0x0045c570`, `Lock`) is stubbed. `BASS_Init` fails (BASS version 0) because `bass.dll` is not next to the recompiled exe.
+- Known teardown crash: `MutexUnlock` (`0x0040160b`) with a null mutex from `DestroyTlsBlock`.
+- `scripts/menus/Loading.nut` (`res/MenuLoading.nut`, `ProgressFG` control) is the loading screen; `scripts/Game.nut` is the `Game` object.
+
+### Pitfalls seen at runtime
+
+- Globals the original keeps adjacent and indexes as one block (a `RECT`, an array) must be **one** C++ object. Separate `int` globals get reordered by the linker, and writing `rect[2]` silently overwrites an unrelated global (this corrupted `g_kdDisplay`).
+- A wrong comparison direction in a sorted-table insert/lookup (`RegisterFactory`) makes components "missing" with no crash; check the `cmp`/`jb` in asm.
+- Vendored SqPlus differs slightly from the game's revision; patches are marked `// VC1:` (e.g. `GetInstance` ignores the `sq_getinstanceup` result because the Component class typetag never matches).
+- A stub that returns 0 for a factory or a vtable slot fails late and far away (null deref in a constructor, "index does not exist" in a script). When a script says a component or method is missing, check the factory and `Script0c` first.
+
 ## Invariants
 
 - Original binary identity: README SHA-256, program name `VirtualCity.Unwrapped.exe`.
 - Read Ghidra, write `src/` or squirrel comments, import with the script. Never the reverse.
 - No fake host `main`, no `ignore-functions` in the reccmp YAML.
-- Default: no sub-agents, no asset upload, no commits of local databases or build output.
+- Default: no sub-agents, no asset upload, no commits of local databases or build output, nothing under `Virtual-City_Win_EN_Full/`.

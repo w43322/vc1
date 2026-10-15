@@ -4,6 +4,7 @@
 #include "kd/iface/iid.h"
 #include "kd/factory.h"
 #include "host/runtime.h"
+#include "bindings/matrix3.h"
 
 #include <new>
 #include <stdlib.h>
@@ -57,6 +58,18 @@ void** CompoundTailValue::Clone(void** out)
     return out;
 }
 
+// STUB: VC1 0x00472e80
+const Matrix3& KdCompoundObject::GetPosition()
+{
+    return Matrix3::Null;
+}
+
+// STUB: VC1 0x00472ea0
+void KdCompoundObject::SetPosition(const Matrix3& value)
+{
+    (void)value;
+}
+
 // FUNCTION: VC1 0x00472f90
 unsigned KdCompoundObject::Release()
 {
@@ -67,6 +80,24 @@ unsigned KdCompoundObject::Release()
 unsigned KdCompoundObject::AddRef()
 {
     return IAbstract::AddRef();
+}
+
+// STUB: VC1 0x004730d0
+void KdCompoundObject::RemoveClassificator(unsigned mask)
+{
+    IClassifiable::RemoveClassificator(mask);
+}
+
+// STUB: VC1 0x00473190
+void KdCompoundObject::AddClassificator(unsigned mask)
+{
+    IClassifiable::AddClassificator(mask);
+}
+
+// STUB: VC1 0x00473730
+void KdCompoundObject::SetName(const KdString& value)
+{
+    name.Assign(value);
 }
 
 // FUNCTION: VC1 0x00473800
@@ -98,49 +129,6 @@ void** KdCompoundObject::Clone(void** out)
 {
     *out = 0;
     return out;
-}
-
-void* KdCompoundObject::Position0c(void* out)
-{
-    return out;
-}
-
-void KdCompoundObject::Position10(const void* valueArg)
-{
-    (void)valueArg;
-}
-
-const char* KdCompoundObject::GetName()
-{
-    return name.c_str();
-}
-
-void KdCompoundObject::SetName(const char* valueArg)
-{
-    (void)valueArg;
-}
-
-int KdCompoundObject::Classify0c(void* arg)
-{
-    (void)arg;
-    return 0;
-}
-
-int KdCompoundObject::Classify10(void* arg)
-{
-    (void)arg;
-    return 0;
-}
-
-int KdCompoundObject::Classify14(void* arg)
-{
-    (void)arg;
-    return 0;
-}
-
-int KdCompoundObject::Classify18()
-{
-    return 0;
 }
 
 int KdCompoundObject::Shutdown()

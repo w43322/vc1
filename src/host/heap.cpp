@@ -7,29 +7,78 @@
 
 namespace vc1 {
 
+// Inferred name. G5 OpenKODE event core: kdCreateEvent / kdPostEvent /
+// kdInstallCallback / kdWaitEvent and the message pump behind kdWaitEvent.
+
 static int PointerInBumpArena(const void* pointer)
 {
     const unsigned char* const bytes = static_cast<const unsigned char*>(pointer);
-    return bytes >= g_bumpArena && bytes <= g_bumpArena + sizeof(g_bumpArena) - 1;
+    return bytes >= g_bumpArena && bytes < reinterpret_cast<const unsigned char*>(&g_heapHead);
 }
 
-static void ReleaseHeapNode(void* node)
+// kdFreeEvent, inlined everywhere: pool slots are marked free, others freed.
+static void ReleaseHeapNode(KdEvent* event)
 {
-    if (PointerInBumpArena(node)) {
-        static_cast<unsigned*>(node)[2] = 0;
+    if (PointerInBumpArena(event)) {
+        event->type = 0;
     }
     else {
-        free(node);
+        free(event);
     }
 }
+
+static void UnlinkEvent(KdEvent* event)
+{
+    if (g_heapHead == event) {
+        g_heapHead = event->next;
+    }
+    if (g_heapTail == event) {
+        g_heapTail = event->prev;
+    }
+    if (event->prev) {
+        event->prev->next = event->next;
+    }
+    if (event->next) {
+        event->next->prev = event->prev;
+    }
+}
+
+// ESI=event. First installed callback whose type (0 = any) and userptr
+// (0 = any) match; the static default record at the end never matches.
+// Inferred name.
+// FUNCTION: VC1 0x004962b0
+static KdCallbackFunc FindCallback(const KdEvent* event)
+{
+    KdCallback* node;
+
+    for (node = g_kdCallbacks; node->next; node = node->next) {
+        if ((node->type == 0 || node->type == event->type)
+            && (node->userptr == 0 || node->userptr == event->userptr)) {
+            return node->func;
+        }
+    }
+    return 0;
+}
+
+// The static terminator's callback. Inferred name.
+// FUNCTION: VC1 0x00496380
+static void DefaultEventCallback(const KdEvent* event)
+{
+    (void)event;
+}
+
+// GLOBAL: VC1 0x004e918c
+KdCallback g_kdDefaultCallback = { DefaultEventCallback, 0, 0, 0, 0 };
+// GLOBAL: VC1 0x004e95c8
+KdCallback* g_kdCallbacks = &g_kdDefaultCallback;
 
 // Unlink heap nodes whose +0x28 owner matches EBX. Used by socket shutdown.
 // FUNCTION: VC1 0x004963b0
 void UnlinkHeapByOwner(void* owner)
 {
-    HeapNode* node = g_heapHead;
+    KdEvent* node = g_heapHead;
     while (node) {
-        HeapNode* const next = node->next;
+        KdEvent* const next = node->next;
         if (node->owner == owner) {
             if (g_heapHead == node) {
                 g_heapHead = next;
@@ -48,139 +97,223 @@ void UnlinkHeapByOwner(void* owner)
     }
 }
 
-// ESI=event. Stamp QPC if the first qword is 0, then link onto DAT_004ed448.
+// kdPostEvent. ESI=event. Stamps the time (QPC ns) if unset, then appends.
 // FUNCTION: VC1 0x00496430
-void QueueEvent(void* node)
+int QueueEvent(KdEvent* event)
 {
     LARGE_INTEGER now;
-    unsigned char* const event = static_cast<unsigned char*>(node);
 
     if (!event) {
-        return;
+        return -1;
     }
-    if (*reinterpret_cast<unsigned*>(event) == 0
-        && *reinterpret_cast<unsigned*>(event + 4) == 0) {
+    if (event->timestamp == 0) {
         QueryPerformanceCounter(&now);
-        *reinterpret_cast<unsigned long long*>(event) =
-            static_cast<unsigned long long>(now.QuadPart);
+        event->timestamp = static_cast<__int64>(static_cast<double>(now.QuadPart) * g_nsPerTick);
     }
-    *reinterpret_cast<HeapNode**>(event + 0x24) = g_heapTail;
-    *reinterpret_cast<HeapNode**>(event + 0x20) = 0;
+    event->prev = g_heapTail;
+    event->next = 0;
     if (!g_heapTail) {
-        g_heapHead = reinterpret_cast<HeapNode*>(event);
+        g_heapHead = event;
     }
     else {
-        g_heapTail->next = reinterpret_cast<HeapNode*>(event);
+        g_heapTail->next = event;
     }
-    g_heapTail = reinterpret_cast<HeapNode*>(event);
-}
-
-// Walk the 0x30 bump slots, else malloc(0x30). Zero +0/+4/+0xc/+0x28.
-// FUNCTION: VC1 0x004964a0
-void* AllocEvent()
-{
-    unsigned char* slot = g_bumpArena;
-    unsigned char* const end = reinterpret_cast<unsigned char*>(&g_heapHead);
-
-    while (slot < end) {
-        if (*reinterpret_cast<void**>(slot + 8) == 0) {
-            *reinterpret_cast<void**>(slot + 8) = reinterpret_cast<void*>(0xffffffff);
-            break;
-        }
-        slot += 0x30;
-    }
-    if (slot >= end) {
-        slot = static_cast<unsigned char*>(malloc(0x30));
-        if (!slot) {
-            return 0;
-        }
-    }
-    *reinterpret_cast<void**>(slot) = 0;
-    *reinterpret_cast<void**>(slot + 4) = 0;
-    *reinterpret_cast<void**>(slot + 0xc) = 0;
-    *reinterpret_cast<void**>(slot + 0x28) = 0;
-    return slot;
-}
-
-// Free DAT_004ed144 if it is not inside the 0x004ed148..0x004ed447 bump range, then the list.
-// FUNCTION: VC1 0x00496580
-void FreeBumpHeaps()
-{
-    void* pages = g_heapPageList;
-    HeapNode* node = g_heapHead;
-
-    if (g_bumpCursor) {
-        ReleaseHeapNode(g_bumpCursor);
-        pages = g_heapPageList;
-        node = g_heapHead;
-    }
-
-    while (node) {
-        HeapNode* const next = node->next;
-        ReleaseHeapNode(node);
-        pages = g_heapPageList;
-        node = next;
-    }
-
-    if (pages != g_heapPageSentinel) {
-        do {
-            void* const next = static_cast<void**>(pages)[3];
-            free(pages);
-            pages = next;
-        } while (pages != g_heapPageSentinel);
-    }
-}
-
-// PeekMessageA drain then timed heap walk. Original returns 0 if a node remains, -1 if empty.
-// STUB: VC1 0x00496740
-static int WaitQueue()
-{
+    g_heapTail = event;
     return 0;
 }
 
-// QPC wait until 0x00496740 is non-zero, then pop DAT_004ed448 onto DAT_004ed144.
-// FUNCTION: VC1 0x00496840
-void* PopTimedEvent()
+// kdCreateEvent. A free slot of the 16-event pool, else malloc(0x30).
+// FUNCTION: VC1 0x004964a0
+KdEvent* AllocEvent()
 {
-    LARGE_INTEGER now;
-    unsigned long long start;
-    int pending;
+    KdEvent* event = reinterpret_cast<KdEvent*>(g_bumpArena);
+    KdEvent* const end = reinterpret_cast<KdEvent*>(&g_heapHead);
 
-    QueryPerformanceCounter(&now);
-    start = static_cast<unsigned long long>(now.QuadPart);
-    pending = WaitQueue();
-    while (pending == 0) {
-        Sleep(1);
-        QueryPerformanceCounter(&now);
-        if (static_cast<unsigned long long>(now.QuadPart) - start
-            == static_cast<unsigned long long>(-1)) {
+    while (event < end) {
+        if (event->type == 0) {
+            event->type = -1;
             break;
         }
-        pending = WaitQueue();
+        ++event;
     }
-    (void)now;
+    if (event >= end) {
+        event = static_cast<KdEvent*>(malloc(sizeof(KdEvent)));
+        if (!event) {
+            return 0;
+        }
+    }
+    event->timestamp = 0;
+    event->userptr = 0;
+    event->owner = 0;
+    return event;
+}
+
+// kdInstallCallback. ESI=func, EBX=type, EDI=userptr. A null func removes the
+// matching record (-1 if none); otherwise a new record goes to the front.
+// FUNCTION: VC1 0x004964f0
+int KdInstallCallback(KdCallbackFunc func, int type, void* userptr)
+{
+    KdCallback* node;
+
+    if (!func) {
+        for (node = g_kdCallbacks; node->next; node = node->next) {
+            if (node->type == type && node->userptr == userptr) {
+                if (g_kdCallbacks == node) {
+                    g_kdCallbacks = node->next;
+                }
+                else {
+                    node->prev->next = node->next;
+                }
+                free(node);
+                return 0;
+            }
+        }
+        return -1;
+    }
+    node = static_cast<KdCallback*>(malloc(sizeof(KdCallback)));
+    node->func = func;
+    node->type = type;
+    node->userptr = userptr;
+    node->next = g_kdCallbacks;
+    node->prev = 0;
+    g_kdCallbacks->prev = node;
+    g_kdCallbacks = node;
+    return 0;
+}
+
+// Frees the last returned event, the queue and every installed callback.
+// FUNCTION: VC1 0x00496580
+void FreeBumpHeaps()
+{
+    KdEvent* event;
+    KdCallback* node;
 
     if (g_bumpCursor) {
         ReleaseHeapNode(g_bumpCursor);
     }
-
-    {
-        HeapNode* const node = g_heapHead;
-        g_bumpCursor = reinterpret_cast<unsigned*>(node);
-        if (node) {
-            if (g_heapTail == node) {
-                g_heapTail = node->prev;
-            }
-            g_heapHead = node->next;
-            if (node->prev) {
-                node->prev->next = node->next;
-            }
-            if (node->next) {
-                node->next->prev = node->prev;
-            }
-        }
-        return node;
+    event = g_heapHead;
+    while (event) {
+        KdEvent* const next = event->next;
+        ReleaseHeapNode(event);
+        event = next;
     }
+    node = g_kdCallbacks;
+    while (node != &g_kdDefaultCallback) {
+        KdCallback* const next = node->next;
+        free(node);
+        node = next;
+    }
+}
+
+// Window procedure, cdecl event. Drops queued pointer moves (0x4001) of the
+// same type and window, so only the newest move stays queued. Inferred name.
+// FUNCTION: VC1 0x00496610
+void DropPointerMoves(const KdEvent* event)
+{
+    KdEvent* node = g_heapHead;
+
+    while (node) {
+        KdEvent* const next = node->next;
+        if (node->type == event->type && node->data[0] == 0x4001 &&
+            node->userptr == event->userptr) {
+            UnlinkEvent(node);
+            ReleaseHeapNode(node);
+        }
+        node = next;
+    }
+}
+
+// EBX=event. Drops queued events of the same type and userptr, so a due
+// timer replaces its pending event. Inferred name.
+// FUNCTION: VC1 0x004966b0
+void DropMatchingEvents(const KdEvent* event)
+{
+    KdEvent* node = g_heapHead;
+
+    while (node) {
+        KdEvent* const next = node->next;
+        if (node->type == event->type && node->userptr == event->userptr) {
+            UnlinkEvent(node);
+            ReleaseHeapNode(node);
+        }
+        node = next;
+    }
+}
+
+// Drains the Win32 queue, polls the pad, fires timers, then runs every queued
+// event through its callback; handled events are freed. -1 if the queue was
+// empty, else 0. Inferred name.
+// FUNCTION: VC1 0x00496740
+static int PumpEvents()
+{
+    MSG msg;
+    KdEvent* event;
+
+    while (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE)) {
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
+    }
+    PollGamepad();
+    FireTimers();
+
+    event = g_heapHead;
+    if (!event) {
+        return -1;
+    }
+    do {
+        KdCallbackFunc func = FindCallback(event);
+        KdEvent* const next = event->next;
+        if (func) {
+            func(event);
+            UnlinkEvent(event);
+            ReleaseHeapNode(event);
+        }
+        event = next;
+    } while (event);
+    return 0;
+}
+
+// kdWaitEvent with the timeout folded to -1: pump until an event is queued,
+// free the previously returned one and pop the head.
+// FUNCTION: VC1 0x00496840
+KdEvent* PopTimedEvent()
+{
+    LARGE_INTEGER now;
+    __int64 start;
+    KdEvent* event;
+
+    QueryPerformanceCounter(&now);
+    start = static_cast<__int64>(static_cast<double>(now.QuadPart) * g_nsPerTick);
+    if (PumpEvents() != 0) {
+        do {
+            Sleep(1);
+            QueryPerformanceCounter(&now);
+            if (static_cast<unsigned __int64>(
+                    static_cast<__int64>(static_cast<double>(now.QuadPart) * g_nsPerTick) - start)
+                >= static_cast<unsigned __int64>(-1)) {
+                break;
+            }
+        } while (PumpEvents() != 0);
+    }
+
+    if (g_bumpCursor) {
+        ReleaseHeapNode(g_bumpCursor);
+    }
+    event = g_heapHead;
+    g_bumpCursor = event;
+    if (event) {
+        g_heapHead = event->next;
+        if (g_heapTail == event) {
+            g_heapTail = event->prev;
+        }
+        if (event->prev) {
+            event->prev->next = event->next;
+        }
+        if (event->next) {
+            event->next->prev = event->prev;
+        }
+    }
+    return event;
 }
 
 // getenv(name); if missing and name is KD_UDID, getenv("COMPUTERNAME"). Original name in ESI.

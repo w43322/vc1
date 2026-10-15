@@ -9,7 +9,7 @@ namespace vc1 {
 // SIZE 0x04
 struct ISystem : IComponentGroup
 {
-    virtual int Start(IUnknown** object) = 0;       // vtable+0x28
+    virtual unsigned char Start(IUnknown** object) = 0; // vtable+0x28
     virtual void Update() = 0;                      // vtable+0x2c
     virtual void Render() = 0;                      // vtable+0x30
     virtual void Frame() = 0;                       // vtable+0x34

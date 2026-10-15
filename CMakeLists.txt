@@ -37,6 +37,7 @@ add_executable(vc1_recompiled
   src/host/kd_log.cpp
   src/app/script.cpp
   src/app/host_services.cpp
+  src/app/host_api.cpp
   src/app/run.cpp
   src/kd/iface/iid.cpp
   src/kd/iface/iunknown.cpp
@@ -55,6 +56,7 @@ add_executable(vc1_recompiled
   src/kd/font/font.cpp
   src/kd/stream/file_reader.cpp
   src/kd/scene/layer.cpp
+  src/kd/group/ptr_set.cpp
   src/kd/group/update_group.cpp
   src/kd/group/render_group.cpp
   src/kd/group/input_group.cpp
@@ -107,7 +109,7 @@ target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/in
   third_party/squirrel223/squirrel ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
-target_link_libraries(vc1_recompiled user32 ws2_32 shell32)
+target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi)
 target_link_options(vc1_recompiled PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")

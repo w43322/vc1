@@ -9,8 +9,10 @@ namespace vc1 {
 extern const char* g_emptyCountedBegin;
 extern unsigned g_emptyCountedSize;
 
-// Inferred from KdCompoundObject::QueryInterface and ctor vptr at +0x0c.
 // The +4 payload is the object's name, assigned from the shared empty string.
+// The default vftable has no destructor slot: GetName (0x00401000, shared
+// with other "return this+4" bodies) and SetName (0x00403ab0). Slot names
+// from getIdentificator / setIdentificator (0x004b59f0, 0x004b5970).
 // SIZE 0x14
 // VTABLE: VC1 0x004d124c
 struct IIdentifiable : IUnknown
@@ -18,9 +20,8 @@ struct IIdentifiable : IUnknown
     KdString name;
 
     IIdentifiable() : name(g_emptyCountedBegin, g_emptyCountedSize) {}
-    virtual ~IIdentifiable() {}
-    virtual const char* GetName() = 0;
-    virtual void SetName(const char* value) = 0;
+    virtual const KdString& GetName() { return name; }                // vtable+0x0c
+    virtual void SetName(const KdString& value) { name.Assign(value); } // vtable+0x10
 };
 
 typedef char Vc1IIdentifiableSizeCheck[sizeof(IIdentifiable) == 0x14 ? 1 : -1];

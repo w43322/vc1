@@ -5,8 +5,11 @@
 
 namespace vc1 {
 
-// Inferred from KdCompoundObject::QueryInterface. Value at +4 makes SIZE 0x08.
-// Default vftable 0x004d15d4 has four operations after IUnknown.
+// Classification bit mask at +4. The default vftable implements every slot:
+// add (0x004060c0), remove (0x004060d0), get (0x0040f130, shared with other
+// "return [this+4]" bodies) and the deleting destructor (0x004060e0). Slot
+// names from the script natives addClassificator / removeClassificator /
+// getClassificators / checkMask.
 // SIZE 0x08
 // VTABLE: VC1 0x004d15d4
 struct IClassifiable : IUnknown
@@ -15,13 +18,16 @@ struct IClassifiable : IUnknown
 
     IClassifiable() : value(0) {}
 
-    virtual int Classify0c(void* arg) = 0;
-    virtual int Classify10(void* arg) = 0;
-    virtual int Classify14(void* arg) = 0;
-    virtual int Classify18() = 0;
+    virtual void AddClassificator(unsigned mask) { value |= mask; }     // vtable+0x0c
+    virtual void RemoveClassificator(unsigned mask) { value &= ~mask; } // vtable+0x10
+    virtual unsigned GetClassificators() { return value; }            // vtable+0x14
+    virtual ~IClassifiable() {}                                       // vtable+0x18
 };
 
 typedef char Vc1IClassifiableSizeCheck[sizeof(IClassifiable) == 0x08 ? 1 : -1];
+
+// SYNTHETIC: VC1 0x004060e0
+// vc1::IClassifiable::`scalar deleting destructor'
 
 }
 

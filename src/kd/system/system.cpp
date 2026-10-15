@@ -7,6 +7,7 @@
 #include "kd/iface/iupdateable.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iresource_manager.h"
+#include "kd/iface/iinput_handler.h"
 #include "bindings/matrix3.h"
 #include "bindings/squirrel_object.h"
 #include "host/runtime.h"
@@ -22,17 +23,13 @@ namespace vc1 {
 IAbstract* g_kdSystem;
 // GLOBAL: VC1 0x004ed6f8
 IUnknown* g_kdServices;
-// GLOBAL: VC1 0x004ed4fc
-void* g_timedEventHead;
+extern Matrix3 g_displayMatrixInv; // display.cpp
 
 // STRING: VC1 0x004d4be4
 static const char kSystem[] = "System";
 // GLOBAL: VC1 0x004d0658
 const char* g_kdNameSystem = kSystem;
 
-void StartPostMixer();
-static void UnlinkCountedNode(void* block);
-static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner);
 static void FactoryClearSlots(void* begin, void* end);
 static unsigned char* InsertCountedRecord(void* factory, unsigned char* pos, void* source);
 static void ReserveRecordTable(void* factory, unsigned newCount);
@@ -342,6 +339,17 @@ const char* KdSystemBase::Script14()
     return kSystem;
 }
 
+// KD_EVENT_TIMER callback installed by Start for its 10 ms timer: one frame.
+// Inferred name.
+// FUNCTION: VC1 0x00461e80
+static void SystemTimerCallback(const KdEvent* event)
+{
+    KdSystemBase* system = g_kdSystem ? static_cast<KdSystemBase*>(g_kdSystem) : 0;
+
+    (void)event;
+    system->Frame();
+}
+
 // RET 4. ISystem vtable+0x50.
 // FUNCTION: VC1 0x00461ea0
 void KdSystemBase::SetTimeScale(float scale)
@@ -378,6 +386,19 @@ unsigned char KdSystemBase::Script10(void* a, void* b)
     (void)a;
     (void)b;
     return 0;
+}
+
+// Event 0x39 callback installed by KdSystemBase::Start on the display window:
+// the input group's pointer handler. Inferred name.
+// FUNCTION: VC1 0x00461f00
+static void SystemPointerCallback(const KdEvent* event)
+{
+    KdSystemBase* system = g_kdSystem ? static_cast<KdSystemBase*>(g_kdSystem) : 0;
+    KdPtr<IInputHandler> input(system->inputGroup
+        ? static_cast<IInputHandler*>(system->inputGroup->QueryInterface(&g_iidInputHandler))
+        : 0);
+
+    input->OnPointer(event->data);
 }
 
 // LEA EAX, [ECX+0x10]; RET. KdComponentGroup::Unmapped20 inlined.
@@ -500,6 +521,40 @@ unsigned KdSystemBase::AddRef()
     return value;
 }
 
+// Event 0x38 (key) callback installed by Start on the display window. On a
+// press with the 0x20000000 modifier bit in the high dword, key 0x4000000d
+// toggles windowed mode and 0x40000073 posts KD_EVENT_QUIT; every key event
+// then goes to the input group's key handler. Inferred name.
+// FUNCTION: VC1 0x00462110
+static void SystemKeyCallback(const KdEvent* event)
+{
+    KdSystemBase* system = g_kdSystem ? static_cast<KdSystemBase*>(g_kdSystem) : 0;
+
+    if (event->data[2] != 0) {
+        const unsigned __int64 flags =
+            *reinterpret_cast<const unsigned __int64*>(&event->data[2]);
+        if (event->data[0] == 0x4000000d) {
+            if ((flags >> 32) & 0x20000000) {
+                IDisplay* display = system->display;
+                display->SetWindowed(!display->IsWindowed());
+            }
+        }
+        else if (event->data[0] == 0x40000073) {
+            if ((flags >> 32) & 0x20000000) {
+                KdEvent* quit = AllocEvent();
+                quit->type = KD_EVENT_QUIT;
+                QueueEvent(quit);
+            }
+        }
+    }
+    {
+        KdPtr<IInputHandler> input(system->inputGroup
+            ? static_cast<IInputHandler*>(system->inputGroup->QueryInterface(&g_iidInputHandler))
+            : 0);
+        input->OnKey(event->data);
+    }
+}
+
 // RET 4. this = IRenderable. Clears with clearColor unless 0xffffff, then
 // renders renderGroup through its IRenderable face.
 // FUNCTION: VC1 0x004621e0
@@ -620,7 +675,7 @@ KdSystemBase::KdSystemBase() throw()
     inputGroup = 0;
     consoleFont = 0;
     clearColor = 0xff000000;
-    heapBlock = 0;
+    timer = 0;
     consoleText[0] = 0;
     time = 0;
     lastTicks = SystemNow();
@@ -711,18 +766,18 @@ static void RebindService(IUnknown** slot, const char** iid)
     }
 }
 
-// Frees heapBlock, shuts the component table down, clears the three groups and
+// Cancels the frame timer, shuts the component table down, clears the three groups and
 // points every service slot back at g_kdServices.
 // FUNCTION: VC1 0x00462720
 int KdSystemBase::Shutdown() throw()
 {
-    void* block = heapBlock;
+    KdTimer* frameTimer = timer;
 
-    if (block) {
-        UnlinkCountedNode(block);
-        free(block);
+    if (frameTimer) {
+        UnlinkTimer(frameTimer);
+        free(frameTimer);
     }
-    heapBlock = 0;
+    timer = 0;
     KdComponentGroup::Shutdown();
 
     if (renderGroup) {
@@ -754,16 +809,17 @@ KdSystemBase::~KdSystemBase() throw()
     g_kdSystem = 0;
 }
 
-// RET 4. Takes the display, allocates heapBlock, starts the post mixer.
+// RET 4. Takes the display, starts the 10 ms frame timer, hooks the timer and
+// the window's key/pointer events, then reads Settings.ClearColor.
 // FUNCTION: VC1 0x00462e80
-int KdSystemBase::Start(IUnknown** object)
+unsigned char KdSystemBase::Start(IUnknown** object)
 {
     IDisplay* face;
 
     if (display) {
         display->Release();
     }
-    if (!object || !*object) {
+    if (!*object) {
         display = 0;
     }
     else {
@@ -774,29 +830,26 @@ int KdSystemBase::Start(IUnknown** object)
         }
     }
 
-    heapBlock = AllocSystemBuffer(10000000, 0, reinterpret_cast<unsigned>(this));
-    StartPostMixer();
+    timer = KdSetTimer(10000000, this);
+    KdInstallCallback(SystemTimerCallback, KD_EVENT_TIMER, this);
+    {
+        KdPtr<IDisplay> window(*object
+            ? static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay)) : 0);
+        KdInstallCallback(SystemKeyCallback, 0x38, window->GetMixer());
+    }
+    {
+        KdPtr<IDisplay> window(*object
+            ? static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay)) : 0);
+        KdInstallCallback(SystemPointerCallback, 0x39, window->GetMixer());
+    }
 
-    if (!object || !*object) {
-        face = 0;
-    }
-    else {
-        face = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
-        if (face) {
-            face->AddRef();
+    // STRING: VC1 0x004d63d8
+    if (SquirrelVM::GetRootTable().Exists("Settings")) {
+        SquirrelObject settings = SquirrelVM::GetRootTable().GetValue("Settings");
+        // STRING: VC1 0x004d63e4
+        if (settings.Exists("ClearColor")) {
+            clearColor = settings.GetInt("ClearColor");
         }
-    }
-    if (face) {
-        face->GetMixer();
-        StartPostMixer();
-        face->Release();
-        face = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
-        if (face) {
-            face->AddRef();
-        }
-        face->GetMixer();
-        StartPostMixer();
-        face->Release();
     }
     return 1;
 }
@@ -965,66 +1018,6 @@ void KdSystemBase::Render() throw()
     }
 }
 
-// EDX=block. Unlinks the timed/heap node at g_timedEventHead.
-// FUNCTION: VC1 0x00486830
-static void UnlinkCountedNode(void* block)
-{
-    void** prev;
-    void* node;
-
-    if (g_timedEventHead == block) {
-        g_timedEventHead = *reinterpret_cast<void**>(static_cast<unsigned char*>(block) + 0x18);
-        return;
-    }
-    prev = &g_timedEventHead;
-    node = g_timedEventHead;
-    while (node) {
-        if (*reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18) == block) {
-            *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18) =
-                *reinterpret_cast<void**>(static_cast<unsigned char*>(block) + 0x18);
-            return;
-        }
-        prev = reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x18);
-        node = *prev;
-        (void)prev;
-    }
-}
-
-// malloc(0x20) timed node: size, flags, owner, QPC timestamp; link at +0x18.
-// FUNCTION: VC1 0x00486890
-static void* AllocSystemBuffer(unsigned size, unsigned flags, unsigned owner)
-{
-    unsigned* node;
-    void** tail;
-    LARGE_INTEGER qpc;
-
-    node = static_cast<unsigned*>(malloc(0x20));
-    if (!node) {
-        return 0;
-    }
-    node[0] = size;
-    node[1] = flags;
-    node[2] = 0x3f;
-    node[3] = owner;
-    QueryPerformanceCounter(&qpc);
-    node[4] = static_cast<unsigned>(qpc.QuadPart);
-    node[5] = static_cast<unsigned>(qpc.QuadPart >> 32);
-    node[6] = 0;
-    tail = &g_timedEventHead;
-    if (g_timedEventHead) {
-        do {
-            tail = reinterpret_cast<void**>(static_cast<unsigned char*>(*tail) + 0x18);
-        } while (*tail);
-    }
-    *tail = node;
-    return node;
-}
-
-// STUB: VC1 0x004964f0
-void StartPostMixer()
-{
-}
-
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x004a8c30
 unsigned char KdSystem::Script10(void* a, void* b)
@@ -1032,6 +1025,33 @@ unsigned char KdSystem::Script10(void* a, void* b)
     (void)a;
     (void)b;
     return 0;
+}
+
+// Event 0x39 callback of KdSystem::Start. Unless the display reports
+// IsWindowed, maps the pointer position through g_displayMatrixInv first.
+// Inferred name.
+// FUNCTION: VC1 0x004a8c40
+static void GamePointerCallback(const KdEvent* event)
+{
+    KdSystemBase* system = g_kdSystem ? static_cast<KdSystemBase*>(g_kdSystem) : 0;
+    unsigned* data = const_cast<unsigned*>(event->data);
+
+    if (!system->display->IsWindowed()) {
+        float x = static_cast<float>(static_cast<int>(data[2]));
+        float y = static_cast<float>(static_cast<int>(data[3]));
+        float mappedX = x * g_displayMatrixInv._11 + y * g_displayMatrixInv._21
+            + g_displayMatrixInv._31;
+        float mappedY = x * g_displayMatrixInv._12 + y * g_displayMatrixInv._22
+            + g_displayMatrixInv._32;
+        data[2] = static_cast<unsigned>(static_cast<int>(mappedX));
+        data[3] = static_cast<unsigned>(static_cast<int>(mappedY));
+    }
+    {
+        KdPtr<IInputHandler> input(system->inputGroup
+            ? static_cast<IInputHandler*>(system->inputGroup->QueryInterface(&g_iidInputHandler))
+            : 0);
+        input->OnPointer(event->data);
+    }
 }
 
 // FUNCTION: VC1 0x004a8d20
@@ -1104,29 +1124,19 @@ void** CreateKdSystem(void** out)
     return out;
 }
 
-// RET 4. Base Start, then one more mixer pass on the display.
+// RET 4. Base Start, then the game's own pointer callback on the window. It is
+// installed last, so it shadows the base one.
 // FUNCTION: VC1 0x004a8eb0
-int KdSystem::Start(IUnknown** object)
+unsigned char KdSystem::Start(IUnknown** object)
 {
-    IDisplay* face;
-    int ok;
-
-    ok = KdSystemBase::Start(object);
-    if (!ok) {
-        return ok;
+    if (!KdSystemBase::Start(object)) {
+        return 0;
     }
-    if (!object || !*object) {
-        face = 0;
+    {
+        KdPtr<IDisplay> window(*object
+            ? static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay)) : 0);
+        KdInstallCallback(GamePointerCallback, 0x39, window->GetMixer());
     }
-    else {
-        face = static_cast<IDisplay*>((*object)->QueryInterface(&g_iidDisplay));
-        if (face) {
-            face->AddRef();
-        }
-    }
-    face->GetMixer();
-    StartPostMixer();
-    face->Release();
     return 1;
 }
 

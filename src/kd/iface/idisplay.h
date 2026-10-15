@@ -5,6 +5,8 @@
 
 namespace vc1 {
 
+struct IRenderTarget;
+
 // Default vftable written by IDisplay(); every slot is _purecall.
 // Method names from KdDisplayBase::Script0c (0x00466b00): CreateRenderTarget, GetWidth,
 // GetHeight, IsWindowed, SetWindowed, ShowKeyboard.
@@ -23,7 +25,7 @@ struct IDisplay : IUnknown
     virtual void* GetMixer() = 0;                          // vtable+0x2c
     virtual void Display30(int unused) = 0;                // vtable+0x30
     virtual void** CreateTexture(void** out) = 0;     // vtable+0x34
-    virtual void** CreateRenderTarget(void** out, unsigned width, unsigned height) = 0; // vtable+0x38
+    virtual KdPtr<IRenderTarget> CreateRenderTarget(unsigned width, unsigned height) = 0; // vtable+0x38
     virtual void** Display3c(void** out) = 0;              // vtable+0x3c
 };
 

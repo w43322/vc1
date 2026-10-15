@@ -1,5 +1,10 @@
 #include "host/runtime.h"
 
+namespace vc1 {
+// GLOBAL: VC1 0x004d0c48
+extern const char kVirtualCity[] = "Virtual City";
+}
+
 // Inferred name. CRT at 0x0042f564 pushes hInstance=0x400000, hPrev=0, lpCmdLine, nCmdShow
 // then CALL 0x00486b00; RET 0x10. Four stdcall args are unused. Not an original symbol.
 // FUNCTION: VC1 0x00486b00
@@ -11,14 +16,12 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, in
     (void)show;
 
     if (!vc1::GetKdEnv(vc1::kKdParentWindow)) {
-        // STRING: VC1 0x004d0c48
-        CreateMutexA(0, 0, "Virtual City");
+        CreateMutexA(0, 0, vc1::kVirtualCity);
         if (GetLastError() != ERROR_ALREADY_EXISTS && GetLastError() != ERROR_ACCESS_DENIED) {
             // Unique instance: fall through to startup.
         }
         else {
-            // STRING: VC1 0x004d2844
-            const HWND existing = FindWindowA("G5__OpenKODE", "Virtual City");
+            const HWND existing = FindWindowA(vc1::kKdWindowClass, "Virtual City");
             return SetForegroundWindow(existing);
         }
     }

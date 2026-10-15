@@ -7,38 +7,109 @@
 namespace vc1 {
 
 // XOR AL,AL; RET 4. ITexture vtable+0x0c.
-// FUNCTION: VC1 0x00418000
+// FUNCTION: VC1 0x00418000 FOLDED
 unsigned char KdTexture::Texture0c(void* arg)
 {
     (void)arg;
     return 0;
 }
 
+// FUNCTION: VC1 0x00418000 FOLDED
+unsigned char KdRenderTexture::Texture0c(void* arg)
+{
+    (void)arg;
+    return 0;
+}
+
+// ESI=this, EAX=D3D texture (borrowed, not AddRef'd). Width/height from
+// GetLevelDesc(0) (texture vtable+0x38), 0 when it fails.
+// FUNCTION: VC1 0x0041d4e0
+KdRenderTexture::KdRenderTexture(IUnknown* texture)
+{
+    typedef int (__stdcall *FnLevelDesc)(IUnknown* texture, unsigned level, unsigned* desc);
+    unsigned desc[8];
+
+    native = texture;
+    width = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
+        native, 0, desc) < 0 ? 0 : desc[6];
+    readback = 0;
+    height = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
+        native, 0, desc) < 0 ? 0 : desc[7];
+}
+
+// FUNCTION: VC1 0x0041d560
+int KdRenderTexture::GetWidth()
+{
+    return static_cast<int>(width);
+}
+
+// FUNCTION: VC1 0x0041d570
+int KdRenderTexture::GetHeight()
+{
+    return static_cast<int>(height);
+}
+
+// Drops the readback surface of Lock (vtable+0x28 unlock, then Release).
+// FUNCTION: VC1 0x0045bc00
+void KdRenderTexture::Unlock()
+{
+    typedef int (__stdcall *FnUnlockRect)(IUnknown* surface);
+
+    if (readback) {
+        reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(readback))[0xa])(readback);
+        readback->Release();
+        readback = 0;
+    }
+}
+
 // this = ITexture. ITexture or IAbstract at +8. RET 4.
 // FUNCTION: VC1 0x0045bc30
-void* TextureQueryInterface(ITexture* self, const char** iid)
+void* KdRenderTexture::QueryInterface(const char** iid)
 {
     const char* name = *iid;
     if (name == g_iidTexture) {
-        return self;
+        return static_cast<ITexture*>(this);
     }
     if (name == g_iidAbstract) {
-        return reinterpret_cast<char*>(self) + 8;
+        return static_cast<IAbstract*>(this);
     }
     return 0;
 }
 
-// this = ITexture. refs at ITexture+0x0c (KdTexture+0x18). RET.
-// FUNCTION: VC1 0x0045bc80
-unsigned TextureAddRef(ITexture* self)
+// ADD ECX, 8; deleting destructor on zero refs.
+// FUNCTION: VC1 0x0045bc60
+unsigned KdRenderTexture::Release()
 {
-    IAbstract* face = reinterpret_cast<IAbstract*>(reinterpret_cast<char*>(self) + 8);
+    IAbstract* face = static_cast<IAbstract*>(this);
+
+    if (--face->refs == 0) {
+        delete face;
+        return 0;
+    }
+    return face->refs;
+}
+
+// refs at ITexture+0x0c. RET.
+// FUNCTION: VC1 0x0045bc80
+unsigned KdRenderTexture::AddRef()
+{
+    IAbstract* face = static_cast<IAbstract*>(this);
     unsigned value = face->refs;
     if (value != 0) {
         ++value;
         face->refs = value;
     }
     return value;
+}
+
+// RET 8. Copies the render target into a system-memory surface
+// (CreateImageSurface, CopyRects) and locks it; only one lock at a time.
+// STUB: VC1 0x0045be10
+void* KdRenderTexture::Lock(void* region, int mode)
+{
+    (void)region;
+    (void)mode;
+    return 0;
 }
 
 // MOV EAX,[ECX+0x14]; RET. this=ITexture (KdTexture+0x0c).

@@ -10,6 +10,8 @@
 #include "host/runtime.h"
 #include "bindings/matrix4.h"
 #include "bindings/matrix3.h"
+#include "bindings/component.h"
+#include "bindings/sqplus.h"
 
 #include <errno.h>
 #include <new>
@@ -32,24 +34,14 @@ int* g_displayMode;
 unsigned g_d3dPresentWindowed[13];
 // GLOBAL: VC1 0x004ed5a4
 unsigned g_d3dPresentFull[13];
+// Windowed-mode frame rectangle (screen coordinates).
 // GLOBAL: VC1 0x004ed590
-int g_displayWindowX;
-// GLOBAL: VC1 0x004ed594
-int g_displayWindowY;
-// GLOBAL: VC1 0x004ed598
-int g_displayWindowRight;
-// GLOBAL: VC1 0x004ed59c
-int g_displayWindowBottom;
+RECT g_displayWindowRect;
 // GLOBAL: VC1 0x004ed5a0
 unsigned g_displayWindowStyle;
+// Full-screen view rectangle (the desktop mode).
 // GLOBAL: VC1 0x004ed5d8
-int g_displayViewLeft;
-// GLOBAL: VC1 0x004ed5dc
-int g_displayViewTop;
-// GLOBAL: VC1 0x004ed5e0
-int g_displayViewRight;
-// GLOBAL: VC1 0x004ed5e4
-int g_displayViewBottom;
+RECT g_displayViewRect;
 // GLOBAL: VC1 0x004ed5e8
 unsigned g_displayViewStyle;
 // GLOBAL: VC1 0x004ed5f0
@@ -110,8 +102,15 @@ int g_displayHeight;
 int g_displayPresentInterval;
 // GLOBAL: VC1 0x004ed450
 void* g_kdWindowMixer;
+static LRESULT CALLBACK KdWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
+// Window class name, also used by WinMain's single-instance FindWindowA.
+// GLOBAL: VC1 0x004d2844
+extern const char kKdWindowClass[] = "G5__OpenKODE";
+
 // GLOBAL: VC1 0x004e95a0
-WNDCLASSA g_kdDisplayClass;
+WNDCLASSA g_kdDisplayClass = {
+    CS_HREDRAW | CS_VREDRAW, KdWindowProc, 0, 0, 0, 0, 0, 0, 0, kKdWindowClass
+};
 
 // STRING: VC1 0x004d4c38
 static const char kTexture[] = "Texture";
@@ -296,11 +295,25 @@ void* IRenderTarget::Display0c(void* a, void* b)
     return out;
 }
 
-// Uses graphics at +0x08, updates the graphics device, then clears if needed.
-// STUB: VC1 0x0041a600
+// IRenderTarget vtable+0x10. Rebind the graphics scene, end and present
+// (the same sequence as KdDisplayBase::Display10).
+// FUNCTION: VC1 0x0041a600
 void* IRenderTarget::Display10()
 {
-    return 0;
+    typedef void* (__stdcall *FnEndScene)(IUnknown* device);
+    typedef void* (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
+        void* d);
+    void* result;
+
+    static_cast<KdGraphics*>(graphics)->BindScene();
+    FlushBatch(1);
+    result = reinterpret_cast<FnEndScene>((*reinterpret_cast<void***>(g_d3dDevice))[0x23])(
+        g_d3dDevice);
+    if (g_d3dLastMixer == 0) {
+        result = reinterpret_cast<FnPresent>((*reinterpret_cast<void***>(g_d3dDevice))[0xf])(
+            g_d3dDevice, 0, 0, 0, 0);
+    }
+    return result;
 }
 
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
@@ -601,16 +614,16 @@ static int Display28Finish()
 {
     LONG style;
     LONG ex;
-    int* rect;
+    const RECT* rect;
     unsigned extra;
 
     style = GetWindowLongA(g_kdDisplayWindow, GWL_STYLE);
     if (g_displaySkipDevice == 0) {
-        rect = &g_displayViewLeft;
+        rect = &g_displayViewRect;
         extra = g_displayViewStyle;
     }
     else {
-        rect = &g_displayWindowX;
+        rect = &g_displayWindowRect;
         extra = g_displayWindowStyle;
     }
     SetWindowLongA(g_kdDisplayWindow, GWL_STYLE, (style & WS_VISIBLE) | extra);
@@ -618,11 +631,13 @@ static int Display28Finish()
     if (g_displaySkipDevice != 0) {
         SetWindowLongA(g_kdDisplayWindow, GWL_EXSTYLE, ex & ~WS_EX_TOPMOST);
         return SetWindowPos(g_kdDisplayWindow, HWND_NOTOPMOST,
-            rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1], SWP_FRAMECHANGED);
+            rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+            SWP_FRAMECHANGED);
     }
     SetWindowLongA(g_kdDisplayWindow, GWL_EXSTYLE, ex | WS_EX_TOPMOST);
     return SetWindowPos(g_kdDisplayWindow, HWND_TOPMOST,
-        rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1], SWP_FRAMECHANGED);
+        rect->left, rect->top, rect->right - rect->left, rect->bottom - rect->top,
+            SWP_FRAMECHANGED);
 }
 
 // EAX=D3DFORMAT from the mode record +8. Maps 0x15..0x19 to present intervals.
@@ -1350,8 +1365,8 @@ static unsigned char DisplayD3DInit()
         present = g_d3dPresentWindowed;
     }
     else {
-        viewW = static_cast<unsigned>(g_displayViewRight - g_displayViewLeft);
-        viewH = static_cast<unsigned>(g_displayViewBottom - g_displayViewTop);
+        viewW = static_cast<unsigned>(g_displayViewRect.right - g_displayViewRect.left);
+        viewH = static_cast<unsigned>(g_displayViewRect.bottom - g_displayViewRect.top);
         format = 0;
         if (viewW == desktop[0] && viewH == desktop[1]) {
             format = desktop[3];
@@ -1532,7 +1547,7 @@ static int Display28Apply(unsigned char windowed)
         return 0;
     }
     if (g_displaySkipDevice) {
-        GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
+        GetWindowRect(g_kdDisplayWindow, &g_displayWindowRect);
     }
     g_displaySkipDevice = windowed;
     interval = Display28Mode(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
@@ -1549,18 +1564,18 @@ int KdDisplayBase::FitWindow()
     int width;
     int height;
 
-    GetWindowRect(g_kdDisplayWindow, reinterpret_cast<LPRECT>(&g_displayWindowX));
-    width = g_displayWindowRight - g_displayWindowX;
-    height = g_displayWindowBottom - g_displayWindowY;
-    g_displayWindowX = (GetSystemMetrics(SM_CXSCREEN) - width) / 2;
-    g_displayWindowY = (GetSystemMetrics(SM_CYSCREEN) - height) / 2;
-    g_displayWindowBottom = g_displayWindowY + height;
-    g_displayWindowRight = g_displayWindowX + width;
+    GetWindowRect(g_kdDisplayWindow, &g_displayWindowRect);
+    width = g_displayWindowRect.right - g_displayWindowRect.left;
+    height = g_displayWindowRect.bottom - g_displayWindowRect.top;
+    g_displayWindowRect.left = (GetSystemMetrics(SM_CXSCREEN) - width) / 2;
+    g_displayWindowRect.top = (GetSystemMetrics(SM_CYSCREEN) - height) / 2;
+    g_displayWindowRect.bottom = g_displayWindowRect.top + height;
+    g_displayWindowRect.right = g_displayWindowRect.left + width;
     g_displayWindowStyle = 0xca0000;
-    g_displayViewLeft = 0;
-    g_displayViewTop = 0;
-    g_displayViewRight = g_displayWidth;
-    g_displayViewBottom = g_displayHeight;
+    g_displayViewRect.left = 0;
+    g_displayViewRect.top = 0;
+    g_displayViewRect.right = g_displayWidth;
+    g_displayViewRect.bottom = g_displayHeight;
     g_displayViewStyle = 0;
     return g_displayHeight;
 }
@@ -1706,15 +1721,13 @@ void** KdDisplayBase::CreateTexture(void** out)
 }
 
 // this = IShutdownable (+0x18). KdDisplayDevice::Shutdown, D3D teardown, then
-// unlink the window from g_heapPageList and destroy it.
+// drop the window's kdInstallCallback record (inlined) and destroy it.
 // FUNCTION: VC1 0x00466400
 int KdDisplayBase::Shutdown() throw()
 {
     unsigned char* window;
     HWND hwnd;
-    void* node;
-    void* next;
-    void* prev;
+    KdCallback* node;
 
     KdDisplayDevice::Shutdown();
     DisplayD3DTeardown();
@@ -1724,22 +1737,19 @@ int KdDisplayBase::Shutdown() throw()
         return 0;
     }
 
-    node = g_heapPageList;
-    while (node) {
-        next = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc);
-        if (*reinterpret_cast<int*>(static_cast<unsigned char*>(node) + 4) == 0
-            && *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 8) == window) {
-            if (g_heapPageList == node) {
-                g_heapPageList = next;
+    node = g_kdCallbacks;
+    while (node->next) {
+        if (node->type == 0 && node->userptr == window) {
+            if (g_kdCallbacks == node) {
+                g_kdCallbacks = node->next;
             }
             else {
-                prev = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0x10);
-                *reinterpret_cast<void**>(static_cast<unsigned char*>(prev) + 0xc) = next;
+                node->prev->next = node->next;
             }
             free(node);
             break;
         }
-        node = next;
+        node = node->next;
     }
 
     hwnd = *reinterpret_cast<HWND*>(window + 4);
@@ -1757,6 +1767,28 @@ int KdDisplayBase::Shutdown() throw()
 KdDisplayBase::~KdDisplayBase()
 {
     KdDisplayBase::Shutdown();
+}
+
+// Window callback installed by SetSize for every event of the window:
+// KD_EVENT_WINDOW_CLOSE (0x2c) logs and posts KD_EVENT_QUIT, focus (0x3c)
+// posts KD_EVENT_RESUME or KD_EVENT_PAUSE. Inferred name.
+// FUNCTION: VC1 0x00466510
+static void DisplayEventCallback(const KdEvent* event)
+{
+    KdEvent* posted;
+
+    if (event->type == 0x2c) {
+        // STRING: VC1 0x004d5dd0
+        HostLog(&g_kdNameDisplay, "close window");
+        posted = AllocEvent();
+        posted->type = KD_EVENT_QUIT;
+        QueueEvent(posted);
+    }
+    else if (event->type == 0x3c) {
+        posted = AllocEvent();
+        posted->type = event->data[0] != 0 ? KD_EVENT_RESUME : KD_EVENT_PAUSE;
+        QueueEvent(posted);
+    }
 }
 
 // IRenderTarget vtable+0x10. Rebind the graphics scene, end and present.
@@ -1796,10 +1828,11 @@ void* KdDisplayBase::Display0c(void* a, void* b)
 
 // RET 0xc. IDisplay vtable+0x38. Loads 3 stdcall args then cdecl-calls 0x0045bf40.
 // FUNCTION: VC1 0x00466660
-void** KdDisplayBase::CreateRenderTarget(void** out, unsigned width, unsigned height)
+KdPtr<IRenderTarget> KdDisplayBase::CreateRenderTarget(unsigned width, unsigned height)
 {
-    CreateRenderTargetBody(out, width, height);
-    return out;
+    KdPtr<IRenderTarget> result;
+    CreateRenderTargetBody(reinterpret_cast<void**>(&result.ptr), width, height);
+    return result;
 }
 
 // RET 4. BL=arg into Display28Apply.
@@ -1847,8 +1880,8 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
             SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
-    SetWindowTextA(hwnd, "Virtual City");
-    StartPostMixer();
+    SetWindowTextA(hwnd, kVirtualCity);
+    KdInstallCallback(DisplayEventCallback, 0, mixer);
     g_kdDisplayWindow = hwnd;
     ShowWindow(hwnd, SW_SHOWNORMAL);
     g_displayWidth = static_cast<int>(width);
@@ -1856,7 +1889,7 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
 
     if (!GetKdEnv(kKdParentWindow)) {
         FitWindow();
-        SetWindowPos(g_kdDisplayWindow, 0, g_displayWindowX, g_displayWindowY, 0, 0,
+        SetWindowPos(g_kdDisplayWindow, 0, g_displayWindowRect.left, g_displayWindowRect.top, 0, 0,
             SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
@@ -1867,13 +1900,166 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
     return KdDisplayDevice::SetSize(width, height);
 }
 
-// RET 8. Script method dispatch (CreateRenderTarget, GetWidth, ...). Not recovered.
-// STUB: VC1 0x00466b00
+// RET 8. Script method lookup (table 0x004ee5ec, guard bit 0x004ee5fc,
+// atexit destructor 0x004cacd0). "GetHeight" is bound to the same vcall
+// thunk as "GetWidth" (0x0041be20, vtable+0x14) in the original.
+// FUNCTION: VC1 0x00466b00
 unsigned char KdDisplayBase::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)name;
-    (void)out;
-    return 0;
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        // STRING: VC1 0x004d5d7c
+        methods["CreateRenderTarget"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::CreateRenderTarget);
+        methods[kScriptGetWidth] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::GetWidth);
+        methods[kScriptGetHeight] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::GetWidth);
+        // STRING: VC1 0x004d5d90
+        methods["IsWindowed"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::IsWindowed);
+        // STRING: VC1 0x004d5d9c
+        methods["SetWindowed"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::SetWindowed);
+        // STRING: VC1 0x004d5da8
+        methods["ShowKeyboard"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::Display30);
+    }
+    return methods.Find(name, out);
+}
+
+// The G5__OpenKODE window procedure. Window messages become events on the
+// window block: close (0x2c, swallowed), destroy (quit), activate (focus);
+// key, char and mouse messages go through TranslateInput. A pointer move
+// first drops the queued moves. The 100 ms timer of kdCreateWindow polls the
+// cursor while it is not captured. Inferred name.
+// FUNCTION: VC1 0x00495c10
+static LRESULT CALLBACK KdWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    int handled = 0;
+    KdWinInput input;
+    KdEvent event;
+    KdWindow* window;
+
+    memset(&event, 0, sizeof(event));
+    window = reinterpret_cast<KdWindow*>(GetWindowLongA(hwnd, GWL_USERDATA));
+    if (!window) {
+        return DefWindowProcA(hwnd, msg, wparam, lparam);
+    }
+    event.userptr = window->userptr;
+
+    switch (msg) {
+    case WM_CLOSE:
+        event.type = 0x2c;
+        handled = 1;
+        break;
+    case WM_DESTROY:
+        event.type = KD_EVENT_QUIT;
+        event.userptr = 0;
+        handled = 1;
+        break;
+    case WM_ACTIVATE:
+        event.type = 0x3c;
+        event.data[0] = (LOWORD(wparam) != 0 && HIWORD(wparam) == 0) ? 1 : 0;
+        break;
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_GETMINMAXINFO: {
+        MINMAXINFO* const info = reinterpret_cast<MINMAXINFO*>(lparam);
+        info->ptMinTrackSize.x = window->width + GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+        info->ptMinTrackSize.y = GetSystemMetrics(SM_CYCAPTION) + window->height +
+            GetSystemMetrics(SM_CYFIXEDFRAME) * 2;
+        handled = 1;
+        break;
+    }
+    case WM_KEYDOWN:
+    case WM_SYSKEYDOWN:
+        input.kind = 0;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        input.kind = 1;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    case WM_CHAR:
+    case WM_SYSCHAR:
+        input.kind = 2;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    case WM_DEADCHAR:
+    case WM_SYSDEADCHAR:
+        handled = 1;
+        break;
+    case WM_TIMER:
+        if (wparam == 1 && GetCapture() != hwnd) {
+            POINT cursor;
+            GetCursorPos(&cursor);
+            ScreenToClient(hwnd, &cursor);
+            wparam = 0;
+            lparam = MAKELPARAM(cursor.x, cursor.y);
+            goto pointer_move;
+        }
+        break;
+    case WM_MOUSEMOVE:
+    pointer_move:
+        if (window->lastPointer != lparam) {
+            window->lastPointer = lparam;
+            input.kind = 5;
+            input.wparam = wparam;
+            input.lparam = lparam;
+            TranslateInput(window, &input, &event);
+            DropPointerMoves(&event);
+            handled = 1;
+        }
+        break;
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+        SetCapture(hwnd);
+        input.kind = 3;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+        ReleaseCapture();
+        input.kind = 4;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    case WM_MOUSEWHEEL:
+        input.kind = 6;
+        input.wparam = wparam;
+        input.lparam = lparam;
+        TranslateInput(window, &input, &event);
+        handled = 1;
+        break;
+    }
+
+    if (event.type) {
+        KdEvent* const posted = AllocEvent();
+        posted->data[0] = event.data[0];
+        posted->type = event.type;
+        posted->data[1] = event.data[1];
+        posted->data[2] = event.data[2];
+        posted->data[3] = event.data[3];
+        posted->userptr = event.userptr;
+        QueueEvent(posted);
+    }
+    if (handled) {
+        return 0;
+    }
+    return DefWindowProcA(hwnd, msg, wparam, lparam);
 }
 
 // RegisterClassA for the display window; hInstance at +0x10, class name at +0x24.
@@ -1962,11 +2148,11 @@ int KdDisplay::FitWindow()
 
     KdDisplayBase::FitWindow();
     EnumDisplaySettingsA(0, ENUM_CURRENT_SETTINGS, &mode);
-    g_displayViewRight = static_cast<int>(mode.dmPelsWidth);
-    g_displayViewBottom = static_cast<int>(mode.dmPelsHeight);
+    g_displayViewRect.right = static_cast<int>(mode.dmPelsWidth);
+    g_displayViewRect.bottom = static_cast<int>(mode.dmPelsHeight);
     SystemParametersInfoA(SPI_GETWORKAREA, 0, &work, 0);
-    if (g_displayWindowRight - g_displayWindowX <= work.right - work.left
-        && g_displayWindowBottom - g_displayWindowY <= work.bottom - work.top) {
+    if (g_displayWindowRect.right - g_displayWindowRect.left <= work.right - work.left
+        && g_displayWindowRect.bottom - g_displayWindowRect.top <= work.bottom - work.top) {
         enabled58 = 1;
         return 1;
     }
@@ -2122,7 +2308,7 @@ void* KdDisplay::Display10()
             }
             if (view) {
                 view->SetTransform(&matrix);
-                Rect clip(*reinterpret_cast<Rect*>(&g_displayViewLeft));
+                Rect clip(*reinterpret_cast<Rect*>(&g_displayViewRect));
                 view->SetClipRect(&clip);
                 view->Clear(0xff000000);
                 view->DrawImage(static_cast<ITexture* const*>(static_cast<IRenderTarget*>(
@@ -2174,7 +2360,6 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
 {
     int viewW;
     int viewH;
-    void* slot;
     float scaleX;
     float scaleY;
     float scale;
@@ -2186,17 +2371,15 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
         return 1;
     }
 
-    viewW = g_displayViewRight - g_displayViewLeft;
-    viewH = g_displayViewBottom - g_displayViewTop;
+    viewW = g_displayViewRect.right - g_displayViewRect.left;
+    viewH = g_displayViewRect.bottom - g_displayViewRect.top;
     if (g_displayWidth == viewW && g_displayHeight == viewH) {
         return 1;
     }
 
-    slot = 0;
-    CreateRenderTarget(&slot, g_displayWidth, g_displayHeight);
-    DisplayAssignTarget(&slot, &target);
-    if (slot) {
-        static_cast<IUnknown*>(slot)->Release();
+    {
+        KdPtr<IRenderTarget> slot(CreateRenderTarget(g_displayWidth, g_displayHeight));
+        DisplayAssignTarget(reinterpret_cast<void**>(&slot.ptr), &target);
     }
     if (!target) {
         HostLogError(&g_kdNameDisplay, kCantCreateRt);

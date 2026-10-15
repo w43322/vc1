@@ -5,8 +5,12 @@
 #include "kd/iface/iabstract.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
+#include "kd/iface/irender_target.h"
 
 namespace vc1 {
+
+struct IPositionable;
+struct ITexture;
 
 // Inferred name. Script class "Component" (0x004cfb54), registered first by
 // BindHostClasses through a temporary SQClassDef (0x0041dd80). Its SqPlus
@@ -63,6 +67,12 @@ DECLARE_INSTANCE_TYPEINFO_NAME(vc1::IUnknown, Component)
 
 namespace SqPlus {
 template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IUnknown>& value);
+// A returned render target goes out as a counted IUnknown (0x0041a890).
+inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IRenderTarget>& value)
+{
+    vc1::KdPtr<vc1::IUnknown> object(value.ptr);
+    Push(v, object);
+}
 // Inlined into SquirrelObject::Get (0x0041b830): the userpointer's IAbstract
 // face, AddRef'd.
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
@@ -72,6 +82,23 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
     return vc1::KdPtr<vc1::IAbstract>(self
         ? static_cast<vc1::IAbstract*>(self->QueryInterface(&vc1::g_iidAbstract))
         : 0);
+}
+// The g5 natives' component arguments (host_api.cpp): the IAbstract face,
+// converted in the Call expression where the parameter is another face.
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IAbstract>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IPositionable>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITexture>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 // A const KdPtr<IGraphics>& argument: the IAbstract face, converted to
 // IGraphics in the Call expression, so both temporaries outlive the native

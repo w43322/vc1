@@ -67,6 +67,7 @@ public:
     virtual void Clear();     // vtable+0x04
     virtual unsigned Count(); // vtable+0x08
     void** __stdcall QueryNamed(void** out, const char** name);
+    KdPtr<IUnknown> Create(const char* name);
 
     unsigned capacity;   // 0x0c
 

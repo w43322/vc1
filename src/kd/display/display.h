@@ -145,7 +145,7 @@ public:
     void* GetMixer();
     void Display30(int unused);
     void** CreateTexture(void** out);
-    void** CreateRenderTarget(void** out, unsigned width, unsigned height);
+    KdPtr<IRenderTarget> CreateRenderTarget(unsigned width, unsigned height);
     int Shutdown() throw();
     virtual int FitWindow(); // IScriptObject vtable+0x18
 };

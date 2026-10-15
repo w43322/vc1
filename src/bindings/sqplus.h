@@ -39,6 +39,11 @@ inline void Push(HSQUIRRELVM v, KdString& value)
 {
     sq_pushstring(v, value.c_str(), -1);
 }
+// A const KdString& return (getIdentificator's Call, 0x0042b400).
+inline void Push(HSQUIRRELVM v, const KdString& value)
+{
+    sq_pushstring(v, const_cast<KdString&>(value).c_str(), -1);
+}
 
 // Engine overloads found by argument-dependent lookup from SqPlus's Call.
 // A const KdString& argument borrows the script string (0x00403990).
@@ -300,6 +305,19 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // TEMPLATE: VC1 0x00403910
 // ??$GetArrayItem@I@vc1@@YAABIPAUSQVM@@H@Z
 
+}
+
+// Declared in SquirrelObject.h; the stock SqPlus body lives in sqplus.h but is
+// missing from the vendored copy. Inlined in getComponentIDs (0x004b6060):
+// sq_pushobject, sq_pushstring, sq_arrayappend, then the inlined sq_pop.
+template<typename T>
+inline BOOL SquirrelObject::ArrayAppend(T item)
+{
+    sq_pushobject(SquirrelVM::_VM, GetObjectHandle());
+    SqPlus::Push(SquirrelVM::_VM, item);
+    BOOL res = sq_arrayappend(SquirrelVM::_VM, -2) == SQ_OK;
+    sq_pop(SquirrelVM::_VM, 1);
+    return res;
 }
 
 #endif

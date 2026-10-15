@@ -6,6 +6,7 @@ Supplementary evidence only; Ghidra decompiler output stays primary.
   disasm-orig.py 0x462720 0x1e0      # fixed byte length
   disasm-orig.py --dwords 0x4d63f0 [count]   # vtable / data dump, default 8 dwords
   disasm-orig.py --cstr 0x4d5bd8 [0x4d5be8 ...]  # NUL-terminated literals
+  disasm-orig.py --recomp 0x401000           # same views of build/vc9/bin's recompiled exe
 """
 import argparse
 import os
@@ -17,6 +18,7 @@ import pefile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXE = os.path.join(ROOT, 'Virtual-City_Win_EN_Full', 'VirtualCity.Unwrapped.exe')
+RECOMP = os.path.join(ROOT, 'build', 'vc9', 'bin', 'VirtualCity.Unwrapped.exe')
 MAX_AUTO = 0x4000
 
 
@@ -25,11 +27,13 @@ def main():
     ap.add_argument('--dwords', action='store_true', help='dump little-endian dwords instead of code')
     ap.add_argument('--keep-int3', action='store_true', help='do not hide int3 padding')
     ap.add_argument('--cstr', action='store_true', help='print NUL-terminated strings at each address')
+    ap.add_argument('--recomp', action='store_true', help='read the recompiled exe instead of the original')
     ap.add_argument('address')
     ap.add_argument('length', nargs='*')
     args = ap.parse_args()
 
-    pe = pefile.PE(EXE, fast_load=True)
+    exe = RECOMP if args.recomp else EXE
+    pe = pefile.PE(exe, fast_load=True)
     base = pe.OPTIONAL_HEADER.ImageBase
     if args.cstr:
         for a in [args.address] + args.length:

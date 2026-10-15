@@ -40,6 +40,44 @@ unsigned KdString::Count()
     return 1;
 }
 
+// EAX=dest, ECX=first, EBX=last. Counted copy of a ref range; returns the
+// end of dest.
+// FUNCTION: VC1 0x00403cb0
+IUnknown** CopyRefs(IUnknown** first, IUnknown** last, IUnknown** dest)
+{
+    for (; first != last; ++first, ++dest) {
+        if (*first) {
+            (*first)->AddRef();
+        }
+        if (*dest) {
+            (*dest)->Release();
+        }
+        *dest = *first;
+    }
+    return dest;
+}
+
+// ECX=count, EDX=list, AL=exact. KdRefList::Reserve with the exact flag;
+// the new slots are nulled.
+// FUNCTION: VC1 0x00403d90
+void ReserveRefs(unsigned count, KdRefList* list, unsigned char exact)
+{
+    const unsigned old = list->items.capacity >> 2;
+    IUnknown** slot;
+    IUnknown** end;
+
+    GrowCountedBuffer(&list->items, static_cast<int>(count * 4), static_cast<char>(exact));
+    if ((list->items.capacity >> 2) > old) {
+        slot = reinterpret_cast<IUnknown**>(list->items.begin) + old;
+        end = reinterpret_cast<IUnknown**>(list->items.begin) + (list->items.capacity >> 2);
+        for (; slot < end; ++slot) {
+            if (slot) {
+                *slot = 0;
+            }
+        }
+    }
+}
+
 // EBX=this. Destroys every KdString up to capacity through its virtual
 // destructor; the KdFactory member destructor is inlined after it.
 // FUNCTION: VC1 0x00408d40
@@ -125,7 +163,7 @@ FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out)
     oldSize = g_kdFactory.size;
     if (found != reinterpret_cast<FactoryEntry*>(
             reinterpret_cast<char*>(oldBegin) + oldSize)
-        && found->name >= entry->name) {
+        && !(entry->name < found->name)) {
         out->entry = found;
         out->inserted = 0;
         return out;
@@ -571,6 +609,29 @@ int KdString::FindLastOf(const KdString& set, unsigned pos) const
         }
     }
     return -1;
+}
+
+// EAX=this, EBX=name, out on the stack, RET 4. Linear strcmp search of the
+// table by name text (getComponent); g_kdDefaultUnknown if missing.
+// Inferred name.
+// FUNCTION: VC1 0x004bccf0
+KdPtr<IUnknown> KdFactory::Create(const char* name)
+{
+    FactoryEntry* entry = begin;
+    FactoryEntry* const end = reinterpret_cast<FactoryEntry*>(
+        reinterpret_cast<char*>(begin) + size);
+
+    for (; entry != end; ++entry) {
+        if (strcmp(entry->name, name) == 0) {
+            void* created;
+            KdPtr<IUnknown> result(static_cast<IUnknown*>(*entry->create(&created)));
+            if (created) {
+                static_cast<IUnknown*>(created)->Release();
+            }
+            return result;
+        }
+    }
+    return KdPtr<IUnknown>(g_kdDefaultUnknown);
 }
 
 // thiscall factory, stdcall out + name slot, RET 8.

@@ -40,23 +40,21 @@ LRESULT CALLBACK KdNetworkWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
         SocketNode* node = g_socketCursor;
         while (node) {
             if (node->socket == static_cast<SOCKET>(wparam)) {
-                void* const event = AllocEvent();
+                KdEvent* const event = AllocEvent();
                 if (event) {
-                    *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(event) + 0xc) =
-                        node->unused04;
+                    event->userptr = reinterpret_cast<void*>(node->unused04);
                 }
                 {
                     const unsigned kind = (static_cast<unsigned>(lparam) & 0xffff) - 1;
                     if (kind <= 0xf) {
                         if (event) {
-                            unsigned* const fields = static_cast<unsigned*>(event);
                             if (kind == 0) {
-                                fields[2] = 0x31;
+                                event->type = 0x31;
                             }
                             else if (kind == 1) {
-                                fields[2] = 0x32;
+                                event->type = 0x32;
                             }
-                            fields[4] = reinterpret_cast<unsigned>(node);
+                            event->data[0] = reinterpret_cast<unsigned>(node);
                             QueueEvent(event);
                         }
                         return 0;

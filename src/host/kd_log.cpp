@@ -47,6 +47,17 @@ void HostLog(const char** prefix, const char* fmt, ...)
     va_end(args);
 }
 
+// EAX=prefix, cdecl fmt and varargs. Tag "warning: ".
+// FUNCTION: VC1 0x004b7090
+void HostLogWarning(const char** prefix, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    // STRING: VC1 0x004d5028
+    HostLogV(prefix, "warning: ", fmt, args);
+    va_end(args);
+}
+
 // EAX=prefix, cdecl fmt and varargs. Tag "error: ".
 // FUNCTION: VC1 0x004b70b0
 void HostLogError(const char** prefix, const char* fmt, ...)
@@ -54,6 +65,17 @@ void HostLogError(const char** prefix, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     HostLogV(prefix, kHostLogError, fmt, args);
+    va_end(args);
+}
+
+// EAX=prefix, cdecl fmt and varargs. Tag "info: ".
+// FUNCTION: VC1 0x004b70d0
+void HostLogInfo(const char** prefix, const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    // STRING: VC1 0x004d5018
+    HostLogV(prefix, "info: ", fmt, args);
     va_end(args);
 }
 

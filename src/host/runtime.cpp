@@ -69,17 +69,13 @@ WNDCLASSA g_kdNetworkClass = {
 // GLOBAL: VC1 0x004f0a20
 double g_nsPerTick;
 // GLOBAL: VC1 0x004ed448
-HeapNode* g_heapHead;
+KdEvent* g_heapHead;
 // GLOBAL: VC1 0x004ed44c
-HeapNode* g_heapTail;
+KdEvent* g_heapTail;
 // GLOBAL: VC1 0x004ed144
-unsigned* g_bumpCursor;
+KdEvent* g_bumpCursor;
 // GLOBAL: VC1 0x004ed148
 unsigned char g_bumpArena[0x300];
-// GLOBAL: VC1 0x004e95c8
-void* g_heapPageList;
-// GLOBAL: VC1 0x004e918c
-void* g_heapPageSentinel;
 
 // GLOBAL: VC1 0x004ed4f8
 KdObject* g_kdObjects;

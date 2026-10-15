@@ -104,6 +104,19 @@ Place these immediately above the definition (or, for `STRING`, above the line t
 
 `FUNCTION` markers must be in address order **within that file**. `STUB` is for bodies that should not be compared yet; do not convert incomplete-but-honest functions to stubs just to raise the score. Stock third-party / CRT symbols go in `config/verified.csv` (`address|type|name|symbol`).
 
+## Running the recompiled exe
+
+The working directory must be `Virtual-City_Win_EN_Full/VirtualCity`. Helpers (Python from `.venv`):
+
+```powershell
+.\.venv\Scripts\python.exe tools\run-debug.py --timeout 20          # log + crash stack
+.\.venv\Scripts\python.exe tools\run-debug.py --bp 414020 415400   # breakpoints at recompiled VAs (.map)
+.\.venv\Scripts\python.exe tools\run-screenshot.py build\shot.png 8
+.\tools\decompile-nut.ps1   # compiled .nut scripts -> Virtual-City_Win_EN_Full/nut-src/
+```
+
+`decompile-nut.ps1` uses [w43322/NutCracker](https://github.com/w43322/NutCracker) (branch `sq2-vc1`), cloned and built into `build/NutCracker`. Current runtime status and the next blockers are in `AGENTS.md` ("Run the game").
+
 ## Toolchain
 
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.
@@ -113,4 +126,4 @@ Place these immediately above the definition (or, for `STRING`, above the line t
 
 ## Do not commit
 
-`ghidra/`, `build/`, `.venv/`, `reccmp-user.yml`, `reccmp-build.yml`, and the original game tree / zip.
+`ghidra/`, `build/`, `.venv/`, `reccmp-user.yml`, `reccmp-build.yml`, and the original game tree / zip. `Virtual-City_Win_EN_Full/` is intentionally not git-ignored (so editor search sees the decompiled scripts); stage files by name and never add anything under it.

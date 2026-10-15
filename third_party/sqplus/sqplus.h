@@ -721,9 +721,9 @@ inline int ReturnCopy(HSQUIRRELVM v,const T & classToCopy) {
 template<typename T,bool ExceptionOnError>
 T * GetInstance(HSQUIRRELVM v,SQInteger idx) {
   SQUserPointer up=0;
-  if (SQ_FAILED(sq_getinstanceup(v,idx,&up,ClassType<T>::type()))) {
-    up = 0;
-  }
+  // VC1: the engine ignores the result (0x00401820); sq_getinstanceup stores
+  // the userpointer before the typetag test, which fails for Component.
+  sq_getinstanceup(v,idx,&up,ClassType<T>::type());
   if (ExceptionOnError) { // This code block should be compiled out when ExceptionOnError is false. In any case, the compiler should not generate a test condition (include or exclude the enclosed code block).
     if (!up) {
       SQPLUS_THROW(_SC("GetInstance: Invalid argument type"));

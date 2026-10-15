@@ -1,5 +1,6 @@
 #include "kd/display/render_target.h"
 
+#include "kd/display/texture.h"
 #include "kd/iface/iid.h"
 
 #include <new>
@@ -67,6 +68,50 @@ unsigned KdRenderTarget::AddRef()
     return value;
 }
 
+// IRenderTarget vtable+0x1c. The cached KdRenderTexture over the node's D3D
+// texture, created on first use; its native is re-read every call. A failed
+// create still Releases the null slot, as in the original.
+// FUNCTION: VC1 0x0045bd40
+void* KdRenderTarget::Display1c()
+{
+    KdRenderTexture* object;
+    IUnknown* ident;
+
+    if (!cachedTexture) {
+        object = static_cast<KdRenderTexture*>(malloc(sizeof(KdRenderTexture)));
+        if (object) {
+            new (object) KdRenderTexture(
+                extra ? static_cast<KdRenderTargetNode*>(extra)->texture : 0);
+        }
+        if (!object) {
+            ident = 0;
+        }
+        else {
+            ident = static_cast<IUnknown*>(
+                static_cast<IAbstract*>(object)->QueryInterface(&g_iidAbstract));
+            if (ident) {
+                ident->AddRef();
+            }
+        }
+        if (cachedTexture) {
+            cachedTexture->Release();
+        }
+        if (!ident) {
+            cachedTexture = 0;
+        }
+        else {
+            cachedTexture = static_cast<ITexture*>(ident->QueryInterface(&g_iidTexture));
+            if (cachedTexture) {
+                cachedTexture->AddRef();
+            }
+            ident->Release();
+        }
+        cachedTexture->Release();
+    }
+    cachedTexture->native = extra ? static_cast<KdRenderTargetNode*>(extra)->texture : 0;
+    return &cachedTexture;
+}
+
 // EAX=malloc(0x20) block, stdcall extra = texture node. IRenderTarget() then extra/refs.
 // FUNCTION: VC1 0x0045bf00
 KdRenderTarget::KdRenderTarget(void* node)
@@ -75,10 +120,6 @@ KdRenderTarget::KdRenderTarget(void* node)
     cachedTexture = 0;
 }
 
-void* KdRenderTarget::Display1c()
-{
-    return 0;
-}
 
 // cdecl out. LTCG extras width/height in EBX/EDI. Lookup miss AddRefs g_renderTargetDefault.
 // FUNCTION: VC1 0x0045bf40

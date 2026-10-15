@@ -33,26 +33,129 @@ struct SocketNode
     SocketNode* next;   // +0x0c
 };
 
-struct HeapNode
+// Inferred name. OpenKODE KDEvent (timestamp, type, userptr, data union) plus
+// G5's queue links. kdCreateEvent (0x004964a0) hands out the 16 static slots
+// of g_bumpArena first; +8 doubles as the slot's in-use mark.
+// SIZE 0x30
+struct KdEvent
 {
-    unsigned pad[8];
-    HeapNode* next;   // +0x20
-    HeapNode* prev;   // +0x24
-    void* owner;      // +0x28 compared to EBX in 0x004963b0
+    __int64 timestamp; // +0x00 QPC ticks, stamped by kdPostEvent when 0
+    int type;          // +0x08 KD_EVENT_*
+    void* userptr;     // +0x0c
+    unsigned data[4];  // +0x10
+    KdEvent* next;     // +0x20
+    KdEvent* prev;     // +0x24
+    void* owner;       // +0x28 compared to EBX in 0x004963b0
+    unsigned pad2c;    // +0x2c
 };
 
+typedef char Vc1KdEventSizeCheck[sizeof(KdEvent) == 0x30 ? 1 : -1];
+
+// OpenKODE event types seen in the host.
+enum
+{
+    KD_EVENT_TIMER = 0x2a,
+    KD_EVENT_QUIT = 0x2b,
+    KD_EVENT_PAUSE = 0x2d,
+    KD_EVENT_RESUME = 0x2e
+};
+
+typedef void (*KdCallbackFunc)(const KdEvent* event);
+
+// Inferred name. kdSetTimer record on g_kdTimers. Times are QPC nanoseconds.
+// periodic is KD_TIMER_ONCE (0x3d) or KD_TIMER_PERIODIC_AVERAGE (0x3f).
+// SIZE 0x20
+struct KdTimer
+{
+    __int64 interval; // +0x00
+    int periodic;     // +0x08
+    void* userptr;    // +0x0c
+    __int64 last;     // +0x10 when the timer last fired (or was set)
+    KdTimer* next;    // +0x18
+    unsigned pad1c;   // +0x1c
+};
+
+extern KdTimer* g_kdTimers; // 0x004ed4fc
+
+// Inferred name. kdInstallCallback record; type 0 matches every event type.
+// The list ends at the static g_kdDefaultCallback.
+// SIZE 0x14
+struct KdCallback
+{
+    KdCallbackFunc func; // +0x00
+    int type;            // +0x04
+    void* userptr;       // +0x08
+    KdCallback* next;    // +0x0c
+    KdCallback* prev;    // +0x10
+};
+
+// Inferred name. kdCreateWindow block (0x004961b0), the window's GWL_USERDATA.
+// SIZE 0x18
+struct KdWindow
+{
+    void* userptr;       // +0x00 event userptr; the block itself
+    HWND hwnd;           // +0x04
+    LPARAM lastPointer;  // +0x08 last WM_MOUSEMOVE/timer position
+    unsigned pad0c;      // +0x0c
+    int width;           // +0x10 client size for WM_GETMINMAXINFO
+    int height;          // +0x14
+};
+
+// Inferred name. The window procedure's input message for TranslateInput:
+// kind 0 key down, 1 key up, 2 char, 3 button down, 4 button up, 5 move,
+// 6 wheel.
+struct KdWinInput
+{
+    int kind;
+    WPARAM wparam;
+    LPARAM lparam;
+};
+
+void TranslateInput(const KdWindow* window, const KdWinInput* input, KdEvent* event);
+void DropPointerMoves(const KdEvent* event);
+
+// Inferred name. KD file stat result of the driver stat/fstat slots.
+// SIZE 0x18
+struct KdFileStat
+{
+    int mode;                 // +0x00 st_mode
+    int pad04;                // +0x04
+    __int64 size;             // +0x08
+    __int64 mtime;            // +0x10
+};
+
+// Inferred name. One file-system driver in the g_kdObjects list ("file",
+// "bar" per archive, "http"). Every file call goes through these slots with
+// the driver's native handle (a FILE* for "file").
+// SIZE 0x15c
 struct KdObject
 {
-    KdObject* prev; // +0x00
-    KdObject* next; // +0x04
-    unsigned pad[0x42];
-    void (*destructor)(KdObject* self); // +0x110, index 0x44 of int*
-    int (*open)(KdObject* self, const char* path, const char* mode); // +0x114
-    int (*close)(KdObject* self, int handle);                         // +0x118
-    unsigned unknown11c;                                              // +0x11c
+    KdObject* prev;      // +0x00
+    KdObject* next;      // +0x04
+    void* data;          // +0x08 driver state ("bar": the open archive)
+    const char* scheme;  // +0x0c
+    char name[0x100];    // +0x10 CreateKdObject's name (the archive path)
+    void (*destructor)(KdObject* self);                                    // +0x110
+    int (*open)(KdObject* self, const char* path, const char* mode);       // +0x114
+    int (*close)(KdObject* self, int handle);                              // +0x118
+    int (*flush)(KdObject* self, int handle);                              // +0x11c
     int (*read)(KdObject* self, void* buffer, unsigned size, unsigned count,
-        int handle);                                                  // +0x120
-    unsigned tail[0x0e];
+        int handle);                                                       // +0x120
+    int (*write)(KdObject* self, const void* buffer, unsigned size, unsigned count,
+        int handle);                                                       // +0x124
+    int (*getc)(KdObject* self, int handle);                               // +0x128
+    int (*putc)(KdObject* self, int c, int handle);                        // +0x12c
+    char* (*gets)(KdObject* self, char* buffer, int size, int handle);     // +0x130
+    int (*eof)(KdObject* self, int handle);                                // +0x134
+    int (*error)(KdObject* self, int handle);                              // +0x138
+    void (*clearerr)(KdObject* self, int handle);                          // +0x13c
+    int (*seek)(KdObject* self, int handle, __int64 offset, int origin);   // +0x140
+    __int64 (*tell)(KdObject* self, int handle);                           // +0x144
+    int (*stat)(KdObject* self, const char* path, KdFileStat* out);        // +0x148
+    int (*fstat)(KdObject* self, int handle, KdFileStat* out);             // +0x14c
+    int (*access)(KdObject* self, const char* path, int mode);             // +0x150
+    void* (*map)(KdObject* self, int handle, unsigned* size);              // +0x154
+    void (*unmap)(KdObject* self, int handle, void* view);                 // +0x158
 };
 
 typedef char Vc1KdObjectSizeCheck[sizeof(KdObject) == 0x15c ? 1 : -1];
@@ -106,12 +209,12 @@ extern WNDCLASSA g_kdNetworkClass; // 0x004e89d8; hInstance at +0x10 is 0x004e89
 WNDCLASSA* GetKdWindowClass(); // 0x00496020, registers the display class once
 
 extern double g_nsPerTick;        // 0x004f0a20, 1e9 / QPC frequency
-extern HeapNode* g_heapHead;      // 0x004ed448
-extern HeapNode* g_heapTail;      // 0x004ed44c
-extern unsigned* g_bumpCursor;    // 0x004ed144
+extern KdEvent* g_heapHead;       // 0x004ed448
+extern KdEvent* g_heapTail;       // 0x004ed44c
+extern KdEvent* g_bumpCursor;     // 0x004ed144, last event kdWaitEvent returned
 extern unsigned char g_bumpArena[0x300]; // 0x004ed148..0x004ed447
-extern void* g_heapPageList;      // 0x004e95c8
-extern void* g_heapPageSentinel;  // 0x004e918c
+extern KdCallback* g_kdCallbacks; // 0x004e95c8
+extern KdCallback g_kdDefaultCallback; // 0x004e918c
 
 extern KdObject* g_kdObjects;     // 0x004ed4f8
 extern KdObject* g_kdObjectIt0;   // 0x004ed4f0
@@ -143,8 +246,12 @@ extern FARPROC g_StackWalk64;
 extern FARPROC g_SymFunctionTableAccess64;
 extern FARPROC g_SymGetModuleBase64;
 
-void* AllocEvent();
-void QueueEvent(void* node);
+KdEvent* AllocEvent();
+int QueueEvent(KdEvent* event);
+// 0x004966b0; original event in EBX
+void DropMatchingEvents(const KdEvent* event);
+// 0x004babe0; XInput pad 0 to key events (0x38)
+void PollGamepad();
 LONG WINAPI UnhandledExceptionFilter(EXCEPTION_POINTERS* info);
 
 // 0x00463b40; original EAX=argc, EBX=argv from g_runScratch0/1
@@ -198,10 +305,18 @@ LRESULT CALLBACK KdNetworkWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpa
 void StartupNetwork();
 // 0x00486aa0
 void InitTimingAndSeh();
+// 0x00486b90; kdStat, original path in EBX, out in EDI
+int StatKdPath(const char* path, KdFileStat* out);
 // 0x00486c40; original this in ESI
 void* DirRead(unsigned char* dir);
+// 0x0047cec0; original path in EAX
+char* CopyExeDir(const char* path, char* dest);
+extern const char kKdDataDir[];   // "data/", startup.cpp
+extern const char kVirtualCity[]; // "Virtual City", win_main.cpp
 // 0x00486f50; original name in EDI
-KdObject* CreateKdObject(int (*ctor)(KdObject* object));
+KdObject* CreateKdObject(int (*ctor)(KdObject* object), const char* name);
+// 0x00499d90; original dest in EAX, src in EDX
+int AppendPath(char* dest, const char* src);
 // 0x00487200
 void DestroyKdObjects();
 // 0x00487280
@@ -210,15 +325,22 @@ unsigned char* DirOpen();
 void InitKdFilesystem();
 // 0x004963b0; original owner in EBX
 void UnlinkHeapByOwner(void* owner);
-// 0x004964f0; original ESI=callback, EBX=count
-void StartPostMixer();
+// 0x00486830; kdCancelTimer's unlink, original timer in EDX
+void UnlinkTimer(KdTimer* timer);
+// 0x00486890; kdSetTimer with periodic folded to KD_TIMER_PERIODIC_AVERAGE
+KdTimer* KdSetTimer(__int64 interval, void* userptr);
+// 0x00486910; posts KD_EVENT_TIMER for every due timer
+void FireTimers();
+// 0x004964f0; kdInstallCallback, original ESI=func, EBX=type, EDI=userptr
+int KdInstallCallback(KdCallbackFunc func, int type, void* userptr);
 // 0x00496580
 void FreeBumpHeaps();
 // 0x00496840
-void* PopTimedEvent();
+KdEvent* PopTimedEvent();
 // 0x00496950; original name in ESI
 const char* GetKdEnv(const char* name);
 extern const char kKdParentWindow[]; // "KD_PARENT_WINDOW", display.cpp
+extern const char kKdWindowClass[];  // "G5__OpenKODE", display.cpp
 extern const char kPercentS[]; // "%s", display.cpp
 // 0x004969c0; original EDX=cap, stack buf/fmt/varargs; ECX unused leftover
 int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
@@ -236,8 +358,12 @@ extern const char* g_kdLogPrefix; // 0x004d062c
 void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args);
 // 0x004b7070
 void HostLog(const char** prefix, const char* fmt, ...);
+// 0x004b7090
+void HostLogWarning(const char** prefix, const char* fmt, ...);
 // 0x004b70b0
 void HostLogError(const char** prefix, const char* fmt, ...);
+// 0x004b70d0
+void HostLogInfo(const char** prefix, const char* fmt, ...);
 // 0x00499e00; SQPRINTFUNCTION, dest 0x004ed9d0 then KdLog
 void ScriptPrint(HSQUIRRELVM v, const SQChar* fmt, ...);
 // 0x004b61b0

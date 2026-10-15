@@ -20,3 +20,6 @@ set(SQUIRREL223_SOURCES
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstream.cpp
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstring.cpp
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdsystem.cpp)
+# The game's sqstdio runs on KD files; see src/host/kd_stdio.h.
+set_source_files_properties(${SQUIRREL223_ROOT}/sqstdlib/sqstdio.cpp PROPERTIES
+  COMPILE_FLAGS "/FIhost/kd_stdio.h")

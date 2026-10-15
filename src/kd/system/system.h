@@ -9,6 +9,7 @@
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ifont.h"
 #include "kd/component_group.h"
+#include "host/runtime.h"
 
 namespace vc1 {
 
@@ -30,7 +31,7 @@ class KdSystemBase : public ISystem,
                      public IAbstract
 {
 public:
-    void* heapBlock;            // 0x38  AllocSystemBuffer node from Start
+    KdTimer* timer;             // 0x38  10 ms frame timer from Start
     KdRef<IDisplay> display;          // 0x3c
     KdRef<IUnknown> resourceManager;  // 0x40
     KdRef<IUnknown> camera;           // 0x44  default camera
@@ -64,7 +65,7 @@ public:
     KdFactory* Unmapped1c(const char** iid);
     void* Unmapped20();
     int Unmapped24();
-    int Start(IUnknown** object);
+    unsigned char Start(IUnknown** object);
     void Update();
     void Render() throw();
     void Frame();
@@ -143,7 +144,7 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    int Start(IUnknown** object);           // vtable+0x28
+    unsigned char Start(IUnknown** object); // vtable+0x28
     unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
 };

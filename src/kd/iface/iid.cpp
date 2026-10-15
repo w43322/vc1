@@ -20,8 +20,8 @@ static const char kIidInputStream[] = "IInputStream";
 // GLOBAL: VC1 0x004d0588
 const char* g_iidInputStream = kIidInputStream;
 
-// STRING: VC1 0x004d4e6c
-static const char kIidIdentifiable[] = "IIdentifiable";
+// GLOBAL: VC1 0x004d4e6c
+extern const char kIidIdentifiable[] = "IIdentifiable";
 // GLOBAL: VC1 0x004d0590
 const char* g_iidIdentifiable = kIidIdentifiable;
 
@@ -114,6 +114,52 @@ const char* g_iidSoundDriver = kIidSoundDriver;
 static const char kIidScriptObject[] = "IScriptObject";
 // GLOBAL: VC1 0x004d05f4
 const char* g_iidScriptObject = kIidScriptObject;
+
+// GLOBAL: VC1 0x004d058c
+// STRING: VC1 0x004d4e7c
+const char* g_iidOutputStream = "IOutputStream";
+// GLOBAL: VC1 0x004d05ac
+// STRING: VC1 0x004d4e10
+const char* g_iidReadable = "IReadable";
+// GLOBAL: VC1 0x004d05b0
+// STRING: VC1 0x004d4e04
+const char* g_iidWriteable = "IWriteable";
+// GLOBAL: VC1 0x004d05b8
+// STRING: VC1 0x004d4dec
+const char* g_iidSaveable = "ISaveable";
+// GLOBAL: VC1 0x004d05dc
+// STRING: VC1 0x004d4d74
+const char* g_iidWithLifeTime = "IWithLifeTime";
+// GLOBAL: VC1 0x004d05e4
+const char* g_iidClassifiable = kIidClassifiable;
+// GLOBAL: VC1 0x004d05e8
+// STRING: VC1 0x004d4d4c
+const char* g_iidVisible = "IVisible";
+// GLOBAL: VC1 0x004d05f0
+// STRING: VC1 0x004d4d28
+const char* g_iidManualControl = "IManualControl";
+// GLOBAL: VC1 0x004d05f8
+const char* g_iidScriptLoadable = kIidScriptLoadable;
+// GLOBAL: VC1 0x004d05fc
+// STRING: VC1 0x004d4cf8
+const char* g_iidScriptSaveable = "IScriptSaveable";
+// GLOBAL: VC1 0x004d0600
+const char* g_iidPositionable = kIidPositionable;
+// GLOBAL: VC1 0x004d0604
+// STRING: VC1 0x004d4cd4
+const char* g_iidPositionableUser = "IPositionableUser";
+// GLOBAL: VC1 0x004d0608
+// STRING: VC1 0x004d4cc4
+const char* g_iidBoundingInfo = "IBoundingInfo";
+// GLOBAL: VC1 0x004d0610
+// STRING: VC1 0x004d4cac
+const char* g_iidInputHandler = "IInputHandler";
+// GLOBAL: VC1 0x004d0614
+// STRING: VC1 0x004d4c9c
+const char* g_iidObjectControl = "IObjectControl";
+// GLOBAL: VC1 0x004d0620
+// STRING: VC1 0x004d4c74
+const char* g_iidAnimateable = "IAnimateable";
 
 // Kept in this translation unit so the recovered function directly compares
 // the canonical IID string objects, as the original does.

@@ -3,6 +3,7 @@
 
 #include "kd/iface/irender_target.h"
 #include "kd/iface/iabstract.h"
+#include "kd/iface/itexture.h"
 
 namespace vc1 {
 
@@ -17,7 +18,7 @@ class KdRenderTarget : public IRenderTarget,
 public:
     unsigned width;          // 0x14
     unsigned height;         // 0x18
-    IUnknown* cachedTexture; // 0x1c
+    ITexture* cachedTexture; // 0x1c
 
     KdRenderTarget(void* node);
     void* QueryInterface(const char** iid); // vtable+0x00
@@ -26,6 +27,15 @@ public:
     int GetWidth();
     int GetHeight();
     void* Display1c();
+};
+
+// The D3D texture of a render-target node (LookupRenderTargetTexture).
+struct KdRenderTargetNode
+{
+    unsigned width;      // 0x00
+    unsigned height;     // 0x04
+    IUnknown* texture;   // 0x08
+    KdRenderTargetNode* next; // 0x0c
 };
 
 typedef char Vc1KdRenderTargetSizeCheck[sizeof(KdRenderTarget) == 0x20 ? 1 : -1];
