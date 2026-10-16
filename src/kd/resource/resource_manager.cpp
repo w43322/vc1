@@ -222,8 +222,6 @@ void KdResourceManager::FreeUnusedResources()
     }
 }
 
-// STRING: VC1 0x004d553c
-static const char kScriptGetFont[] = "GetFont";
 // STRING: VC1 0x004d5544
 static const char kScriptGetEffect[] = "GetEffect";
 // STRING: VC1 0x004d5550

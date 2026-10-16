@@ -2480,11 +2480,11 @@ void* KdDisplay::Display10()
                 camera->Release();
             }
             if (view) {
-                view->SetTransform(&matrix);
+                view->SetTransform(matrix);
                 Rect clip(*reinterpret_cast<Rect*>(&g_displayViewRect));
-                view->SetClipRect(&clip);
+                view->SetClipRect(clip);
                 view->Clear(0xff000000);
-                view->DrawImage(static_cast<ITexture* const*>(static_cast<IRenderTarget*>(
+                view->DrawImage(*static_cast<const KdPtr<ITexture>*>(static_cast<IRenderTarget*>(
                     static_cast<void*>(target))->Display1c()), 0.0f, 0.0f, 0.0f, 0.0f,
                     static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
                 view->Release();

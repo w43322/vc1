@@ -31,27 +31,27 @@ public:
 
     IUnknown** GetCamera();
     Rect* GetView();
-    Rect* GetClipRect();
-    void SetClipRect(const Rect* rect);
+    Rect& GetClipRect();
+    void SetClipRect(const Rect& rect);
     unsigned GetColor();
     void SetColor(unsigned color);
     unsigned GetMode();
     void SetMode(unsigned mode);
     IUnknown** GetFont();
-    void SetFont(IUnknown* const* font);
+    void SetFont(const KdPtr<IFont>& font);
     void Clear(unsigned color);
-    Matrix3* GetTransform();
-    void SetTransform(const Matrix3* matrix);
-    Vector2* GetOrigin();
-    void Translate(const Vector2* offset);
+    Matrix3& GetTransform();
+    void SetTransform(const Matrix3& matrix);
+    Vector2& GetOrigin();
+    void Translate(const Vector2& offset);
     void FillRect(float x, float y, float width, float height);
-    void Graphics54(float a, float b, float c, float d);
-    void DrawImage(ITexture* const* texture, float x, float y, float u, float v,
+    void DrawRect(float x, float y, float width, float height);
+    void DrawImage(const KdPtr<ITexture>& texture, float x, float y, float u, float v,
         float width, float height);
     void Graphics5c(void* a, void* b, unsigned c);
     void DrawString(const char* text, float x, float y);
-    void Graphics64(float a, float b, float c, float d);
-    void Graphics68(void* a, float b, float c, float d);
+    void DrawLine(float x0, float y0, float x1, float y1);
+    void DrawEllipse(float x, float y, float width, float height);
 
     unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
@@ -60,6 +60,9 @@ public:
     void BindScene();
     unsigned char SetView(const Rect* rect, IUnknown* const* newCamera);
 };
+
+extern const char kScriptGetTransform[];
+extern const char kScriptSetTransform[];
 
 typedef char Vc1KdGraphicsSizeCheck[sizeof(KdGraphics) == 0x64 ? 1 : -1];
 

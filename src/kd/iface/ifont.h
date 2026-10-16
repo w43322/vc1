@@ -3,6 +3,7 @@
 
 #include "kd/iface/iunknown.h"
 #include "kd/factory.h"
+#include "kd/iface/iid.h"
 
 namespace vc1 {
 
@@ -18,6 +19,12 @@ struct IFont : IUnknown
 };
 
 typedef char Vc1IFontSizeCheck[sizeof(IFont) == 0x04 ? 1 : -1];
+
+template <>
+struct KdIid<IFont>
+{
+    static const char** Get() { return &g_iidFont; }
+};
 
 KdRef<IFont>* AssignFont(KdRef<IFont>* self, IUnknown* const* source);
 

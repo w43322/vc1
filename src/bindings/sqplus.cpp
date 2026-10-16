@@ -14,6 +14,12 @@ extern const char kScriptRegisterObject[] = "RegisterObject";
 extern const char kScriptUnregisterObject[] = "UnregisterObject";
 // GLOBAL: VC1 0x004d4ea8
 extern const char kScriptGetObject[] = "GetObject";
+// GLOBAL: VC1 0x004d553c
+extern const char kScriptGetFont[] = "GetFont";
+// GLOBAL: VC1 0x004d5910
+extern const char kScriptGetCamera[] = "GetCamera";
+// GLOBAL: VC1 0x004d17c8
+extern const char kScriptClear[] = "Clear";
 
 // ECX=table, EAX=name. Map operator[]: the closure stored under name, or a
 // null one inserted at its lower bound.

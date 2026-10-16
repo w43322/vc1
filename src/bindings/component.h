@@ -4,6 +4,7 @@
 #include "memory/fixed_pool.h"
 #include "kd/iface/iabstract.h"
 #include "kd/iface/icamera.h"
+#include "kd/iface/ifont.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/irenderable.h"
@@ -91,6 +92,12 @@ inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IAbstract>& value)
     vc1::KdPtr<vc1::IUnknown> object(value.ptr);
     Push(v, object);
 }
+// IGraphics GetFont / GetCamera return the slot; it goes out as a counted
+// IUnknown (0x0040c970).
+inline void Push(HSQUIRRELVM v, vc1::IUnknown** value)
+{
+    Push(v, *reinterpret_cast<vc1::KdPtr<vc1::IUnknown>*>(value));
+}
 // Inlined into SquirrelObject::Get (0x0041b830): the userpointer's IAbstract
 // face, AddRef'd.
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
@@ -124,6 +131,12 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ICamera>
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRenderable>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// SetFont's argument, QI'd to IFont in the Call (0x0041d040).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IFont>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

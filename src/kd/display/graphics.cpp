@@ -1,6 +1,13 @@
 #include "kd/display/graphics.h"
 #include "kd/display/display.h"
 
+#include "bindings/component.h"
+#include "bindings/sqplus.h"
+#include "kd/iface/icomponent_faces.h"
+
+// <windows.h> (via host/runtime.h) maps DrawText to DrawTextA.
+#undef DrawText
+
 #include "kd/iface/iid.h"
 #include "kd/iface/ifont.h"
 
@@ -20,21 +27,21 @@ GraphicsState* IGraphics::GetState()
 // FUNCTION: VC1 0x004187e0
 void IGraphics::SetState(const GraphicsState* value)
 {
-    SetClipRect(&value->clip);
+    SetClipRect(value->clip);
     SetColor(value->color);
     SetMode(value->mode);
-    SetTransform(&value->transform);
-    SetFont(&value->font);
+    SetTransform(value->transform);
+    SetFont(*reinterpret_cast<const KdPtr<IFont>*>(&value->font));
 }
 
 // RET 4. Identity with origin = offset, folded into state.transform in place by
 // 0x00473cd0 (EAX=transform, ECX=local), then SetTransform(transform).
 // FUNCTION: VC1 0x00418830
-void IGraphics::Translate(const Vector2* offset)
+void IGraphics::Translate(const Vector2& offset)
 {
-    Matrix3 move(*offset);
+    Matrix3 move(offset);
 
-    SetTransform(state.transform.LeftMultiply(&move));
+    SetTransform(*state.transform.LeftMultiply(&move));
 }
 
 // MOV EAX, 0x004d4c40; RET. IScriptObject vtable+0x14.
@@ -52,14 +59,14 @@ KdGraphics::~KdGraphics()
     camera = 0;
 }
 
-// RET 0x10. Four floats; draws through vtable+0x64. Body not recovered.
+// RET 0x10. Script "DrawRect"; draws through vtable+0x64. Body not recovered.
 // STUB: VC1 0x0045c610
-void KdGraphics::Graphics54(float a, float b, float c, float d)
+void KdGraphics::DrawRect(float x, float y, float width, float height)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)x;
+    (void)y;
+    (void)width;
+    (void)height;
 }
 
 // LEA EAX, [ECX+0x54]; RET.
@@ -85,24 +92,25 @@ unsigned char KdGraphics::Script10(void* a, void* b)
     return 0;
 }
 
-// RET 0x10. Body not recovered.
+// RET 0x10. Script "DrawEllipse" (four floats, the same Call as DrawRect).
+// Body not recovered.
 // STUB: VC1 0x0045c700
-void KdGraphics::Graphics68(void* a, float b, float c, float d)
+void KdGraphics::DrawEllipse(float x, float y, float width, float height)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)x;
+    (void)y;
+    (void)width;
+    (void)height;
 }
 
-// RET 0x10. Body not recovered.
+// RET 0x10. Script "DrawLine". Body not recovered.
 // STUB: VC1 0x0045c810
-void KdGraphics::Graphics64(float a, float b, float c, float d)
+void KdGraphics::DrawLine(float x0, float y0, float x1, float y1)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)x0;
+    (void)y0;
+    (void)x1;
+    (void)y1;
 }
 
 // RET 0xc. Inferred name. Without state.font (+0x40) nothing is drawn.
@@ -119,10 +127,10 @@ void KdGraphics::DrawString(const char* text, float x, float y)
     if (!state.font) {
         return;
     }
-    Matrix3 saved(*GetTransform());
+    Matrix3 saved(GetTransform());
     origin.x = x;
     origin.y = y;
-    Translate(&origin);
+    Translate(origin);
     font = static_cast<IFont*>(state.font);
     face = static_cast<IUnknown*>(static_cast<IAbstract*>(this)->QueryInterface(
         &g_iidAbstract));
@@ -139,7 +147,7 @@ void KdGraphics::DrawString(const char* text, float x, float y)
     if (self) {
         self->Release();
     }
-    SetTransform(&saved);
+    SetTransform(saved);
 }
 
 // RET 0xc. Batches 0x60-byte records through g_batchCount. Body not recovered.
@@ -153,17 +161,17 @@ void KdGraphics::Graphics5c(void* a, void* b, unsigned c)
 
 // RET 4. REP MOVSD 9 dwords into state.transform, then 0x00464710 (EAX=matrix).
 // FUNCTION: VC1 0x0045c9a0
-void KdGraphics::SetTransform(const Matrix3* matrix)
+void KdGraphics::SetTransform(const Matrix3& matrix)
 {
-    state.transform = *matrix;
-    DisplayD3dSetView(matrix);
+    state.transform = matrix;
+    DisplayD3dSetView(&matrix);
 }
 
 // LEA EAX, [ECX+0x1c]; RET.
 // FUNCTION: VC1 0x0045c9c0
-Matrix3* KdGraphics::GetTransform()
+Matrix3& KdGraphics::GetTransform()
 {
-    return &state.transform;
+    return state.transform;
 }
 
 // RET 4. IDirect3DDevice8::Clear (vtable+0x90): 0 rects, D3DCLEAR_TARGET, Z=1.
@@ -179,15 +187,15 @@ void KdGraphics::Clear(unsigned color)
 
 // RET 4. AddRef new, Release old, store at +0x40.
 // FUNCTION: VC1 0x0045ca00
-void KdGraphics::SetFont(IUnknown* const* font)
+void KdGraphics::SetFont(const KdPtr<IFont>& font)
 {
-    if (*font) {
-        (*font)->AddRef();
+    if (font.ptr) {
+        font.ptr->AddRef();
     }
     if (state.font) {
         state.font->Release();
     }
-    state.font = *font;
+    state.font = font.ptr;
 }
 
 // LEA EAX, [ECX+0x40]; RET.
@@ -223,9 +231,9 @@ unsigned KdGraphics::GetColor()
 
 // LEA EAX, [ECX+4]; RET. Same body as IGraphics::GetState, not folded.
 // FUNCTION: VC1 0x0045ca90
-Rect* KdGraphics::GetClipRect()
+Rect& KdGraphics::GetClipRect()
 {
-    return &state.clip;
+    return state.clip;
 }
 
 // RET 4. IAbstract has no null check in the original.
@@ -273,7 +281,7 @@ unsigned KdGraphics::AddRef()
 // 1/GetWidth and 1/GetHeight, so a negative size mirrors the image. The quad
 // carries ITexture::native and state.mode into 0x004648b0 (EDI).
 // FUNCTION: VC1 0x0045cb10
-void KdGraphics::DrawImage(ITexture* const* texture, float x, float y, float u, float v,
+void KdGraphics::DrawImage(const KdPtr<ITexture>& texture, float x, float y, float u, float v,
     float width, float height)
 {
     BatchQuad quad;
@@ -296,10 +304,10 @@ void KdGraphics::DrawImage(ITexture* const* texture, float x, float y, float u, 
         y += height;
         height = -height;
     }
-    quad.texture = (*texture)->native;
+    quad.texture = texture->native;
     quad.flags = state.mode;
-    scaleU = 1.0f / static_cast<float>((*texture)->GetWidth());
-    scaleV = 1.0f / static_cast<float>((*texture)->GetHeight());
+    scaleU = 1.0f / static_cast<float>(texture->GetWidth());
+    scaleV = 1.0f / static_cast<float>(texture->GetHeight());
     u0 = u * scaleU;
     v0 = v * scaleV;
     u1 = (u + sourceWidth) * scaleU;
@@ -370,7 +378,7 @@ void KdGraphics::FillRect(float x, float y, float width, float height)
 
 // JMP 0x00418830.
 // FUNCTION: VC1 0x0045cd90
-void KdGraphics::Translate(const Vector2* offset)
+void KdGraphics::Translate(const Vector2& offset)
 {
     IGraphics::Translate(offset);
 }
@@ -402,7 +410,7 @@ void KdGraphics::BindScene()
             font->AddRef();
         }
     }
-    SetFont(&font);
+    SetFont(*reinterpret_cast<const KdPtr<IFont>*>(&font));
     if (font) {
         font->Release();
     }
@@ -422,7 +430,7 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
         GraphicsState reset;
         SetState(&reset);
     }
-    SetClipRect(&view);
+    SetClipRect(view);
     if (*newCamera) {
         (*newCamera)->AddRef();
     }
@@ -452,17 +460,17 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
 
 // GetTransform() then origin at +0x18.
 // FUNCTION: VC1 0x0045cfa0
-Vector2* KdGraphics::GetOrigin()
+Vector2& KdGraphics::GetOrigin()
 {
-    return &GetTransform()->GetOrigin();
+    return GetTransform().GetOrigin();
 }
 
 // RET 4. Copies the clip rect, then 0x00464c10(x, y; ECX=width, EAX=height).
 // FUNCTION: VC1 0x0045cfb0
-void KdGraphics::SetClipRect(const Rect* rect)
+void KdGraphics::SetClipRect(const Rect& rect)
 {
-    state.clip = *rect;
-    DisplayD3dSetClip(rect->x, rect->y, rect->width, rect->height);
+    state.clip = rect;
+    DisplayD3dSetClip(rect.x, rect.y, rect.width, rect.height);
 }
 
 // EAX=this (malloc(0x64) in IRenderTarget()). GraphicsState defaults, then the
@@ -477,13 +485,72 @@ KdGraphics::KdGraphics()
     view.x = 0;
 }
 
-// RET 8. Script registration body; not recovered.
-// STUB: VC1 0x0045dc20
+// STRING: VC1 0x004d58d4
+static const char kScriptGetClip[] = "GetClip";
+// STRING: VC1 0x004d2070
+static const char kScriptSetClip[] = "SetClip";
+// STRING: VC1 0x004d58dc
+static const char kScriptGetColor[] = "GetColor";
+// STRING: VC1 0x004d2034
+static const char kScriptSetColor[] = "SetColor";
+// STRING: VC1 0x004d58e8
+static const char kScriptGetBlendMode[] = "GetBlendMode";
+// STRING: VC1 0x004d58f8
+static const char kScriptSetBlendMode[] = "SetBlendMode";
+// STRING: VC1 0x004d5908
+static const char kScriptSetFont[] = "SetFont";
+// GLOBAL: VC1 0x004d591c
+extern const char kScriptGetTransform[] = "GetTransform";
+// GLOBAL: VC1 0x004d592c
+extern const char kScriptSetTransform[] = "SetTransform";
+// STRING: VC1 0x004d593c
+static const char kScriptGetTranslate[] = "GetTranslate";
+// STRING: VC1 0x004d594c
+static const char kScriptTranslate[] = "Translate";
+// STRING: VC1 0x004d5958
+static const char kScriptDrawRect[] = "DrawRect";
+// STRING: VC1 0x004d5964
+static const char kScriptFillRect[] = "FillRect";
+// STRING: VC1 0x004d5970
+static const char kScriptDrawTexture[] = "DrawTexture";
+// STRING: VC1 0x004d597c
+static const char kScriptDrawString[] = "DrawString";
+// STRING: VC1 0x004d5988
+static const char kScriptDrawLine[] = "DrawLine";
+// STRING: VC1 0x004d5994
+static const char kScriptDrawEllipse[] = "DrawEllipse";
+
+// RET 8. this = IScriptObject (+0x44); the dispatchers QI the instance to
+// IScriptObject and step back to KdGraphics. Every closure calls through the
+// IGraphics vtable (vcall thunks 0x00417bb0..0x0041d2d0).
+// FUNCTION: VC1 0x0045dc20
 unsigned char KdGraphics::Script0c(const char* name, SquirrelObject* out)
 {
-    (void)name;
-    (void)out;
-    return 0;
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        methods[kScriptGetClip] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetClipRect);
+        methods[kScriptSetClip] = CreateScriptMethod<KdGraphics>(&KdGraphics::SetClipRect);
+        methods[kScriptGetColor] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetColor);
+        methods[kScriptSetColor] = CreateScriptMethod<KdGraphics>(&KdGraphics::SetColor);
+        methods[kScriptGetBlendMode] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetMode);
+        methods[kScriptSetBlendMode] = CreateScriptMethod<KdGraphics>(&KdGraphics::SetMode);
+        methods[kScriptGetFont] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetFont);
+        methods[kScriptSetFont] = CreateScriptMethod<KdGraphics>(&KdGraphics::SetFont);
+        methods[kScriptClear] = CreateScriptMethod<KdGraphics>(&KdGraphics::Clear);
+        methods[kScriptGetCamera] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetCamera);
+        methods[kScriptGetTransform] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetTransform);
+        methods[kScriptSetTransform] = CreateScriptMethod<KdGraphics>(&KdGraphics::SetTransform);
+        methods[kScriptGetTranslate] = CreateScriptMethod<KdGraphics>(&KdGraphics::GetOrigin);
+        methods[kScriptTranslate] = CreateScriptMethod<KdGraphics>(&KdGraphics::Translate);
+        methods[kScriptDrawRect] = CreateScriptMethod<KdGraphics>(&KdGraphics::DrawRect);
+        methods[kScriptFillRect] = CreateScriptMethod<KdGraphics>(&KdGraphics::FillRect);
+        methods[kScriptDrawTexture] = CreateScriptMethod<KdGraphics>(&KdGraphics::DrawImage);
+        methods[kScriptDrawString] = CreateScriptMethod<KdGraphics>(&KdGraphics::DrawString);
+        methods[kScriptDrawLine] = CreateScriptMethod<KdGraphics>(&KdGraphics::DrawLine);
+        methods[kScriptDrawEllipse] = CreateScriptMethod<KdGraphics>(&KdGraphics::DrawEllipse);
+    }
+    return methods.Find(name, out);
 }
 
 }

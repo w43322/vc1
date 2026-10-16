@@ -389,7 +389,7 @@ void BindHostClasses()
         .func(&IntegralF::PushValue, "PushValue")
         .func(&IntegralF::GetAverageValue, "GetAverageValue")
         .func(&IntegralF::GetIntegralValue, "GetIntegralValue")
-        .func(&IntegralF::Clear, "Clear");
+        .func(&IntegralF::Clear, kScriptClear);
 }
 
 }

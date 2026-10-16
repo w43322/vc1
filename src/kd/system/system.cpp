@@ -960,8 +960,7 @@ unsigned char KdSystemBase::Script0c(const char* name, SquirrelObject* out)
         methods[kScriptRegisterObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::RegisterObject);
         methods[kScriptUnregisterObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::UnregisterObject);
         methods[kScriptGetObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::FindObject);
-        // STRING: VC1 0x004d5910
-        methods["GetCamera"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetCamera);
+        methods[kScriptGetCamera] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetCamera);
         methods[kScriptSetCamera] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::SetCamera);
         // STRING: VC1 0x004d638c
         methods["UpdateFrame"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::Update);
@@ -1005,8 +1004,8 @@ void KdSystemBase::Render() throw()
 
             AssignFont(&consoleFont, &loaded.ptr);
         }
-        graphics->SetTransform(&Matrix3::Identity);
-        graphics->SetFont(reinterpret_cast<IUnknown* const*>(&consoleFont.ptr));
+        graphics->SetTransform(Matrix3::Identity);
+        graphics->SetFont(*reinterpret_cast<const KdPtr<IFont>*>(&consoleFont.ptr));
         graphics->SetColor(0xff000000);
         font = consoleFont;
         graphics->FillRect(0.0f, 0.0f, static_cast<float>(font->GetTextWidth(consoleText)),

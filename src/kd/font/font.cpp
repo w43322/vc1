@@ -325,7 +325,7 @@ void KdFont::DrawText(IUnknown* const* graphics, const char* text)
     while (cursor.code != 0) {
         glyph = Find(cursor.code);
         if (glyph != GlyphEnd()) {
-            target->DrawImage(reinterpret_cast<ITexture* const*>(pages.items.begin) + glyph->info.page,
+            target->DrawImage(reinterpret_cast<const KdPtr<ITexture>*>(pages.items.begin)[glyph->info.page],
                 static_cast<float>(glyph->info.offsetX + pen), static_cast<float>(glyph->info.offsetY),
                 static_cast<float>(glyph->info.u), static_cast<float>(glyph->info.v),
                 static_cast<float>(glyph->info.width), static_cast<float>(glyph->info.height));
