@@ -340,6 +340,369 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // TEMPLATE: VC1 0x00403910
 // ??$GetArrayItem@I@vc1@@YAABIPAUSQVM@@H@Z
 
+// InitHostServices (0x004b61b0) natives: one RegisterGlobal per function
+// type (shared by natives of the same type), the out-of-line Register of
+// the single-use ones with name and function folded in, their
+// DirectCallFunction Dispatch and the ReturnSpecialization Call. Paired
+// with the recompiled chain in registration order.
+
+// TEMPLATE: VC1 0x00429a00
+// ??$RegisterGlobal@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@Z@SqPlus@@YAXPAUSQVM@@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@Z1@Z
+
+// TEMPLATE: VC1 0x00429aa0
+// ??$RegisterGlobal@P6A?AVSquirrelObject@@XZ@SqPlus@@YAXPAUSQVM@@P6A?AVSquirrelObject@@XZPBD@Z
+
+// TEMPLATE: VC1 0x00429b40
+// ??$RegisterGlobal@P6AXPAUSQVM@@@Z@SqPlus@@YAXPAUSQVM@@P6AX0@ZPBD@Z
+
+// TEMPLATE: VC1 0x00429c20
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x00429d00
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBD@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBD@Z2@Z
+
+// TEMPLATE: VC1 0x00429de0
+// ??$RegisterGlobal@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x00429ec0
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@_N@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@_N@ZPBD@Z
+
+// TEMPLATE: VC1 0x00429fa0
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a080
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@1@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a160
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a200
+// ??$RegisterGlobal@P6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a2a0
+// ??$RegisterGlobal@P6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a340
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a420
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@H@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@H@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a500
+// ??$RegisterGlobal@P6AHABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6AHABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a5e0
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a680
+// ??$RegisterGlobal@P6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a720
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a7c0
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a860
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@M@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@3@M@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a900
+// ??$RegisterGlobal@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@1@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042a9e0
+// ??$RegisterGlobal@P6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042aa80
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@Z2@Z
+
+// TEMPLATE: VC1 0x0042ab20
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042abc0
+// ??$RegisterGlobal@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@0@Z@SqPlus@@YAXPAUSQVM@@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@1@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042ac60
+// ??$RegisterGlobal@P6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042ad00
+// ??$RegisterGlobal@P6AIABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6AIABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042ada0
+// ??$RegisterGlobal@P6AHXZ@SqPlus@@YAXPAUSQVM@@P6AHXZPBD@Z
+
+// TEMPLATE: VC1 0x0042ae80
+// ??$RegisterGlobal@P6AHHVSquirrelObject@@@Z@SqPlus@@YAXPAUSQVM@@P6AHHVSquirrelObject@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042af20
+// ??$RegisterGlobal@P6A_NPBD@Z@SqPlus@@YAXPAUSQVM@@P6A_NPBD@Z1@Z
+
+// TEMPLATE: VC1 0x0042afc0
+// ??$RegisterGlobal@P6AHH@Z@SqPlus@@YAXPAUSQVM@@P6AHH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b060
+// ??$RegisterGlobal@P6AMMM@Z@SqPlus@@YAXPAUSQVM@@P6AMMM@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b140
+// ??$RegisterGlobal@P6AMM@Z@SqPlus@@YAXPAUSQVM@@P6AMM@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b1e0
+// ??$RegisterGlobal@P6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b280
+// ??$Register@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@Z@SqPlus@@YAXPAUSQVM@@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@Z1@Z
+
+// TEMPLATE: VC1 0x0042b2e0
+// ??$Register@P6A?AVSquirrelObject@@XZ@SqPlus@@YAXPAUSQVM@@P6A?AVSquirrelObject@@XZPBD@Z
+
+// TEMPLATE: VC1 0x0042b340
+// ??$Register@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b3a0
+// ??$Register@P6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b400
+// ??$Register@P6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b460
+// ??$Register@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b4c0
+// ??$Register@P6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b520
+// ??$Register@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b580
+// ??$Register@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b5e0
+// ??$Register@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@M@Z@SqPlus@@YAXPAUSQVM@@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@3@M@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b640
+// ??$Register@P6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b6a0
+// ??$Register@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@Z2@Z
+
+// TEMPLATE: VC1 0x0042b700
+// ??$Register@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b760
+// ??$Register@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@0@Z@SqPlus@@YAXPAUSQVM@@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@1@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b7c0
+// ??$Register@P6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@YAXPAUSQVM@@P6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b820
+// ??$Register@P6AIABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@YAXPAUSQVM@@P6AIABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b880
+// ??$Register@P6AHHVSquirrelObject@@@Z@SqPlus@@YAXPAUSQVM@@P6AHHVSquirrelObject@@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b8e0
+// ??$Register@P6A_NPBD@Z@SqPlus@@YAXPAUSQVM@@P6A_NPBD@Z1@Z
+
+// TEMPLATE: VC1 0x0042b940
+// ??$Register@P6AHH@Z@SqPlus@@YAXPAUSQVM@@P6AHH@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042b9a0
+// ??$Register@P6AMM@Z@SqPlus@@YAXPAUSQVM@@P6AMM@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042ba00
+// ??$Register@P6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@2@@Z@SqPlus@@YAXPAUSQVM@@P6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@3@@ZPBD@Z
+
+// TEMPLATE: VC1 0x0042ba60
+// ?Dispatch@?$DirectCallFunction@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bad0
+// ?Dispatch@?$DirectCallFunction@P6A?AVSquirrelObject@@XZ@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bb40
+// ?Dispatch@?$DirectCallFunction@P6AXPAUSQVM@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bbb0
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bc20
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBD@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bc90
+// ?Dispatch@?$DirectCallFunction@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bd00
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@_N@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bd70
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bde0
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042be50
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bec0
+// ?Dispatch@?$DirectCallFunction@P6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bf30
+// ?Dispatch@?$DirectCallFunction@P6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042bf90
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c000
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@H@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c070
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c0e0
+// ?Dispatch@?$DirectCallFunction@P6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c140
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c1b0
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c210
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@M@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c270
+// ?Dispatch@?$DirectCallFunction@P6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c2e0
+// ?Dispatch@?$DirectCallFunction@P6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c350
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c3c0
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c430
+// ?Dispatch@?$DirectCallFunction@P6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@0@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c4a0
+// ?Dispatch@?$DirectCallFunction@P6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c510
+// ?Dispatch@?$DirectCallFunction@P6AHABV?$KdPtr@UIAbstract@vc1@@@vc1@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c580
+// ?Dispatch@?$DirectCallFunction@P6AHXZ@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c600
+// ?Dispatch@?$DirectCallFunction@P6AHHVSquirrelObject@@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c670
+// ?Dispatch@?$DirectCallFunction@P6A_NPBD@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c6e0
+// ?Dispatch@?$DirectCallFunction@P6AHH@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c750
+// ?Dispatch@?$DirectCallFunction@P6AMMM@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c7c0
+// ?Dispatch@?$DirectCallFunction@P6AMM@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c830
+// ?Dispatch@?$DirectCallFunction@P6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@2@@Z@SqPlus@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0042c960
+// ??$Call@PBD@?$ReturnSpecialization@V?$KdPtr@UIUnknown@vc1@@@vc1@@@SqPlus@@SAHP6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@PBD@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042ca10
+// ??$Call@PAUSQVM@@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXPAUSQVM@@@Z0H@Z
+
+// TEMPLATE: VC1 0x0042ca70
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042cad0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBD@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBD@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042cbc0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@V?$KdPtr@UIUnknown@vc1@@@vc1@@@SqPlus@@SAHP6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042cc70
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@_N@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@_N@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042ccf0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042cd90
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV12@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042ce40
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@VSquirrelObject@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042cf70
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@VSquirrelObject@@@SqPlus@@SAHP6A?AVSquirrelObject@@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d0a0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@ABVKdString@vc1@@@SqPlus@@SAHP6AABVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d120
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d1d0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@H@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@H@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d240
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d320
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@ABUMatrix3@vc1@@@SqPlus@@SAHP6AABUMatrix3@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d3c0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@2@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABUMatrix3@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d430
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@2@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV?$KdPtr@UIPositionable@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d510
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@2@M@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABVKdString@3@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d630
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV12@@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NABV?$KdPtr@UIAbstract@vc1@@@vc1@@0@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d720
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@VKdString@vc1@@@SqPlus@@SAHP6A?AVKdString@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d800
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@PBDH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d8f0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UIAbstract@vc1@@@vc1@@HH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042d9b0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@ABV12@@?$ReturnSpecialization@V?$KdPtr@UIUnknown@vc1@@@vc1@@@SqPlus@@SAHP6A?AV?$KdPtr@UIUnknown@vc1@@@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@0@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042dab0
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@URectF@vc1@@@SqPlus@@SAHP6A?AURectF@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042db70
+// ??$Call@ABV?$KdPtr@UIAbstract@vc1@@@vc1@@@?$ReturnSpecialization@H@SqPlus@@SAHP6AHABV?$KdPtr@UIAbstract@vc1@@@vc1@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042dc00
+// ??$Call@HVSquirrelObject@@@?$ReturnSpecialization@H@SqPlus@@SAHP6AHHVSquirrelObject@@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042dcf0
+// ??$Call@PBD@?$ReturnSpecialization@_N@SqPlus@@SAHP6A_NPBD@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042dd90
+// ??$Call@H@?$ReturnSpecialization@H@SqPlus@@SAHP6AHH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042de20
+// ??$Call@MM@?$ReturnSpecialization@M@SqPlus@@SAHP6AMMM@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042deb0
+// ??$Call@M@?$ReturnSpecialization@M@SqPlus@@SAHP6AMM@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0042df00
+// ??$Call@ABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@2@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@3@@ZPAUSQVM@@H@Z
+
 }
 
 // Declared in SquirrelObject.h; the stock SqPlus body lives in sqplus.h but is

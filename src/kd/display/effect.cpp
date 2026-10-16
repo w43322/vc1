@@ -243,7 +243,7 @@ bool KdEffectEmitter::IsExpired()
 }
 
 // FUNCTION: VC1 0x0045a900
-int KdEffectEmitter::GetLifeTime()
+unsigned KdEffectEmitter::GetLifeTime()
 {
     return lifeTime;
 }

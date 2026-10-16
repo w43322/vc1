@@ -62,7 +62,7 @@ KdPtr<IUnknown> beginRender(const KdPtr<IAbstract>& object, const KdPtr<IAbstrac
 void endRender(const KdPtr<IAbstract>& object);
 KdPtr<IUnknown> getRenderTargetTexture(const KdPtr<IAbstract>& object);
 RectF getBoundingRect(const KdPtr<IAbstract>& object);
-int getLifeTime(const KdPtr<IAbstract>& object);
+unsigned getLifeTime(const KdPtr<IAbstract>& object);
 bool isExpired(const KdPtr<IAbstract>& object);
 int getTime();
 int getSystemTime();

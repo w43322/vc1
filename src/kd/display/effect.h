@@ -134,7 +134,7 @@ public:
     int GetUpdateLayer();                                               // IUpdateable vtable+0x0c
     int SetLayer(unsigned layer);                                   // IUpdateable vtable+0x10
     void Update(unsigned sliceBit, int dt);                         // IUpdateable vtable+0x14
-    int GetLifeTime();
+    unsigned GetLifeTime();
     bool IsExpired();
     void SetPositionable(const KdPtr<IPositionable>& source);
     void SetPosition(const Matrix3& value);

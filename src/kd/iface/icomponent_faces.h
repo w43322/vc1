@@ -62,11 +62,13 @@ struct ISaveable : IUnknown
 
 // getLifeTime (0x004b4d70) and isExpired (0x004b4cf0). An updateable with a
 // lifetime: KdEffectEmitter's QI hands out the same face for IUpdateable.
+// The lifetime is unsigned: getLifeTime has its own RegisterGlobal
+// instantiation (0x0042ad00), apart from the int one of getClassificators.
 // SIZE 0x04
 // VTABLE: VC1 0x004d7a88
 struct IWithLifeTime : IUpdateable
 {
-    virtual int GetLifeTime() = 0;    // vtable+0x18
+    virtual unsigned GetLifeTime() = 0; // vtable+0x18
     virtual bool IsExpired() = 0;     // vtable+0x1c
 };
 

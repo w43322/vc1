@@ -403,7 +403,7 @@ bool isExpired(const KdPtr<IAbstract>& object)
 }
 
 // FUNCTION: VC1 0x004b4d70
-int getLifeTime(const KdPtr<IAbstract>& object)
+unsigned getLifeTime(const KdPtr<IAbstract>& object)
 {
     ScriptFace<IWithLifeTime> life(object);
     return life.ptr ? life->GetLifeTime() : 0;
