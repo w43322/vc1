@@ -5,10 +5,13 @@
 #include "bindings/rectf.h"
 #include "bindings/sqplus.h"
 
+#include <mmsystem.h>
+
 #include <errno.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <squirrel.h>
@@ -237,12 +240,100 @@ const char* GetResourceLocale()
     return g_resourceLocale;
 }
 
-// XInputGetState(0) into 0x004e9080; posts a key event (0x38) for each
-// changed button bit and for each changed thumb-stick direction. Not
-// recovered yet.
-// STUB: VC1 0x004babe0
+// Inferred names. Joystick 0 as read by PollGamepad.
+// GLOBAL: VC1 0x004e9080
+JOYINFOEX g_joyInfo;
+// GLOBAL: VC1 0x004e90b4
+MMRESULT g_joyResult;
+// GLOBAL: VC1 0x004ea84c
+DWORD g_joyButtons;
+// Point-of-view hat directions up, left, right, down (0/1).
+// GLOBAL: VC1 0x004eb0d8
+unsigned g_joyHat[4];
+
+// joyGetPosEx(0) into g_joyInfo; posts an input event (0x38) for every
+// changed button (key 0x9001 + bit, data 1 when pressed) and for every
+// changed hat direction (key 0x8002 + direction). The hat events are created
+// and queued inline without the pool's malloc check.
+// FUNCTION: VC1 0x004babe0
 void PollGamepad()
 {
+    unsigned hat[4];
+    LARGE_INTEGER now;
+    unsigned i;
+
+    g_joyResult = joyGetPosEx(0, &g_joyInfo);
+    if (g_joyResult != JOYERR_NOERROR) {
+        return;
+    }
+    const DWORD buttons = g_joyInfo.dwButtons;
+    const DWORD pov = g_joyInfo.dwPOV;
+    unsigned bit = 1;
+    for (i = 0; i < 32; ++i) {
+        const DWORD pressed = bit & buttons;
+        if ((bit & g_joyButtons) != pressed) {
+            KdEvent* const event = AllocEvent();
+            event->type = 0x38;
+            event->userptr = g_kdWindowMixer ? *static_cast<void**>(g_kdWindowMixer) : 0;
+            event->data[0] = i + 0x9001;
+            *reinterpret_cast<__int64*>(&event->data[2]) = pressed != 0;
+            QueueEvent(event);
+        }
+        bit = _rotl(bit, 1);
+    }
+    if (pov == 0xffff) {
+        hat[0] = 0;
+        hat[1] = 0;
+        hat[2] = 0;
+        hat[3] = 0;
+    }
+    else {
+        hat[0] = pov - 9000 > 18000;
+        hat[1] = pov > 18000;
+        hat[2] = pov - 1 < 17999;
+        hat[3] = pov - 9001 < 17999;
+    }
+    for (i = 0; i < 4; ++i) {
+        const unsigned value = hat[i];
+        if (g_joyHat[i] != value) {
+            KdEvent* event = reinterpret_cast<KdEvent*>(g_bumpArena);
+            for (;;) {
+                if (event->type == 0) {
+                    event->type = -1;
+                    break;
+                }
+                ++event;
+                if (event >= reinterpret_cast<KdEvent*>(&g_heapHead)) {
+                    event = static_cast<KdEvent*>(malloc(sizeof(KdEvent)));
+                    break;
+                }
+            }
+            event->timestamp = 0;
+            event->userptr = 0;
+            event->owner = 0;
+            event->type = 0x38;
+            event->userptr = g_kdWindowMixer ? *static_cast<void**>(g_kdWindowMixer) : 0;
+            *reinterpret_cast<__int64*>(&event->data[2]) = static_cast<int>(value);
+            event->data[0] = i + 0x8002;
+            QueryPerformanceCounter(&now);
+            event->timestamp =
+                static_cast<__int64>(static_cast<double>(now.QuadPart) * g_nsPerTick);
+            event->prev = g_heapTail;
+            event->next = 0;
+            g_heapTail = event;
+            if (!event->prev) {
+                g_heapHead = event;
+            }
+            else {
+                event->prev->next = event;
+            }
+        }
+    }
+    g_joyButtons = buttons;
+    g_joyHat[0] = hat[0];
+    g_joyHat[1] = hat[1];
+    g_joyHat[2] = hat[2];
+    g_joyHat[3] = hat[3];
 }
 
 // Last pointer position and buttons, mirrored from every pointer event.

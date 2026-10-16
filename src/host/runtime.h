@@ -211,6 +211,7 @@ WNDCLASSA* GetKdWindowClass(); // 0x00496020, registers the display class once
 extern double g_nsPerTick;        // 0x004f0a20, 1e9 / QPC frequency
 extern KdEvent* g_heapHead;       // 0x004ed448
 extern KdEvent* g_heapTail;       // 0x004ed44c
+extern void* g_kdWindowMixer;     // 0x004ed450, the KD window (userptr first)
 extern KdEvent* g_bumpCursor;     // 0x004ed144, last event kdWaitEvent returned
 extern unsigned char g_bumpArena[0x300]; // 0x004ed148..0x004ed447
 extern KdCallback* g_kdCallbacks; // 0x004e95c8

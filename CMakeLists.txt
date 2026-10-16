@@ -133,7 +133,7 @@ target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/in
   ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
-target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi bass_import)
+target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi winmm bass_import)
 if(EXISTS "${VC1_GAME_BASS_DLL}")
   add_custom_command(TARGET vc1_recompiled POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_GAME_BASS_DLL}"
