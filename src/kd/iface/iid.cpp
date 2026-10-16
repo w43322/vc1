@@ -21,6 +21,7 @@
 #include "kd/display/effect.h"
 #include "kd/route/transport_mover.h"
 #include "kd/render/group_renderer.h"
+#include "kd/road/road_cells_renderer.h"
 
 namespace vc1 {
 
@@ -714,6 +715,29 @@ void* KdRoadRenderer::QueryInterface(const char** iid)
     }
     if (name == kIidReadable) {
         return static_cast<IReadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004abeb0
+void* KdRoadCellsRenderer::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidClassifiable) {
+        return static_cast<IClassifiable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

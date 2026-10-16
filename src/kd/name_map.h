@@ -122,6 +122,22 @@ struct KdObjArray
             }
         }
     }
+    // Exact grow to [first, last), then an element copy. Out of line in the
+    // original (EDI=this, stack first, EBX=last).
+    __declspec(noinline) void AssignRange(const T* first, const T* last)
+    {
+        const unsigned count = static_cast<unsigned>(last - first);
+        const unsigned bytes = count * sizeof(T);
+        T* to;
+        if (items.capacity < bytes) {
+            Reserve(count, 1);
+        }
+        to = Begin();
+        items.size = bytes;
+        for (; first != last; ++first, ++to) {
+            to->Assign(*first);
+        }
+    }
     static __declspec(noinline) void DestroyRange(T* first, T* last)
     {
         for (; first < last; ++first) {
