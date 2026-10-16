@@ -123,6 +123,7 @@ add_executable(vc1_recompiled
   src/bindings/squirrel_object.cpp
   src/sqplus/SquirrelVM.cpp
   src/memory/fixed_pool.cpp
+  src/memory/global_new.cpp
   ${SQUIRREL223_SOURCES}
   ${KLIBC_SOURCES}
   ${LIBTGA_SOURCES}

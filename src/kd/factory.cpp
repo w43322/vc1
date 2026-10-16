@@ -141,6 +141,18 @@ void ReverseCountedBytes(void* first, void* last)
     } while (span > 0);
 }
 
+// ESI=this, EAX=text. Copies text (null means empty); SqPlus setVar's
+// std::string case is the only caller.
+// FUNCTION: VC1 0x0040e410
+KdString& KdString::operator=(const char* text)
+{
+    if (!text) {
+        text = reinterpret_cast<const char*>(&g_kdLogTag);
+    }
+    AssignCountedString(this, text, static_cast<unsigned>(strlen(text)));
+    return *this;
+}
+
 static void RegisterOne(const char** nameSlot, KdFactoryFn fn)
 {
     FactoryEntry pair;

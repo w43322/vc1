@@ -183,6 +183,7 @@ public:
         AssignCountedString(this, first, static_cast<unsigned>(last - first));
     }
     KdString(const KdString& source);
+    KdString& operator=(const char* text);
     unsigned Count();
     void Resize(unsigned length) throw();
     int Find(const KdString& needle) const;

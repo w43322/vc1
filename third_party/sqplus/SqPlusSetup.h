@@ -115,8 +115,12 @@
 //#define SQPLUS_USE_SANDBOX_VM
 
 
+// VC1: the engine's std::string is its counted KdString (setVar assigns
+// through KdString::operator= 0x0040e410); the exe has no MSVC <string>,
+// libcpmt or C++ exception runtime.
 #if defined(SQPLUS_SUPPORT_STD_STRING) || defined(SQPLUS_SUPPORT_SQ_STD_STRING)
-# include <string>
+# include "kd/factory.h"
+namespace std { typedef vc1::KdString string; }
 #endif
 
 

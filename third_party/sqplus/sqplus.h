@@ -855,9 +855,8 @@ SquirrelObject Get(TypeWrapper<SquirrelObject>, HSQUIRRELVM v, int idx);
 #endif // SQPLUS_AUTOCONVERT_OTHER_CHAR
 
 #ifdef SQPLUS_SUPPORT_STD_STRING
-void Push(HSQUIRRELVM v, const std::string& value);
+// VC1: Push/Get for std::string (vc1::KdString) are the engine's.
 bool Match(TypeWrapper<const std::string&>, HSQUIRRELVM v, int idx);
-std::string Get(TypeWrapper<const std::string&>, HSQUIRRELVM v, int idx); 
 #endif
 
 // Added jflanglois suggestion, 8/20/06. jcs
