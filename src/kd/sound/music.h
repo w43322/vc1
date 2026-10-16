@@ -46,7 +46,7 @@ public:
     bool SetLoop(bool loop);                                       // ISound vtable+0x34
     bool IsActive();                                               // ISound vtable+0x38
     bool IsPaused();                                               // ISound vtable+0x3c
-    bool IsStarted();                                              // ISound vtable+0x40
+    bool IsSliding();                                              // ISound vtable+0x40
     unsigned char Load(const char* name);                          // ILoadable vtable+0x0c
     unsigned char Script0c(const char* name, SquirrelObject* out); // IScriptObject vtable+0x0c
     unsigned char Script10(void* a, void* b);                      // IScriptObject vtable+0x10

@@ -8,7 +8,8 @@ namespace vc1 {
 // A playable BASS channel: music streams (KdMusic) and samples (KdSound).
 // Slot names are inferred from the bodies (BASS attribute 1 = frequency,
 // 2 = volume, 3 = pan) and from the script names bound to them ("Play",
-// "Stop", "Pause", "Resume", "SetVolume", "SetLoop", "IsActive", "IsPaused").
+// "Stop", "Pause", "Resume", "SetVolume", "SetLoop", "IsActive", "IsPaused",
+// "IsSliding"; KdMusic's IsSliding only tests for a non-stopped stream).
 // Volume and pan are percentages; the setters slide over time ms when time > 0.
 // SIZE 0x04
 struct ISound : IUnknown
@@ -26,7 +27,7 @@ struct ISound : IUnknown
     virtual bool SetLoop(bool loop) = 0;               // vtable+0x34
     virtual bool IsActive() = 0;                       // vtable+0x38 playing
     virtual bool IsPaused() = 0;                       // vtable+0x3c
-    virtual bool IsStarted() = 0;                      // vtable+0x40 not stopped
+    virtual bool IsSliding() = 0;                      // vtable+0x40
 };
 
 typedef char Vc1ISoundSizeCheck[sizeof(ISound) == 0x04 ? 1 : -1];

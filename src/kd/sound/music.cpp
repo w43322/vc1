@@ -43,8 +43,9 @@ const char* KdMusic::Script14()
     return kMusic;
 }
 
+// ISound "IsSliding" slot; for a stream only "not stopped".
 // FUNCTION: VC1 0x0045e490
-bool KdMusic::IsStarted()
+bool KdMusic::IsSliding()
 {
     return BASS_ChannelIsActive(stream) != BASS_ACTIVE_STOPPED;
 }

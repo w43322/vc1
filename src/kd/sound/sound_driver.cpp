@@ -1,6 +1,7 @@
 #include "kd/sound/sound_driver.h"
 #include "kd/sound/bass_api.h"
 #include "kd/sound/music.h"
+#include "kd/sound/sound.h"
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
@@ -24,11 +25,6 @@ const char* g_kdNameSoundDriver = kSoundDriver;
 const char* KdSoundDriver::Script14()
 {
     return kSoundDriver;
-}
-
-// STUB: VC1 0x0045f960
-static void Sound10Body()
-{
 }
 
 KdSoundDriver::KdSoundDriver()
@@ -143,10 +139,11 @@ void* KdSoundDriver::Sound14(void* arg)
     return arg;
 }
 
-// STUB: VC1 0x00468230
+// RET 4. ResourceManager GetSound: a new KdSound's IAbstract face to *arg.
+// FUNCTION: VC1 0x00468230
 void* KdSoundDriver::Sound10(void* arg)
 {
-    Sound10Body();
+    CreateKdSound(static_cast<void**>(arg));
     return arg;
 }
 

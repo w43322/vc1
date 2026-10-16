@@ -68,6 +68,7 @@ add_executable(vc1_recompiled
   src/kd/component_group.cpp
   src/kd/sound/sound_driver.cpp
   src/kd/sound/music.cpp
+  src/kd/sound/sound.cpp
   src/kd/scene/compound_object.cpp
   src/kd/console/console.cpp
   src/kd/font/font.cpp
