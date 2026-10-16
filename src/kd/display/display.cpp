@@ -127,6 +127,10 @@ extern const char kKdParentWindow[] = "KD_PARENT_WINDOW";
 const char* g_kdNameDisplay = kDisplay;
 // GLOBAL: VC1 0x004d0638
 const char* g_kdNameTexture = kTexture;
+// STRING: VC1 0x004d4c28
+static const char kRenderTarget[] = "RenderTarget";
+// GLOBAL: VC1 0x004d063c
+const char* g_kdNameRenderTarget = kRenderTarget;
 // STRING: VC1 0x004d5db8
 static const char kInitSize[] = "Init: %dx%d";
 // STRING: VC1 0x004d5dc4
@@ -3020,10 +3024,11 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
     return 1;
 }
 
-// STUB: VC1 0x004b22e0
+// RET 8. Only the base table (0x00466b00); the result is normalized to 0/1.
+// FUNCTION: VC1 0x004b22e0
 unsigned char KdDisplay::GetMember(const char* name, SquirrelObject* out)
 {
-    return KdDisplayBase::GetMember(name, out);
+    return KdDisplayBase::GetMember(name, out) != 0;
 }
 
 // Release the GetRenderTexture static if set. Registered with atexit from 0x004662e0.

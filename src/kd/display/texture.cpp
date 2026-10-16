@@ -5,6 +5,10 @@
 
 #include "kd/iface/iid.h"
 
+#include <new>
+#include <stdlib.h>
+#include <string.h>
+
 namespace vc1 {
 
 // XOR AL,AL; RET 4. ITexture vtable+0x0c.
@@ -103,14 +107,59 @@ unsigned KdRenderTexture::AddRef()
     return value;
 }
 
-// RET 8. Copies the render target into a system-memory surface
+// D3DLOCKED_RECT.
+struct D3dLockedRect
+{
+    int pitch;   // 0x00
+    void* bits;  // 0x04
+};
+
+// STRING: VC1 0x004d68a4
+static const char kAlreadyLocked[] = "already locked";
+
+// RET 8. region is {x, y, width, height}. Copies that part of the render
+// target into a system-memory surface in the display format
 // (CreateImageSurface, CopyRects) and locks it; only one lock at a time.
-// STUB: VC1 0x0045be10
+// FUNCTION: VC1 0x0045be10
 void* KdRenderTexture::Lock(void* region, bool readOnly)
 {
-    (void)region;
-    (void)readOnly;
-    return 0;
+    typedef int (__stdcall *FnGetSurfaceLevel)(IUnknown* texture, unsigned level,
+        IUnknown** surface);
+    typedef int (__stdcall *FnCreateImageSurface)(IUnknown* device, unsigned width,
+        unsigned height, int format, IUnknown** surface);
+    typedef int (__stdcall *FnCopyRects)(IUnknown* device, IUnknown* source, const RECT* rects,
+        unsigned count, IUnknown* destination, const POINT* points);
+    typedef int (__stdcall *FnLockRect)(IUnknown* surface, D3dLockedRect* locked,
+        const RECT* rect, unsigned flags);
+    const int* const rect = static_cast<const int*>(region);
+    IUnknown* surface;
+    RECT source;
+    POINT origin;
+    D3dLockedRect locked;
+
+    if (readback) {
+        HostLogError(&g_kdNameRenderTarget, kAlreadyLocked);
+        return 0;
+    }
+    surface = 0;
+    reinterpret_cast<FnGetSurfaceLevel>((*reinterpret_cast<void***>(native))[0xf])(
+        native, 0, &surface);
+    reinterpret_cast<FnCreateImageSurface>((*reinterpret_cast<void***>(g_d3dDevice))[0x1b])(
+        g_d3dDevice, rect[2], rect[3], g_displayMode[2], &readback);
+    source.left = rect[0];
+    source.top = rect[1];
+    source.right = rect[0] + rect[2];
+    source.bottom = rect[1] + rect[3];
+    origin.x = 0;
+    origin.y = 0;
+    reinterpret_cast<FnCopyRects>((*reinterpret_cast<void***>(g_d3dDevice))[0x1c])(
+        g_d3dDevice, surface, &source, 1, readback, &origin);
+    D3dRelease(surface);
+    locked.pitch = 0;
+    locked.bits = 0;
+    reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(readback))[9])(
+        readback, &locked, 0, (readOnly ? 0x10 : 0) | 0x8800);
+    return locked.bits;
 }
 
 // MOV EAX,[ECX+0x14]; RET. this=ITexture (KdTexture+0x0c).
@@ -219,11 +268,50 @@ const char* KdTexture::GetTypeName()
     return 0;
 }
 
-// Allocates and constructs a KdTexture, copies its locked pixels, returns IAbstract.
-// STUB: VC1 0x0045c1a0
+// RET 4. this = ICloneable. A new KdTexture whose first writable lock
+// creates its native texture at this texture's size; the pixels are copied
+// from a read-only lock of this one. Returns the copy's IAbstract.
+// FUNCTION: VC1 0x0045c1a0
 void** KdTexture::Clone(void** out)
 {
-    *out = 0;
+    void* const memory = malloc(sizeof(KdTexture));
+    KdTexture* copy;
+    IUnknown* face;
+    IUnknown* queried;
+
+    if (memory) {
+        copy = new (memory) KdTexture();
+    }
+    else {
+        copy = 0;
+    }
+    int source[4];
+    source[2] = static_cast<int>(width);
+    source[3] = static_cast<int>(height);
+    source[0] = 0;
+    source[1] = 0;
+    const void* const pixels = Lock(source, true);
+    int target[4];
+    target[0] = 0;
+    target[1] = 0;
+    target[2] = static_cast<int>(width);
+    target[3] = static_cast<int>(height);
+    void* const destination = copy->Lock(target, false);
+    memcpy(destination, pixels, height * width * 4);
+    copy->Unlock();
+    Unlock();
+    face = &static_cast<IAbstract&>(*copy);
+    if (!face) {
+        queried = 0;
+    }
+    else {
+        queried = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
+    }
+    *out = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    static_cast<IUnknown*>(*out)->Release();
     return out;
 }
 
