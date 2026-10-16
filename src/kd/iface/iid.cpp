@@ -1,5 +1,6 @@
 #include "kd/iface/iid.h"
 #include "kd/scene/compound_object.h"
+#include "kd/resource/resource_manager.h"
 #include "kd/scene/scripted_object.h"
 
 namespace vc1 {
@@ -166,6 +167,26 @@ const char* g_iidAnimateable = "IAnimateable";
 static const char kIidStateProvider[] = "IStateProvider";
 // GLOBAL: VC1 0x004d0624
 const char* g_iidStateProvider = kIidStateProvider;
+
+// RET 4.
+// FUNCTION: VC1 0x0046d520
+void* KdResourceManager::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidComponentGroup || name == kIidShutdownable) {
+        return static_cast<KdComponentGroup*>(this);
+    }
+    if (name == kIidResourceManager) {
+        return static_cast<IResourceManager*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
 
 // RET 4. A face only when the script defines its member (the input face
 // also when LoadFromScript cached a pointer handler), then the compound's.

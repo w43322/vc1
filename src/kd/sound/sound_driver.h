@@ -30,10 +30,11 @@ public:
     int SetEnabled();                       // vtable+0x0c
     void* Sound10(void* arg);               // vtable+0x10
     void* Sound14(void* arg);               // vtable+0x14
-    unsigned char Sound18();              // vtable+0x18
-    unsigned char Sound1c();              // vtable+0x1c
-    unsigned char Sound20();              // vtable+0x20
-    float Sound24();                       // vtable+0x24
+    bool Start();                           // vtable+0x18
+    bool Stop();                            // vtable+0x1c
+    bool Pause();                           // vtable+0x20
+    int GetVolume();                        // vtable+0x24
+    bool SetVolume(int volume);             // vtable+0x28
     int Shutdown();                         // vtable+0x0c
     unsigned char Script0c(const char* name, SquirrelObject* out);
     unsigned char Script10(void* a, void* b);
@@ -64,6 +65,32 @@ typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
 // ?AddRef@KdSoundDriver@vc1@@W7AEIXZ
 // SYNTHETIC: VC1 0x00419af0
 // ?AddRef@KdSoundDriver@vc1@@WM@AEIXZ
+
+// Script methods (Script0c): Start / Stop / Pause share one closure type.
+
+// TEMPLATE: VC1 0x00419850
+// ??$CreateScriptMethod@VKdSoundDriver@vc1@@P812@AE_NXZ@vc1@@YA?AVSquirrelObject@@P8KdSoundDriver@0@AE_NXZ@Z
+
+// TEMPLATE: VC1 0x004198c0
+// ??$CreateScriptMethod@VKdSoundDriver@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdSoundDriver@0@AEHXZ@Z
+
+// TEMPLATE: VC1 0x00419930
+// ??$CreateScriptMethod@VKdSoundDriver@vc1@@P812@AE_NH@Z@vc1@@YA?AVSquirrelObject@@P8KdSoundDriver@0@AE_NH@Z@Z
+
+// TEMPLATE: VC1 0x004199a0
+// ??$Call@VKdSoundDriver@vc1@@@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdSoundDriver@vc1@@P823@AE_NXZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004199f0
+// ??$Call@VKdSoundDriver@vc1@@H@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdSoundDriver@vc1@@P823@AE_NH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00468400
+// ?Dispatch@?$ScriptMethodCall@VKdSoundDriver@vc1@@P812@AE_NH@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004684a0
+// ?Dispatch@?$ScriptMethodCall@VKdSoundDriver@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x00468570
+// ?Dispatch@?$ScriptMethodCall@VKdSoundDriver@vc1@@P812@AE_NXZ@vc1@@SAHPAUSQVM@@@Z
 
 void** CreateKdSoundDriver(void** out);
 

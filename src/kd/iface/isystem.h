@@ -26,6 +26,8 @@ struct ISystem : IComponentGroup
 
 typedef char Vc1ISystemSizeCheck[sizeof(ISystem) == 0x04 ? 1 : -1];
 
+KdPtr<ISystem> GetKdSystem();
+
 }
 
 #endif

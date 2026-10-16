@@ -535,14 +535,13 @@ unsigned char KdFont::Load(const char* name) throw()
         {
             KdString full(path.c_str());
             KdRef<IResourceManager> manager;
-            KdRef<IUnknown> resource;
             IUnknown** slot;
             IUnknown* const* loaded;
 
             IResourceManager* loader = *GetKdResourceManager(&manager.ptr);
             slot = reinterpret_cast<IUnknown**>(pages.items.begin) + id;
-            loaded = reinterpret_cast<IUnknown* const*>(
-                loader->Resource0c(reinterpret_cast<void**>(&resource.ptr), &full));
+            KdPtr<IUnknown> resource(loader->GetTexture(full));
+            loaded = &resource.ptr;
             if (*slot) {
                 (*slot)->Release();
             }

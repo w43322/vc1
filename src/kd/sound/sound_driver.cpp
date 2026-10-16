@@ -3,6 +3,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
+#include "bindings/sqplus.h"
 
 #include <stdlib.h>
 
@@ -24,18 +25,19 @@ const char* KdSoundDriver::Script14()
 }
 
 // STUB: VC1 0x0044467a
-static void BassFree()
+static __declspec(noinline) int BassFree()
 {
+    return 0;
 }
 
 // STUB: VC1 0x00444680
-static unsigned BassGetVersion()
+static __declspec(noinline) unsigned BassGetVersion()
 {
     return 0;
 }
 
 // STUB: VC1 0x00444686
-static int BassInit(int device, unsigned freq, unsigned flags, void* win, void* clsid)
+static __declspec(noinline) int BassInit(int device, unsigned freq, unsigned flags, void* win, void* clsid)
 {
     (void)device;
     (void)freq;
@@ -46,13 +48,13 @@ static int BassInit(int device, unsigned freq, unsigned flags, void* win, void* 
 }
 
 // STUB: VC1 0x0044468c
-static int BassErrorGetCode()
+static __declspec(noinline) int BassErrorGetCode()
 {
     return 0;
 }
 
 // STUB: VC1 0x00444692
-static int BassGetDeviceInfo(unsigned device, void* info)
+static __declspec(noinline) int BassGetDeviceInfo(unsigned device, void* info)
 {
     (void)device;
     (void)info;
@@ -60,33 +62,40 @@ static int BassGetDeviceInfo(unsigned device, void* info)
 }
 
 // STUB: VC1 0x00444698
-static int BassGetDevice()
+static __declspec(noinline) int BassGetDevice()
 {
     return 0;
 }
 
 // STUB: VC1 0x0044469e
-static int BassStart()
+static __declspec(noinline) int BassStart()
 {
     return 0;
 }
 
 // STUB: VC1 0x004446a4
-static int BassPause()
+static __declspec(noinline) int BassStop()
 {
     return 0;
 }
 
 // STUB: VC1 0x004446aa
-static int BassStop()
+static __declspec(noinline) int BassPause()
 {
     return 0;
 }
 
 // STUB: VC1 0x004446b0
-static float BassGetCPU()
+static __declspec(noinline) float BassGetVolume()
 {
     return 0.0f;
+}
+
+// STUB: VC1 0x004446b6
+static __declspec(noinline) int BassSetVolume(float volume)
+{
+    (void)volume;
+    return 0;
 }
 
 // STUB: VC1 0x0045e9b0
@@ -103,30 +112,44 @@ KdSoundDriver::KdSoundDriver()
 {
 }
 
-// CALL IAT; NEG/SBB/NEG EAX. ISoundDriver vtable+0x24 then JMP CRT.
-// STUB: VC1 0x00468100
-float KdSoundDriver::Sound24()
+// RET 4. ISoundDriver vtable+0x28: BASS_SetVolume((float)volume) != 0.
+// FUNCTION: VC1 0x004680e0
+bool KdSoundDriver::SetVolume(int volume)
 {
-    return BassGetCPU();
+    return BassSetVolume(static_cast<float>(volume)) != 0;
+}
+
+// ISoundDriver vtable+0x24: BASS_GetVolume, then JMP _ftol.
+// FUNCTION: VC1 0x00468100
+int KdSoundDriver::GetVolume()
+{
+    return static_cast<int>(BassGetVolume());
 }
 
 // CALL IAT; NEG/SBB/NEG EAX.
-// STUB: VC1 0x00468110
-unsigned char KdSoundDriver::Sound20()
-{
-    return BassStop() != 0;
-}
-
-// STUB: VC1 0x00468120
-unsigned char KdSoundDriver::Sound1c()
+// FUNCTION: VC1 0x00468110
+bool KdSoundDriver::Pause()
 {
     return BassPause() != 0;
 }
 
-// STUB: VC1 0x00468130
-unsigned char KdSoundDriver::Sound18()
+// FUNCTION: VC1 0x00468120
+bool KdSoundDriver::Stop()
+{
+    return BassStop() != 0;
+}
+
+// FUNCTION: VC1 0x00468130
+bool KdSoundDriver::Start()
 {
     return BassStart() != 0;
+}
+
+// IShutdownable vtable+0x0c: JMP BASS_Free.
+// FUNCTION: VC1 0x00468140
+int KdSoundDriver::Shutdown()
+{
+    return BassFree();
 }
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
@@ -270,12 +293,34 @@ int KdSoundDriver::SetEnabled()
     return 1;
 }
 
-int KdSoundDriver::Shutdown()
-{
-    return 0;
-}
 
-unsigned char KdSoundDriver::Script0c(const char*, SquirrelObject*) { return 0; }
+// STRING: VC1 0x004d5ae8
+static const char kScriptStart[] = "Start";
+// STRING: VC1 0x004d5af0
+static const char kScriptStop[] = "Stop";
+// STRING: VC1 0x004d5af8
+static const char kScriptPause[] = "Pause";
+// STRING: VC1 0x004d5b00
+static const char kScriptGetVolume[] = "GetVolume";
+// STRING: VC1 0x004d5b0c
+static const char kScriptSetVolume[] = "SetVolume";
+
+// RET 8. IScriptObject vtable+0x0c. Method table 0x004ee4f8 (guard bit
+// 0x004ee508, atexit 0x004cabb0).
+// FUNCTION: VC1 0x00468610
+unsigned char KdSoundDriver::Script0c(const char* name, SquirrelObject* out)
+{
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        methods[kScriptStart] = CreateScriptMethod<KdSoundDriver>(&KdSoundDriver::Start);
+        methods[kScriptStop] = CreateScriptMethod<KdSoundDriver>(&KdSoundDriver::Stop);
+        methods[kScriptPause] = CreateScriptMethod<KdSoundDriver>(&KdSoundDriver::Pause);
+        methods[kScriptGetVolume] = CreateScriptMethod<KdSoundDriver>(&KdSoundDriver::GetVolume);
+        methods[kScriptSetVolume] = CreateScriptMethod<KdSoundDriver>(&KdSoundDriver::SetVolume);
+    }
+    return methods.Find(name, out);
+}
 
 KdSoundDriver::~KdSoundDriver()
 {

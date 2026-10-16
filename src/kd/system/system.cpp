@@ -999,11 +999,9 @@ void KdSystemBase::Render() throw()
         if (!consoleFont) {
             KdString path(kConsoleFont);
             KdRef<IResourceManager> manager;
-            KdRef<IUnknown> loaded;
+            KdPtr<IUnknown> loaded((*GetKdResourceManager(&manager.ptr))->GetFont(path));
 
-            AssignFont(&consoleFont, reinterpret_cast<IUnknown**>(
-                (*GetKdResourceManager(&manager.ptr))->LoadFont(
-                    reinterpret_cast<void**>(&loaded.ptr), &path)));
+            AssignFont(&consoleFont, &loaded.ptr);
         }
         graphics->SetTransform(&Matrix3::Identity);
         graphics->SetFont(reinterpret_cast<IUnknown* const*>(&consoleFont.ptr));
