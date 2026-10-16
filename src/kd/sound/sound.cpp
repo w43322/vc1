@@ -345,9 +345,9 @@ KdSound::KdSound() : sample(0)
 {
 }
 
-// ESI = out.
+// ESI = out. Out of line at KdSoundDriver's call, as in the original.
 // FUNCTION: VC1 0x0045f960
-void** CreateKdSound(void** out)
+__declspec(noinline) void** CreateKdSound(void** out)
 {
     KdSound* object;
     IAbstract* face;

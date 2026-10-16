@@ -211,7 +211,7 @@ void KdObjectWatcher::Update(unsigned sliceBit, int dt)
     view._31 = point.x;
     view._32 = point.y;
     camera->SetPosition(view);
-    Vector2 screen = camera->GetViewMatrix().MultVrt(point);
+    Vector2 screen = camera->GetWorldToScreen().MultVrt(point);
     correction.x = RoundToNearest(screen.x) - screen.x;
     correction.y = RoundToNearest(screen.y) - screen.y;
     KdPtr<IGraphics> graphics;

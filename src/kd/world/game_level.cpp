@@ -428,7 +428,7 @@ bool KdGameLevel::LoadFromScript(SquirrelObject& table)
 
 // Hidden return, RET 0x10. Script "GetObjectAt": the front-most (largest
 // view y) matching object near point whose script "HitTest"(point) is true.
-// Point goes through the camera's GetScreenMatrix, object positions through
+// Point goes through the camera's GetUIToScreen, object positions through
 // its view matrix. Without a camera, or with no hit, the null identifier.
 // FUNCTION: VC1 0x004b1680
 KdPtr<IUnknown> KdGameLevel::GetObjectAt(const Vector2& point, unsigned include, unsigned exclude)
@@ -450,8 +450,8 @@ KdPtr<IUnknown> KdGameLevel::GetObjectAt(const Vector2& point, unsigned include,
         return result;
     }
     {
-        const Matrix3& view = camera->GetViewMatrix();
-        const Matrix3& screen = camera->GetScreenMatrix();
+        const Matrix3& view = camera->GetWorldToScreen();
+        const Matrix3& screen = camera->GetUIToScreen();
         const Vector2 target = TransformPoint(screen, point.x, point.y);
         NamedRecord* it;
 

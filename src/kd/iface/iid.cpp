@@ -11,6 +11,7 @@
 #include "kd/blob/blob.h"
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
+#include "kd/scene/camera.h"
 #include "kd/display/effect.h"
 
 namespace vc1 {
@@ -425,6 +426,27 @@ void* KdScene::QueryInterface(const char** iid)
     }
     if (name == kIidComponentGroup || name == kIidShutdownable) {
         return static_cast<KdComponentGroup*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The ICamera face also answers IPositionable; no null check on the
+// IAbstract face.
+// FUNCTION: VC1 0x004701e0
+void* KdCamera::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidCamera || name == kIidPositionable) {
+        return static_cast<ICamera*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

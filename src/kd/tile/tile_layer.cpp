@@ -485,7 +485,7 @@ int KdTileLayer::Render(void* graphics)
 
     if (*camera) {
         const Rect& clip = target.ptr->GetClipRect();
-        const Matrix3& screen = static_cast<ICamera*>(*target.ptr->GetCamera())->GetScreenMatrix();
+        const Matrix3& screen = static_cast<ICamera*>(*target.ptr->GetCamera())->GetUIToScreen();
         const Vector2 topLeft = TransformPoint(screen,
             static_cast<float>(clip.x), static_cast<float>(clip.y));
         const Vector2 bottomRight = TransformPoint(screen,

@@ -315,9 +315,9 @@ KdMusic::KdMusic() : stream(0)
 {
 }
 
-// ESI = out.
+// ESI = out. Out of line at KdSoundDriver's call, as in the original.
 // FUNCTION: VC1 0x0045e9b0
-void** CreateKdMusic(void** out)
+__declspec(noinline) void** CreateKdMusic(void** out)
 {
     KdMusic* object;
     IAbstract* face;
