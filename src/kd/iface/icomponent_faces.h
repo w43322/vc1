@@ -60,13 +60,12 @@ struct ISaveable : IUnknown
     virtual bool Save(const char* path) = 0; // vtable+0x0c
 };
 
-// getLifeTime (0x004b4d70) and isExpired (0x004b4cf0).
+// getLifeTime (0x004b4d70) and isExpired (0x004b4cf0). An updateable with a
+// lifetime: KdEffectEmitter's QI hands out the same face for IUpdateable.
 // SIZE 0x04
-struct IWithLifeTime : IUnknown
+// VTABLE: VC1 0x004d7a88
+struct IWithLifeTime : IUpdateable
 {
-    virtual void LifeTime0c() = 0;    // vtable+0x0c
-    virtual void LifeTime10() = 0;    // vtable+0x10
-    virtual void LifeTime14() = 0;    // vtable+0x14
     virtual int GetLifeTime() = 0;    // vtable+0x18
     virtual bool IsExpired() = 0;     // vtable+0x1c
 };

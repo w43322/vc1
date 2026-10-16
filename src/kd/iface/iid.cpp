@@ -142,14 +142,16 @@ const char* g_iidWriteable = "IWriteable";
 // GLOBAL: VC1 0x004d05b8
 // STRING: VC1 0x004d4dec
 const char* g_iidSaveable = "ISaveable";
-// GLOBAL: VC1 0x004d05dc
 // STRING: VC1 0x004d4d74
-const char* g_iidWithLifeTime = "IWithLifeTime";
+static const char kIidWithLifeTime[] = "IWithLifeTime";
+// GLOBAL: VC1 0x004d05dc
+const char* g_iidWithLifeTime = kIidWithLifeTime;
 // GLOBAL: VC1 0x004d05e4
 const char* g_iidClassifiable = kIidClassifiable;
-// GLOBAL: VC1 0x004d05e8
 // STRING: VC1 0x004d4d4c
-const char* g_iidVisible = "IVisible";
+static const char kIidVisible[] = "IVisible";
+// GLOBAL: VC1 0x004d05e8
+const char* g_iidVisible = kIidVisible;
 // GLOBAL: VC1 0x004d0628
 // STRING: VC1 0x004d4c54
 const char* g_iidTileManager = "ITileManager";
@@ -163,9 +165,10 @@ const char* g_iidScriptLoadable = kIidScriptLoadable;
 const char* g_iidScriptSaveable = "IScriptSaveable";
 // GLOBAL: VC1 0x004d0600
 const char* g_iidPositionable = kIidPositionable;
-// GLOBAL: VC1 0x004d0604
 // STRING: VC1 0x004d4cd4
-const char* g_iidPositionableUser = "IPositionableUser";
+static const char kIidPositionableUser[] = "IPositionableUser";
+// GLOBAL: VC1 0x004d0604
+const char* g_iidPositionableUser = kIidPositionableUser;
 // GLOBAL: VC1 0x004d0608
 // STRING: VC1 0x004d4cc4
 const char* g_iidBoundingInfo = "IBoundingInfo";
@@ -187,6 +190,62 @@ const char* g_iidStateProvider = kIidStateProvider;
 static const char kIidTileAnimationData[] = "ITileAnimationData";
 // GLOBAL: VC1 0x004d0ac8
 const char* g_iidTileAnimationData = kIidTileAnimationData;
+
+// RET 4.
+// FUNCTION: VC1 0x0045a9c0
+void* KdEffectEmitter::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidWithLifeTime || name == kIidUpdateable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IWithLifeTime*>(this);
+    }
+    if (name == kIidRenderable || name == kIidEffectEmitter) {
+        return static_cast<IEffectEmitter*>(this);
+    }
+    if (name == kIidPositionableUser) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IPositionableUser*>(this);
+    }
+    if (name == kIidPositionable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidVisible) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IVisible*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidShutdownable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
 
 // this = IEffect, RET 4.
 // FUNCTION: VC1 0x0045b650

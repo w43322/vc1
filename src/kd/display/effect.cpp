@@ -7,7 +7,12 @@
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
 
+#include "kd/iface/igraphics.h"
+#include "kd/iface/iid.h"
+#include "bindings/rect.h"
+
 #include <errno.h>
+#include <new>
 #include <stdlib.h>
 
 namespace SqPlus {
@@ -21,8 +26,11 @@ inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IEffectEmitter>& value)
 
 namespace vc1 {
 
-extern PyroLibrary* g_displayPyro; // display.cpp
-extern const char kReadBinary[];   // display.cpp
+extern PyroLibrary* g_displayPyro;      // display.cpp
+extern IUnknown* g_graphics;            // display.cpp
+extern const char kReadBinary[];        // display.cpp
+extern const char kScriptSetEnabled[];  // object_watcher.cpp
+bool IsRectVisible(const KdPtr<IGraphics>& graphics, const Rect& rect); // tile_manager.cpp
 
 // STRING: VC1 0x004d4c18
 static const char kEffect[] = "Effect";
@@ -34,6 +42,24 @@ const char* g_kdNameEffect = kEffect;
 // GLOBAL: VC1 0x004ed708
 KdPtr<IAbstract> g_effectNoEmitter;
 
+// What an emitter falls back to for its graphics after drawing and for its
+// positionable on Shutdown. Like g_effectNoEmitter only read (atexit
+// destructor 0x004cb4b0), so always null.
+// GLOBAL: VC1 0x004ed710
+KdPtr<IUnknown> g_effectNoTarget;
+
+// Pyro's SetMatrix input in local mode: a 3x4 row-major transform whose
+// rotation and translation entries Update overwrites.
+// GLOBAL: VC1 0x004e8938
+float g_effectLocalTransform[3][4] = {
+    { 1.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 1.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 1.0f, 0.0f },
+};
+
+// STRING: VC1 0x004d4c08
+static const char kEffectEmitter[] = "EffectEmitter";
+
 // RET 8. Null handle: errno 0x11, 0. Otherwise driver write (+0x124).
 // FUNCTION: VC1 0x0040eda0 FOLDED
 int KdPyroStream::Write(const void* buffer, int size)
@@ -43,6 +69,28 @@ int KdPyroStream::Write(const void* buffer, int size)
         return 0;
     }
     return file->driver->write(file->driver, buffer, 1, size, file->native);
+}
+
+// Inferred name. ESI = slot, RET 4. slot = source's IGraphics face, counted;
+// only caller KdEffectEmitter::Render.
+// FUNCTION: VC1 0x0041a680
+__declspec(noinline) IUnknown** AssignGraphics(IUnknown** slot, const KdPtr<IUnknown>& source)
+{
+    IUnknown* queried;
+
+    if (*slot) {
+        (*slot)->Release();
+    }
+    if (!source.ptr) {
+        *slot = 0;
+        return slot;
+    }
+    queried = static_cast<IUnknown*>(source.ptr->QueryInterface(&g_iidGraphics));
+    *slot = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    return slot;
 }
 
 // MOV EAX, "Effect"; RET.
@@ -95,13 +143,343 @@ int KdPyroStream::Tell()
     return static_cast<int>(file->driver->tell(file->driver, file->native));
 }
 
-// EDI = result. The emitter wrapper is not recovered yet.
-// STUB: VC1 0x0045b590
+// MOV EAX, "EffectEmitter"; RET.
+// FUNCTION: VC1 0x0042dfa0
+const char* KdEffectEmitter::Script14()
+{
+    return kEffectEmitter;
+}
+
+// Inferred name. ESI = graphics; returns &g_graphics. Pyro draws through
+// g_graphics (KdDisplayDevice); only caller KdEffectEmitter::Render.
+// FUNCTION: VC1 0x0042dfd0
+__declspec(noinline) IUnknown** SetGraphics(const KdPtr<IGraphics>& graphics)
+{
+    if (graphics.ptr) {
+        graphics.ptr->AddRef();
+    }
+    if (g_graphics) {
+        g_graphics->Release();
+    }
+    g_graphics = graphics.ptr;
+    return &g_graphics;
+}
+
+// RET 4. Nine dwords into localMatrix.
+// FUNCTION: VC1 0x0045a820
+void KdEffectEmitter::SetLocalMatrix(const Matrix3& matrix)
+{
+    localMatrix = matrix;
+}
+
+// FUNCTION: VC1 0x0045a840
+void KdEffectEmitter::SetLocalMode(bool local)
+{
+    localMode = local;
+}
+
+// FUNCTION: VC1 0x0045a850
+void KdEffectEmitter::SetEnabled(bool value)
+{
+    enabled = value;
+}
+
+// FUNCTION: VC1 0x0045a860
+void KdEffectEmitter::SetRenderLayer(int layer)
+{
+    renderLayer = layer;
+}
+
+// Restarts the emitter and the lifetime.
+// FUNCTION: VC1 0x0045a870
+void KdEffectEmitter::Reset()
+{
+    emitter->Reset();
+    lifeTime = 0;
+    enabled = true;
+    started = false;
+}
+
+// this = IVisible.
+// FUNCTION: VC1 0x0045a890
+bool KdEffectEmitter::IsVisible()
+{
+    return visible;
+}
+
+// FUNCTION: VC1 0x0045a8a0
+void KdEffectEmitter::SetVisible(bool value)
+{
+    visible = value;
+}
+
+// The render layer.
+// FUNCTION: VC1 0x0045a8b0
+int KdEffectEmitter::Render14()
+{
+    return renderLayer;
+}
+
+// RET 4. this = IWithLifeTime; the layer is ignored.
+// FUNCTION: VC1 0x0045a8c0
+int KdEffectEmitter::SetLayer(unsigned layer)
+{
+    (void)layer;
+    return 0;
+}
+
+// MOV EAX, 0x40; RET.
+// FUNCTION: VC1 0x0045a8d0
+int KdEffectEmitter::Unmapped0c()
+{
+    return 0x40;
+}
+
+// Expired once it has emitted and every particle is gone.
+// FUNCTION: VC1 0x0045a8e0
+bool KdEffectEmitter::IsExpired()
+{
+    return started && !emitter->HasParticles();
+}
+
+// FUNCTION: VC1 0x0045a900
+int KdEffectEmitter::GetLifeTime()
+{
+    return lifeTime;
+}
+
+// XOR AL,AL; RET 8.
+// FUNCTION: VC1 0x0045a910
+unsigned char KdEffectEmitter::Script10(void* a, void* b)
+{
+    (void)a;
+    (void)b;
+    return 0;
+}
+
+// this = IPositionable. The followed positionable's, else its own.
+// FUNCTION: VC1 0x0045a920
+const Matrix3& KdEffectEmitter::GetPosition()
+{
+    if (positionable) {
+        return positionable->GetPosition();
+    }
+    return position;
+}
+
+// RET 4. Ignored while following a positionable.
+// FUNCTION: VC1 0x0045a940
+void KdEffectEmitter::SetPosition(const Matrix3& value)
+{
+    if (!positionable) {
+        position = value;
+    }
+}
+
+// RET 4. this = IPositionableUser. Keeps the current position, then follows
+// source (counted).
+// FUNCTION: VC1 0x0045a960
+void KdEffectEmitter::SetPositionable(const KdPtr<IPositionable>& source)
+{
+    position = GetPosition();
+    if (source.ptr) {
+        source.ptr->AddRef();
+    }
+    if (positionable) {
+        positionable->Release();
+    }
+    positionable = source.ptr;
+}
+
+// ADD ECX, 0x30; deleting destructor (IAbstract vtable+0x0c) on zero refs.
+// FUNCTION: VC1 0x0045aa80
+unsigned KdEffectEmitter::Release()
+{
+    IUnknown* face;
+    unsigned result;
+    typedef void (__thiscall *Fn0c)(void* object, int arg);
+
+    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
+    result = --refs;
+    if (result == 0) {
+        reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
+        return 0;
+    }
+    return result;
+}
+
+// refs at +0x34; only counts up from nonzero.
+// FUNCTION: VC1 0x0045aaa0
+unsigned KdEffectEmitter::AddRef()
+{
+    unsigned value = refs;
+    if (value != 0) {
+        ++value;
+        refs = value;
+    }
+    return value;
+}
+
+// RET 8. this = IWithLifeTime. Advances the emitter to the new lifetime at
+// the current position * localMatrix. In local mode the emitter gets the
+// transform (and its creation position rotated by it) and moves at the
+// origin; otherwise it just moves to the transformed origin.
+// FUNCTION: VC1 0x0045aab0
+void KdEffectEmitter::Update(unsigned sliceBit, int dt)
+{
+    (void)sliceBit;
+    lifeTime += dt;
+    float time = lifeTime * 0.001f;
+    float step = dt * 0.001f;
+    Matrix3 at = GetPosition() * localMatrix;
+    if (localMode) {
+        g_effectLocalTransform[0][0] = at._11;
+        g_effectLocalTransform[1][0] = at._12;
+        g_effectLocalTransform[0][1] = at._21;
+        g_effectLocalTransform[1][1] = at._22;
+        g_effectLocalTransform[0][3] = at._31;
+        g_effectLocalTransform[1][3] = at._32;
+        emitter->SetMatrix(&g_effectLocalTransform[0][0]);
+        emitter->SetPosition(emitterX * at._11 + emitterY * at._12,
+            emitterX * at._21 + emitterY * at._22, 0.0f);
+        emitter->Move(time, step, 0.0f, 0.0f, 0.0f, enabled);
+    }
+    else {
+        emitter->Move(time, step, at._31, at._32, 0.0f, enabled);
+    }
+    emitter->Prepare(time, step);
+    if (!started && emitter->HasParticles()) {
+        started = true;
+    }
+}
+
+// this = IShutdownable. Stops following its positionable.
+// FUNCTION: VC1 0x0045ac60
+int KdEffectEmitter::Shutdown()
+{
+    IPositionable* queried;
+
+    if (positionable) {
+        positionable->Release();
+    }
+    if (!g_effectNoTarget.ptr) {
+        positionable = 0;
+        return 0;
+    }
+    queried = static_cast<IPositionable*>(g_effectNoTarget.ptr->QueryInterface(&g_iidPositionable));
+    positionable = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    return 0;
+}
+
+// RET 4. graphics is a KdPtr<IGraphics>*. Draws through g_graphics when the
+// effect's BoundingRect at the current origin is on screen.
+// FUNCTION: VC1 0x0045aca0
+int KdEffectEmitter::Render(void* graphics)
+{
+    const KdPtr<IGraphics>& target = *static_cast<const KdPtr<IGraphics>*>(graphics);
+
+    if (visible) {
+        const Matrix3& at = GetPosition();
+        const RectF& bounds = static_cast<KdEffect*>(effect)->bounds;
+        Rect rect(static_cast<SQInteger>(bounds.x + at._31),
+            static_cast<SQInteger>(bounds.y + at._32),
+            static_cast<SQInteger>(bounds.width),
+            static_cast<SQInteger>(bounds.height));
+        if (IsRectVisible(target, rect)) {
+            SetGraphics(target);
+            emitter->Emitter08();
+            AssignGraphics(&g_graphics, g_effectNoTarget);
+        }
+    }
+    return 0;
+}
+
+// EAX = this. The emitter is deleted, the effect released, then the
+// positionable member.
+// FUNCTION: VC1 0x0045ad40
+KdEffectEmitter::~KdEffectEmitter()
+{
+    if (emitter) {
+        delete emitter;
+        emitter = 0;
+    }
+    if (effect) {
+        effect->Release();
+        effect = 0;
+    }
+}
+
+// RET 8. Method table 0x004ee3f4 (guard bit 0x004ee404, atexit destructor
+// 0x004cb450); every closure calls through the vtable.
+// FUNCTION: VC1 0x0045b150
+unsigned char KdEffectEmitter::Script0c(const char* name, SquirrelObject* out)
+{
+    static ScriptMethodTable methods;
+
+    if (methods.Empty()) {
+        // STRING: VC1 0x004d7a34
+        methods["Reset"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::Reset);
+        // STRING: VC1 0x004d159c
+        methods["SetRenderLayer"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetRenderLayer);
+        methods[kScriptSetEnabled] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetEnabled);
+        // STRING: VC1 0x004d7a3c
+        methods["SetLocalMode"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetLocalMode);
+        // STRING: VC1 0x004d7a4c
+        methods["SetLocalMatrix"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetLocalMatrix);
+    }
+    return methods.Find(name, out);
+}
+
+// ESI = this, RET 8. Takes ownership of source, keeps owner counted and
+// remembers the emitter's own position.
+// FUNCTION: VC1 0x0045b410
+KdEffectEmitter::KdEffectEmitter(IPyroEmitter* source, IEffect* owner)
+{
+    float z;
+
+    visible = true;
+    enabled = true;
+    localMode = true;
+    started = false;
+    emitterX = 0.0f;
+    emitterY = 0.0f;
+    effect = owner;
+    lifeTime = 0;
+    emitter = source;
+    renderLayer = 200;
+    emitter->SetUserData(this);
+    effect->AddRef();
+    emitter->GetPosition(&emitterX, &emitterY, &z);
+}
+
+// EDI = result.
+// FUNCTION: VC1 0x0045b590
 KdPtr<IAbstract> CreateEffectEmitter(IPyroEmitter* emitter, IEffect* effect)
 {
-    (void)emitter;
-    (void)effect;
-    return KdPtr<IAbstract>();
+    KdEffectEmitter* object;
+    IAbstract* face;
+    IAbstract* queried;
+
+    object = static_cast<KdEffectEmitter*>(malloc(sizeof(KdEffectEmitter)));
+    if (!object) {
+        queried = 0;
+    }
+    else {
+        new (object) KdEffectEmitter(emitter, effect);
+        face = static_cast<IAbstract*>(object);
+        if (!face) {
+            queried = 0;
+        }
+        else {
+            queried = static_cast<IAbstract*>(face->QueryInterface(&g_iidAbstract));
+        }
+    }
+    KdPtr<IAbstract> result(queried);
+    result->Release();
+    return result;
 }
 
 // XOR AL,AL; RET 8.

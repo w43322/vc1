@@ -10,8 +10,8 @@ extern const char* g_emptyCountedBegin;
 extern unsigned g_emptyCountedSize;
 
 // The +4 payload is the object's name, assigned from the shared empty string.
-// The default vftable has no destructor slot: GetName (0x00401000, shared
-// with other "return this+4" bodies) and SetName (0x00403ab0). Slot names
+// Default vftable: GetName (0x00401000, shared with other "return this+4"
+// bodies), SetName (0x00403ab0), then the deleting destructor. Slot names
 // from getIdentificator / setIdentificator (0x004b59f0, 0x004b5970).
 // SIZE 0x14
 // VTABLE: VC1 0x004d124c
@@ -22,9 +22,13 @@ struct IIdentifiable : IUnknown
     IIdentifiable() : name(g_emptyCountedBegin, g_emptyCountedSize) {}
     virtual const KdString& GetName() { return name; }                // vtable+0x0c
     virtual void SetName(const KdString& value) { name.Assign(value); } // vtable+0x10
+    virtual ~IIdentifiable() {}                                       // vtable+0x14
 };
 
 typedef char Vc1IIdentifiableSizeCheck[sizeof(IIdentifiable) == 0x14 ? 1 : -1];
+
+// SYNTHETIC: VC1 0x004053b0
+// vc1::IIdentifiable::`scalar deleting destructor'
 
 }
 
