@@ -33,6 +33,21 @@ struct IGridMap : IPositionable
     virtual void RemoveRenderer(const KdPtr<IGridRenderer>& renderer) = 0; // vtable+0x28
 };
 
+struct Vector2;
+
+// Inferred names. Breadth-first path search over an IGridMap: cells whose
+// value bit is set in the passable mask can be walked; FindPath fills the
+// point list (script "FindPath" / "GetPoint").
+// SIZE 0x04
+struct IGridRouter : IUnknown
+{
+    virtual void SetPassableMask(int mask) = 0;              // vtable+0x0c
+    virtual int FindPath(const Vector2& from, const Vector2& to,
+        bool worldSpace) = 0;                                // vtable+0x10
+    virtual Vector2& GetPoint(int index) = 0;                // vtable+0x14
+    virtual int GetPointCount() = 0;                         // vtable+0x18
+};
+
 }
 
 #endif

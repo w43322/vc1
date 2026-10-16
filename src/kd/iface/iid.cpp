@@ -8,6 +8,7 @@
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/tile/tile_layer.h"
+#include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/display/effect.h"
 
@@ -210,6 +211,10 @@ const char* g_iidTileObject = "ITileObject";
 static const char kIidGridMap[] = "IGridMap";
 // GLOBAL: VC1 0x004d0ad0
 const char* g_iidGridMap = kIidGridMap;
+// STRING: VC1 0x004cfdf8
+static const char kIidGridRouter[] = "IGridRouter";
+// GLOBAL: VC1 0x004d0ad8
+const char* g_iidGridRouter = kIidGridRouter;
 // STRING: VC1 0x004cfdec
 static const char kIidTileLayer[] = "ITileLayer";
 // GLOBAL: VC1 0x004d0adc
@@ -565,6 +570,26 @@ void* KdObjectWatcher::QueryInterface(const char** iid)
     }
     if (name == kIidIdentifiable) {
         return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004aef00
+void* KdGridRouter::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidGridRouter) {
+        return static_cast<IGridRouter*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
     }
     if (name == kIidShutdownable) {
         return static_cast<IShutdownable*>(this);

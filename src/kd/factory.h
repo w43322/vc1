@@ -291,6 +291,17 @@ struct KdArray
         items.size = bytes;
         reinterpret_cast<T*>(reinterpret_cast<char*>(items.begin) + bytes)[-1] = value;
     }
+    // PushBack where the original keeps it out of line (EAX=this, value by
+    // reference).
+    __declspec(noinline) void Append(const T& value)
+    {
+        unsigned bytes = (Count() + 1) * sizeof(T);
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 0);
+        }
+        items.size = bytes;
+        reinterpret_cast<T*>(reinterpret_cast<char*>(items.begin) + bytes)[-1] = value;
+    }
     // Out of line in the original (EAX=this, ESI=count).
     __declspec(noinline) void Resize(unsigned count)
     {
