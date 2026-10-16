@@ -455,6 +455,23 @@ int KdFread(void* buffer, unsigned size, unsigned count, void* file)
     return handle->driver->read(handle->driver, buffer, size, count, handle->native);
 }
 
+// Inferred name. ESI=file; fclose over an OpenKdFile handle (driver+0x118),
+// then frees the handle.
+// FUNCTION: VC1 0x00486e70
+int KdFclose(void* file)
+{
+    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    int result;
+
+    if (!handle) {
+        errno = 0x11;
+        return -1;
+    }
+    result = handle->driver->close(handle->driver, handle->native);
+    free(handle);
+    return result;
+}
+
 // Walk DAT_004ed4f8. Each node +0x114 is cdecl (self, path, mode); mode is EBX from the caller.
 // FUNCTION: VC1 0x00486eb0
 void* OpenKdPath(const char* path, const char* mode)

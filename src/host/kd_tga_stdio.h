@@ -27,17 +27,8 @@ inline int KdFgetc(void* file)
     return handle->driver->getc(handle->driver, handle->native);
 }
 
-inline int KdFclose(void* file)
-{
-    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
-    if (!handle) {
-        errno = 0x11;
-        return -1;
-    }
-    handle->driver->close(handle->driver, handle->native);
-    free(handle);
-    return 0;
-}
+// 0x00486e70; ESI=file
+int KdFclose(void* file);
 
 }
 

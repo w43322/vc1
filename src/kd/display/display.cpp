@@ -8,6 +8,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
+#include "host/kd_stdio.h"
 #include "bindings/matrix4.h"
 #include "bindings/matrix3.h"
 #include "bindings/component.h"
@@ -1549,14 +1550,82 @@ static IUnknown* LoadTgaTexture(const char* name, int* width, int* height)
     return 0;
 }
 
-// EAX=name, cdecl out width/height. PVRTC loader.
-// STUB: VC1 0x00465990
+// STRING: VC1 0x004d602c
+static const char kUnsupportedPvrDepth[] = "Unsupported pvr depth";
+
+// Inferred name. The PVR v2 file header (0x34 bytes).
+struct PvrHeader
+{
+    unsigned headerSize; // 0x00
+    unsigned height;     // 0x04
+    unsigned width;      // 0x08
+    unsigned mipCount;   // 0x0c
+    unsigned flags;      // 0x10
+    unsigned dataSize;   // 0x14
+    unsigned bitCount;   // 0x18
+    unsigned redMask;    // 0x1c
+    unsigned greenMask;  // 0x20
+    unsigned blueMask;   // 0x24
+    unsigned alphaMask;  // 0x28
+    unsigned tag;        // 0x2c "PVR!"
+    unsigned surfaces;   // 0x30
+};
+
+typedef char Vc1PvrHeaderSizeCheck[sizeof(PvrHeader) == 0x34 ? 1 : -1];
+
+// EAX=name, cdecl out width/height. Inferred name. Only 32-bit PVR files: the
+// pixel data is read straight into a managed A8R8G8B8 texture of the file's
+// size (no power-of-two fitting, one level).
+// FUNCTION: VC1 0x00465990
 static IUnknown* LoadPvrTexture(const char* name, int* width, int* height)
 {
-    (void)name;
-    (void)width;
-    (void)height;
-    return 0;
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnLockRect)(IUnknown* tex, unsigned level, int* locked,
+        const RECT* rect, unsigned flags);
+    typedef int (__stdcall *FnUnlockRect)(IUnknown* tex, unsigned level);
+    IUnknown* texture;
+    int locked[2];
+    PvrHeader header;
+    int hr;
+    char buf[512];
+
+    KdFileHandle* const file = static_cast<KdFileHandle*>(OpenKdFile(name, kReadBinary));
+    if (!file) {
+        return 0;
+    }
+    if (!file->driver->read(file->driver, &header, sizeof(header), 1, file->native)) {
+        file->driver->close(file->driver, file->native);
+        free(file);
+        return 0;
+    }
+    if (header.bitCount != 32) {
+        FormatBufferOpen(buf, kPercentS, kUnsupportedPvrDepth);
+        HostLogError(&g_kdNameDisplay, buf);
+        KdFclose(file);
+        return 0;
+    }
+    *width = header.width;
+    *height = header.height;
+    hr = reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+        g_d3dDevice, header.width, header.height, 1, 0, 0x15, 1, &texture);
+    if (hr < 0) {
+        DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+        KdFclose(file);
+        return 0;
+    }
+    hr = reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(texture))[0x10])(
+        texture, 0, locked, 0, 0);
+    if (hr < 0) {
+        DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+        D3dRelease(texture);
+        KdFclose(file);
+        return 0;
+    }
+    KdFread(reinterpret_cast<void*>(locked[1]), header.dataSize, 1, file);
+    reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(texture))[0x11])(texture, 0);
+    KdFclose(file);
+    return texture;
 }
 
 // cdecl width/height. CreateTexture + GetLevelDesc; link node onto g_d3dChain.
