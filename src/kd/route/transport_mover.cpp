@@ -77,6 +77,7 @@ static const char kScriptOnMovingFinish[] = "OnMovingFinish";
 static const double kHalfPi = 1.5707963705062866;
 static const double kQuarterPi = 0.7853981852531433;
 static const double kPi = 3.1415927410125732;
+static const double kFiveQuarterPi = 3.9269909858703613;
 static const double kTwoPi = 6.2831854820251465;
 
 // Inferred name. cdecl float, the absolute value on the FPU stack; kept out
@@ -304,6 +305,44 @@ int KdTransportMover::GetUpdateLayer()
 unsigned char KdTransportMover::SetMember(void*, void*)
 {
     return 0;
+}
+
+// Inferred name. EDI=this, EAX=cell, ECX=axes (X then Y axis of the
+// transport). The heading picks the cells ahead, behind and to the right of
+// cell; a spot beside the road is free when ahead and behind are
+// indestructible road and the right cell is not.
+// FUNCTION: VC1 0x0049bb50
+bool KdTransportMover::CanParkBeside(const KdGridCell& cell, const Vector2* axes)
+{
+    KdGridCell ahead = cell;
+    KdGridCell behind = cell;
+    KdGridCell side = cell;
+    const float angle = WrapAngle(static_cast<float>(
+        atan2(static_cast<double>(axes[0].y), static_cast<double>(axes[0].x))));
+
+    if (angle < kQuarterPi) {
+        ++ahead.x;
+        --behind.x;
+        ++side.y;
+    }
+    else if (angle < 2.3561945f) {
+        ++ahead.y;
+        --behind.y;
+        --side.x;
+    }
+    else if (angle < kFiveQuarterPi) {
+        ++behind.x;
+        --ahead.x;
+        --side.y;
+    }
+    else {
+        ++behind.y;
+        --ahead.y;
+        ++side.x;
+    }
+    return gridMap->roadIndestructible == gridMap->GetCellValue(ahead.x, ahead.y)
+        && gridMap->roadIndestructible == gridMap->GetCellValue(behind.x, behind.y)
+        && gridMap->roadIndestructible != gridMap->GetCellValue(side.x, side.y);
 }
 
 // RET 4. Script "SetGridRouter".
@@ -541,18 +580,100 @@ bool KdTransportMover::IsBlocked(KdTransportRecord& record)
     return false;
 }
 
-// RET 4. Script "MoveToRoadsite".
-// STUB: VC1 0x0049c4a0
-bool KdTransportMover::MoveToRoadsite(const KdPtr<IPositionable>&)
+// RET 4. Script "MoveToRoadsite". When the route's end is in another cell and
+// the spot beside the current cell is free, the route is replaced by a short
+// pull-over: half a cell ahead, cornerOuter - cornerRadius to the right, and
+// a tiny step ahead. The transport is then parked and moving.
+// FUNCTION: VC1 0x0049c4a0
+bool KdTransportMover::MoveToRoadsite(const KdPtr<IPositionable>& transport)
 {
-    return false;
+    if (!gridMap) {
+        return false;
+    }
+    const int index = FindTransport(this, transport);
+    if (index < 0) {
+        return false;
+    }
+    KdTransportRecord& record = records[index];
+    if (!record.route || record.route->IsEmpty()) {
+        return false;
+    }
+    const Vector2 end = worldToGrid.MultVrt((record.route->GetPoints()->End() - 1)->position);
+    const unsigned short endX = static_cast<unsigned short>(static_cast<int>(end.x));
+    const unsigned short endY = static_cast<unsigned short>(static_cast<int>(end.y));
+    if (record.cell.x == endX && record.cell.y == endY) {
+        return false;
+    }
+
+    Vector2 axes[2];
+    axes[0].x = record.transport->GetPosition()._11;
+    axes[0].y = record.transport->GetPosition()._12;
+    const Matrix3& matrix = record.transport->GetPosition();
+    axes[1].x = matrix._21;
+    axes[1].y = matrix._22;
+    if (!CanParkBeside(record.cell, axes)) {
+        return false;
+    }
+
+    const Matrix3& position = record.transport->GetPosition();
+    const Vector2 origin = worldToGrid.MultVrt(*reinterpret_cast<const Vector2*>(&position._31));
+    const float shift = cornerOuter - cornerRadius;
+    const float sx = shift * axes[1].x;
+    const float sy = shift * axes[1].y;
+    const float hx = axes[0].x * 0.5f;
+    const float hy = axes[0].y * 0.5f;
+    Vector2 ahead;
+    ahead.x = hx + origin.x;
+    ahead.y = origin.y + hy;
+    Vector2 aside;
+    aside.x = ahead.x + sx;
+    aside.y = ahead.y + sy;
+    const float tx = static_cast<float>(axes[0].x * 0.0010000000474974513);
+    const float ty = static_cast<float>(axes[0].y * 0.0010000000474974513);
+    Vector2 stop;
+    stop.x = tx + aside.x;
+    stop.y = ty + aside.y;
+
+    record.route->Clear();
+    record.route->AddPoint(gridToWorld.MultVrt(ahead));
+    record.route->AddPoint(gridToWorld.MultVrt(aside));
+    record.route->AddPoint(gridToWorld.MultVrt(stop));
+    record.distance = 0.0f;
+    record.atRoadside = true;
+    record.moving = true;
+    return true;
 }
 
-// RET 4. Script "CanStartMoving".
-// STUB: VC1 0x0049c710
-bool KdTransportMover::CanStartMoving(const KdPtr<IPositionable>&)
+// RET 4. Script "CanStartMoving". False while another moving transport on the
+// road in the same cell faces less than 180 degrees from the route start.
+// FUNCTION: VC1 0x0049c710
+bool KdTransportMover::CanStartMoving(const KdPtr<IPositionable>& transport)
 {
-    return false;
+    const int index = FindTransport(this, transport);
+    if (index < 0) {
+        return false;
+    }
+    KdTransportRecord& record = records[index];
+    const KdRouteSample start = record.route->GetSampleAt(0.0f);
+    const float dx = start.direction.x;
+    const float dy = start.direction.y;
+    const float cx = static_cast<float>(record.cell.x);
+    const float cy = static_cast<float>(record.cell.y);
+    KdTransportRecord* other;
+
+    for (other = records.Begin(); other != records.End(); ++other) {
+        if (SameObject(other->transport, record.transport)) {
+            continue;
+        }
+        if (!other->atRoadside && other->moving && static_cast<float>(other->cell.x) == cx
+            && static_cast<float>(other->cell.y) == cy) {
+            const Matrix3& its = other->transport->GetPosition();
+            if (ClampedACos(its._11 * dx + its._12 * dy) < kPi) {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 // RET 4. IRenderable vtable+0x10: the routes while visible.
@@ -753,8 +874,7 @@ void KdTransportMover::NotifyCellChange(KdTransportRecord& record)
     }
     {
         const bool passable = (passableMask
-            & 1 << gridMap->GetCellValue(static_cast<unsigned short>(record.cell.x),
-                static_cast<unsigned short>(record.cell.y))) != 0;
+            & 1 << gridMap->GetCellValue(record.cell.x, record.cell.y)) != 0;
         SquirrelObject self(object);
         SquirrelVM::BeginCall(member, self);
         SquirrelVM::PushParam(passable);
@@ -812,8 +932,8 @@ void KdTransportMover::UpdateRecord(KdTransportRecord& record, int dt)
         record.transport->SetPosition(position);
         {
             const Vector2 grid = worldToGrid.MultVrt(sample.position);
-            cell.x = static_cast<short>(static_cast<int>(grid.x));
-            cell.y = static_cast<short>(static_cast<int>(grid.y));
+            cell.x = static_cast<unsigned short>(static_cast<int>(grid.x));
+            cell.y = static_cast<unsigned short>(static_cast<int>(grid.y));
         }
         if (record.cell != cell) {
             record.cell = cell;
@@ -992,10 +1112,10 @@ bool KdTransportMover::InitMoving(const KdPtr<IPositionable>& transport,
     KdTransportRecord& record = records[index];
     record.distance = 0.0f;
     AssignRoute(record.route, BuildDrivingRoute(route, record.atRoadside));
-    record.cell.x = static_cast<short>(static_cast<int>(route->GetSampleAt(0.0f).position.x));
+    record.cell.x = static_cast<unsigned short>(static_cast<int>(route->GetSampleAt(0.0f).position.x));
     record.atRoadside = false;
     record.moving = false;
-    record.cell.y = static_cast<short>(static_cast<int>(route->GetSampleAt(0.0f).position.y));
+    record.cell.y = static_cast<unsigned short>(static_cast<int>(route->GetSampleAt(0.0f).position.y));
     return true;
 }
 

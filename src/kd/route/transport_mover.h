@@ -20,8 +20,8 @@ namespace vc1 {
 // SIZE 0x04
 struct KdGridCell
 {
-    short x; // 0x00
-    short y; // 0x02
+    unsigned short x; // 0x00
+    unsigned short y; // 0x02
 
     __declspec(noinline) bool operator!=(const KdGridCell& other) const;
 };
@@ -153,6 +153,7 @@ public:
 
     static int __stdcall FindTransport(KdTransportMover* self,
         const KdPtr<IPositionable>& transport);
+    bool CanParkBeside(const KdGridCell& cell, const Vector2* axes);
     bool IsBlocked(KdTransportRecord& record);
     void NotifyCellChange(KdTransportRecord& record);
     void UpdateRecord(KdTransportRecord& record, int dt);
