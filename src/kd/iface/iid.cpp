@@ -8,6 +8,7 @@
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/tile/tile_layer.h"
+#include "kd/blob/blob.h"
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/display/effect.h"
@@ -174,9 +175,10 @@ const char* g_iidTileManager = "ITileManager";
 const char* g_iidManualControl = "IManualControl";
 // GLOBAL: VC1 0x004d05f8
 const char* g_iidScriptLoadable = kIidScriptLoadable;
-// GLOBAL: VC1 0x004d05fc
 // STRING: VC1 0x004d4cf8
-const char* g_iidScriptSaveable = "IScriptSaveable";
+static const char kIidScriptSaveable[] = "IScriptSaveable";
+// GLOBAL: VC1 0x004d05fc
+const char* g_iidScriptSaveable = kIidScriptSaveable;
 // GLOBAL: VC1 0x004d0600
 const char* g_iidPositionable = kIidPositionable;
 // STRING: VC1 0x004d4cd4
@@ -336,6 +338,38 @@ void* KdFile::QueryInterface(const char** iid)
             return 0;
         }
         return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The IInputStream face is the object itself.
+// FUNCTION: VC1 0x0046c990
+void* KdBlob::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidInputStream) {
+        return static_cast<IInputStream*>(this);
+    }
+    if (name == kIidOutputStream) {
+        return static_cast<IOutputStream*>(this);
+    }
+    if (name == kIidReadable) {
+        return static_cast<IReadable*>(this);
+    }
+    if (name == kIidWriteable) {
+        return static_cast<IWriteable*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidScriptSaveable) {
+        return static_cast<IScriptSaveable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

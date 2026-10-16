@@ -10,6 +10,8 @@ address|type|name|symbol
 0x0043031c|library|__iob_func|___iob_func
 0x00430501|library|_fileno|__fileno
 0x0043063a|library|_get_osfhandle|__get_osfhandle
+0x004315fb|library|strtol|_strtol
+0x0043166b|library|_itoa|__itoa
 0x0043195f|library|isspace|_isspace
 0x004352c1|library|___security_init_cookie|___security_init_cookie
 0x00436010|library|memcpy|_memcpy
