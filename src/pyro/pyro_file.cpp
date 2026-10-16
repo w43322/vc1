@@ -171,13 +171,41 @@ PyroFrameTable::~PyroFrameTable()
     }
 }
 
-// ECX=device, ESI=frames. Creates the frame table's device buffers; body not
-// recovered yet.
-// STUB: VC1 0x00452ed0
+// ECX=device, ESI=frames. Uploads the graphic's mesh as a white triangle list:
+// keysA are the positions, keysB the position index triples, frame 0 holds the
+// UVs (pairs) and their index triples. The dwords are copied unconverted.
+// FUNCTION: VC1 0x00452ed0
 void PyroCreateFrameBuffers(IPyroDevice* device, PyroFrameTable* frames)
 {
-    (void)device;
-    (void)frames;
+    device->Pyro0c(&frames->buffer, frames->keyCountB * 3, 0x18, 0x10009, 0);
+    const int vertexCount = frames->keyCountB * 3;
+    PyroVertex* const vertices = new PyroVertex[vertexCount];
+    PyroVertex* out = vertices;
+    for (int i = 0; i < frames->keyCountB; ++i) {
+        const int* const corners = frames->keysB[i].v;
+        const int* const uvs = frames->frames[0].triples[i].v;
+        out[0].x = reinterpret_cast<const float*>(frames->keysA[corners[0]].v)[0];
+        out[0].y = reinterpret_cast<const float*>(frames->keysA[corners[0]].v)[1];
+        out[0].z = reinterpret_cast<const float*>(frames->keysA[corners[0]].v)[2];
+        out[0].u = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[0]].v)[0];
+        out[0].color = 0xffffffff;
+        out[0].v = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[0]].v)[1];
+        out[1].x = reinterpret_cast<const float*>(frames->keysA[corners[1]].v)[0];
+        out[1].y = reinterpret_cast<const float*>(frames->keysA[corners[1]].v)[1];
+        out[1].z = reinterpret_cast<const float*>(frames->keysA[corners[1]].v)[2];
+        out[1].u = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[1]].v)[0];
+        out[1].color = 0xffffffff;
+        out[1].v = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[1]].v)[1];
+        out[2].x = reinterpret_cast<const float*>(frames->keysA[corners[2]].v)[0];
+        out[2].y = reinterpret_cast<const float*>(frames->keysA[corners[2]].v)[1];
+        out[2].z = reinterpret_cast<const float*>(frames->keysA[corners[2]].v)[2];
+        out[2].u = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[2]].v)[0];
+        out[2].color = 0xffffffff;
+        out[2].v = reinterpret_cast<const float*>(frames->frames[0].pairs[uvs[2]].v)[1];
+        out += 3;
+    }
+    frames->buffer->Upload(vertices, 0, vertexCount * 0x18, 1);
+    delete[] vertices;
 }
 
 // ESI=this, EDI=ar.
