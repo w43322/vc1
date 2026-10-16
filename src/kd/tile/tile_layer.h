@@ -119,7 +119,7 @@ typedef char Vc1KdTileLayerSizeCheck[sizeof(KdTileLayer) == 0xe0 ? 1 : -1];
 void** CreateKdTileLayer(void** out);
 
 // TEMPLATE: VC1 0x004047e0
-// ?Reserve@?$KdObjArray@URect@vc1@@@vc1@@QAEXI@Z
+// ?Reserve@?$KdObjArray@URect@vc1@@@vc1@@QAEXIE@Z
 
 // SYNTHETIC: VC1 0x00409a70
 // vc1::KdTileLayer::`scalar deleting destructor'

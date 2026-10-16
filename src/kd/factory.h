@@ -80,6 +80,14 @@ public:
         }
         Clear();
     }
+    // Sets size to bytes, reserving bytes + Count() through the vptr.
+    __forceinline void ResizeBytes(unsigned bytes)
+    {
+        if (capacity < Count() + bytes) {
+            GrowCountedBuffer(this, static_cast<int>(bytes), 1);
+        }
+        size = bytes;
+    }
 
 protected:
     // Reserves bytes (+Count() through the KdFactory vptr) and sets size;

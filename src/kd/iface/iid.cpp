@@ -9,6 +9,7 @@
 #include "kd/tile/tile_animation_data.h"
 #include "kd/tile/tile_layer.h"
 #include "kd/blob/blob.h"
+#include "kd/road/grid_rect_renderer.h"
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/road/road_renderer.h"
@@ -706,6 +707,26 @@ void* KdGridRouter::QueryInterface(const char** iid)
     }
     if (name == kIidShutdownable) {
         return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004afd80
+void* KdGridRectRenderer::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidGridRenderer) {
+        return static_cast<IGridRenderer*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

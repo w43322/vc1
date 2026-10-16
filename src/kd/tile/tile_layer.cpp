@@ -570,7 +570,14 @@ void KdTileGrid::Build(const KdArray<Tile>& tiles)
     }
     cells.items.size = 0;
     if (tiles.items.size != 0) {
-        KdObjArray<Rect> rects(tiles.Count());
+        KdObjArray<Rect> rects;
+        {
+            const unsigned bytes = tiles.Count() * sizeof(Rect);
+            if (rects.items.capacity < bytes) {
+                rects.Reserve(bytes / sizeof(Rect), 1);
+            }
+            rects.items.size = bytes;
+        }
         const Tile* const first = tiles.Data();
         unsigned i;
         unsigned count;
