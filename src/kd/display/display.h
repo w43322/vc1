@@ -114,8 +114,8 @@ public:
 
     int Pyro00(void* a, void* b);
     int Pyro04(unsigned mode, unsigned value);
-    int Pyro08(void** out, void* b, void* c, void* d, void* e);
-    int Pyro0c(void** out, void* b, void* c, void* d, void* e);
+    int Pyro08(void** out, int count, int stride, unsigned format, int flags);
+    int Pyro0c(void** out, int count, int stride, unsigned format, int flags);
     int Pyro10(void* a, void* b, void* c, void* d);
     int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags);
     int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height, int flags);

@@ -7,33 +7,39 @@ namespace vc1 {
 // Inlined into the scalar deleting destructor (0x0042ed40).
 PyroLibrary::~PyroLibrary()
 {
-    if (buffer) {
-        free(buffer);
-        buffer = 0;
+    if (vertices) {
+        delete[] vertices;
+        vertices = 0;
     }
-    if (resource) {
-        delete resource;
-        resource = 0;
+    if (vertexBuffer) {
+        delete vertexBuffer;
+        vertexBuffer = 0;
     }
 }
 
-// Frees +0x0c and resets the library state; body not fully recovered.
-// STUB: VC1 0x00450080
+// FUNCTION: VC1 0x00450080
 void PyroLibrary::Done()
 {
-    if (buffer) {
-        free(buffer);
+    if (vertices) {
+        delete[] vertices;
+        vertices = 0;
     }
-    buffer = 0;
+    if (vertexBuffer) {
+        delete vertexBuffer;
+        vertexBuffer = 0;
+    }
 }
 
-// RET 4. Statically linked Pyro library code; body not recovered.
-// STUB: VC1 0x004500c0
-int PyroLibrary::Init(IPyroDevice* value)
+// RET 4. Device buffer of 0x800 vertices (stride 0x18) plus the scratch copy.
+// EAX keeps the scratch pointer; SetSize ignores it.
+// FUNCTION: VC1 0x004500c0
+void PyroLibrary::Init(IPyroDevice* value)
 {
     device = value;
-    field10 = 0x200;
-    return 0;
+    capacity = 0x200;
+    vertexCursor = 0;
+    value->Pyro0c(reinterpret_cast<void**>(&vertexBuffer), 0x800, 0x18, 0x10009, 0);
+    vertices = new PyroVertex[capacity * 4];
 }
 
 // RET 4. Body not recovered.

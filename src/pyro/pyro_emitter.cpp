@@ -1,5 +1,9 @@
 #include "pyro/pyro_emitter.h"
 
+#include "pyro/pyro_random.h"
+
+#include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 namespace vc1 {
@@ -35,7 +39,7 @@ void PyroEmitter::Reset()
 }
 
 // FUNCTION: VC1 0x0042e980
-bool PyroEmitter::IsActive()
+bool PyroEmitter::Is3D()
 {
     PyroEmitter* root = this;
     while (root->parent) {
@@ -166,10 +170,10 @@ float PyroEmitter::GetConstant()
 
 // RET 8.
 // FUNCTION: VC1 0x0042ebb0
-void PyroEmitter::SetRange(int a, int b)
+void PyroEmitter::SetEmitCallback(PyroEmitCallback callback, void* data)
 {
-    rangeA = a;
-    rangeB = b;
+    emitCallback = callback;
+    emitCallbackData = data;
 }
 
 // Pops a particle off the free list, carving a new block of 64 when empty.
@@ -212,6 +216,28 @@ void PyroParticleFreeAll()
     g_pyroParticlePool.blocks = 0;
 }
 
+// EAX=this, ECX=out (3x3).
+// FUNCTION: VC1 0x0044ea70
+void PyroEmitter::GetOrientation(float* out)
+{
+    for (int row = 0; row < 3; ++row) {
+        out[row * 3 + 0] = orientation[row][0];
+        out[row * 3 + 1] = orientation[row][1];
+        out[row * 3 + 2] = orientation[row][2];
+    }
+}
+
+// EAX=this, ECX=out (3x3).
+// FUNCTION: VC1 0x0044eaa0
+void PyroEmitter::GetRotation(float* out)
+{
+    for (int row = 0; row < 3; ++row) {
+        out[row * 3 + 0] = rotation[row][0];
+        out[row * 3 + 1] = rotation[row][1];
+        out[row * 3 + 2] = rotation[row][2];
+    }
+}
+
 // RET 8. Update with the stored move position.
 // FUNCTION: VC1 0x0044ead0
 void PyroEmitter::Update(float time, float dt)
@@ -243,17 +269,58 @@ void PyroEmitter::SetMatrix(const float* source)
     matrixIdentity = identity;
 }
 
-// EAX=this. Body not recovered yet.
-// STUB: VC1 0x0044ec40
-void PyroLayer::UpdateRotation()
+// EAX=this, EBX=source. Passes the rotation on to every child emitter.
+// FUNCTION: VC1 0x0044ec40
+void PyroLayer::SetChildRotation(const float* source)
 {
+    for (PyroParticle* particle = particles; particle; particle = particle->next) {
+        for (int i = 0; i < particle->childCount; ++i) {
+            if (particle->children[i].emitter) {
+                particle->children[i].emitter->SetRotation(source);
+            }
+        }
+    }
 }
 
-// EAX=this. Body not recovered yet.
-// STUB: VC1 0x0044eca0
+// EAX=this. Particles of the child emitters.
+// FUNCTION: VC1 0x0044eca0
 int PyroLayer::CountParticles()
 {
-    return 0;
+    int total = 0;
+
+    if (subEmitterCount) {
+        for (PyroParticle* particle = particles; particle; particle = particle->next) {
+            if (particle->children) {
+                for (int i = 0; i < particle->childCount; ++i) {
+                    total += particle->children[i].emitter->GetParticleCount();
+                }
+            }
+        }
+    }
+    return total;
+}
+
+// ESI=this, t on the stack. Piecewise linear, optionally smoothstepped.
+// FUNCTION: VC1 0x0044ed10
+float PyroCurve::Evaluate(float t)
+{
+    if (count != 1 && keys[0].time < t) {
+        PyroCurveKey* key = keys;
+        float f;
+
+        if (keys[count - 1].time <= t) {
+            return keys[count - 1].value;
+        }
+        while (key[1].time < t) {
+            ++key;
+        }
+        f = (t - key->time) / (key[1].time - key->time);
+        if (smooth) {
+            f = (3.0f - (f + f)) * f * f;
+        }
+        return (key[1].value - key->value) * f + key->value;
+    }
+    return keys->value;
 }
 
 // EAX=this. Instances share the prototype's curve keys and name.
@@ -266,6 +333,47 @@ void PyroEmitter::MarkInstance()
     isInstance = true;
 }
 
+// ESI=this, EDI=&direction. Yaw/pitch frame (no roll) along direction.
+// FUNCTION: VC1 0x0044f0d0
+void PyroEmitter::UpdateOrientation()
+{
+    float length = sqrtf(direction[0] * direction[0] + direction[1] * direction[1] +
+        direction[2] * direction[2]);
+    const float roll = 0.0f;
+    float yaw;
+    float pitch;
+    float sy;
+    float cy;
+    float sp;
+    float cp;
+    float sr;
+    float cr;
+
+    if (fabsf(length) < 0.0001f) {
+        direction[0] = 1.0f;
+        direction[1] = 0.0f;
+        direction[2] = 0.0f;
+        length = 1.0f;
+    }
+    yaw = -atan2f(direction[0], direction[1]);
+    pitch = asinf(direction[2] / length);
+    sy = sinf(yaw);
+    cy = cosf(yaw);
+    sp = sinf(pitch);
+    cp = cosf(pitch);
+    sr = sinf(roll);
+    cr = cosf(roll);
+    orientation[0][0] = sr * sy * sp + cy * cr;
+    orientation[1][0] = sp * cr * sy - sr * cy;
+    orientation[2][0] = cp * sy;
+    orientation[0][1] = cr * sy - sp * cy * sr;
+    orientation[1][1] = -cy * sp * cr - sr * sy;
+    orientation[2][1] = cp * -cy;
+    orientation[0][2] = cp * sr;
+    orientation[1][2] = cp * cr;
+    orientation[2][2] = -sp;
+}
+
 // RET 4. Copies the rotation part of a 4x4 matrix.
 // FUNCTION: VC1 0x0044f2a0
 void PyroEmitter::SetRotation(const float* source)
@@ -276,7 +384,7 @@ void PyroEmitter::SetRotation(const float* source)
         rotation[row][2] = source[row * 4 + 2];
     }
     for (int i = 0; i < layerCount; ++i) {
-        layers[i].UpdateRotation();
+        layers[i].SetChildRotation(source);
     }
 }
 
@@ -324,12 +432,136 @@ void PyroLayer::MarkInstance()
     isInstance = true;
 }
 
+// ESI=this. Rotation from the three layer angles (radians).
+// FUNCTION: VC1 0x0044f4e0
+void PyroLayer::UpdateAngles()
+{
+    float sa;
+    float ca;
+    float sb;
+    float cb;
+    float sc;
+    float cc;
+
+    if (angles[0] == 0.0f && angles[1] == 0.0f && angles[2] == 0.0f) {
+        hasAngles = false;
+        return;
+    }
+    hasAngles = true;
+    sa = sinf(angles[0]);
+    ca = cosf(angles[0]);
+    sb = sinf(angles[1]);
+    cb = cosf(angles[1]);
+    sc = sinf(angles[2]);
+    cc = cosf(angles[2]);
+    rotation[0][0] = cb * cc;
+    rotation[1][0] = sc * cb;
+    rotation[2][0] = -sb;
+    rotation[0][1] = sa * sb * cc - ca * sc;
+    rotation[1][1] = sc * sa * sb + cc * ca;
+    rotation[2][1] = cb * sa;
+    rotation[0][2] = cc * sb * ca + sc * sa;
+    rotation[1][2] = sb * ca * sc - cc * sa;
+    rotation[2][2] = cb * ca;
+}
+
+// ECX=this, EBX=b, EDI=a, t/r/g on the stack; RET 0xc. With repeat > 1 the
+// key range wraps repeat times over t.
+// FUNCTION: VC1 0x0044f780
+void PyroKeyList::Sample(float t, float* r, float* g, float* b, float* a)
+{
+    if (count != 1 && keys[0].time < t) {
+        PyroColorKey* key = keys;
+        float f;
+
+        if (repeat > 1 && count > 1) {
+            t = fmodf(t * repeat, keys[count - 1].time - keys[0].time) + keys[0].time;
+        }
+        else if (keys[count - 1].time <= t) {
+            *r = keys[count - 1].r;
+            *g = keys[count - 1].g;
+            *b = keys[count - 1].b;
+            *a = keys[count - 1].a;
+            return;
+        }
+        while (key[1].time < t) {
+            ++key;
+        }
+        f = (t - key->time) / (key[1].time - key->time);
+        *r = key->r + f * (key[1].r - key->r);
+        *g = (key[1].g - key->g) * f + key->g;
+        *b = (key[1].b - key->b) * f + key->b;
+        *a = (key[1].a - key->a) * f + key->a;
+        return;
+    }
+    *r = keys->r;
+    *g = keys->g;
+    *b = keys->b;
+    *a = keys->a;
+}
+
+// EAX=this; RET 0xc. Weighted pick; choices with flag set also get a random
+// unit axis and angle.
+// FUNCTION: VC1 0x0044fa90
+PyroGraphicRef* PyroGraphicChoices::Pick(float* axis, float* angle, float* scale)
+{
+    PyroGraphicChoice* choice;
+    float lengthSq;
+    float inverse;
+
+    if (count == 0) {
+        axis[0] = 0.0f;
+        axis[1] = 0.0f;
+        axis[2] = 1.0f;
+        *angle = 0.0f;
+        *scale = 1.0f;
+        return 0;
+    }
+    if (count == 1) {
+        choice = choices;
+    }
+    else if (total == 0) {
+        choice = &choices[PyroGetRandom()->Next() % count];
+    }
+    else {
+        unsigned value = PyroGetRandom()->Next() % total;
+        choice = &choices[count - 1];
+        for (int i = 0; i < count - 1; ++i) {
+            if (value < static_cast<unsigned>(choices[i].weight)) {
+                choice = &choices[i];
+                break;
+            }
+            value -= choices[i].weight;
+        }
+    }
+    *scale = choice->value;
+    if (!choice->flag) {
+        axis[0] = 0.0f;
+        axis[1] = 0.0f;
+        axis[2] = 1.0f;
+        *angle = 0.0f;
+        return choice->ref;
+    }
+    do {
+        axis[0] = static_cast<float>(PyroRandomSigned());
+        axis[1] = static_cast<float>(PyroRandomSigned());
+        axis[2] = static_cast<float>(PyroRandomSigned());
+        lengthSq = axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2];
+    } while (lengthSq < 0.1f);
+    inverse = 1.0f / sqrtf(lengthSq);
+    axis[0] = inverse * axis[0];
+    axis[1] = axis[1] * inverse;
+    axis[2] = inverse * axis[2];
+    *angle = static_cast<float>(PyroRandomUnit() * 6.283185307179586);
+    return choice->ref;
+}
+
 // FUNCTION: VC1 0x0044fd60
 PyroEmitter::PyroEmitter()
 {
-    field168 = 0;
-    field16c = 0;
-    field170 = 0;
+    direction[0] = 0.0f;
+    direction[1] = 0.0f;
+    direction[2] = 0.0f;
     movePosition[0] = 0.0f;
     movePosition[1] = 0.0f;
     movePosition[2] = 0.0f;
@@ -349,8 +581,8 @@ PyroEmitter::PyroEmitter()
     childCapacity = 0;
     parent = 0;
     prototype = 0;
-    rangeA = 0;
-    rangeB = 0;
+    emitCallback = 0;
+    emitCallbackData = 0;
     userData = 0;
     field210 = 100.0f;
     for (int row = 0; row < 3; ++row) {
@@ -366,6 +598,112 @@ PyroEmitter::PyroEmitter()
     }
 }
 
+// ECX=this, EBX=angle, eleven stack arguments; RET 0x2c. Spawn point on the
+// emitter shape and launch direction; *angle ends up as the particle angle,
+// the direction uses the shape angle before angleMode replaces it.
+// FUNCTION: VC1 0x00450160
+void PyroEmitter::GetSpawn(float* angle, float* x, float* y, float* z, float* dx, float* dy,
+    float* dz, int angleMode, float angleDegrees, int index, float minPitch, float maxPitch)
+{
+    bool flip = field194;
+    float base;
+
+    if (flip && field195) {
+        if (field196) {
+            flip = (index & 1) != 0;
+            index /= 2;
+        }
+        else {
+            flip = (PyroGetRandom()->Next() & 1) != 0;
+        }
+    }
+    {
+        const float r = static_cast<float>(PyroRandomSigned());
+        *angle = values[9] * r * 0.5f + values[8];
+    }
+    if (field19c == 0) {
+        *x = movePosition[0];
+        *y = movePosition[1];
+        *z = movePosition[2];
+    }
+    else if (field19c == 1) {
+        float t;
+
+        if (field196) {
+            if (field198 > 1) {
+                t = static_cast<float>(index) / (field198 - 1);
+            }
+            else {
+                t = 0.0f;
+            }
+        }
+        else {
+            t = static_cast<float>(PyroRandomUnit());
+        }
+        t = (t - 0.5f) * 2.0f;
+        *x = cosf(values[14]) * values[15] * t + movePosition[0];
+        *y = sinf(values[14]) * values[15] * t + movePosition[1];
+        *z = movePosition[2];
+        *angle = values[14] + 1.57075f + *angle;
+    }
+    else {
+        float t;
+        float spread;
+
+        if (field196) {
+            t = static_cast<float>(index) / field198;
+        }
+        else {
+            t = static_cast<float>(PyroRandomUnit());
+        }
+        spread = t * 6.283f;
+        t = spread + values[14];
+        *x = cosf(t) * values[15] + movePosition[0];
+        *y = sinf(t) * values[15] + movePosition[1];
+        *z = movePosition[2];
+        *angle = *angle + t;
+    }
+    base = *angle;
+    if (angleMode == 2) {
+        *angle = angleDegrees * 0.0174533f;
+    }
+    else if (angleMode == 0) {
+        *angle = angleDegrees * 0.0174533f + *angle;
+    }
+    else {
+        *angle = static_cast<float>(PyroRandomUnit() * 6.283185307179586);
+    }
+    if (Is3D()) {
+        float low = minPitch;
+        float high = maxPitch;
+        float pitch;
+        float r;
+        float s;
+
+        if (high < low) {
+            low = maxPitch;
+            high = minPitch;
+        }
+        r = static_cast<float>(PyroRandomUnit());
+        pitch = (high - low) * r + low;
+        pitch = 3.1415f - pitch;
+        s = sinf(pitch);
+        *dx = cosf(base) * s;
+        *dy = sinf(base) * s;
+        *dz = -cosf(pitch);
+    }
+    else {
+        *dx = cosf(base);
+        *dy = sinf(base);
+        *dz = 0.0f;
+    }
+    if (flip) {
+        *dx = -*dx;
+        *dy = -*dy;
+        *dz = -*dz;
+    }
+}
+
 // ECX=this.
 // FUNCTION: VC1 0x00450550
 PyroLayer::PyroLayer()
@@ -377,7 +715,7 @@ PyroLayer::PyroLayer()
     graphics.total = 0;
     keyList.count = 0;
     keyList.keys = 0;
-    keyList.loop = false;
+    keyList.random = false;
     keyList.shared = false;
     time = 0.0f;
     particles = 0;
@@ -390,8 +728,51 @@ PyroLayer::PyroLayer()
     subEmitters = 0;
     isInstance = false;
     field2b4 = 0;
-    field250 = 0;
-    field1ec = false;
+    particleCount = 0;
+    hasAngles = false;
+}
+
+// ESI=particle, stack this; RET 4. Unlinks the particle, deletes its child
+// emitters and returns it to the pool.
+// FUNCTION: VC1 0x00450910
+void PyroLayer::FreeParticle(PyroParticle* particle)
+{
+    PyroParticle* const prev = particle->prev;
+    PyroParticle* const next = particle->next;
+
+    if (prev) {
+        prev->next = next;
+    }
+    if (next) {
+        next->prev = prev;
+    }
+    if (!prev) {
+        particles = next;
+    }
+    if (particle->children) {
+        for (int i = 0; i < particle->childCount; ++i) {
+            if (particle->children[i].emitter) {
+                delete particle->children[i].emitter;
+            }
+        }
+        free(particle->children);
+        particle->children = 0;
+        particle->childCount = 0;
+    }
+    PyroParticleRelease(particle);
+}
+
+// RET 8. value scaled by a random factor in [1 - variation, 1 + variation];
+// above 1 the range is shifted up so the result stays positive.
+// FUNCTION: VC1 0x00450a00
+float PyroVary(float value, float variation)
+{
+    const float r = static_cast<float>(PyroRandomSigned());
+
+    if (variation > 1.0f) {
+        return value + value * (r * variation + (variation - 1.0f));
+    }
+    return value + value * r * variation;
 }
 
 // Sum of every layer's live and pending particles.
@@ -401,17 +782,248 @@ int PyroEmitter::GetParticleCount()
     int total = 0;
     for (int i = 0; i < layerCount; ++i) {
         PyroLayer* const layer = &layers[i];
-        total += layer->CountParticles() + layer->field250;
+        total += layer->CountParticles() + layer->particleCount;
     }
     return total;
 }
 
-// Stack this, a, b. Body not recovered yet.
-// STUB: VC1 0x00450af0
-void PyroLayer::Prepare(float a, float b)
+// Stack this, now, dt; RET 0xc. Moves every particle: velocity, emitter
+// drift and turbulence; with attached colliders the step is clipped against
+// them (the emitter's and then the prototype's list); spin and drag act
+// around the spawn origin.
+// FUNCTION: VC1 0x00450af0
+void PyroLayer::Prepare(float now, float dt)
 {
-    (void)a;
-    (void)b;
+    const float t = emitter->GetConstant() * now;
+    const float d = emitter->GetConstant() * dt;
+    int index = 0;
+
+    for (PyroParticle* particle = particles; particle; particle = particle->next, ++index) {
+        float noiseX;
+        float noiseY;
+        float noiseZ;
+        float vx;
+        float vy;
+        float vz;
+        float x;
+        float y;
+        float z;
+
+        if (particle->cur50 != 0.0f) {
+            const float amplitude = particle->cur50 * 0.01f;
+            const float base = t * 0.05f + particle->phase;
+            const float base450 = 450.0f + base;
+            const float span = d * 0.05f;
+
+            noiseX = PyroNoise(base, span + base) * amplitude;
+            noiseY = PyroNoise(base450, base450 + span) * amplitude;
+            if (emitter->Is3D()) {
+                const float base940 = base + 940.0f;
+                noiseZ = PyroNoise(base940, base940 + span) * amplitude;
+            }
+            else {
+                noiseZ = 0.0f;
+            }
+        }
+        else {
+            noiseZ = 0.0f;
+            noiseY = 0.0f;
+            noiseX = 0.0f;
+        }
+        vx = particle->cur3c * particle->velocity[0] + emitter->position[0] * particle->cur54;
+        vy = particle->cur3c * particle->velocity[1] + emitter->position[1] * particle->cur54;
+        vz = particle->velocity[2] * particle->cur3c + emitter->position[2] * particle->cur54;
+        if (!emitter->children) {
+            const float size = particle->cur40;
+
+            x = particle->position[0] + size * vx * (dt + noiseX);
+            y = size * vy * (noiseY + dt) + particle->position[1];
+            z = particle->position[2] + (noiseZ + dt) * vz * size;
+        }
+        else {
+            float position[3];
+            float step[3];
+            float velocity[3];
+            float time = now;
+            float left = dt;
+            IPyroCollider* last = 0;
+            bool hit;
+
+            position[0] = particle->position[0];
+            position[1] = particle->position[1];
+            position[2] = particle->position[2];
+            step[0] = particle->cur40 * vx;
+            step[1] = particle->cur40 * vy;
+            step[2] = particle->cur40 * vz;
+            velocity[0] = particle->velocity[0];
+            velocity[1] = particle->velocity[1];
+            velocity[2] = particle->velocity[2];
+            do {
+                IPyroCollider* best = 0;
+                float bestTime = 0.0f;
+                float savedPosition[3];
+                float savedStep[3];
+                float savedVelocity[3];
+
+                hit = false;
+                for (int pass = 0; pass < 2; ++pass) {
+                    PyroEmitter* source;
+
+                    if (pass == 0) {
+                        source = emitter;
+                    }
+                    else {
+                        source = emitter->prototype;
+                        if (source->children == emitter->children) {
+                            break;
+                        }
+                    }
+                    for (int k = 0; k < source->childCount; ++k) {
+                        IPyroCollider* const collider = static_cast<IPyroCollider*>(source->children[k]);
+                        float hitTime;
+                        float tryPosition[3];
+                        float tryStep[3];
+                        float tryVelocity[3];
+
+                        if (collider == last) {
+                            continue;
+                        }
+                        hitTime = left;
+                        tryPosition[0] = position[0];
+                        tryPosition[1] = position[1];
+                        tryPosition[2] = position[2];
+                        tryStep[0] = step[0];
+                        tryStep[1] = step[1];
+                        tryStep[2] = step[2];
+                        tryVelocity[0] = velocity[0];
+                        tryVelocity[1] = velocity[1];
+                        tryVelocity[2] = velocity[2];
+                        if (collider->Collide(time, tryPosition, tryStep, tryVelocity, left,
+                                particle->cur40, particle->field34, index, &hitTime, 0)) {
+                            if (!hit || hitTime < bestTime) {
+                                bestTime = hitTime;
+                            }
+                            best = collider;
+                            hit = true;
+                            savedPosition[0] = tryPosition[0];
+                            savedPosition[1] = tryPosition[1];
+                            savedPosition[2] = tryPosition[2];
+                            savedStep[0] = tryStep[0];
+                            savedStep[1] = tryStep[1];
+                            savedStep[2] = tryStep[2];
+                            savedVelocity[0] = tryVelocity[0];
+                            savedVelocity[1] = tryVelocity[1];
+                            savedVelocity[2] = tryVelocity[2];
+                        }
+                    }
+                }
+                if (hit) {
+                    position[0] = savedPosition[0];
+                    position[1] = savedPosition[1];
+                    position[2] = savedPosition[2];
+                    step[0] = savedStep[0];
+                    step[1] = savedStep[1];
+                    step[2] = savedStep[2];
+                    velocity[0] = savedVelocity[0];
+                    velocity[1] = savedVelocity[1];
+                    velocity[2] = savedVelocity[2];
+                    time = bestTime + time;
+                    left = left - bestTime;
+                    if (left <= 0.0f) {
+                        break;
+                    }
+                }
+                last = best;
+            } while (hit);
+            if (left > 0.0f) {
+                position[0] = left * step[0] + position[0];
+                position[1] = left * step[1] + position[1];
+                position[2] = left * step[2] + position[2];
+            }
+            x = position[0];
+            y = position[1];
+            z = position[2];
+            particle->velocity[0] = velocity[0];
+            particle->velocity[1] = velocity[1];
+            particle->velocity[2] = velocity[2];
+        }
+        if (particle->cur58 != 0.0f || particle->cur5c != 0.0f) {
+            float dx = x - particle->origin[0];
+            float dy = y - particle->origin[1];
+
+            if (particle->cur58 != 0.0f) {
+                const float spin = dt * particle->cur58;
+                const float s = sinf(spin);
+                const float c = cosf(spin);
+                const float rx = dx * c - dy * s;
+
+                dy = c * dy + s * dx;
+                dx = rx;
+                if (matrixMode != 1) {
+                    particle->spawnAngle += spin;
+                }
+            }
+            if (particle->cur5c != 0.0f) {
+                const float drag = 1.0f - particle->cur5c * dt;
+                dx = drag * dx;
+                dy = drag * dy;
+            }
+            x = dx + particle->origin[0];
+            y = dy + particle->origin[1];
+        }
+        particle->position[0] = x;
+        particle->position[1] = y;
+        particle->position[2] = z;
+        particle->spawnAngle = particle->spawnAngle + particle->cur44 * dt;
+        particle->angle = dt * particle->cur48 + particle->angle;
+        if (particle->children) {
+            for (int i = 0; i < particle->childCount; ++i) {
+                PyroParticle::Child* const child = &particle->children[i];
+                if (child->emitter) {
+                    child->emitter->Prepare(now - child->time, dt);
+                }
+            }
+        }
+    }
+}
+
+// ESI=this. matrix = rotation * the root emitter's rotation (mode 1) or
+// orientation (mode 2); without angles the root rotation itself.
+// FUNCTION: VC1 0x00451220
+void PyroLayer::UpdateMatrix()
+{
+    PyroEmitter* root = emitter;
+    float local[3][3];
+
+    while (root->parent) {
+        root = root->parent;
+    }
+    if (!hasAngles) {
+        root->GetRotation(&matrix[0][0]);
+        return;
+    }
+    if (matrixMode == 1) {
+        root->GetRotation(&local[0][0]);
+    }
+    else if (matrixMode == 2) {
+        root->GetOrientation(&local[0][0]);
+    }
+    else {
+        for (int row = 0; row < 3; ++row) {
+            matrix[row][0] = rotation[row][0];
+            matrix[row][1] = rotation[row][1];
+            matrix[row][2] = rotation[row][2];
+        }
+        return;
+    }
+    for (int row = 0; row < 3; ++row) {
+        matrix[row][0] = local[2][0] * rotation[row][2] + local[1][0] * rotation[row][1] +
+            local[0][0] * rotation[row][0];
+        matrix[row][1] = local[2][1] * rotation[row][2] + local[1][1] * rotation[row][1] +
+            local[0][1] * rotation[row][0];
+        matrix[row][2] = local[2][2] * rotation[row][2] + local[1][2] * rotation[row][1] +
+            local[0][2] * rotation[row][0];
+    }
 }
 
 // Stack this, a, b. Body not recovered yet.
@@ -455,17 +1067,17 @@ void PyroKeyList::Read(PyroArchive& ar)
     int flag;
 
     ar.Read(&count, 4);
-    keys = new PyroKey20[count];
+    keys = new PyroColorKey[count];
     for (int i = 0; i < count; ++i) {
-        ar.Read(&keys[i].v[0], 4);
-        ar.Read(&keys[i].v[1], 4);
-        ar.Read(&keys[i].v[2], 4);
-        ar.Read(&keys[i].v[3], 4);
-        ar.Read(&keys[i].v[4], 4);
+        ar.Read(&keys[i].time, 4);
+        ar.Read(&keys[i].r, 4);
+        ar.Read(&keys[i].g, 4);
+        ar.Read(&keys[i].b, 4);
+        ar.Read(&keys[i].a, 4);
     }
-    ar.Read(&field08, 4);
+    ar.Read(&repeat, 4);
     ar.Read(&flag, 4);
-    loop = flag != 0;
+    random = flag != 0;
 }
 
 // EAX=ar, stack this and version. Keys gained their interpolation fields in
@@ -499,7 +1111,7 @@ void PyroCurve::Read(PyroArchive& ar, int version)
         }
     }
     ar.Read(&flag, 4);
-    loop = flag != 0;
+    smooth = flag != 0;
 }
 
 // ESI=this, EDI=ar.
@@ -582,6 +1194,38 @@ int PyroEmitter::Emitter04(int a, int b)
     return total;
 }
 
+// ESI=this. New particles go to the head of the list.
+// FUNCTION: VC1 0x00453760
+PyroParticle* PyroLayer::NewParticle()
+{
+    PyroParticle* const particle = static_cast<PyroParticle*>(PyroParticleAlloc());
+
+    if (!particles) {
+        particles = particle;
+        particle->next = 0;
+        particles->prev = 0;
+        return particles;
+    }
+    particle->prev = 0;
+    particle->next = particles;
+    particles->prev = particle;
+    particles = particle;
+    return particle;
+}
+
+// RET 8. PyroVary on the magnitude, sign kept.
+// FUNCTION: VC1 0x004537d0
+float PyroVarySigned(float value, float variation)
+{
+    if (variation == 0.0f) {
+        return value;
+    }
+    if (value < 0.0f) {
+        return -PyroVary(-value, variation);
+    }
+    return PyroVary(value, variation);
+}
+
 // FUNCTION: VC1 0x00453980
 PyroEmitter::~PyroEmitter()
 {
@@ -596,16 +1240,337 @@ PyroEmitter::~PyroEmitter()
     }
 }
 
-// EBX=this, five floats and a flag on the stack. Body not recovered yet.
-// STUB: VC1 0x00454f70
+// Stack this, now, dt; RET 0xc. Ages every particle: over-life curves, key
+// colour, gravity and child emitters. Expired particles stop their children,
+// spawn the end-of-life sub-emitters (field1ac == 1) and are freed once the
+// children are at least 0.1 s old and empty.
+// FUNCTION: VC1 0x00453bc0
+void PyroLayer::Update(float now, float dt)
+{
+    const float t = emitter->GetConstant() * now;
+    PyroParticle* particle = particles;
+
+    while (particle) {
+        PyroParticle* const next = particle->next;
+        const float age = t - particle->birth;
+        float life;
+
+        if (flag2) {
+            life = 0.0f;
+        }
+        else {
+            life = age / particle->lifetime;
+            if (life >= 1.0f) {
+                if (particle->alive) {
+                    for (int i = 0; i < particle->childCount; ++i) {
+                        PyroEmitter* const child = particle->children[i].emitter;
+                        if (child->field1ac == 0) {
+                            child->field1a9 = false;
+                        }
+                    }
+                    for (int i = 0; i < subEmitterCount; ++i) {
+                        if (subEmitters[i].field1ac == 1) {
+                            PyroEmitter* const child = new PyroEmitter(&subEmitters[i]);
+                            PyroEmitter* const owner = emitter;
+
+                            ++particle->childCount;
+                            particle->children = static_cast<PyroParticle::Child*>(
+                                realloc(particle->children, particle->childCount * sizeof(PyroParticle::Child)));
+                            particle->children[particle->childCount - 1].emitter = child;
+                            particle->children[particle->childCount - 1].time = now;
+                            child->parent = owner;
+                        }
+                    }
+                    particle->alive = false;
+                }
+                else {
+                    bool busy = false;
+
+                    for (int i = 0; i < particle->childCount; ++i) {
+                        PyroEmitter* const child = particle->children[i].emitter;
+                        if (child && (now - particle->children[i].time < 0.1f || child->HasParticles())) {
+                            busy = true;
+                            break;
+                        }
+                    }
+                    if (!busy) {
+                        FreeParticle(particle);
+                        --particleCount;
+                        particle = next;
+                        continue;
+                    }
+                }
+            }
+        }
+        {
+            const float curve31 = curves[31].Get(life);
+            const float curve27 = curves[27].Get(life);
+            const float curve29 = curves[29].Get(life);
+            const float curve30 = curves[30].Get(life);
+            const float curve28 = curves[28].Get(life);
+            const float curve33 = curves[33].Get(life);
+            const float curve32 = curves[32].Get(life);
+            const float curve35 = curves[35].Get(life);
+            const float curve36 = curves[36].Get(life);
+            const float curve37 = curves[37].Get(life);
+            float scaled;
+            float gravity;
+
+            if (!keyList.random || !particle->keyed) {
+                particle->keyed = true;
+                keyList.Sample(keyList.random ? static_cast<float>(PyroRandomUnit()) : age / particle->lifetime,
+                    &particle->keyColor[0], &particle->keyColor[1], &particle->keyColor[2],
+                    &particle->keyColor[3]);
+            }
+            particle->cur3c = particle->start6c * curve28;
+            particle->cur44 = particle->start70 * curve29;
+            particle->cur48 = particle->start74 * curve30;
+            particle->cur50 = particle->start78 * curve31;
+            particle->cur54 = particle->start84 * curve32;
+            particle->cur60 = particle->start64 * curve35;
+            particle->cur58 = particle->start88 * curve36;
+            particle->cur5c = particle->start8c * curve37;
+            scaled = particle->start7c * curve27;
+            particle->cur40 = scaled * particle->base4c;
+            gravity = particle->gravity * curve33;
+            if (!emitter->Is3D()) {
+                particle->velocity[1] = (t - particle->birth) * gravity + particle->velocity[1];
+            }
+            else {
+                particle->velocity[2] = particle->velocity[2] - (t - particle->birth) * gravity;
+            }
+            for (int i = 0; i < particle->childCount; ++i) {
+                PyroParticle::Child* const child = &particle->children[i];
+                if (child->emitter) {
+                    child->emitter->Move(now - child->time, dt, particle->position[0],
+                        particle->position[1], particle->position[2], true);
+                }
+            }
+        }
+        particle = next;
+    }
+}
+
+// Stack this, now, dt, emit; RET 0x10. Evaluates the layer curves (scaled by
+// the emitter values), spawns this frame's particles and ages them.
+// FUNCTION: VC1 0x00454140
+void PyroLayer::Emit(float now, float dt, bool emit)
+{
+    if (emitter->Is3D()) {
+        UpdateAngles();
+        UpdateMatrix();
+    }
+    if (emitter->field1a9 && (!flag1 || !active)) {
+        const float t = emitter->GetConstant() * now;
+        float life = curves[0].Get(t);
+        float rate = curves[1].Get(t);
+        float start64 = curves[2].Get(t);
+        float start90 = curves[3].Get(t);
+        float start70 = curves[4].Get(t);
+        float start74 = curves[5].Get(t);
+        float start6c = curves[6].Get(t);
+        float start7c = curves[7].Get(t);
+        float start78 = curves[9].Get(t);
+        float gravity = curves[8].Get(t);
+        float start88 = curves[13].Get(t);
+        float start8c = curves[14].Get(t);
+        float start84 = curves[10].Get(t);
+        const float minPitch = curves[11].Get(t);
+        const float maxPitch = curves[12].Get(t);
+        const float lifeVariation = curves[15].Get(t);
+        const float start7cVariation = curves[16].Get(t);
+        const float rateVariation = curves[17].Get(t);
+        const float start6cVariation = curves[18].Get(t);
+        const float start78Variation = curves[21].Get(t);
+        const float gravityVariation = curves[24].Get(t);
+        const float start70Variation = curves[25].Get(t);
+        const float start74Variation = curves[26].Get(t);
+        const float start90Variation = curves[19].Get(t);
+        const float start84Variation = curves[20].Get(t);
+        const float start88Variation = curves[13].Get(t);
+        const float start8cVariation = curves[14].Get(t);
+        float emitterValue10;
+        int count;
+
+        if (flag4 && start70 != 0.0f) {
+            if (PyroGetRandom()->Next() & 1) {
+                start70 = -start70;
+            }
+        }
+        life = emitter->values[0] * life;
+        start70 = emitter->values[3] * start70;
+        start74 = emitter->values[4] * start74;
+        start7c = emitter->values[6] * start7c;
+        start6c = emitter->values[5] * start6c;
+        start78 = emitter->values[7] * start78;
+        start64 = emitter->values[2] * start64;
+        rate = emitter->values[1] * rate;
+        gravity = emitter->values[13] * gravity;
+        start90 = emitter->values[11] * start90;
+        start84 = emitter->values[16] * start84;
+        start88 = emitter->values[17] * start88;
+        start8c = emitter->values[18] * start8c;
+        emitterValue10 = emitter->values[10];
+        if (!flag1) {
+            float add;
+
+            if (rateVariation != 0.0f) {
+                rate = PyroVary(rate, rateVariation);
+            }
+            add = rate * dt;
+            rate = add + time;
+            count = static_cast<int>(rate);
+            time = rate - count;
+        }
+        else {
+            count = burstCount;
+            active = true;
+        }
+        if (emit && (life != 0.0f || lifeVariation != 0.0f) && count > 0) {
+            do {
+                for (int i = 0;; ++i) {
+                    PyroParticle* particle;
+                    float x;
+                    float y;
+                    float z;
+                    float dx;
+                    float dy;
+                    float dz;
+                    float angle;
+                    int points;
+
+                    if (emitter->field19c == 0 || !emitter->field196) {
+                        points = 1;
+                    }
+                    else if (emitter->field194 && emitter->field195) {
+                        points = emitter->field198 * 2;
+                    }
+                    else {
+                        points = emitter->field198;
+                    }
+                    if (i >= points) {
+                        break;
+                    }
+                    particle = NewParticle();
+                    emitter->GetSpawn(&angle, &x, &y, &z, &dx, &dy, &dz, field04,
+                        static_cast<float>(field08), i, minPitch, maxPitch);
+                    if (emitter->emitCallback) {
+                        float spawn[7];
+
+                        spawn[0] = x;
+                        spawn[1] = y;
+                        spawn[2] = z;
+                        spawn[3] = dx;
+                        spawn[4] = dy;
+                        spawn[5] = dz;
+                        spawn[6] = angle;
+                        emitter->emitCallback(spawn, emitter->emitCallbackData);
+                        x = spawn[0];
+                        y = spawn[1];
+                        z = spawn[2];
+                        dx = spawn[3];
+                        dy = spawn[4];
+                        dz = spawn[5];
+                        angle = spawn[6];
+                    }
+                    ++particleCount;
+                    particle->position[0] = x;
+                    particle->alive = true;
+                    particle->position[1] = y;
+                    particle->keyed = false;
+                    particle->childCount = 0;
+                    particle->position[2] = z;
+                    particle->children = 0;
+                    particle->offset[0] = x - emitter->movePosition[0];
+                    particle->offset[1] = y - emitter->movePosition[1];
+                    particle->offset[2] = z - emitter->movePosition[2];
+                    particle->origin[0] = emitter->movePosition[0];
+                    particle->origin[1] = emitter->movePosition[1];
+                    particle->origin[2] = emitter->movePosition[2];
+                    particle->velocity[0] = dx;
+                    particle->velocity[1] = dy;
+                    particle->velocity[2] = dz;
+                    particle->spawnAngle = angle;
+                    particle->base4c = emitter->values[12];
+                    particle->phase = static_cast<float>(rand() & 0x7fff) * 0.1432f;
+                    emitter->GetColor(&particle->color[0], &particle->color[1], &particle->color[2],
+                        &particle->color[3]);
+                    particle->fieldbc = emitterValue10;
+                    particle->lifetime = lifeVariation == 0.0f ? life : PyroVary(life, lifeVariation);
+                    particle->birth = t;
+                    if (!flag4) {
+                        particle->start70 = start70Variation != 0.0f ? PyroVary(start70, start70Variation) : start70;
+                    }
+                    else {
+                        particle->start70 = start70Variation != 0.0f ? PyroVarySigned(start70, start70Variation) : start70;
+                    }
+                    particle->start74 = start74Variation == 0.0f ? start74 : PyroVary(start74, start74Variation);
+                    particle->start64 = start64;
+                    particle->start7c = start7cVariation == 0.0f ? start7c : PyroVary(start7c, start7cVariation);
+                    particle->start6c = start6cVariation == 0.0f ? start6c : PyroVary(start6c, start6cVariation);
+                    particle->start78 = start78Variation == 0.0f ? start78 : PyroVary(start78, start78Variation);
+                    particle->gravity = gravityVariation == 0.0f ? gravity : PyroVary(gravity, gravityVariation);
+                    particle->start84 = start84Variation == 0.0f ? start84 : PyroVary(start84, start84Variation);
+                    particle->start88 = start88Variation == 0.0f ? start88 : PyroVary(start88, start88Variation);
+                    particle->start8c = start8cVariation == 0.0f ? start8c : PyroVary(start8c, start8cVariation);
+                    particle->start90 = start90Variation == 0.0f ? start90 : PyroVary(start90, start90Variation);
+                    particle->graphic = graphics.Pick(particle->axis, &particle->angle, &particle->scale);
+                    particle->childCount = 0;
+                    particle->children = 0;
+                    for (int j = 0; j < subEmitterCount; ++j) {
+                        if (subEmitters[j].field1ac == 0) {
+                            PyroEmitter* const child = new PyroEmitter(&subEmitters[j]);
+                            PyroEmitter* const owner = emitter;
+
+                            ++particle->childCount;
+                            particle->children = static_cast<PyroParticle::Child*>(
+                                realloc(particle->children, particle->childCount * sizeof(PyroParticle::Child)));
+                            particle->children[particle->childCount - 1].emitter = child;
+                            particle->children[particle->childCount - 1].time = now;
+                            child->parent = owner;
+                        }
+                    }
+                }
+            } while (--count);
+        }
+    }
+    Update(now, dt);
+}
+
+// EBX=this, five floats and a flag on the stack; RET 0x18. Evaluates the
+// emitter curves into values[] and emits/ages every layer.
+// FUNCTION: VC1 0x00454f70
 void PyroEmitter::MoveTo(float time, float dt, float x, float y, float z, bool emit)
 {
-    (void)time;
-    (void)dt;
-    (void)x;
-    (void)y;
-    (void)z;
-    (void)emit;
+    float t;
+
+    movePosition[0] = x;
+    movePosition[1] = y;
+    movePosition[2] = z;
+    UpdateOrientation();
+    t = GetConstant() * time;
+    values[0] = curves[0].Get(t);
+    values[1] = curves[1].Get(t);
+    values[2] = curves[2].Get(t);
+    values[3] = curves[3].Get(t);
+    values[4] = curves[4].Get(t);
+    values[5] = curves[5].Get(t);
+    values[6] = curves[10].Get(t);
+    values[7] = curves[11].Get(t);
+    values[13] = curves[6].Get(t);
+    values[8] = curves[12].Get(t);
+    values[9] = curves[13].Get(t);
+    values[14] = curves[14].Get(t);
+    values[12] = curves[8].Get(t);
+    values[15] = curves[15].Get(t);
+    values[10] = curves[9].Get(t);
+    values[16] = curves[16].Get(t);
+    values[17] = curves[17].Get(t);
+    values[18] = curves[18].Get(t);
+    values[11] = curves[7].Get(t);
+    for (int i = 0; i < layerCount; ++i) {
+        layers[i].Emit(time, dt, emit);
+    }
 }
 
 // RET 0x18.
@@ -690,10 +1655,10 @@ void PyroLayer::Read(PyroArchive& ar, int version)
             subEmitters[i].Deserialize(ar, version);
         }
     }
-    ar.Read(&field1e8, 4);
-    ar.Read(&field238, 4);
-    ar.Read(&field23c, 4);
-    ar.Read(&field240, 4);
+    ar.Read(&matrixMode, 4);
+    ar.Read(&angles[0], 4);
+    ar.Read(&angles[1], 4);
+    ar.Read(&angles[2], 4);
     curves[11].Read(ar, version);  // 0xa4
     curves[12].Read(ar, version);  // 0xb0
     curves[13].Read(ar, version);  // 0xbc
@@ -706,7 +1671,7 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     graphics.Read(ar);
     ar.Read(&value, 4);
     field14 = value != 0;
-    ar.Read(&field24c, 4);
+    ar.Read(&burstCount, 4);
     curves[5].Read(ar, version);   // 0x5c
     curves[26].Read(ar, version);  // 0x158
     curves[30].Read(ar, version);  // 0x188

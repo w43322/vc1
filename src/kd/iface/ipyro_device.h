@@ -15,8 +15,8 @@ struct IPyroDevice
 {
     virtual int Pyro00(void* a, void* b) = 0;                         // vtable+0x00
     virtual int Pyro04(unsigned mode, unsigned value) = 0;            // vtable+0x04
-    virtual int Pyro08(void** out, void* b, void* c, void* d, void* e); // vtable+0x08
-    virtual int Pyro0c(void** out, void* b, void* c, void* d, void* e); // vtable+0x0c
+    virtual int Pyro08(void** out, int count, int stride, unsigned format, int flags); // vtable+0x08
+    virtual int Pyro0c(void** out, int count, int stride, unsigned format, int flags); // vtable+0x0c
     virtual int Pyro10(void* a, void* b, void* c, void* d) = 0;       // vtable+0x10
     virtual int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags) = 0; // vtable+0x14
     virtual int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height,

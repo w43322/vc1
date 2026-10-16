@@ -330,13 +330,13 @@ const char* KdDisplayBase::Script14()
 
 // MOV EAX, 1; RET 0x14.
 // FUNCTION: VC1 0x0041aca0
-int IPyroDevice::Pyro08(void** out, void* b, void* c, void* d, void* e)
+int IPyroDevice::Pyro08(void** out, int count, int stride, unsigned format, int flags)
 {
     (void)out;
-    (void)b;
-    (void)c;
-    (void)d;
-    (void)e;
+    (void)count;
+    (void)stride;
+    (void)format;
+    (void)flags;
     return 1;
 }
 
@@ -344,12 +344,12 @@ int IPyroDevice::Pyro08(void** out, void* b, void* c, void* d, void* e)
 // wraps it in an 8-byte object (vftable 0x004d6278, value at +4) into *out.
 // The wrapper class is not recovered yet.
 // STUB: VC1 0x0041acb0
-int IPyroDevice::Pyro0c(void** out, void* b, void* c, void* d, void* e)
+int IPyroDevice::Pyro0c(void** out, int count, int stride, unsigned format, int flags)
 {
     void* inner;
     int result;
 
-    result = Pyro08(&inner, b, c, d, e);
+    result = Pyro08(&inner, count, stride, format, flags);
     if (result) {
         return result;
     }
@@ -639,24 +639,24 @@ int KdDisplayDevice::Shutdown()
 // RET 0x14. malloc(0x14) buffer object (vftables 0x004d6268 then 0x004d6368)
 // with a b*c byte block; *out = its +4 face. Not recovered yet.
 // STUB: VC1 0x004640e0
-int KdDisplayDevice::Pyro0c(void** out, void* b, void* c, void* d, void* e)
+int KdDisplayDevice::Pyro0c(void** out, int count, int stride, unsigned format, int flags)
 {
-    (void)b;
-    (void)c;
-    (void)d;
-    (void)e;
+    (void)count;
+    (void)stride;
+    (void)format;
+    (void)flags;
     *out = 0;
     return 0;
 }
 
 // RET 0x14. Same buffer object as Pyro0c; *out = the object itself.
 // STUB: VC1 0x00464150
-int KdDisplayDevice::Pyro08(void** out, void* b, void* c, void* d, void* e)
+int KdDisplayDevice::Pyro08(void** out, int count, int stride, unsigned format, int flags)
 {
-    (void)b;
-    (void)c;
-    (void)d;
-    (void)e;
+    (void)count;
+    (void)stride;
+    (void)format;
+    (void)flags;
     *out = 0;
     return 0;
 }
