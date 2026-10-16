@@ -1234,19 +1234,148 @@ bool KdTransportMover::ReadTransportFromStream(const KdPtr<IInputStream>& stream
     return true;
 }
 
-// Script "FindPathToArea": a new route from a point into a cell rect.
-// STUB: VC1 0x0049eaf0
-KdPtr<IUnknown> KdTransportMover::FindPathToArea(const Vector2&, const Vector2&, const Rect&)
+// The IRoute face of this file's null object: the "no route" result.
+static __forceinline IUnknown* NullRoute()
 {
-    return KdPtr<IUnknown>();
+    IUnknown* route = 0;
+
+    if (g_kdTransportMoverNullObject.ptr) {
+        route = static_cast<IUnknown*>(
+            g_kdTransportMoverNullObject->QueryInterface(&g_iidRoute));
+        if (route) {
+            route->AddRef();
+        }
+    }
+    return route;
 }
 
-// Script "FindPathBetweenAreas".
-// STUB: VC1 0x0049edd0
-KdPtr<IUnknown> KdTransportMover::FindPathBetweenAreas(const Vector2&, const Rect&,
-    const Vector2&, const Rect&)
+// A new "Route" from the factory, counted IRoute face.
+static __forceinline IRoute* CreateRoute()
 {
-    return KdPtr<IUnknown>();
+    void* unknown;
+    IRoute* route = 0;
+
+    GetKdFactory()->QueryNamed(&unknown, &g_kdNameRoute);
+    if (unknown) {
+        route = static_cast<IRoute*>(static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidRoute));
+        if (route) {
+            route->AddRef();
+        }
+        static_cast<IUnknown*>(unknown)->Release();
+    }
+    return route;
+}
+
+// RET 0x10. Script "FindPathToArea": the shortest cell route from `from`
+// to a cell of area grown by one (corners excluded). Reaching the target
+// cell itself wins at once; no path gives the null route.
+// FUNCTION: VC1 0x0049eaf0
+KdPtr<IUnknown> KdTransportMover::FindPathToArea(const Vector2& from, const Vector2& target,
+    const Rect& area)
+{
+    KdPtr<IUnknown> result;
+
+    if (!gridMap.ptr || !router.ptr) {
+        result.ptr = NullRoute();
+        return result;
+    }
+    int best = 0x7fffffff;
+    bool found = false;
+    KdPtr<IRoute> route;
+    route.ptr = CreateRoute();
+    router->SetPassableMask(passableMask);
+    int x;
+    int y;
+
+    for (x = area.x - 1; x <= area.x + area.width; ++x) {
+        for (y = area.y - 1; y <= area.y + area.height; ++y) {
+            if (x == area.x - 1 && y == area.y - 1) {
+                continue;
+            }
+            if (x == area.x - 1 && y == area.y + area.height) {
+                continue;
+            }
+            if (x == area.x + area.width && y == area.y - 1) {
+                continue;
+            }
+            if (x == area.x + area.width && y == area.y + area.height) {
+                continue;
+            }
+            const Vector2 cell(static_cast<float>(x), static_cast<float>(y));
+            const int length = router->FindPath(from, cell, false);
+            if (target.x == cell.x && target.y == cell.y) {
+                if (length > 0) {
+                    route->AssignPoints(router.AsPtr());
+                    result.ptr = route.ptr;
+                    route.ptr->AddRef();
+                    return result;
+                }
+            }
+            else if (length > 0 && length < best) {
+                best = length;
+                route->AssignPoints(router.AsPtr());
+                found = true;
+            }
+        }
+    }
+    if (found) {
+        result.ptr = route.ptr;
+        if (result.ptr) {
+            result.ptr->AddRef();
+        }
+        return result;
+    }
+    result.ptr = NullRoute();
+    return result;
+}
+
+// RET 0x14. Script "FindPathBetweenAreas": FindPathToArea from every cell of
+// fromArea grown by one (corners excluded), the shortest route by length;
+// the route starting at `from` itself wins at once.
+// FUNCTION: VC1 0x0049edd0
+KdPtr<IUnknown> KdTransportMover::FindPathBetweenAreas(const Vector2& from, const Rect& fromArea,
+    const Vector2& to, const Rect& toArea)
+{
+    KdPtr<IUnknown> best;
+    best.ptr = NullRoute();
+    int bestLength = 0x7fffffff;
+    int x;
+    int y;
+
+    for (x = fromArea.x - 1; x <= fromArea.x + fromArea.width; ++x) {
+        for (y = fromArea.y - 1; y <= fromArea.y + fromArea.height; ++y) {
+            if (x == fromArea.x - 1 && y == fromArea.y - 1) {
+                continue;
+            }
+            if (x == fromArea.x - 1 && y == fromArea.y + fromArea.height) {
+                continue;
+            }
+            if (x == fromArea.x + fromArea.width && y == fromArea.y - 1) {
+                continue;
+            }
+            if (x == fromArea.x + fromArea.width && y == fromArea.y + fromArea.height) {
+                continue;
+            }
+            const Vector2 cell(static_cast<float>(x), static_cast<float>(y));
+            KdPtr<IUnknown> path = FindPathToArea(cell, to, toArea);
+            if (SameObject(path.ptr, g_kdTransportMoverNullObject.ptr)) {
+                continue;
+            }
+            const int length = static_cast<int>(static_cast<IRoute*>(path.ptr)->GetLength());
+            if (from.x == cell.x && from.y == cell.y) {
+                return path;
+            }
+            if (length < bestLength) {
+                bestLength = length;
+                path.ptr->AddRef();
+                if (best.ptr) {
+                    best.ptr->Release();
+                }
+                best.ptr = path.ptr;
+            }
+        }
+    }
+    return best;
 }
 
 // RET 8. Script "InitMoving": gives the transport the driving route of a

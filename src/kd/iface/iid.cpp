@@ -21,6 +21,7 @@
 #include "kd/display/effect.h"
 #include "kd/route/route.h"
 #include "kd/route/transport_mover.h"
+#include "kd/route/tsp_solver.h"
 #include "kd/render/group_renderer.h"
 #include "kd/road/road_cells_renderer.h"
 #include "kd/world/game_object.h"
@@ -251,6 +252,10 @@ const char* g_iidGridRenderer = kIidGridRenderer;
 static const char kIidRoute[] = "IRoute";
 // GLOBAL: VC1 0x004d0ae4
 const char* g_iidRoute = kIidRoute;
+// STRING: VC1 0x004cfdc8
+static const char kIidTSPSolver[] = "ITSPSolver";
+// GLOBAL: VC1 0x004d0ae8
+const char* g_iidTSPSolver = kIidTSPSolver;
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -565,6 +570,23 @@ void* KdCompoundObject::QueryInterface(const char** iid)
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x0049b410
+void* KdTSPSolver::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidTSPSolver) {
+        return static_cast<ITSPSolver*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
