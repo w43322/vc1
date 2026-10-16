@@ -53,7 +53,8 @@ int IRenderable::Render0c(void* graphics, void* unused)
     return Render(graphics);
 }
 
-// EAX=key, ECX=record. MemCompare of +4/+8 string fields; AL = cmp < 0.
+// EAX=key, ECX=record. AL = key < record: MemCompare (left=EDX) gets the key
+// text in EDX and the record text in ECX, length as tiebreak.
 // FUNCTION: VC1 0x00409970
 unsigned char RecordEq(void* key, void* record)
 {
@@ -65,17 +66,18 @@ unsigned char RecordEq(void* key, void* record)
 
     keyLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(key) + 8);
     recLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(record) + 8);
+    lenCmp = static_cast<int>(keyLen) - static_cast<int>(recLen);
+    lenCmp = (lenCmp > 0) - (lenCmp < 0);
     n = keyLen;
     if (recLen < n) {
         n = recLen;
     }
     cmp = MemCompare(
-        *reinterpret_cast<void**>(static_cast<unsigned char*>(record) + 4),
         *reinterpret_cast<void**>(static_cast<unsigned char*>(key) + 4),
+        *reinterpret_cast<void**>(static_cast<unsigned char*>(record) + 4),
         n);
     if (cmp == 0) {
-        lenCmp = static_cast<int>(keyLen) - static_cast<int>(recLen);
-        cmp = (lenCmp > 0) - (lenCmp < 0);
+        cmp = lenCmp;
     }
     return cmp < 0;
 }
