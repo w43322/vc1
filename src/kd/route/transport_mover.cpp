@@ -1402,18 +1402,134 @@ bool KdTransportMover::InitMoving(const KdPtr<IPositionable>& transport,
     return true;
 }
 
-// Script "CreateOptimalRouteFromPosition".
-// STUB: VC1 0x0049f160
-void KdTransportMover::CreateOptimalRouteFromPosition(const KdObjArray<Vector2>&,
-    const KdObjArray<Rect>&, int, const Vector2&)
+// RET 0x10. Script "CreateOptimalRouteFromPosition": splits the area indexes
+// into those FindPathToArea reaches from `from` and the rest, puts first in
+// front of the reachable ones and orders them by the TSPSolver tour over the
+// area centres (distances x10). Read back through
+// GetOptimalRouteIndexesReachable / Unreachable.
+// FUNCTION: VC1 0x0049f160
+void KdTransportMover::CreateOptimalRouteFromPosition(const KdObjArray<Vector2>& targets,
+    const KdObjArray<Rect>& areas, int first, const Vector2& from)
 {
+    const unsigned char count = static_cast<unsigned char>(areas.Count());
+    unsigned char reachableCount = 0;
+    unsigned char unreachableCount = 0;
+    unsigned char i;
+
+    if (reachable.items.capacity < count) {
+        GrowCountedBuffer(&reachable.items, count, 1);
+    }
+    reachable.items.size = count;
+    if (unreachable.items.capacity < count) {
+        GrowCountedBuffer(&unreachable.items, count, 1);
+    }
+    unreachable.items.size = count;
+    for (i = 0; i < count; ++i) {
+        bool none;
+        {
+            KdPtr<IUnknown> path = FindPathToArea(from, targets[i], areas[i]);
+            none = path.ptr == 0;
+        }
+        if (none) {
+            unreachable[unreachableCount++] = i;
+        }
+        else {
+            reachable[reachableCount++] = i;
+        }
+    }
+    const unsigned total = reachableCount;
+    if (reachable.items.capacity < total) {
+        GrowCountedBuffer(&reachable.items, static_cast<int>(total), 1);
+    }
+    reachable.items.size = total;
+    if (unreachable.items.capacity < unreachableCount) {
+        GrowCountedBuffer(&unreachable.items, unreachableCount, 1);
+    }
+    unreachable.items.size = unreachableCount;
+    if (reachableCount <= 1) {
+        return;
+    }
+    for (i = 1; i < reachableCount; ++i) {
+        if (static_cast<unsigned char>(first) == reachable[i]) {
+            reachable[i] = reachable[0];
+            reachable[0] = static_cast<unsigned char>(first);
+            break;
+        }
+    }
+    if (reachableCount <= 1) {
+        return;
+    }
+
+    KdObjArray<KdArray<int> > distances(total);
+    unsigned row;
+    unsigned column;
+    for (row = 0; row < total; ++row) {
+        KdArray<int>& cells = distances[row];
+        const unsigned bytes = total * sizeof(int);
+        if (cells.items.capacity < bytes) {
+            GrowCountedBuffer(&cells.items, static_cast<int>(bytes), 1);
+        }
+        cells.items.size = bytes;
+    }
+    for (row = 0; row < total; ++row) {
+        distances[row][row] = 0;
+        for (column = row + 1; column < total; ++column) {
+            const Rect& a = areas[reachable[row]];
+            const Rect& b = areas[reachable[column]];
+            const float ax = static_cast<float>(static_cast<float>(a.width + a.x * 2 - 1) * 0.5);
+            const float ay = static_cast<float>(static_cast<float>(a.height + a.y * 2 - 1) * 0.5);
+            const float bx = static_cast<float>(static_cast<float>(b.width + b.x * 2 - 1) * 0.5);
+            const float by = static_cast<float>(static_cast<float>(b.height + b.y * 2 - 1) * 0.5);
+            const float dx = ax - bx;
+            const float dy = ay - by;
+            const float square = dy * dy + dx * dx;
+            const float length = static_cast<float>(sqrt(static_cast<double>(square)));
+            int& cell = distances[row][column];
+            cell = static_cast<int>(length * 10.0);
+            distances[column][row] = cell;
+        }
+    }
+
+    KdPtr<ITSPSolver> solver;
+    {
+        void* unknown;
+        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTspSolver);
+        if (unknown) {
+            solver.ptr = static_cast<ITSPSolver*>(
+                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTSPSolver));
+            if (solver.ptr) {
+                solver.ptr->AddRef();
+            }
+            static_cast<IUnknown*>(unknown)->Release();
+        }
+    }
+    solver->Solve(distances, 0);
+    KdArray<unsigned char> order(reachable);
+    int index;
+    for (index = 0; index < static_cast<int>(total); ++index) {
+        reachable[index] = order[solver->GetResultID(index)];
+    }
 }
 
-// Script "CreateOptimalRouteFromArea".
-// STUB: VC1 0x0049f740
-void KdTransportMover::CreateOptimalRouteFromArea(const KdObjArray<Vector2>&,
-    const KdObjArray<Rect>&, int, const Vector2&, const Rect&)
+// RET 0x14. Script "CreateOptimalRouteFromArea": CreateOptimalRouteFromPosition
+// from the start of the first non-empty FindPathBetweenAreas route out of
+// fromArea, or from `from` when there is none.
+// FUNCTION: VC1 0x0049f740
+void KdTransportMover::CreateOptimalRouteFromArea(const KdObjArray<Vector2>& targets,
+    const KdObjArray<Rect>& areas, int first, const Vector2& from, const Rect& fromArea)
 {
+    Vector2 start = from;
+    unsigned i;
+
+    for (i = 0; i < areas.Count(); ++i) {
+        KdPtr<IUnknown> path = FindPathBetweenAreas(from, fromArea, targets[i], areas[i]);
+        IRoute* const route = static_cast<IRoute*>(path.ptr);
+        if (route && !route->IsEmpty()) {
+            start = route->GetSampleAt(0.0f).position;
+            break;
+        }
+    }
+    CreateOptimalRouteFromPosition(targets, areas, first, start);
 }
 
 // RET 8. IScriptObject vtable+0x0c: the static method table only.

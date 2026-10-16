@@ -5,6 +5,7 @@
 #include "kd/iface/icomponent_faces.h"
 #include "kd/iface/igrid_map.h"
 #include "kd/iface/iroute.h"
+#include "kd/iface/itsp_solver.h"
 #include "kd/iface/iscript_object.h"
 #include "kd/iface/ishutdownable.h"
 #include "kd/iface/iupdateable.h"
@@ -147,9 +148,9 @@ public:
         const Vector2& to, const Rect& toArea);
     bool InitMoving(const KdPtr<IPositionable>& transport, const KdPtr<IRoute>& route);
     void CreateOptimalRouteFromPosition(const KdObjArray<Vector2>& targets,
-        const KdObjArray<Rect>& areas, int count, const Vector2& from);
+        const KdObjArray<Rect>& areas, int first, const Vector2& from);
     void CreateOptimalRouteFromArea(const KdObjArray<Vector2>& targets,
-        const KdObjArray<Rect>& areas, int count, const Vector2& from, const Rect& fromArea);
+        const KdObjArray<Rect>& areas, int first, const Vector2& from, const Rect& fromArea);
 
     static int __stdcall FindTransport(KdTransportMover* self,
         const KdPtr<IPositionable>& transport);
