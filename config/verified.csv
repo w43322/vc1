@@ -7,7 +7,10 @@ address|type|name|symbol
 0x0042fea0|library|memchr|_memchr
 0x0043006d|library|srand|_srand
 0x004301ed|library|_errno|__errno
+0x00430213|library|_dosmaperr|__dosmaperr
+0x004302e9|library|rename|_rename
 0x0043031c|library|__iob_func|___iob_func
+0x004304d1|library|remove|_remove
 0x00430501|library|_fileno|__fileno
 0x0043063a|library|_get_osfhandle|__get_osfhandle
 0x004315fb|library|strtol|_strtol
@@ -17,6 +20,7 @@ address|type|name|symbol
 0x00436010|library|memcpy|_memcpy
 0x00437490|library|memset|_memset
 0x00437510|library|_allmul|__allmul
+0x00437f90|library|_aulldiv|__aulldiv
 0x00442e0e|library|Direct3DCreate8|_Direct3DCreate8@4
 0x0044467a|library|BASS_Free|_BASS_Free@0
 0x00444680|library|BASS_GetVersion|_BASS_GetVersion@0

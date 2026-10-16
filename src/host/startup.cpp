@@ -701,6 +701,21 @@ unsigned char* DirOpen()
     }
 }
 
+// Inferred name. EDI=oldPath, EAX=newPath. CRT rename on both paths after
+// the "data/..." translation; a null path stays null.
+// FUNCTION: VC1 0x004873c0
+int KdRename(const char* oldPath, const char* newPath)
+{
+    char newBuffer[260];
+    char oldBuffer[260];
+    char* const newName = newPath ? CopyExeDir(newPath, newBuffer) : 0;
+
+    if (!oldPath) {
+        return rename(0, newName);
+    }
+    return rename(CopyExeDir(oldPath, oldBuffer), newName);
+}
+
 // Seed KD object iterators from DAT_004ed4f8 and CRT path slots, then scan the exe directory.
 // FUNCTION: VC1 0x00487450
 void InitKdFilesystem()

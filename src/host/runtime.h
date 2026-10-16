@@ -318,6 +318,8 @@ int StatKdPath(const char* path, KdFileStat* out);
 void* DirRead(unsigned char* dir);
 // 0x0047cec0; original path in EAX
 char* CopyExeDir(const char* path, char* dest);
+// 0x004873c0; original oldPath in EDI, newPath in EAX
+int KdRename(const char* oldPath, const char* newPath);
 extern const char kKdDataDir[];   // "data/", startup.cpp
 extern const char kVirtualCity[]; // "Virtual City", win_main.cpp
 // 0x00486f50; original name in EDI

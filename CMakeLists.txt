@@ -41,6 +41,7 @@ add_executable(vc1_recompiled
   src/host/thread.cpp
   src/host/network.cpp
   src/host/sqstd_math.cpp
+  src/host/sqstd_system.cpp
   src/host/startup.cpp
   src/host/heap.cpp
   src/host/kd_log.cpp
