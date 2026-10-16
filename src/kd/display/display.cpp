@@ -96,7 +96,7 @@ IUnknown* g_graphics;
 // GLOBAL: VC1 0x004ed6f4
 IUnknown* g_graphicsHost;
 // GLOBAL: VC1 0x004e74b6
-unsigned char g_displaySkipDevice;
+bool g_displaySkipDevice;
 // GLOBAL: VC1 0x004e8744
 int g_displayWidth;
 // GLOBAL: VC1 0x004e8998
@@ -154,7 +154,7 @@ static void DisplayD3dLogHresult(int hr, const char* message, char flag);
 static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
-static int Display28Apply(unsigned char windowed);
+static int Display28Apply(bool windowed);
 static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
 static float MinFloat(float a, float b);
@@ -1719,7 +1719,7 @@ static unsigned char DisplayQueryReady()
 // BL=windowed (SetWindowed argument). Switches g_displaySkipDevice and resets
 // the device when the mode actually changes.
 // FUNCTION: VC1 0x00465e70
-static int Display28Apply(unsigned char windowed)
+static int Display28Apply(bool windowed)
 {
     int interval;
 
@@ -1845,7 +1845,7 @@ void* KdDisplayBase::GetMixer()
 
 // MOV AL, [0x004e74b6]; RET. IDisplay vtable+0x24.
 // FUNCTION: VC1 0x004662c0
-unsigned char KdDisplayBase::IsWindowed()
+bool KdDisplayBase::IsWindowed()
 {
     return g_displaySkipDevice;
 }
@@ -2077,9 +2077,10 @@ KdPtr<IRenderTarget> KdDisplayBase::CreateRenderTarget(unsigned width, unsigned 
     return result;
 }
 
-// RET 4. BL=arg into Display28Apply.
+// RET 4. BL=arg into Display28Apply. The script closure (0x00466830) reads
+// the argument with SqPlus Get(TypeWrapper<bool>), so scripts pass bools.
 // FUNCTION: VC1 0x00466680
-int KdDisplayBase::SetWindowed(unsigned char arg)
+int KdDisplayBase::SetWindowed(bool arg)
 {
     return Display28Apply(arg);
 }
@@ -2588,7 +2589,7 @@ void* KdDisplay::Display0c(void* a, void* b)
 
 // this = IDisplay. Leaving windowed mode needs enabled58 (window fits). RET 4.
 // FUNCTION: VC1 0x004b2100
-int KdDisplay::SetWindowed(unsigned char arg)
+int KdDisplay::SetWindowed(bool arg)
 {
     if (arg == 0 || enabled58 != 0) {
         return Display28Apply(arg);
@@ -2636,7 +2637,7 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
     matrix.m[1] *= scale;
     matrix.m[3] *= scale;
     matrix.m[4] *= scale;
-    if (scaleX < scaleY) {
+    if (scaleY < scaleX) {
         matrix.m[6] = (static_cast<float>(viewW) - static_cast<float>(g_displayWidth) * scale)
             * 0.5f;
         matrix.m[7] = 0.0f;

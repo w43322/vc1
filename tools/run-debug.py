@@ -16,6 +16,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import os
 import re
 import sys
+import threading
 import time
 
 k32 = ctypes.WinDLL("kernel32", use_last_error=True)
@@ -340,6 +341,58 @@ def arm_watch(hthread, addr):
     k32.Wow64SetThreadContext(hthread, ctypes.byref(ctx))
 
 
+def start_clicks(pid, specs):
+    """Real cursor clicks from a side thread (the game re-reads GetCursorPos on
+    its WM_TIMER, so posted mouse messages do not move its pointer)."""
+    user32 = ctypes.windll.user32
+    if not user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4)):
+        user32.SetProcessDPIAware()
+    clicks = []
+    for s in specs:
+        pos, at = s.split("@")
+        fx, fy = pos.split(",")
+        clicks.append((float(at), float(fx), float(fy)))
+    clicks.sort()
+    t0 = time.time()
+
+    def find_window():
+        found = []
+        proc = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+
+        def cb(hwnd, _):
+            owner = wt.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(owner))
+            if owner.value == pid and user32.IsWindowVisible(hwnd):
+                found.append(hwnd)
+            return True
+
+        user32.EnumWindows(proc(cb), 0)
+        return found[0] if found else None
+
+    def run():
+        for at, fx, fy in clicks:
+            delay = at - (time.time() - t0)
+            if delay > 0:
+                time.sleep(delay)
+            hwnd = find_window()
+            if not hwnd:
+                print("== click: no window")
+                continue
+            rect = wt.RECT()
+            user32.GetClientRect(hwnd, ctypes.byref(rect))
+            pt = wt.POINT(int(rect.right * fx), int(rect.bottom * fy))
+            user32.ClientToScreen(hwnd, ctypes.byref(pt))
+            user32.SetForegroundWindow(hwnd)
+            user32.SetCursorPos(pt.x, pt.y)
+            time.sleep(0.3)
+            user32.mouse_event(0x0002, 0, 0, 0, 0)
+            time.sleep(0.1)
+            user32.mouse_event(0x0004, 0, 0, 0, 0)
+            print("== click %.2f,%.2f at %.1fs (screen %d,%d)" % (fx, fy, time.time() - t0, pt.x, pt.y))
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
@@ -357,8 +410,13 @@ def main():
     ap.add_argument("--watch-ofs", type=lambda s: int(s, 0), default=0,
                     help="signed offset added to the --watch-ptr target")
     ap.add_argument("--watch-max", type=int, default=20, help="hits printed for --watch")
+    ap.add_argument("--bp-args", type=int, default=0,
+                    help="instead of a full dump, print N dwords at the first stack argument on every hit")
+    ap.add_argument("--click", action="append", default=[],
+                    help="FX,FY@T: left-click at T s, fractions of the game client area")
     ap.add_argument("args", nargs="*")
     a = ap.parse_args()
+    sys.stdout.reconfigure(errors="backslashreplace")
     mapfile = a.map or os.path.splitext(a.exe)[0] + ".map"
 
     si = STARTUPINFOW()
@@ -370,6 +428,8 @@ def main():
         print("CreateProcess failed", ctypes.get_last_error())
         return 1
 
+    if a.click:
+        start_clicks(pi.dwProcessId, a.click)
     syms = Symbols()
     threads = {pi.dwThreadId: pi.hThread}
     hproc = pi.hProcess
@@ -461,6 +521,13 @@ def main():
                             ret = int.from_bytes(read(hproc, ctx.Esp, 4), "little")
                             msg = "<empty fmt %08x %r from %s>" % (fmtp, read(hproc, fmtp, 16), syms.lookup(ret))
                         sys.stdout.write("  log: " + msg.rstrip("\n") + "\n")
+                    elif a.bp_args:
+                        # compact: first stack arg as a pointer, dump N dwords there
+                        argp = int.from_bytes(read(hproc, ctx.Esp + 4, 4) or b"\0\0\0\0", "little")
+                        raw = read(hproc, argp, 4 * a.bp_args) or b""
+                        words = [int.from_bytes(raw[i:i + 4], "little") for i in range(0, len(raw), 4)]
+                        print("== bp %08x hit %d ecx=%08x [arg0=%08x] %s" % (
+                            addr, bp_hits[addr], ctx.Ecx, argp, " ".join("%08x" % w for w in words)))
                     elif bp_hits[addr] <= a.bp_max:
                         dump(hproc, hthread, syms, "breakpoint %08x hit %d" % (addr, bp_hits[addr]))
                     if a.watch_ptr and addr != log_addr:

@@ -164,8 +164,8 @@ public:
     int GetHeight();
     void* Display1c();
     unsigned char SetSize(unsigned width, unsigned height);
-    unsigned char IsWindowed();
-    int SetWindowed(unsigned char arg);
+    bool IsWindowed();
+    int SetWindowed(bool arg);
     void* GetMixer();
     void Display30(int unused);
     void** CreateTexture(void** out);
@@ -241,7 +241,7 @@ public:
     void* Display0c(void* a, void* b);      // IRenderTarget vtable+0x0c
     void* Display10();                       // IRenderTarget vtable+0x10
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20
-    int SetWindowed(unsigned char arg);     // IDisplay vtable+0x28
+    int SetWindowed(bool arg);              // IDisplay vtable+0x28
     int Shutdown();                         // IShutdownable vtable+0x0c
     int FitWindow();                        // IScriptObject vtable+0x18
 };
