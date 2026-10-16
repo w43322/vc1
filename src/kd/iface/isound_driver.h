@@ -8,7 +8,8 @@ namespace vc1 {
 // SIZE 0x04
 struct ISoundDriver : IUnknown
 {
-    virtual int SetEnabled() = 0;          // vtable+0x0c
+    // RunApp passes IDisplay vtable+0x2c; KdSoundDriver ignores it.
+    virtual bool SetEnabled(void* mixer) = 0; // vtable+0x0c
     virtual void* Sound10(void* arg) = 0;  // vtable+0x10
     virtual void* Sound14(void* arg) = 0;  // vtable+0x14
     // Script "Start" / "Stop" / "Pause" / "GetVolume" / "SetVolume"

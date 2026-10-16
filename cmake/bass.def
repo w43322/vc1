@@ -1,0 +1,40 @@
+; Exports of the BASS 2.4 audio DLL the original links against (BASS.dll
+; beside the game). Only used to build the import library: cmake/bass.cmake
+; links cmake/bass_stub.c against this so the stdcall symbols import by their
+; undecorated names.
+LIBRARY BASS
+EXPORTS
+  BASS_Free
+  BASS_GetVersion
+  BASS_Init
+  BASS_ErrorGetCode
+  BASS_GetDeviceInfo
+  BASS_GetDevice
+  BASS_Start
+  BASS_Stop
+  BASS_Pause
+  BASS_GetVolume
+  BASS_SetVolume
+  BASS_SampleFree
+  BASS_SampleLoad
+  BASS_SampleGetInfo
+  BASS_SampleGetChannel
+  BASS_ChannelPlay
+  BASS_SampleGetChannels
+  BASS_ChannelStop
+  BASS_ChannelPause
+  BASS_ChannelGetAttribute
+  BASS_ChannelSlideAttribute
+  BASS_ChannelSetAttribute
+  BASS_SampleSetInfo
+  BASS_ChannelGetInfo
+  BASS_ChannelFlags
+  BASS_ChannelIsActive
+  BASS_ChannelIsSliding
+  BASS_StreamFree
+  BASS_StreamCreateFileUser
+  BASS_ChannelSeconds2Bytes
+  BASS_ChannelSetPosition
+  BASS_ChannelGetPosition
+  BASS_ChannelBytes2Seconds
+  BASS_ChannelGetLength

@@ -125,6 +125,11 @@ static const char kIidSoundDriver[] = "ISoundDriver";
 // GLOBAL: VC1 0x004d0618
 const char* g_iidSoundDriver = kIidSoundDriver;
 
+// STRING: VC1 0x004d4c84
+static const char kIidSound[] = "ISound";
+// GLOBAL: VC1 0x004d061c
+const char* g_iidSound = kIidSound;
+
 // STRING: VC1 0x004d4d18
 static const char kIidScriptObject[] = "IScriptObject";
 // GLOBAL: VC1 0x004d05f4

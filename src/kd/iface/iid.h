@@ -24,6 +24,7 @@ extern const char* g_iidResourceManager;
 extern const char* g_iidCamera;
 extern const char* g_iidTileManager;
 extern const char* g_iidSoundDriver;
+extern const char* g_iidSound;
 extern const char* g_iidScriptObject;
 extern const char* g_iidOutputStream;
 extern const char* g_iidReadable;

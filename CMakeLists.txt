@@ -31,6 +31,7 @@ include(cmake/libtga.cmake)
 include(cmake/jpgd.cmake)
 include(cmake/libpng.cmake)
 include(cmake/sqplus.cmake)
+include(cmake/bass.cmake)
 
 add_executable(vc1_recompiled
   src/host/win_main.cpp
@@ -66,6 +67,7 @@ add_executable(vc1_recompiled
   src/kd/system/system.cpp
   src/kd/component_group.cpp
   src/kd/sound/sound_driver.cpp
+  src/kd/sound/music.cpp
   src/kd/scene/compound_object.cpp
   src/kd/console/console.cpp
   src/kd/font/font.cpp
@@ -129,7 +131,12 @@ target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/in
   ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
-target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi)
+target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi bass_import)
+if(EXISTS "${VC1_GAME_BASS_DLL}")
+  add_custom_command(TARGET vc1_recompiled POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_GAME_BASS_DLL}"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/BASS.dll")
+endif()
 target_link_options(vc1_recompiled PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")

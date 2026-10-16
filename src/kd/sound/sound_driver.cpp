@@ -1,4 +1,6 @@
 #include "kd/sound/sound_driver.h"
+#include "kd/sound/bass_api.h"
+#include "kd/sound/music.h"
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
@@ -24,85 +26,6 @@ const char* KdSoundDriver::Script14()
     return kSoundDriver;
 }
 
-// STUB: VC1 0x0044467a
-static __declspec(noinline) int BassFree()
-{
-    return 0;
-}
-
-// STUB: VC1 0x00444680
-static __declspec(noinline) unsigned BassGetVersion()
-{
-    return 0;
-}
-
-// STUB: VC1 0x00444686
-static __declspec(noinline) int BassInit(int device, unsigned freq, unsigned flags, void* win, void* clsid)
-{
-    (void)device;
-    (void)freq;
-    (void)flags;
-    (void)win;
-    (void)clsid;
-    return 0;
-}
-
-// STUB: VC1 0x0044468c
-static __declspec(noinline) int BassErrorGetCode()
-{
-    return 0;
-}
-
-// STUB: VC1 0x00444692
-static __declspec(noinline) int BassGetDeviceInfo(unsigned device, void* info)
-{
-    (void)device;
-    (void)info;
-    return 0;
-}
-
-// STUB: VC1 0x00444698
-static __declspec(noinline) int BassGetDevice()
-{
-    return 0;
-}
-
-// STUB: VC1 0x0044469e
-static __declspec(noinline) int BassStart()
-{
-    return 0;
-}
-
-// STUB: VC1 0x004446a4
-static __declspec(noinline) int BassStop()
-{
-    return 0;
-}
-
-// STUB: VC1 0x004446aa
-static __declspec(noinline) int BassPause()
-{
-    return 0;
-}
-
-// STUB: VC1 0x004446b0
-static __declspec(noinline) float BassGetVolume()
-{
-    return 0.0f;
-}
-
-// STUB: VC1 0x004446b6
-static __declspec(noinline) int BassSetVolume(float volume)
-{
-    (void)volume;
-    return 0;
-}
-
-// STUB: VC1 0x0045e9b0
-static void Sound14Body()
-{
-}
-
 // STUB: VC1 0x0045f960
 static void Sound10Body()
 {
@@ -116,40 +39,40 @@ KdSoundDriver::KdSoundDriver()
 // FUNCTION: VC1 0x004680e0
 bool KdSoundDriver::SetVolume(int volume)
 {
-    return BassSetVolume(static_cast<float>(volume)) != 0;
+    return BASS_SetVolume(static_cast<float>(volume)) != 0;
 }
 
 // ISoundDriver vtable+0x24: BASS_GetVolume, then JMP _ftol.
 // FUNCTION: VC1 0x00468100
 int KdSoundDriver::GetVolume()
 {
-    return static_cast<int>(BassGetVolume());
+    return static_cast<int>(BASS_GetVolume());
 }
 
 // CALL IAT; NEG/SBB/NEG EAX.
 // FUNCTION: VC1 0x00468110
 bool KdSoundDriver::Pause()
 {
-    return BassPause() != 0;
+    return BASS_Pause() != 0;
 }
 
 // FUNCTION: VC1 0x00468120
 bool KdSoundDriver::Stop()
 {
-    return BassStop() != 0;
+    return BASS_Stop() != 0;
 }
 
 // FUNCTION: VC1 0x00468130
 bool KdSoundDriver::Start()
 {
-    return BassStart() != 0;
+    return BASS_Start() != 0;
 }
 
 // IShutdownable vtable+0x0c: JMP BASS_Free.
 // FUNCTION: VC1 0x00468140
 int KdSoundDriver::Shutdown()
 {
-    return BassFree();
+    return BASS_Free();
 }
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
@@ -212,10 +135,11 @@ unsigned KdSoundDriver::AddRef()
     return n;
 }
 
-// STUB: VC1 0x00468220
+// RET 4. ResourceManager GetMusic: a new KdMusic's IAbstract face to *arg.
+// FUNCTION: VC1 0x00468220
 void* KdSoundDriver::Sound14(void* arg)
 {
-    Sound14Body();
+    CreateKdMusic(static_cast<void**>(arg));
     return arg;
 }
 
@@ -270,40 +194,39 @@ static const char kBassInit[] = "BASS_Init: %d";
 // STRING: VC1 0x004d5b3c
 static const char kBassDevice[] = "Device: %s\n";
 
-// STUB: VC1 0x00468360
-int KdSoundDriver::SetEnabled()
+// RET 4; the argument is unused. Logs the version bytes high to low,
+// BASS_Init(-1, 44100, 0, 0, 0), then the default device name.
+// FUNCTION: VC1 0x00468360
+bool KdSoundDriver::SetEnabled(void* mixer)
 {
-    unsigned ver;
-    int device;
-    char* name;
+    BassDword ver;
+    BassDeviceInfo info;
+    const signed char* const bytes = reinterpret_cast<const signed char*>(&ver);
 
-    ver = BassGetVersion();
-    HostLog(&g_kdNameSoundDriver, kBassVersion,
-        static_cast<int>(static_cast<signed char>(ver >> 24)),
-        static_cast<int>(static_cast<signed char>(ver >> 16)),
-        static_cast<int>(static_cast<signed char>(ver >> 8)),
-        static_cast<int>(static_cast<signed char>(ver)));
-    if (!BassInit(-1, 0xac44, 0, 0, 0)) {
-        HostLogError(&g_kdNameSoundDriver, kBassInit, BassErrorGetCode());
-        return 0;
+    (void)mixer;
+    ver = BASS_GetVersion();
+    HostLog(&g_kdNameSoundDriver, kBassVersion, bytes[3], bytes[2], bytes[1], bytes[0]);
+    if (!BASS_Init(-1, 0xac44, 0, 0, 0)) {
+        HostLogError(&g_kdNameSoundDriver, kBassInit, BASS_ErrorGetCode());
+        return false;
     }
-    device = BassGetDevice();
-    BassGetDeviceInfo(static_cast<unsigned>(device), &name);
-    HostLog(&g_kdNameSoundDriver, kBassDevice, name);
-    return 1;
+    BASS_GetDeviceInfo(BASS_GetDevice(), &info);
+    HostLog(&g_kdNameSoundDriver, kBassDevice, info.name);
+    return true;
 }
 
 
 // STRING: VC1 0x004d5ae8
 static const char kScriptStart[] = "Start";
-// STRING: VC1 0x004d5af0
-static const char kScriptStop[] = "Stop";
-// STRING: VC1 0x004d5af8
-static const char kScriptPause[] = "Pause";
+// Stop, Pause and SetVolume are also KdMusic / KdSound script names.
+// GLOBAL: VC1 0x004d5af0
+extern const char kScriptStop[] = "Stop";
+// GLOBAL: VC1 0x004d5af8
+extern const char kScriptPause[] = "Pause";
 // STRING: VC1 0x004d5b00
 static const char kScriptGetVolume[] = "GetVolume";
-// STRING: VC1 0x004d5b0c
-static const char kScriptSetVolume[] = "SetVolume";
+// GLOBAL: VC1 0x004d5b0c
+extern const char kScriptSetVolume[] = "SetVolume";
 
 // RET 8. IScriptObject vtable+0x0c. Method table 0x004ee4f8 (guard bit
 // 0x004ee508, atexit 0x004cabb0).
@@ -324,7 +247,7 @@ unsigned char KdSoundDriver::Script0c(const char* name, SquirrelObject* out)
 
 KdSoundDriver::~KdSoundDriver()
 {
-    BassFree();
+    BASS_Free();
     g_kdSoundDriver = 0;
 }
 

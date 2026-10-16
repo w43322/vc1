@@ -27,7 +27,7 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    int SetEnabled();                       // vtable+0x0c
+    bool SetEnabled(void* mixer);           // vtable+0x0c
     void* Sound10(void* arg);               // vtable+0x10
     void* Sound14(void* arg);               // vtable+0x14
     bool Start();                           // vtable+0x18

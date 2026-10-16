@@ -101,9 +101,7 @@ int RunApp()
         sound = static_cast<ISoundDriver*>(
             AcquireNamed(&g_kdNameSoundDriver, &g_iidSoundDriver));
         {
-            void* const mix = display->GetMixer();
-            (void)mix;
-            if (sound && !sound->SetEnabled()) {
+            if (!sound->SetEnabled(display->GetMixer())) {
                 // STRING: VC1 0x004d0cc4
                 config.SetValue("SoundEnabled", false);
             }
@@ -146,8 +144,9 @@ int RunApp()
     // STRING: VC1 0x004d0d14
     SquirrelVM::RunScript(SquirrelVM::GetRootTable().GetValue("destroyApp"), 0);
 
+    system->Shutdown();
+    system->Release();
     if (sound) {
-        sound->SetEnabled();
         sound->Release();
     }
 
@@ -170,9 +169,6 @@ int RunApp()
     {
         IUnknown* const liveDisplay = AcquireNamed(&g_kdNameDisplay, &g_iidDisplay);
         KdAddRef(liveDisplay);
-        if (system) {
-            system->Release();
-        }
         display->Release();
         KdRelease(liveDisplay);
     }
