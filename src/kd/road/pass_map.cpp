@@ -86,13 +86,13 @@ const char* KdPassMap::GetTypeName()
 // Inferred name. EAX=&stream, cdecl value. Folded with the IOutputStream
 // twin: both are the slot+0x0c call with 2 bytes.
 // FUNCTION: VC1 0x00405c00 FOLDED
-static bool ReadShort(const KdPtr<IInputStream>& stream, short* value)
+bool ReadShort(const KdPtr<IInputStream>& stream, short* value)
 {
     return stream.ptr->Read(value, 2) == 2;
 }
 
 // FUNCTION: VC1 0x00405c00 FOLDED
-static bool WriteShort(const KdPtr<IOutputStream>& stream, const short* value)
+bool WriteShort(const KdPtr<IOutputStream>& stream, const short* value)
 {
     return stream.ptr->Write(value, 2) == 2;
 }

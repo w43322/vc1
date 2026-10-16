@@ -70,6 +70,8 @@ KdRef<IUnknown> g_kdTransportMoverNullObject;
 
 float MinFloat(float a, float b); // display.cpp
 extern const char kScriptOnCellChange[]; // pass_map.cpp
+bool ReadShort(const KdPtr<IInputStream>& stream, short* value);         // pass_map.cpp
+bool WriteShort(const KdPtr<IOutputStream>& stream, const short* value); // pass_map.cpp
 
 // STRING: VC1 0x004d2330
 static const char kScriptOnMovingFinish[] = "OnMovingFinish";
@@ -89,6 +91,20 @@ static __declspec(noinline) float FloatAbs(float value)
         value = -value;
     }
     return value;
+}
+
+// Inferred name. EAX=&stream, cdecl value. Folded with the IOutputStream
+// twin: both are the slot+0x0c call with 1 byte.
+// FUNCTION: VC1 0x00406860 FOLDED
+static __declspec(noinline) bool ReadBool(const KdPtr<IInputStream>& stream, bool* value)
+{
+    return stream.ptr->Read(value, 1) == 1;
+}
+
+// FUNCTION: VC1 0x00406860 FOLDED
+static __declspec(noinline) bool WriteBool(const KdPtr<IOutputStream>& stream, const bool* value)
+{
+    return stream.ptr->Write(value, 1) == 1;
 }
 
 // ECX=this, EAX=other: 1 when x or y differ.
@@ -420,11 +436,47 @@ int __stdcall KdTransportMover::FindTransport(KdTransportMover* self,
 }
 
 // RET 8. Script "WriteTransportToStream".
-// STUB: VC1 0x0049be90
-bool KdTransportMover::WriteTransportToStream(const KdPtr<IOutputStream>&,
-    const KdPtr<IPositionable>&)
+// FUNCTION: VC1 0x0049be90
+bool KdTransportMover::WriteTransportToStream(const KdPtr<IOutputStream>& stream,
+    const KdPtr<IPositionable>& transport)
 {
-    return false;
+    const int index = FindTransport(this, transport);
+    if (index < 0) {
+        return false;
+    }
+    KdTransportRecord& record = records[index];
+    {
+        KdPtr<IWriteable> writeable;
+        if (record.route.ptr) {
+            writeable.ptr = static_cast<IWriteable*>(record.route->QueryInterface(&g_iidWriteable));
+            if (writeable.ptr) {
+                writeable.ptr->AddRef();
+            }
+        }
+        bool hasRoute = writeable.ptr != 0;
+        if (stream.ptr->Write(&hasRoute, 1) != 1) {
+            return false;
+        }
+        if (writeable.ptr && !writeable->WriteTo(stream)) {
+            return false;
+        }
+    }
+    if (stream.ptr->Write(&record.distance, 4) != 4) {
+        return false;
+    }
+    if (stream.ptr->Write(&record.cell.x, 2) != 2) {
+        return false;
+    }
+    if (!WriteShort(stream, reinterpret_cast<const short*>(&record.cell.y))) {
+        return false;
+    }
+    if (!WriteBool(stream, &record.atRoadside)) {
+        return false;
+    }
+    if (!WriteBool(stream, &record.moving)) {
+        return false;
+    }
+    return true;
 }
 
 // RET 4. Script "GetRouteLength": the length of the transport's route.
@@ -676,10 +728,77 @@ bool KdTransportMover::CanStartMoving(const KdPtr<IPositionable>& transport)
     return true;
 }
 
-// RET 4. IRenderable vtable+0x10: the routes while visible.
-// STUB: VC1 0x0049c8c0
-int KdTransportMover::Render(void*)
+static __forceinline Vector2 ToScreen(const Matrix3& m, float x, float y)
 {
+    return Vector2(x * m._11 + y * m._21 + m._31, x * m._12 + y * m._22 + m._32);
+}
+
+// RET 4. IRenderable vtable+0x10, a debug overlay while visible: per
+// transport a green dot at its position, the lookAhead x vehicleWidth box
+// IsBlocked checks, and its route in magenta.
+// FUNCTION: VC1 0x0049c8c0
+int KdTransportMover::Render(void* graphics)
+{
+    if (visible) {
+        const KdPtr<IGraphics>& target = *static_cast<const KdPtr<IGraphics>*>(graphics);
+        const Matrix3& m = static_cast<ICamera*>(*target.ptr->GetCamera())->GetWorldToScreen();
+        KdTransportRecord* record;
+
+        for (record = records.Begin(); record != records.End(); ++record) {
+            target.ptr->SetColor(0xff90ee90);
+            const Matrix3& position = record->transport->GetPosition();
+            const float px = position._31;
+            const float py = position._32;
+            const Vector2 dot = ToScreen(m, px, py);
+            target.ptr->DrawEllipse(static_cast<float>(dot.x - 3.0),
+                static_cast<float>(dot.y - 3.0), 6.0f, 6.0f);
+
+            const Matrix3& axisX = record->transport->GetPosition();
+            const float xx = axisX._11;
+            const float xy = axisX._12;
+            const Matrix3& axisY = record->transport->GetPosition();
+            const float yx = axisY._21;
+            const float yy = axisY._22;
+            const float negWidth = -vehicleWidth;
+            const float rx = static_cast<float>(negWidth * yx * 0.5);
+            const float ry = static_cast<float>(negWidth * yy * 0.5);
+            const float rearRightX = rx + px;
+            const float rearRightY = ry + py;
+            const float range = lookAhead;
+            const float frontRightX = range * xx + rearRightX;
+            const float frontRightY = range * xy + rearRightY;
+            const float width = vehicleWidth;
+            const float lx = static_cast<float>(width * yx * 0.5);
+            const float ly = static_cast<float>(width * yy * 0.5);
+            const float rearLeftX = lx + px;
+            const float rearLeftY = ly + py;
+            const float frontLeftX = range * xx + rearLeftX;
+            const float frontLeftY = range * xy + rearLeftY;
+
+            const Vector2 a = ToScreen(m, rearRightX, rearRightY);
+            const Vector2 b = ToScreen(m, rearLeftX, rearLeftY);
+            const Vector2 c = ToScreen(m, frontLeftX, frontLeftY);
+            const Vector2 d = ToScreen(m, frontRightX, frontRightY);
+            target.ptr->DrawLine(a.x, a.y, b.x, b.y);
+            target.ptr->DrawLine(b.x, b.y, c.x, c.y);
+            target.ptr->DrawLine(c.x, c.y, d.x, d.y);
+            target.ptr->DrawLine(d.x, d.y, a.x, a.y);
+
+            if (record->route) {
+                target.ptr->SetColor(0xffff00ff);
+                KdObjArray<KdRoutePoint>* points = record->route->GetPoints();
+                unsigned i;
+
+                for (i = 1; i < points->Count(); ++i) {
+                    const Vector2 from = ToScreen(m, (*points)[i - 1].position.x,
+                        (*points)[i - 1].position.y);
+                    const Vector2 to = ToScreen(m, (*points)[i].position.x,
+                        (*points)[i].position.y);
+                    target.ptr->DrawLine(from.x, from.y, to.x, to.y);
+                }
+            }
+        }
+    }
     return 0;
 }
 
@@ -1073,11 +1192,46 @@ KdPtr<IRoute> KdTransportMover::BuildDrivingRoute(KdPtr<IRoute> route, bool from
 }
 
 // RET 8. Script "ReadTransportFromStream".
-// STUB: VC1 0x0049e9d0
-bool KdTransportMover::ReadTransportFromStream(const KdPtr<IInputStream>&,
-    const KdPtr<IPositionable>&)
+// FUNCTION: VC1 0x0049e9d0
+bool KdTransportMover::ReadTransportFromStream(const KdPtr<IInputStream>& stream,
+    const KdPtr<IPositionable>& transport)
 {
-    return false;
+    const int index = FindTransport(this, transport);
+    if (index < 0) {
+        return false;
+    }
+    KdTransportRecord& record = records[index];
+    bool hasRoute;
+    if (stream.ptr->Read(&hasRoute, 1) != 1) {
+        return false;
+    }
+    if (hasRoute) {
+        {
+            KdRef<IUnknown> unknown;
+            GetKdFactory()->QueryNamed(reinterpret_cast<void**>(&unknown.ptr), &g_kdNameRoute);
+            AssignRouteFace(record.route, unknown);
+        }
+        KdPtr<IReadable> readable(record.route.AsPtr());
+        if (!readable->ReadFrom(stream)) {
+            return false;
+        }
+    }
+    if (stream.ptr->Read(&record.distance, 4) != 4) {
+        return false;
+    }
+    if (stream.ptr->Read(&record.cell.x, 2) != 2) {
+        return false;
+    }
+    if (!ReadShort(stream, reinterpret_cast<short*>(&record.cell.y))) {
+        return false;
+    }
+    if (!ReadBool(stream, &record.atRoadside)) {
+        return false;
+    }
+    if (!ReadBool(stream, &record.moving)) {
+        return false;
+    }
+    return true;
 }
 
 // Script "FindPathToArea": a new route from a point into a cell rect.
