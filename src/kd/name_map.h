@@ -80,6 +80,24 @@ struct KdObjArray
             }
         }
     }
+    // Grow to count elements, exact or with the KdFactory slack.
+    __declspec(noinline) void Reserve(unsigned count, unsigned char exact)
+    {
+        unsigned old = items.capacity / sizeof(T);
+        T* slot;
+        T* end;
+
+        GrowCountedBuffer(&items, static_cast<int>(count * sizeof(T)), exact);
+        if (items.capacity / sizeof(T) > old) {
+            slot = Begin() + old;
+            end = Begin() + items.capacity / sizeof(T);
+            for (; slot < end; ++slot) {
+                if (slot) {
+                    ::new (static_cast<void*>(slot)) T();
+                }
+            }
+        }
+    }
     static __declspec(noinline) void DestroyRange(T* first, T* last)
     {
         for (; first < last; ++first) {

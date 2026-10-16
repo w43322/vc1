@@ -17,6 +17,7 @@ struct Vector2
     Vector2() : x(0.0f), y(0.0f) {}
     explicit Vector2(SQFloat s) : x(s), y(s) {}
     Vector2(SQFloat ax, SQFloat ay) : x(ax), y(ay) {}
+    void Assign(const Vector2& source) { *this = source; }
 
     VC1_SIZE_CLASS_NEW(Vector2)
 

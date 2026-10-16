@@ -26,6 +26,7 @@ extern const char* g_iidTileManager;
 extern const char* g_iidTileObject;
 extern const char* g_iidTileLayer;
 extern const char* g_iidGridMap;
+extern const char* g_iidRoadRenderer;
 extern const char* g_iidGridRenderer;
 extern const char* g_iidGridRouter;
 extern const char* g_iidSoundDriver;
