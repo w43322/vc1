@@ -12,6 +12,7 @@
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/scene/camera.h"
+#include "kd/render/classificated_renderer.h"
 #include "kd/display/effect.h"
 
 namespace vc1 {
@@ -662,6 +663,21 @@ void* KdGridRouter::QueryInterface(const char** iid)
 void* KdGameLevel::QueryInterface(const char** iid)
 {
     void* face = KdScene::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. KdScriptedObject's faces first; the IAbstract fallback after it is
+// unreachable the same way as in KdGameLevel's.
+// FUNCTION: VC1 0x004b2340
+void* KdClassificatedRenderer::QueryInterface(const char** iid)
+{
+    void* face = KdScriptedObject::QueryInterface(iid);
     if (face) {
         return face;
     }
