@@ -12,7 +12,7 @@ struct Vector2;
 // SIZE 0x08
 struct KdLayerEntry
 {
-    int layer;      // 0x00  ITileObject::GetLayer value
+    int layer;      // 0x00  ITileObject::GetRenderOrder value
     int groupIndex; // 0x04  index into KdScene::groups
 };
 

@@ -258,7 +258,7 @@ void KdGameLevel::RemoveObject(void** object)
             KdLayerEntry* it;
 
             tile->AddRef();
-            layer = tile->GetLayer();
+            layer = tile->GetRenderOrder();
             it = layers.LowerBound(layer);
             found = it < layers.End() && !(layer < it->layer) ? it : layers.End();
         }
@@ -294,7 +294,7 @@ void KdGameLevel::AddObject(void** object)
             KdLayerEntry* it;
 
             tile->AddRef();
-            layer = tile->GetLayer();
+            layer = tile->GetRenderOrder();
             it = layers.LowerBound(layer);
             found = it < layers.End() && !(layer < it->layer) ? it : layers.End();
         }

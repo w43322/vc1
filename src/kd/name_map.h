@@ -75,7 +75,7 @@ struct KdObjArray
             end = Begin() + items.capacity / sizeof(T);
             for (; slot < end; ++slot) {
                 if (slot) {
-                    new (slot) T();
+                    ::new (static_cast<void*>(slot)) T();
                 }
             }
         }

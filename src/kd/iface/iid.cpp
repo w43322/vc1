@@ -7,6 +7,7 @@
 #include "kd/file/file.h"
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
+#include "kd/tile/tile_layer.h"
 #include "kd/display/effect.h"
 
 namespace vc1 {
@@ -142,12 +143,14 @@ const char* g_iidScriptObject = kIidScriptObject;
 static const char kIidOutputStream[] = "IOutputStream";
 // GLOBAL: VC1 0x004d058c
 const char* g_iidOutputStream = kIidOutputStream;
-// GLOBAL: VC1 0x004d05ac
 // STRING: VC1 0x004d4e10
-const char* g_iidReadable = "IReadable";
-// GLOBAL: VC1 0x004d05b0
+static const char kIidReadable[] = "IReadable";
+// GLOBAL: VC1 0x004d05ac
+const char* g_iidReadable = kIidReadable;
 // STRING: VC1 0x004d4e04
-const char* g_iidWriteable = "IWriteable";
+static const char kIidWriteable[] = "IWriteable";
+// GLOBAL: VC1 0x004d05b0
+const char* g_iidWriteable = kIidWriteable;
 // GLOBAL: VC1 0x004d05b8
 // STRING: VC1 0x004d4dec
 const char* g_iidSaveable = "ISaveable";
@@ -202,6 +205,10 @@ const char* g_iidTileAnimationData = kIidTileAnimationData;
 // GLOBAL: VC1 0x004d0acc
 // STRING: VC1 0x004cfe20
 const char* g_iidTileObject = "ITileObject";
+// STRING: VC1 0x004cfdec
+static const char kIidTileLayer[] = "ITileLayer";
+// GLOBAL: VC1 0x004d0adc
+const char* g_iidTileLayer = kIidTileLayer;
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -437,6 +444,41 @@ void* KdCompoundObject::QueryInterface(const char** iid)
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004a2750
+void* KdTileLayer::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidTileLayer) {
+        return static_cast<ITileLayer*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidClassifiable) {
+        return static_cast<IClassifiable*>(this);
+    }
+    if (name == kIidReadable) {
+        return static_cast<IReadable*>(this);
+    }
+    if (name == kIidWriteable) {
+        return static_cast<IWriteable*>(this);
+    }
+    if (name == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (name == kIidFunctionalGroup) {
+        return static_cast<IFunctionalGroup*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

@@ -12,6 +12,8 @@ extern const char kScriptGetHeight[] = "GetHeight";
 extern const char kScriptRegisterObject[] = "RegisterObject";
 // GLOBAL: VC1 0x004d1e44
 extern const char kScriptUnregisterObject[] = "UnregisterObject";
+// GLOBAL: VC1 0x004d159c
+extern const char kScriptSetRenderLayer[] = "SetRenderLayer";
 // GLOBAL: VC1 0x004d4ea8
 extern const char kScriptGetObject[] = "GetObject";
 // GLOBAL: VC1 0x004d553c

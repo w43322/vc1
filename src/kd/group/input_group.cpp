@@ -31,8 +31,8 @@ public:
     void* QueryInterface(const char** iid);
     unsigned AddRef();
     unsigned Release();
-    unsigned char Add(void** object);
-    void Remove(void** object);
+    unsigned char Add(const KdPtr<IAbstract>& object);
+    void Remove(const KdPtr<IAbstract>& object);
     void Clear();
     unsigned char OnKey(const unsigned* data);
     unsigned char OnPointer(const unsigned* data);
@@ -128,9 +128,9 @@ void KdInputGroup::Clear()
 
 // Appends the object's IInputHandler face; 0 for an object without one.
 // FUNCTION: VC1 0x004b6a10
-unsigned char KdInputGroup::Add(void** object)
+unsigned char KdInputGroup::Add(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     unsigned char added = 0;
     KdPtr<IUnknown> face(source
         ? static_cast<IUnknown*>(source->QueryInterface(&g_iidInputHandler)) : 0);
@@ -150,9 +150,9 @@ KdInputGroup::~KdInputGroup() throw()
 
 // Drops every slot holding the object's IInputHandler face.
 // FUNCTION: VC1 0x004b6b20
-void KdInputGroup::Remove(void** object)
+void KdInputGroup::Remove(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     KdPtr<IUnknown> face(source
         ? static_cast<IUnknown*>(source->QueryInterface(&g_iidInputHandler)) : 0);
 

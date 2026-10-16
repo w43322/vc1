@@ -317,7 +317,7 @@ void KdScene::RemoveObject(void** object)
     }
     for (i = 0; i < groups.items.size >> 2; ++i) {
         if (groupMask & (1u << i)) {
-            static_cast<IFunctionalGroup*>(RefBegin(&groups)[i])->Remove(object);
+            static_cast<IFunctionalGroup*>(RefBegin(&groups)[i])->Remove(*reinterpret_cast<const KdPtr<IAbstract>*>(object));
         }
     }
     if (group) {
@@ -350,7 +350,7 @@ void KdScene::AddObject(void** object)
     }
     for (i = 0; i < groups.items.size >> 2; ++i) {
         if (groupMask & (1u << i)) {
-            static_cast<IFunctionalGroup*>(RefBegin(&groups)[i])->Add(object);
+            static_cast<IFunctionalGroup*>(RefBegin(&groups)[i])->Add(*reinterpret_cast<const KdPtr<IAbstract>*>(object));
         }
     }
     if (group) {

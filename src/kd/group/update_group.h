@@ -40,8 +40,8 @@ public:
     int GetUpdateLayer();
     int SetLayer(unsigned value);
     void Update(unsigned slice, int dt);
-    unsigned char Add(void** object);
-    void Remove(void** object);
+    unsigned char Add(const KdPtr<IAbstract>& object);
+    void Remove(const KdPtr<IAbstract>& object);
     void Clear();
 
     void FlushFresh();

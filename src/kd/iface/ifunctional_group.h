@@ -6,13 +6,15 @@
 
 namespace vc1 {
 
+struct IAbstract;
+
 // Slot names inferred from KdSystemBase::RegisterObject / UnregisterObject / Shutdown.
 // Add returns 0 for a null object or one the group refuses.
 // SIZE 0x04
 struct IFunctionalGroup : IUnknown
 {
-    virtual unsigned char Add(void** object) = 0; // vtable+0x0c
-    virtual void Remove(void** object) = 0; // vtable+0x10
+    virtual unsigned char Add(const KdPtr<IAbstract>& object) = 0; // vtable+0x0c
+    virtual void Remove(const KdPtr<IAbstract>& object) = 0; // vtable+0x10
     virtual void Clear() = 0;               // vtable+0x14
 };
 

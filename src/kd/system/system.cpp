@@ -871,9 +871,9 @@ KdPtr<IUnknown> KdSystemBase::UnregisterObject(const KdString& name)
             *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(&name) + 4));
         return found;
     }
-    updateGroup->Remove(reinterpret_cast<void**>(&found.ptr));
-    renderGroup->Remove(reinterpret_cast<void**>(&found.ptr));
-    inputGroup->Remove(reinterpret_cast<void**>(&found.ptr));
+    updateGroup->Remove(*reinterpret_cast<const KdPtr<IAbstract>*>(&found));
+    renderGroup->Remove(*reinterpret_cast<const KdPtr<IAbstract>*>(&found));
+    inputGroup->Remove(*reinterpret_cast<const KdPtr<IAbstract>*>(&found));
     ClearCollected();
     return found;
 }
@@ -943,9 +943,9 @@ void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& 
         reinterpret_cast<FnSetName>((*reinterpret_cast<void***>(ident))[4])(ident, &name);
         ident->Release();
     }
-    updateGroup->Add(out);
-    renderGroup->Add(out);
-    inputGroup->Add(out);
+    updateGroup->Add(*reinterpret_cast<const KdPtr<IAbstract>*>(out));
+    renderGroup->Add(*reinterpret_cast<const KdPtr<IAbstract>*>(out));
+    inputGroup->Add(*reinterpret_cast<const KdPtr<IAbstract>*>(out));
 }
 
 // GLOBAL: VC1 0x004cf8c8

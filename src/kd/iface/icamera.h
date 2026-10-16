@@ -21,9 +21,9 @@ struct ICamera : IUnknown
     virtual void UnanalyzedSlot20() = 0;                // vtable+0x20
     virtual void UnanalyzedSlot24() = 0;                // vtable+0x24
     virtual void UnanalyzedSlot28() = 0;                // vtable+0x28
-    // Guess: GameLevel "GetObjectAt" (0x004b1680) maps its script point
-    // through this matrix and compares the result with object positions
-    // mapped through GetViewMatrix, so it takes points into view space.
+    // Screen to world: TileLayer::Render (0x004a3690) maps the graphics
+    // clip rect through it to find the visible tiles, and GameLevel
+    // "GetObjectAt" (0x004b1680) maps its script point through it.
     virtual const Matrix3& GetScreenMatrix() = 0;       // vtable+0x2c
 };
 

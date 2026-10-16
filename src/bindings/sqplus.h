@@ -24,6 +24,8 @@ extern const char kScriptGetWidth[];
 extern const char kScriptGetHeight[];
 extern const char kScriptRegisterObject[];
 extern const char kScriptUnregisterObject[];
+extern const char kScriptSetRenderLayer[];
+extern const char kScriptGetRenderLayer[];
 extern const char kScriptGetObject[];
 extern const char kScriptGetFont[];
 extern const char kScriptGetCamera[];

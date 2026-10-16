@@ -422,8 +422,7 @@ unsigned char KdEffectEmitter::GetMember(const char* name, SquirrelObject* out)
     if (methods.Empty()) {
         // STRING: VC1 0x004d7a34
         methods["Reset"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::Reset);
-        // STRING: VC1 0x004d159c
-        methods["SetRenderLayer"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetRenderLayer);
+        methods[kScriptSetRenderLayer] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetRenderLayer);
         methods[kScriptSetEnabled] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetEnabled);
         // STRING: VC1 0x004d7a3c
         methods["SetLocalMode"] = CreateScriptMethod<KdEffectEmitter>(&KdEffectEmitter::SetLocalMode);

@@ -147,9 +147,9 @@ void KdUpdateGroup::AddMember(IUnknown* const* object)
 
 // IFunctionalGroup+0x10. Queues a remove (and cancels a queued add).
 // FUNCTION: VC1 0x0046fb10
-void KdUpdateGroup::Remove(void** object)
+void KdUpdateGroup::Remove(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     KdPtrInsert inserted;
     bool isNull;
 
@@ -176,9 +176,9 @@ void KdUpdateGroup::Remove(void** object)
 // IFunctionalGroup+0x0c. Queues an add (and cancels a queued remove); 0 for
 // an object without IUpdateable.
 // FUNCTION: VC1 0x0046fc40
-unsigned char KdUpdateGroup::Add(void** object)
+unsigned char KdUpdateGroup::Add(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     KdPtrInsert inserted;
     bool isNull;
 

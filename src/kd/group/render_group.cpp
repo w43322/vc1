@@ -36,8 +36,8 @@ public:
     void* QueryInterface(const char** iid);
     unsigned AddRef();
     unsigned Release();
-    unsigned char Add(void** object);
-    void Remove(void** object);
+    unsigned char Add(const KdPtr<IAbstract>& object);
+    void Remove(const KdPtr<IAbstract>& object);
     void Clear();
     int RenderMasked(void* graphics, void* space);
     int Render(void* graphics);
@@ -154,9 +154,9 @@ int KdRenderGroup::RenderMasked(void* graphics, void* space)
 // Appends the object's IRenderable face and re-sorts by render order; 0 for
 // an object without one.
 // FUNCTION: VC1 0x0046d1d0
-unsigned char KdRenderGroup::Add(void** object)
+unsigned char KdRenderGroup::Add(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     unsigned char added = 0;
     KdPtr<IUnknown> face(source
         ? static_cast<IUnknown*>(source->QueryInterface(&g_iidRenderable)) : 0);
@@ -177,9 +177,9 @@ KdRenderGroup::~KdRenderGroup() throw()
 
 // Drops every slot holding the object's IRenderable face.
 // FUNCTION: VC1 0x0046d2f0
-void KdRenderGroup::Remove(void** object)
+void KdRenderGroup::Remove(const KdPtr<IAbstract>& object)
 {
-    IUnknown* const source = static_cast<IUnknown*>(*object);
+    IUnknown* const source = object.ptr;
     KdPtr<IUnknown> face(source
         ? static_cast<IUnknown*>(source->QueryInterface(&g_iidRenderable)) : 0);
 
