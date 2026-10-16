@@ -59,6 +59,14 @@ inline void Push(HSQUIRRELVM v, const KdString& value)
 KdString Get(SqPlus::TypeWrapper<const KdString&>, HSQUIRRELVM v, int idx);
 // A script array of the list's integers (0x00403860).
 void Push(HSQUIRRELVM v, KdArray<unsigned>& value);
+// The same for bytes (TransportMover's route indexes, 0x0040c8d0).
+void Push(HSQUIRRELVM v, KdArray<unsigned char>& value);
+
+struct Vector2;
+struct Rect;
+// Script arrays of Vector2 / Rect instances (0x00406430, 0x0040c750).
+KdObjArray<Vector2> Get(SqPlus::TypeWrapper<const KdObjArray<Vector2>&>, HSQUIRRELVM v, int idx);
+KdObjArray<Rect> Get(SqPlus::TypeWrapper<const KdObjArray<Rect>&>, HSQUIRRELVM v, int idx);
 
 // Inferred name. Slot idx converted to T, kept in a function-local static
 // (out of line for unsigned at 0x00403910, inlined for int into 0x00403520).

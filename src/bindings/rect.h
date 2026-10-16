@@ -27,6 +27,8 @@ struct Rect
     Rect() { x = y = width = height = 0; }
     Rect(SQInteger ax, SQInteger ay, SQInteger aw, SQInteger ah)
         : x(ax), y(ay), width(aw), height(ah) {}
+    // KdObjArray element copy.
+    void Assign(const Rect& source) { *this = source; }
 
     VC1_SIZE_CLASS_NEW(Rect)
 

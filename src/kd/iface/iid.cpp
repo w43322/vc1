@@ -19,6 +19,7 @@
 #include "kd/scene/camera.h"
 #include "kd/render/classificated_renderer.h"
 #include "kd/display/effect.h"
+#include "kd/route/transport_mover.h"
 
 namespace vc1 {
 
@@ -238,6 +239,10 @@ const char* g_iidTileLayer = kIidTileLayer;
 static const char kIidGridRenderer[] = "IGridRenderer";
 // GLOBAL: VC1 0x004d0ae0
 const char* g_iidGridRenderer = kIidGridRenderer;
+// STRING: VC1 0x004cfdd4
+static const char kIidRoute[] = "IRoute";
+// GLOBAL: VC1 0x004d0ae4
+const char* g_iidRoute = kIidRoute;
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -526,6 +531,32 @@ void* KdCompoundObject::QueryInterface(const char** iid)
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x0049bd50
+void* KdTransportMover::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidUpdateable) {
+        return static_cast<IUpdateable*>(this);
+    }
+    if (name == kIidVisible) {
+        return static_cast<IVisible*>(this);
+    }
+    if (name == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

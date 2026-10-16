@@ -29,8 +29,8 @@ extern const char kScriptSetCamera[]; // system.cpp
 
 // GLOBAL: VC1 0x004cf8bc
 extern const char kScriptSetGridMap[] = "SetGridMap";
-// STRING: VC1 0x004d19ec
-static const char kScriptSetGridRouter[] = "SetGridRouter";
+// GLOBAL: VC1 0x004d19ec
+extern const char kScriptSetGridRouter[] = "SetGridRouter";
 // STRING: VC1 0x004d19fc
 static const char kScriptSetRenderer[] = "SetRenderer";
 // STRING: VC1 0x004d1a08

@@ -29,6 +29,7 @@ extern const char* g_iidGridMap;
 extern const char* g_iidRoadRenderer;
 extern const char* g_iidGridRenderer;
 extern const char* g_iidGridRouter;
+extern const char* g_iidRoute;
 extern const char* g_iidSoundDriver;
 extern const char* g_iidSound;
 extern const char* g_iidScriptObject;

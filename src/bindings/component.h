@@ -22,6 +22,9 @@ struct IRoadRenderer;
 struct ITileLayer;
 struct ITileAnimationData;
 struct IPositionable;
+struct IRoute;
+struct IInputStream;
+struct IOutputStream;
 struct ITexture;
 
 // Inferred name. Script class "Component" (0x004cfb54), registered first by
@@ -183,6 +186,23 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITileLay
 }
 // BuildingBuilder SetBuildingData's animation data (Call 0x004016b0).
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITileAnimationData>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// TransportMover InitMoving's route and the stream arguments of
+// Write/ReadTransportToStream (Calls 0x0040bcd0, 0x0040c1f0, 0x0040c370).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRoute>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IInputStream>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IOutputStream>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
