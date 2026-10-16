@@ -17,6 +17,9 @@ void* KdQueryInterface(IUnknown* object, const char** iid);
 void KdAddRef(IUnknown* object);
 void KdRelease(IUnknown* object);
 
+template <class T>
+class KdPtr;
+
 // Inferred name. Owning interface pointer member: the original destructors
 // inline "if (p) p->Release(); p = 0;" per member in reverse declaration order.
 // Assignment does not touch the reference count.
@@ -41,6 +44,20 @@ public:
     }
     operator T*() const { return ptr; }
     T* operator->() const { return ptr; }
+    // Counted assignment from a borrowed pointer: AddRef the new one first.
+    template <class P>
+    void Assign(const P& value)
+    {
+        if (value.ptr) {
+            value.ptr->AddRef();
+        }
+        if (ptr) {
+            ptr->Release();
+        }
+        ptr = value.ptr;
+    }
+    // The member passed where a const KdPtr<T>& is expected (same layout).
+    const KdPtr<T>& AsPtr() const { return *reinterpret_cast<const KdPtr<T>*>(this); }
 
 private:
     KdRef(const KdRef&);

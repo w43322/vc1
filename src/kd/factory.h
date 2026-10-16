@@ -311,6 +311,21 @@ struct KdArray
         }
         items.size = bytes;
     }
+    // Exact grow to [first, last), then an element copy. Out of line in the
+    // original (EAX=this, stack first, EBX=last).
+    __declspec(noinline) void AssignRange(const T* first, const T* last)
+    {
+        unsigned bytes = static_cast<unsigned>(last - first) * sizeof(T);
+        T* to;
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 1);
+        }
+        to = Data();
+        items.size = bytes;
+        for (; first != last; ++first, ++to) {
+            *to = *first;
+        }
+    }
     // Exact grow, then an element copy.
     void Assign(const KdArray& source)
     {

@@ -15,7 +15,11 @@
 namespace vc1 {
 
 struct IFunctionalGroup;
+struct IGridMap;
 struct IGridRenderer;
+struct IGridRouter;
+struct IRoadRenderer;
+struct ITileLayer;
 struct IPositionable;
 struct ITexture;
 
@@ -150,6 +154,28 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRendera
 // PassMap AddRenderer / RemoveRenderer, QI'd to IGridRenderer in the Call
 // (0x00405e00).
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGridRenderer>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// TerrainBuilder's setters, QI'd in their Calls (0x004048c0, 0x00407e00,
+// 0x00407ea0, 0x00407fe0).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGridMap>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGridRouter>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRoadRenderer>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITileLayer>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

@@ -12,6 +12,7 @@
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/road/road_renderer.h"
+#include "kd/build/terrain_builder.h"
 #include "kd/scene/camera.h"
 #include "kd/render/classificated_renderer.h"
 #include "kd/display/effect.h"
@@ -228,9 +229,10 @@ const char* g_iidGridRouter = kIidGridRouter;
 static const char kIidTileLayer[] = "ITileLayer";
 // GLOBAL: VC1 0x004d0adc
 const char* g_iidTileLayer = kIidTileLayer;
-// GLOBAL: VC1 0x004d0ae0
 // STRING: VC1 0x004cfddc
-const char* g_iidGridRenderer = "IGridRenderer";
+static const char kIidGridRenderer[] = "IGridRenderer";
+// GLOBAL: VC1 0x004d0ae0
+const char* g_iidGridRenderer = kIidGridRenderer;
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -573,6 +575,26 @@ void* KdTileAnimationData::QueryInterface(const char** iid)
         return static_cast<IScriptLoadable*>(this);
     }
     if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The compound's faces first.
+// FUNCTION: VC1 0x004a5ca0
+void* KdTerrainBuilder::QueryInterface(const char** iid)
+{
+    void* face = KdCompoundObject::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidInputHandler) {
+        return static_cast<IInputHandler*>(this);
+    }
+    if (*iid == kIidGridRenderer) {
+        return static_cast<IGridRenderer*>(this);
+    }
+    if (*iid == kIidAbstract) {
         return static_cast<IAbstract*>(this);
     }
     return 0;

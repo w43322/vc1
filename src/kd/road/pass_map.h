@@ -16,29 +16,6 @@ class SquirrelObject;
 
 namespace vc1 {
 
-// Inferred name. The cell kinds PassMap reads from its script table
-// (CPassMap in Level.nut) by these member names; not initialized by the
-// constructor.
-// SIZE 0x34
-struct KdPassMapCellValues
-{
-    int clean;              // 0x00 "CELL_VALUE_Clean"
-    int occupied;           // 0x04 "CELL_VALUE_Occupied"
-    int plant;              // 0x08 "CELL_VALUE_Plant"
-    int roadBroken;         // 0x0c "CELL_VALUE_RoadBroken"
-    int road;               // 0x10 "CELL_VALUE_Road"
-    int roadIndestructible; // 0x14 "CELL_VALUE_RoadIndestructible"
-    int roadConstruction;   // 0x18 "CELL_VALUE_RoadConstruction"
-    int forestMin;          // 0x1c "CELL_VALUE_ForestMin"
-    int forestMax;          // 0x20 "CELL_VALUE_ForestMax"
-    int forestBurnt;        // 0x24 "CELL_VALUE_ForestBurnt"
-    int forestCutted;       // 0x28 "CELL_VALUE_ForestCutted"
-    int waste;              // 0x2c "CELL_VALUE_Waste"
-    int roadInvisible;      // 0x30 "CELL_VALUE_RoadInvisible"
-};
-
-typedef char Vc1KdPassMapCellValuesSizeCheck[sizeof(KdPassMapCellValues) == 0x34 ? 1 : -1];
-
 // Inferred name. Factory "PassMap": the byte grid of cell kinds of a level
 // map (one cell per map tile, placed by the IPositionable matrix). Script
 // "SetCellValue" calls the script member "OnCellChange"(self, x, y, value);
@@ -63,7 +40,6 @@ class KdPassMap : public IScriptObject,
                   public IRenderable,
                   public IVisible,
                   public IGridMap,
-                  public KdPassMapCellValues,
                   public IIdentifiable,
                   public IAbstract
 {

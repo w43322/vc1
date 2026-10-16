@@ -2,6 +2,7 @@
 #define VC1_KD_ITILE_LAYER_H
 
 #include "kd/factory.h"
+#include "kd/iface/iid.h"
 #include "kd/iface/iunknown.h"
 
 namespace vc1 {
@@ -32,6 +33,12 @@ struct ITileLayer : IUnknown
 };
 
 typedef char Vc1ITileLayerSizeCheck[sizeof(ITileLayer) == 0x04 ? 1 : -1];
+
+template <>
+struct KdIid<ITileLayer>
+{
+    static const char** Get() { return &g_iidTileLayer; }
+};
 
 }
 

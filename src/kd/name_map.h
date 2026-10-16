@@ -80,6 +80,30 @@ struct KdObjArray
             }
         }
     }
+    // Inline append: grow with the KdFactory slack, default-construct the new
+    // slots, then assign the last element.
+    __forceinline void PushBack(const T& value)
+    {
+        unsigned bytes = (Count() + 1) * sizeof(T);
+        if (items.capacity < bytes) {
+            unsigned old = items.capacity / sizeof(T);
+            T* slot;
+            T* end;
+
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 0);
+            if (items.capacity / sizeof(T) > old) {
+                slot = Begin() + old;
+                end = Begin() + items.capacity / sizeof(T);
+                for (; slot < end; ++slot) {
+                    if (slot) {
+                        ::new (static_cast<void*>(slot)) T();
+                    }
+                }
+            }
+        }
+        items.size = bytes;
+        End()[-1] = value;
+    }
     // Grow to count elements, exact or with the KdFactory slack.
     __declspec(noinline) void Reserve(unsigned count, unsigned char exact)
     {
