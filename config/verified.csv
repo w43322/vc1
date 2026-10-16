@@ -379,6 +379,12 @@ address|type|name|symbol
 0x00444734|library|BASS_ChannelGetPosition|_BASS_ChannelGetPosition@8
 0x0044473a|library|BASS_ChannelBytes2Seconds|_BASS_ChannelBytes2Seconds@12
 0x00444740|library|BASS_ChannelGetLength|_BASS_ChannelGetLength@8
+0x00444746|library|WSAGetLastError|_WSAGetLastError@0
+0x0044474c|library|WSASetLastError|_WSASetLastError@4
+0x00444752|library|RtlUnwind|_RtlUnwind@16
+0x00444758|library|_mkdir|__mkdir
+0x0044478a|library|_access_s|__access_s
+0x00444813|library|_access|__access
 0x004c4096|library|_ftol2_sse|__ftol2_sse
 0x004c4f20|library|_allshl|__allshl
 0x004c4f64|library|_setjmp3|__setjmp3
