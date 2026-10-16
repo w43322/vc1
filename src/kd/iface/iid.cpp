@@ -4,6 +4,7 @@
 #include "kd/scene/scripted_object.h"
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
+#include "kd/display/effect.h"
 
 namespace vc1 {
 
@@ -48,6 +49,16 @@ const char* g_iidRenderTarget = kIidRenderTarget;
 static const char kIidGraphics[] = "IGraphics";
 // GLOBAL: VC1 0x004d05a0
 const char* g_iidGraphics = kIidGraphics;
+
+// STRING: VC1 0x004d4e2c
+static const char kIidEffect[] = "IEffect";
+// GLOBAL: VC1 0x004d05a4
+const char* g_iidEffect = kIidEffect;
+
+// STRING: VC1 0x004d4e1c
+static const char kIidEffectEmitter[] = "IEffectEmitter";
+// GLOBAL: VC1 0x004d05a8
+const char* g_iidEffectEmitter = kIidEffectEmitter;
 
 // STRING: VC1 0x004d4df8
 static const char kIidLoadable[] = "ILoadable";
@@ -176,6 +187,38 @@ const char* g_iidStateProvider = kIidStateProvider;
 static const char kIidTileAnimationData[] = "ITileAnimationData";
 // GLOBAL: VC1 0x004d0ac8
 const char* g_iidTileAnimationData = kIidTileAnimationData;
+
+// this = IEffect, RET 4.
+// FUNCTION: VC1 0x0045b650
+void* KdEffect::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidEffect) {
+        return static_cast<IEffect*>(this);
+    }
+    if (name == kIidLoadable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<ILoadable*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
 
 // RET 4.
 // FUNCTION: VC1 0x0046d520

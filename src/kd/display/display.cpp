@@ -1,4 +1,5 @@
 #include "kd/display/display.h"
+#include "kd/display/effect.h"
 #include "kd/display/graphics.h"
 #include "kd/display/pyro.h"
 #include "kd/display/render_target.h"
@@ -525,12 +526,39 @@ int KdDisplayDevice::Pyro14(void* a, void* b, void* c)
     return 0;
 }
 
-// RET 4. malloc(0x2c), construct via 0x0045b6e0 (EAX=this), QI IAbstract at
-// +0x10 into *out. That class is not recovered yet.
-// STUB: VC1 0x00463fc0
+// RET 4. A new KdEffect's IAbstract face (CreateTexture's pattern).
+// FUNCTION: VC1 0x00463fc0
 void** KdDisplayDevice::Display3c(void** out)
 {
-    *out = 0;
+    KdEffect* object;
+    IUnknown* queried;
+    IUnknown* face;
+
+    object = static_cast<KdEffect*>(malloc(sizeof(KdEffect)));
+    if (!object) {
+        queried = 0;
+    }
+    else {
+        new (object) KdEffect();
+        if (!object) {
+            queried = 0;
+        }
+        else {
+            face = static_cast<IUnknown*>(static_cast<IAbstract*>(object));
+            if (!face) {
+                queried = 0;
+            }
+            else {
+                queried = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
+            }
+        }
+    }
+    *out = queried;
+    if (queried) {
+        queried->AddRef();
+    }
+    queried = static_cast<IUnknown*>(*out);
+    queried->Release();
     return out;
 }
 

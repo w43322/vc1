@@ -44,12 +44,25 @@ int PyroLibrary::Pyro04(void* a)
     return 0;
 }
 
-// RET 4. Body not recovered.
-// STUB: VC1 0x00456800
-int PyroLibrary::Pyro00(void* a)
+// RET 4. Deserializes a .pyro file; the file is dropped unless the whole
+// stream was consumed.
+// FUNCTION: VC1 0x00456800
+PyroFile* PyroLibrary::LoadFile(IPyroStream* stream)
 {
-    (void)a;
-    return 0;
+    PyroStreamReader reader(stream);
+    PyroFile* const file = new PyroFile(this);
+    PyroArchive ar;
+
+    ar.stream = &reader;
+    ar.storing = false;
+    file->Deserialize(ar);
+    if (stream->Tell() != reader.GetLength()) {
+        if (file) {
+            delete file;
+        }
+        return 0;
+    }
+    return file;
 }
 
 }

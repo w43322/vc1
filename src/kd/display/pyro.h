@@ -2,6 +2,7 @@
 #define VC1_KD_PYRO_H
 
 #include "kd/iface/ipyro_device.h"
+#include "pyro/pyro_file.h"
 
 namespace vc1 {
 
@@ -37,7 +38,7 @@ public:
         buffer = 0;
     }
 
-    virtual int Pyro00(void* a);              // vtable+0x00
+    virtual PyroFile* LoadFile(IPyroStream* stream); // vtable+0x00
     virtual int Pyro04(void* a);              // vtable+0x04
     virtual int Init(IPyroDevice* device);    // vtable+0x08
     virtual void Done();                      // vtable+0x0c

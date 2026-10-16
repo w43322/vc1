@@ -52,6 +52,11 @@ add_executable(vc1_recompiled
   src/kd/display/display.cpp
   src/kd/display/graphics.cpp
   src/kd/display/pyro.cpp
+  src/kd/display/effect.cpp
+  src/pyro/pyro_emitter.cpp
+  src/pyro/pyro_file.cpp
+  src/pyro/pyro_stream.cpp
+  src/pyro/pyro_string.cpp
   src/kd/display/render_target.cpp
   src/kd/display/texture.cpp
   src/kd/system/system.cpp

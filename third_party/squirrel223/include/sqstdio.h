@@ -53,7 +53,7 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 
 // SYNTHETIC: VC1 0x0040ed80
 // SQStream::`scalar deleting destructor'
-// FUNCTION: VC1 0x0040eda0
+// FUNCTION: VC1 0x0040eda0 FOLDED
 // SQFile::Write
 // FUNCTION: VC1 0x0040ede0
 // SQFile::Flush
@@ -67,9 +67,9 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 // SQFile::EOS
 // SYNTHETIC: VC1 0x0040eea0
 // SQFile::`scalar deleting destructor'
-// FUNCTION: VC1 0x0041d680
+// FUNCTION: VC1 0x0041d680 FOLDED
 // SQFile::Read
-// FUNCTION: VC1 0x0041d710
+// FUNCTION: VC1 0x0041d710 FOLDED
 // SQFile::Tell
 // FUNCTION: VC1 0x0048f240
 // _file_releasehook
