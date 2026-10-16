@@ -629,6 +629,13 @@ bool SQVM::CLASS_OP(SQObjectPtr &target,SQInteger baseclass,SQInteger attributes
 bool SQVM::IsEqual(SQObjectPtr &o1,SQObjectPtr &o2,bool &res)
 {
 	if(type(o1) == type(o2)) {
+		// VC1: the game's VM (IsEqual 0x00493230) compares two native-backed
+		// instances by their userpointer, so every Component wrapper pushed
+		// for one engine object equals the others.
+		if(type(o1) == OT_INSTANCE && _instance(o1)->_userpointer && _instance(o2)->_userpointer) {
+			res = (_instance(o1)->_userpointer == _instance(o2)->_userpointer);
+			return true;
+		}
 		res = ((_userpointer(o1) == _userpointer(o2)?true:false));
 	}
 	else {
