@@ -3,6 +3,7 @@
 #include "kd/resource/resource_manager.h"
 #include "kd/scene/scripted_object.h"
 #include "kd/scene/scene.h"
+#include "kd/world/game_level.h"
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/display/effect.h"
@@ -196,6 +197,9 @@ const char* g_iidStateProvider = kIidStateProvider;
 static const char kIidTileAnimationData[] = "ITileAnimationData";
 // GLOBAL: VC1 0x004d0ac8
 const char* g_iidTileAnimationData = kIidTileAnimationData;
+// GLOBAL: VC1 0x004d0acc
+// STRING: VC1 0x004cfe20
+const char* g_iidTileObject = "ITileObject";
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -441,6 +445,21 @@ void* KdObjectWatcher::QueryInterface(const char** iid)
         return static_cast<IShutdownable*>(this);
     }
     if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. KdScene's faces first (ECX kept in EDX across the call); the
+// IAbstract fallback after it cannot be reached, KdScene answers it.
+// FUNCTION: VC1 0x004b0c80
+void* KdGameLevel::QueryInterface(const char** iid)
+{
+    void* face = KdScene::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidAbstract) {
         return static_cast<IAbstract*>(this);
     }
     return 0;

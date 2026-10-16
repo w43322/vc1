@@ -102,10 +102,30 @@ typedef char Vc1KdFactorySizeCheck[sizeof(KdFactory) == 0x10 ? 1 : -1];
 // its own). The out-of-line destructor releases every slot up to capacity,
 // then destroys the buffer.
 // SIZE 0x10
+struct KdRefList;
+void ReserveRefs(unsigned count, KdRefList* list, unsigned char exact);
+IUnknown** CopyRefs(IUnknown** first, IUnknown** last, IUnknown** dest);
+
 struct KdRefList
 {
     KdFactory items; // 0x00
 
+    KdRefList() {}
+    // Inlined where a list returned by value is copied (the script call
+    // 0x00403f10): exact reserve, then counted copies of the slots.
+    KdRefList(const KdRefList& source)
+    {
+        const unsigned count = source.items.size >> 2;
+        const unsigned bytes = count * sizeof(IUnknown*);
+        if (bytes > 0) {
+            ReserveRefs(count, this, 1);
+        }
+        items.size = bytes;
+        CopyRefs(reinterpret_cast<IUnknown**>(source.items.begin),
+            reinterpret_cast<IUnknown**>(reinterpret_cast<unsigned char*>(source.items.begin)
+                + source.items.size),
+            reinterpret_cast<IUnknown**>(items.begin));
+    }
     ~KdRefList() throw();
     void Reserve(unsigned count);
     void Resize(unsigned count)

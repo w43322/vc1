@@ -19,9 +19,12 @@ namespace vc1 {
 // group and identifier faces against (by IAbstract identity).
 extern KdRef<IUnknown> g_kdNullSceneObject;
 extern KdRef<IUnknown> g_kdNullSceneIdentifier;
+// The identifier of a group without an IIdentifiable face.
+extern KdString g_kdEmptyIdentifier;
 
 extern const char kSystemObjectExists[];
 extern const char kSystemObjectNotFound[];
+extern const char kCantFindGroup[];
 
 // Factory "Scene" and the base of the game's GameLevel: a named component
 // group with a script instance whose objects also join the scene's own

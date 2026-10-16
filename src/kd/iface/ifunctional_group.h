@@ -1,6 +1,7 @@
 #ifndef VC1_KD_IFUNCTIONAL_GROUP_H
 #define VC1_KD_IFUNCTIONAL_GROUP_H
 
+#include "kd/iface/iid.h"
 #include "kd/iface/iunknown.h"
 
 namespace vc1 {
@@ -16,6 +17,12 @@ struct IFunctionalGroup : IUnknown
 };
 
 typedef char Vc1IFunctionalGroupSizeCheck[sizeof(IFunctionalGroup) == 0x04 ? 1 : -1];
+
+template <>
+struct KdIid<IFunctionalGroup>
+{
+    static const char** Get() { return &g_iidFunctionalGroup; }
+};
 
 }
 

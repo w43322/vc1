@@ -14,6 +14,7 @@
 
 namespace vc1 {
 
+struct IFunctionalGroup;
 struct IPositionable;
 struct ITexture;
 
@@ -58,6 +59,10 @@ SQInteger ComponentGet(HSQUIRRELVM vm);      // "_get"
 // _nexti cursor into the iterated group's 0x14-byte name records.
 extern unsigned char* g_componentCursor;
 bool ComponentCursorIs(const char* key);
+
+// Found by argument-dependent lookup from SqPlus's Call: a script array of
+// the list's objects.
+void Push(HSQUIRRELVM v, KdRefList& value);
 
 template <>
 struct KdIid<IGraphics>
@@ -121,6 +126,12 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IPositio
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITexture>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// GameLevel SetDynamicLayer's group (Call 0x00403e50).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IFunctionalGroup>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

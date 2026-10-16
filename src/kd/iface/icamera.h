@@ -17,6 +17,14 @@ struct ICamera : IUnknown
     // KdGraphics::SetView passes (&graphics IAbstract, &view rect).
     virtual void BindView() = 0;                        // vtable+0x14
     virtual const Matrix3& GetViewMatrix() = 0;         // vtable+0x18
+    virtual void UnanalyzedSlot1c() = 0;                // vtable+0x1c
+    virtual void UnanalyzedSlot20() = 0;                // vtable+0x20
+    virtual void UnanalyzedSlot24() = 0;                // vtable+0x24
+    virtual void UnanalyzedSlot28() = 0;                // vtable+0x28
+    // Guess: GameLevel "GetObjectAt" (0x004b1680) maps its script point
+    // through this matrix and compares the result with object positions
+    // mapped through GetViewMatrix, so it takes points into view space.
+    virtual const Matrix3& GetScreenMatrix() = 0;       // vtable+0x2c
 };
 
 typedef char Vc1ICameraSizeCheck[sizeof(ICamera) == 0x04 ? 1 : -1];

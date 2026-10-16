@@ -33,8 +33,9 @@ KdString g_kdEmptyIdentifier;
 static const char kObjectLoaded[] = "Object %s loaded";
 // STRING: VC1 0x004d5438
 static const char kObjectDeleted[] = "Object %s deleted";
-// STRING: VC1 0x004d544c
-static const char kCantFindGroup[] = "can't find group: %s";
+// Also GameLevel "SetDynamicLayer".
+// GLOBAL: VC1 0x004d544c
+extern const char kCantFindGroup[] = "can't find group: %s";
 // STRING: VC1 0x004d53d0
 static const char kScriptAppendGroup[] = "AppendGroup";
 // STRING: VC1 0x004d53dc

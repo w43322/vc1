@@ -50,6 +50,44 @@ template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IScriptObject>& value)
     face->AddRef();
 }
 
+}
+
+namespace vc1 {
+
+// ESI=vm, stack &value. A script array of the list's objects, each pushed
+// like Push(KdPtr<IUnknown>&) (null slots as null). A failed instance still
+// reaches the sq_set. Returned by GameLevel "FindObjectsByMask".
+// FUNCTION: VC1 0x00404070
+void Push(HSQUIRRELVM v, KdRefList& value)
+{
+    unsigned i;
+
+    sq_newarray(v, value.items.size >> 2);
+    for (i = 0; i < value.items.size >> 2; ++i) {
+        IUnknown* const object = reinterpret_cast<IUnknown**>(value.items.begin)[i];
+
+        sq_pushinteger(v, static_cast<SQInteger>(i));
+        if (object) {
+            IAbstract* const face = static_cast<IAbstract*>(object->QueryInterface(&g_iidAbstract));
+            if (!CreateNativeClassInstance(v, SqPlus::GetTypeName(*face), face,
+                    ReleaseComponent)) {
+                SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)"));
+            }
+            else {
+                face->AddRef();
+            }
+        }
+        else {
+            sq_pushnull(v);
+        }
+        sq_set(v, -3);
+    }
+}
+
+}
+
+namespace SqPlus {
+
 // FUNCTION: VC1 0x0040c970
 template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IUnknown>& value)
 {

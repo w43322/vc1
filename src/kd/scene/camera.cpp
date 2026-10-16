@@ -7,10 +7,11 @@ class KdCamera : public ICamera
 {
 };
 
-// STRING: VC1 0x004d0dd8
-static const char kCamera[] = "Camera";
+// Also the scene object name GameLevel "GetObjectAt" looks up.
+// GLOBAL: VC1 0x004d0dd8
+extern const char kCameraName[] = "Camera";
 // GLOBAL: VC1 0x004d0684
-const char* g_kdNameCamera = kCamera;
+const char* g_kdNameCamera = kCameraName;
 
 // STUB: VC1 0x004707c0
 void** CreateKdCamera(void** out)

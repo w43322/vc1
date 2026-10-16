@@ -23,6 +23,7 @@ extern const char* g_iidRenderable;
 extern const char* g_iidResourceManager;
 extern const char* g_iidCamera;
 extern const char* g_iidTileManager;
+extern const char* g_iidTileObject;
 extern const char* g_iidSoundDriver;
 extern const char* g_iidSound;
 extern const char* g_iidScriptObject;

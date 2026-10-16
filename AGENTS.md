@@ -182,6 +182,7 @@ The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-
 - `mount: http()` fails (`error: -1, can't mount (null)()`): the http KD driver `0x0047d650` is still a stub. The blank `<empty fmt ...>` log lines label the bytes after the format string, not the log level.
 - Known teardown crash: `MutexUnlock` (`0x0040160b`) with a null mutex from `DestroyTlsBlock`.
 - `scripts/menus/Loading.nut` (`res/MenuLoading.nut`, `ProgressFG` control) is the loading screen; `scripts/Game.nut` is the `Game` object.
+- Levels: `Scene` (`src/kd/scene/scene.cpp`) and its subclass `GameLevel` (`src/kd/world/game_level.cpp`: dynamic tile layers, `FindObjectsByMask`, `GetObjectAt`) are recovered. Clicking through the comic (`--click 0.84,0.53@14` then `0.5,0.5` every 4 s from 22 s) reaches `Loading level: Level_01_01`; `Level.Load` then fails because the `File` component (`CreateKdFile` `0x0046a8c0`) and `Camera` (`0x004707c0`) are still stubs.
 
 ### Pitfalls seen at runtime
 
