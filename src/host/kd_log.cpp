@@ -23,9 +23,10 @@ static const char kHostLogError[] = "error: ";
 
 // ECX=fmt, EAX=va_list, ESI=tag, cdecl prefix. "[name] tag text" when the
 // caller's name slot (a factory name such as g_kdNameDisplay, or the app's
-// g_kdLogPrefix) is set.
+// g_kdLogPrefix) is set. The original keeps it out of line in all four
+// HostLog* wrappers.
 // FUNCTION: VC1 0x004b7010
-void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args)
+__declspec(noinline) void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args)
 {
     char buf[0x400];
 

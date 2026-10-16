@@ -16,8 +16,11 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 endif()
 
 # Do not inherit /MD, /Ob1, /RTC or Debug defaults from a CMake release.
-set(CMAKE_C_FLAGS "/nologo /W3 /MT /GS")
-set(CMAKE_CXX_FLAGS "/nologo /W3 /MT /GS /GR-")
+# /GS-: the original calls __security_check_cookie (0x0043980a) only from the
+# prebuilt CRT; game and library code have no cookies (LoadTgaTexture
+# 0x00465770 keeps a 0x200-byte char buffer without one).
+set(CMAKE_C_FLAGS "/nologo /W3 /MT /GS-")
+set(CMAKE_CXX_FLAGS "/nologo /W3 /MT /GS- /GR-")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:NOREF /OPT:NOICF /SAFESEH:NO /LTCG")
@@ -25,6 +28,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(cmake/squirrel223.cmake)
 include(cmake/klibc.cmake)
 include(cmake/libtga.cmake)
+include(cmake/jpgd.cmake)
 include(cmake/sqplus.cmake)
 
 add_executable(vc1_recompiled
@@ -107,9 +111,10 @@ add_executable(vc1_recompiled
   ${SQUIRREL223_SOURCES}
   ${KLIBC_SOURCES}
   ${LIBTGA_SOURCES}
+  ${JPGD_SOURCES}
   ${SQPLUS_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
-  third_party/squirrel223/squirrel third_party/libtga ${SQPLUS_INCLUDE_DIRS})
+  third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
 target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi)

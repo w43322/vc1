@@ -9,6 +9,7 @@
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
 #include "host/kd_stdio.h"
+#include "kd/display/jpeg_stream.h"
 #include "bindings/matrix4.h"
 #include "bindings/matrix3.h"
 #include "bindings/component.h"
@@ -1743,13 +1744,78 @@ static int Display28Apply(bool windowed)
     return Display28Finish();
 }
 
-// cdecl name, out width/height. JPEG loader.
-// STUB: VC1 0x00465f10
+// cdecl name, out width/height (the image size). Inferred name. jpgd 0.93b
+// (jpeg_decoder_file_stream on a KD file, jpeg_decoder 0x00459b00 built on
+// the stack) into a managed X8R8G8B8 texture sized by the power-of-two caps;
+// the decoder's RGBX scanlines are swizzled to BGRA with alpha 0xff. Any
+// decode error after the texture exists releases it.
+// FUNCTION: VC1 0x00465f10
 static IUnknown* LoadJpgTexture(const char* name, int* width, int* height)
 {
-    (void)name;
-    (void)width;
-    (void)height;
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnLockRect)(IUnknown* tex, unsigned level, int* locked,
+        const RECT* rect, unsigned flags);
+    typedef int (__stdcall *FnUnlockRect)(IUnknown* tex, unsigned level);
+    IUnknown* texture;
+    unsigned texWidth;
+    unsigned texHeight;
+    int locked[2];
+    unsigned char* row;
+    void* line;
+    uint lineLen;
+    unsigned* dst;
+    const unsigned* src;
+    const unsigned* end;
+    unsigned pixel;
+    int y;
+    int hr;
+
+    jpeg_decoder_file_stream stream;
+    if (stream.open(name)) {
+        return 0;
+    }
+    jpeg_decoder decoder(&stream, false);
+    if (decoder.get_error_code() == 0) {
+        *width = decoder.get_width();
+        *height = decoder.get_height();
+        texWidth = *width;
+        texHeight = *height;
+        DisplayD3dPow2Caps(&texWidth, &texHeight);
+        hr = reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+            g_d3dDevice, texWidth, texHeight, 1, 0, 0x16, 1, &texture);
+        if (hr < 0) {
+            DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+            return 0;
+        }
+        hr = reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(texture))[0x10])(
+            texture, 0, locked, 0, 0);
+        if (hr < 0) {
+            DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+            D3dRelease(texture);
+            return 0;
+        }
+        row = reinterpret_cast<unsigned char*>(locked[1]);
+        decoder.begin();
+        for (y = 0; y < *height; y++) {
+            if (decoder.decode(&line, &lineLen)) {
+                break;
+            }
+            dst = reinterpret_cast<unsigned*>(row);
+            src = static_cast<const unsigned*>(line);
+            end = reinterpret_cast<const unsigned*>(static_cast<const uchar*>(line) + lineLen);
+            for (; src < end; src++) {
+                pixel = *src;
+                *dst++ = ((pixel >> 16) & 0xff) | ((pixel | 0xffffff00) << 16) | (pixel & 0xff00);
+            }
+            row += locked[0];
+        }
+        reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(texture))[0x11])(texture, 0);
+        if (decoder.get_error_code() == 0) {
+            return texture;
+        }
+        D3dRelease(texture);
+    }
     return 0;
 }
 
