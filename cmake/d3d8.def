@@ -1,0 +1,6 @@
+; The one d3d8.dll export the original imports (thunk 0x00442e0e). Only used
+; to build the import library: cmake/d3d8.cmake links cmake/d3d8_stub.c
+; against this so the stdcall symbol imports by its undecorated name.
+LIBRARY d3d8
+EXPORTS
+  Direct3DCreate8

@@ -25,6 +25,9 @@
 
 #pragma function(memcpy)
 
+// d3d8.dll export (import thunk 0x00442e0e, library row in config/verified.csv).
+extern "C" vc1::IUnknown* __stdcall Direct3DCreate8(unsigned sdkVersion);
+
 namespace vc1 {
 
 // GLOBAL: VC1 0x004ed54c
@@ -1520,24 +1523,6 @@ static unsigned char DisplayD3dReset()
     return DisplayD3dRecreate() != 0;
 }
 
-static IUnknown* CallDirect3DCreate8(unsigned sdk)
-{
-    typedef IUnknown* (__stdcall *FnDirect3DCreate8)(unsigned version);
-    static FnDirect3DCreate8 create8;
-    HMODULE dll;
-
-    if (!create8) {
-        dll = LoadLibraryA("d3d8.dll");
-        if (dll) {
-            create8 = reinterpret_cast<FnDirect3DCreate8>(GetProcAddress(dll, "Direct3DCreate8"));
-        }
-    }
-    if (!create8) {
-        return 0;
-    }
-    return create8(sdk);
-}
-
 // Direct3DCreate8, present params, CreateDevice, Recreate, Clear(0). Returns AL.
 // FUNCTION: VC1 0x004652b0
 static unsigned char DisplayD3DInit()
@@ -1563,7 +1548,7 @@ static unsigned char DisplayD3DInit()
     unsigned viewW;
     unsigned viewH;
 
-    g_d3dObject = CallDirect3DCreate8(0x78);
+    g_d3dObject = Direct3DCreate8(0x78);
     if (!g_d3dObject) {
         FormatBufferOpen(buf, kDxErrorFmt, kCantCreateD3d,
             DxGetErrorString(static_cast<int>(0x8876086a)));
