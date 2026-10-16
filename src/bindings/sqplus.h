@@ -703,6 +703,91 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // TEMPLATE: VC1 0x0042df00
 // ??$Call@ABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@2@@?$ReturnSpecialization@X@SqPlus@@SAHP6AXABV?$KdPtr@UITexture@vc1@@@vc1@@ABUMatrix4@3@@ZPAUSQVM@@H@Z
 
+
+// Callees of the TEMPLATE instantiations named elsewhere (Dispatch -> Call,
+// CreateScriptMethod -> Dispatch), paired with the recompiled callees.
+
+// TEMPLATE: VC1 0x004048c0
+// ??$Call@VKdBuildingBuilder@vc1@@ABV?$KdPtr@UIGridMap@vc1@@@2@@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdBuildingBuilder@vc1@@P823@AEXABV?$KdPtr@UIGridMap@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00408080
+// ??$Call@VKdTerrainBuilder@vc1@@ABU?$KdArray@F@2@@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdTerrainBuilder@vc1@@P823@AEXABU?$KdArray@F@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0040a790
+// ??$Call@VKdRoadRenderer@vc1@@F@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdRoadRenderer@vc1@@P823@AEXF@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004169c0
+// ??$Call@VKdCamera@vc1@@ABUVector2@2@@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAVKdCamera@vc1@@P823@AE?AUVector2@3@ABU43@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041b390
+// ??$Call@VKdEffect@vc1@@@?$ReturnSpecialization@V?$KdPtr@UIEffectEmitter@vc1@@@vc1@@@SqPlus@@SAHAAVKdEffect@vc1@@P823@AE?AV?$KdPtr@UIEffectEmitter@vc1@@@3@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041c180
+// ??$Call@VKdSound@vc1@@KHH@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdSound@vc1@@P823@AE_NKHH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041c260
+// ??$Call@VKdMusic@vc1@@HH@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdMusic@vc1@@P823@AE_NHH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041c6a0
+// ??$Call@VKdMusic@vc1@@_N@?$ReturnSpecialization@H@SqPlus@@SAHAAVKdMusic@vc1@@P823@AEH_N@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041c710
+// ??$Call@VKdMusic@vc1@@M@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdMusic@vc1@@P823@AE_NM@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041c7a0
+// ??$Call@VKdMusic@vc1@@_N@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdMusic@vc1@@P823@AE_N_N@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041d040
+// ??$Call@VKdLayer@vc1@@ABV?$KdPtr@UIFont@vc1@@@2@@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXABV?$KdPtr@UIFont@vc1@@@3@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041d130
+// ??$Call@VKdLayer@vc1@@PBDMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXPBDMM@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004262c0
+// ??$Call@EEEE@?$ReturnSpecialization@I@SqPlus@@SAHP6AIEEEE@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426420
+// ??$Call@ABUVector3@vc1@@ABU12@@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHP6A?AUVector3@vc1@@ABU23@0@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004264b0
+// ??$Call@ABUVector3@vc1@@ABU12@M@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHP6A?AUVector3@vc1@@ABU23@0M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426560
+// ??$Call@ABUVector2@vc1@@ABU12@M@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHP6A?AUVector2@vc1@@ABU23@0M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426610
+// ??$Call@ABUVector2@vc1@@@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHP6A?AUVector2@vc1@@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426680
+// ??$Call@ABUVector4@vc1@@ABU12@@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHP6A?AUVector3@vc1@@ABUVector4@3@0@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426710
+// ??$Call@ABUVector4@vc1@@ABU12@M@?$ReturnSpecialization@UVector4@vc1@@@SqPlus@@SAHP6A?AUVector4@vc1@@ABU23@0M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004267d0
+// ??$Call@ABUMatrix3@vc1@@@?$ReturnSpecialization@UMatrix3@vc1@@@SqPlus@@SAHP6A?AUMatrix3@vc1@@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426840
+// ??$Call@ABUMatrix4@vc1@@@?$ReturnSpecialization@UMatrix4@vc1@@@SqPlus@@SAHP6A?AUMatrix4@vc1@@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004268c0
+// ??$Call@ABUQuaternion@vc1@@@?$ReturnSpecialization@UQuaternion@vc1@@@SqPlus@@SAHP6A?AUQuaternion@vc1@@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0045ae00
+// ?Dispatch@?$ScriptMethodCall@VKdEffectEmitter@vc1@@P812@AEXABUMatrix3@2@@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0045aec0
+// ?Dispatch@?$ScriptMethodCall@VKdEffectEmitter@vc1@@P812@AEX_N@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0045af90
+// ?Dispatch@?$ScriptMethodCall@VKdEffectEmitter@vc1@@P812@AEXH@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0045b0a0
+// ?Dispatch@?$ScriptMethodCall@VKdEffectEmitter@vc1@@P812@AEXXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0045b8f0
+// ?Dispatch@?$ScriptMethodCall@VKdEffect@vc1@@P812@AE?AV?$KdPtr@UIEffectEmitter@vc1@@@2@XZ@vc1@@SAHPAUSQVM@@@Z
+
 }
 
 // Declared in SquirrelObject.h; the stock SqPlus body lives in sqplus.h but is
