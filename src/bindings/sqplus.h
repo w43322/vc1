@@ -6,6 +6,7 @@
 #include "kd/factory.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/iscript_object.h"
+#include "kd/name_map.h"
 
 #include <string.h>
 
@@ -88,6 +89,24 @@ KdArray<T> Get(SqPlus::TypeWrapper<const KdArray<T>&>, HSQUIRRELVM v, int idx)
             sq_pop(v, 1);
         }
     }
+    return result;
+}
+
+// A script table as a name-sorted map of its values (0x00409220).
+KdNameMap<SquirrelObject> Get(SqPlus::TypeWrapper<const KdNameMap<SquirrelObject>&>,
+    HSQUIRRELVM v, int idx);
+// A script array of int arrays (0x004093e0).
+KdObjArray<KdArray<int> > Get(SqPlus::TypeWrapper<const KdObjArray<KdArray<int> >&>,
+    HSQUIRRELVM v, int idx);
+
+// Inferred name. object converted to T: pushed, read with the matching Get,
+// then the inlined sq_poptop.
+template<class T>
+T GetScriptValue(const SquirrelObject& object)
+{
+    sq_pushobject(SquirrelVM::_VM, object.GetObjectHandle());
+    T result = Get(SqPlus::TypeWrapper<const T&>(), SquirrelVM::_VM, -1);
+    sq_poptop(SquirrelVM::_VM);
     return result;
 }
 

@@ -3,6 +3,7 @@
 #include "kd/resource/resource_manager.h"
 #include "kd/scene/scripted_object.h"
 #include "kd/render/object_watcher.h"
+#include "kd/tile/tile_animation_data.h"
 
 namespace vc1 {
 
@@ -171,6 +172,10 @@ const char* g_iidAnimateable = "IAnimateable";
 static const char kIidStateProvider[] = "IStateProvider";
 // GLOBAL: VC1 0x004d0624
 const char* g_iidStateProvider = kIidStateProvider;
+// STRING: VC1 0x004cfe2c
+static const char kIidTileAnimationData[] = "ITileAnimationData";
+// GLOBAL: VC1 0x004d0ac8
+const char* g_iidTileAnimationData = kIidTileAnimationData;
 
 // RET 4.
 // FUNCTION: VC1 0x0046d520
@@ -251,6 +256,23 @@ void* KdCompoundObject::QueryInterface(const char** iid)
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. this = ITileAnimationData.
+// FUNCTION: VC1 0x004a4550
+void* KdTileAnimationData::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidTileAnimationData) {
+        return this;
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
