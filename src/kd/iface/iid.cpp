@@ -4,6 +4,7 @@
 #include "kd/scene/scripted_object.h"
 #include "kd/scene/scene.h"
 #include "kd/world/game_level.h"
+#include "kd/file/file.h"
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/display/effect.h"
@@ -137,9 +138,10 @@ static const char kIidScriptObject[] = "IScriptObject";
 // GLOBAL: VC1 0x004d05f4
 const char* g_iidScriptObject = kIidScriptObject;
 
-// GLOBAL: VC1 0x004d058c
 // STRING: VC1 0x004d4e7c
-const char* g_iidOutputStream = "IOutputStream";
+static const char kIidOutputStream[] = "IOutputStream";
+// GLOBAL: VC1 0x004d058c
+const char* g_iidOutputStream = kIidOutputStream;
 // GLOBAL: VC1 0x004d05ac
 // STRING: VC1 0x004d4e10
 const char* g_iidReadable = "IReadable";
@@ -282,6 +284,38 @@ void* KdEffect::QueryInterface(const char** iid)
             return 0;
         }
         return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The IAbstract face is returned without the null check.
+// FUNCTION: VC1 0x0046a690
+void* KdFile::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidInputStream) {
+        return static_cast<IInputStream*>(this);
+    }
+    if (name == kIidOutputStream) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IOutputStream*>(this);
+    }
+    if (name == kIidScriptObject) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidShutdownable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IShutdownable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
