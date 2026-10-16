@@ -139,6 +139,19 @@ if(EXISTS "${VC1_GAME_BASS_DLL}")
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_GAME_BASS_DLL}"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/BASS.dll")
 endif()
+# The game loads its cursors (setCursor ids 100..105) and icon from its own
+# module, so the original's resources are dumped into the build tree at
+# configure time and linked in (local copy only, like BASS.dll).
+set(VC1_ORIGINAL_EXE "${CMAKE_SOURCE_DIR}/Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe")
+set(VC1_PYTHON "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
+if(EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
+  set(VC1_RSRC_RES "${CMAKE_BINARY_DIR}/original-rsrc/original.res")
+  execute_process(COMMAND "${VC1_PYTHON}" "${CMAKE_SOURCE_DIR}/tools/extract-rsrc.py"
+    "${VC1_ORIGINAL_EXE}" "${VC1_RSRC_RES}" RESULT_VARIABLE VC1_RSRC_RESULT)
+  if(VC1_RSRC_RESULT EQUAL 0)
+    target_link_options(vc1_recompiled PRIVATE "${VC1_RSRC_RES}")
+  endif()
+endif()
 target_link_options(vc1_recompiled PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")

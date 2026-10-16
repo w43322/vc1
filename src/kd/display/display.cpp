@@ -2059,7 +2059,8 @@ static int ApplyWindowedMode(bool windowed)
         GetWindowRect(g_kdDisplayWindow, &g_displayWindowRect);
     }
     g_displaySkipDevice = windowed;
-    interval = FormatPresentInterval(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
+    g_displayMode = reinterpret_cast<int*>(windowed ? g_d3dPresentWindowed : g_d3dPresentFull);
+    interval = FormatPresentInterval(static_cast<unsigned>(g_displayMode[2]));
     g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
     DisplayD3dReset();
     return UpdateWindowFrame();
