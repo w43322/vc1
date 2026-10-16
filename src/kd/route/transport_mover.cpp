@@ -6,11 +6,15 @@
 #include "bindings/sqplus.h"
 #include "sqplus/SquirrelVM.h"
 
+#include <math.h>
 #include <new>
 #include <stdlib.h>
 #include <string.h>
 
 namespace vc1 {
+
+float WrapAngle(float angle); // host_api.cpp
+float fltsign(float value);   // host_api.cpp
 
 // STRING: VC1 0x004cfd18
 static const char kTransportMover[] = "TransportMover";
@@ -64,11 +68,98 @@ static const char kScriptGetOptimalRouteIndexesUnreachable[] = "GetOptimalRouteI
 // GLOBAL: VC1 0x004ed6a8
 KdRef<IUnknown> g_kdTransportMoverNullObject;
 
+float MinFloat(float a, float b); // display.cpp
+extern const char kScriptOnCellChange[]; // pass_map.cpp
+
+// STRING: VC1 0x004d2330
+static const char kScriptOnMovingFinish[] = "OnMovingFinish";
+
+static const double kHalfPi = 1.5707963705062866;
+static const double kQuarterPi = 0.7853981852531433;
+static const double kPi = 3.1415927410125732;
+static const double kTwoPi = 6.2831854820251465;
+
+// Inferred name. cdecl float, the absolute value on the FPU stack; kept out
+// of line in the blocker check.
+// FUNCTION: VC1 0x00404320
+static __declspec(noinline) float FloatAbs(float value)
+{
+    if (value < 0.0f) {
+        value = -value;
+    }
+    return value;
+}
+
+// ECX=this, EAX=other: 1 when x or y differ.
+// FUNCTION: VC1 0x00407600
+bool KdGridCell::operator!=(const KdGridCell& other) const
+{
+    if (x == other.x && y == other.y) {
+        return false;
+    }
+    return true;
+}
+
 // MOV EAX, "TransportMover"; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0040b2f0
 const char* KdTransportMover::GetTypeName()
 {
     return kTransportMover;
+}
+
+// Inferred name. ESI=slot, stack source, RET 4: releases the slot, then
+// takes the source's counted IAbstract face.
+// FUNCTION: VC1 0x0040b320
+static __declspec(noinline) KdRef<IAbstract>& AssignAbstractFace(KdRef<IAbstract>& slot,
+    const KdRef<IPositionable>& source)
+{
+    if (slot.ptr) {
+        slot.ptr->Release();
+    }
+    if (!source.ptr) {
+        slot.ptr = 0;
+        return slot;
+    }
+    slot.ptr = static_cast<IAbstract*>(source->QueryInterface(&g_iidAbstract));
+    if (slot.ptr) {
+        slot.ptr->AddRef();
+    }
+    return slot;
+}
+
+// Inferred name. ESI=slot, EDI=source: counted copy, AddRef first.
+// FUNCTION: VC1 0x0040b3a0
+static __declspec(noinline) KdRef<IRoute>& AssignRoute(KdRef<IRoute>& slot,
+    const KdPtr<IRoute>& source)
+{
+    if (source.ptr) {
+        source.ptr->AddRef();
+    }
+    if (slot.ptr) {
+        slot.ptr->Release();
+    }
+    slot.ptr = source.ptr;
+    return slot;
+}
+
+// Inferred name. ESI=slot, stack source, RET 4: releases the slot, then
+// takes the source's counted IRoute face.
+// FUNCTION: VC1 0x0040b3d0
+static __declspec(noinline) KdRef<IRoute>& AssignRouteFace(KdRef<IRoute>& slot,
+    const KdRef<IUnknown>& source)
+{
+    if (slot.ptr) {
+        slot.ptr->Release();
+    }
+    if (!source.ptr) {
+        slot.ptr = 0;
+        return slot;
+    }
+    slot.ptr = static_cast<IRoute*>(source->QueryInterface(&g_iidRoute));
+    if (slot.ptr) {
+        slot.ptr->AddRef();
+    }
+    return slot;
 }
 
 // EDI=source, ESI=this. Counted copies of the three object slots.
@@ -78,10 +169,10 @@ KdTransportRecord& KdTransportRecord::operator=(const KdTransportRecord& source)
     transport.Assign(source.transport);
     route.Assign(source.route);
     distance = source.distance;
-    unknown0c = source.unknown0c;
-    arrived = source.arrived;
+    cell = source.cell;
+    atRoadside = source.atRoadside;
     moving = source.moving;
-    target.Assign(source.target);
+    blocker.Assign(source.blocker);
     paused = source.paused;
     return *this;
 }
@@ -378,6 +469,78 @@ int KdTransportMover::Shutdown()
     return 0;
 }
 
+// Both null, or the same object (IAbstract faces of a then b compared).
+static __forceinline bool SameObject(IUnknown* a, IUnknown* b)
+{
+    void* face;
+
+    if (!a) {
+        return !b;
+    }
+    if (!b) {
+        return false;
+    }
+    face = a->QueryInterface(&g_iidAbstract);
+    return face == b->QueryInterface(&g_iidAbstract);
+}
+
+// Inferred name. Stack self, record, RET 8. True when another moving
+// transport (not parked, not this one, not waiting behind this one) is at
+// most lookAhead ahead along the heading, within half the vehicle width of
+// the lane and facing within 90 degrees; it becomes the record's blocker.
+// The heading is the transport's X axis, or the route start before moving.
+// FUNCTION: VC1 0x0049c180
+bool KdTransportMover::IsBlocked(KdTransportRecord& record)
+{
+    KdRouteSample sample;
+    const Vector2* heading;
+    KdTransportRecord* other;
+
+    if (record.distance <= 0.0f) {
+        sample = record.route->GetSampleAt(record.distance);
+        heading = &sample.direction;
+    }
+    else {
+        heading = reinterpret_cast<const Vector2*>(&record.transport->GetPosition()._11);
+    }
+    const float hx = heading->x;
+    const float hy = heading->y;
+    for (other = records.Begin(); other != records.End(); ++other) {
+        if (SameObject(other->transport, record.transport)) {
+            continue;
+        }
+        if (SameObject(other->blocker, record.transport)) {
+            continue;
+        }
+        if (!other->atRoadside && other->moving) {
+            const Matrix3& mine = record.transport->GetPosition();
+            const Matrix3& its = other->transport->GetPosition();
+            const float dx = its._31 - mine._31;
+            const float dy = its._32 - mine._32;
+            const float range = lookAhead;
+            const float halfWidth = vehicleWidth * 0.5f;
+            const float reach = halfWidth + range;
+            if ((dx < 0.0f ? -dx : dx) <= reach && (dy < 0.0f ? -dy : dy) <= reach) {
+                const Matrix3& otherPosition = other->transport->GetPosition();
+                const float ox = otherPosition._11;
+                const float oy = otherPosition._12;
+                const Matrix3& position = record.transport->GetPosition();
+                const float ax = position._21;
+                const float ay = position._22;
+                const float along = dy * hy + dx * hx;
+                if (along >= 0.0f && along <= range
+                    && FloatAbs(dy * ay + ax * dx) <= halfWidth
+                    && ClampedACos(ox * hx + oy * hy) <= kHalfPi) {
+                    AssignAbstractFace(record.blocker, other->transport);
+                    return true;
+                }
+            }
+        }
+    }
+    record.blocker.Assign(reinterpret_cast<const KdRef<IAbstract>&>(g_kdTransportMoverNullObject));
+    return false;
+}
+
 // RET 4. Script "MoveToRoadsite".
 // STUB: VC1 0x0049c4a0
 bool KdTransportMover::MoveToRoadsite(const KdPtr<IPositionable>&)
@@ -413,8 +576,8 @@ KdTransportMover::KdTransportMover() throw()
     cornerRadius = 0.2f;
     cornerOuter = 0.4f;
     visible = false;
-    unknown28 = 50.0f;
-    unknown2c = 24.0f;
+    lookAhead = 50.0f;
+    vehicleWidth = 24.0f;
     speed = 0.2f;
     GrowCountedBuffer(&reachable.items, 0xff, 1);
     GrowCountedBuffer(&unreachable.items, 0xff, 1);
@@ -437,6 +600,97 @@ void** CreateKdTransportMover(void** out)
     }
     static_cast<IUnknown*>(*out)->Release();
     return out;
+}
+
+// WrapAngle (0x0040ccb0) and fltsign (0x0040cb60) as inlined in InsertArc.
+static __forceinline float WrapAngleInline(float angle)
+{
+    if (angle >= kTwoPi || angle < 0.0f) {
+        float turns = static_cast<float>(floor(static_cast<double>(static_cast<float>(angle / kTwoPi))));
+        angle = static_cast<float>(angle - turns * kTwoPi);
+    }
+    return angle;
+}
+
+static __forceinline float SignInline(float value)
+{
+    if (value > 0.0f) {
+        return 1.0f;
+    }
+    if (value < 0.0f) {
+        return -1.0f;
+    }
+    return 0.0f;
+}
+
+// Inferred name. EAX=points, stack &at, centre x/y, radius, from and to
+// angles, RET 0x18. Inserts the arc's points at at in eighths of the signed
+// turn from from towards to, until the remaining turn changes sign; at ends
+// after the last inserted point. The insert is InsertCountedBytes
+// (0x004b8a20) inlined after a one-element grow.
+// FUNCTION: VC1 0x0049d070
+static __declspec(noinline) void InsertArc(KdObjArray<Vector2>& points, Vector2*& at, float cx,
+    float cy, float radius, float from, float to)
+{
+    typedef unsigned (__thiscall *FnCount)(void* object);
+    float step = WrapAngle(to - from);
+    float rest;
+
+    if (step > kPi) {
+        step = static_cast<float>(step - kTwoPi);
+    }
+    step = static_cast<float>(step * 0.125);
+    from -= step;
+    const float sign = fltsign(step);
+    do {
+        from += step;
+        const float px = static_cast<float>(cos(static_cast<double>(from))) * radius + cx;
+        const float py = static_cast<float>(sin(static_cast<double>(from))) * radius + cy;
+        const unsigned offset = static_cast<unsigned>(
+            reinterpret_cast<unsigned char*>(at)
+            - reinterpret_cast<unsigned char*>(points.items.begin));
+        {
+            const unsigned old = points.items.capacity / sizeof(Vector2);
+            Vector2* slot;
+            Vector2* end;
+
+            GrowCountedBuffer(&points.items,
+                static_cast<int>((points.Count() + 1) * sizeof(Vector2)), 0);
+            if (points.items.capacity / sizeof(Vector2) > old) {
+                slot = points.Begin() + old;
+                end = points.Begin() + points.items.capacity / sizeof(Vector2);
+                for (; slot < end; ++slot) {
+                    if (slot) {
+                        ::new (static_cast<void*>(slot)) Vector2();
+                    }
+                }
+            }
+        }
+        {
+            const unsigned newSize = points.items.size + sizeof(Vector2);
+            const unsigned used = reinterpret_cast<FnCount>(
+                (*reinterpret_cast<void***>(&points.items))[2])(&points.items);
+            unsigned char* begin;
+
+            if (points.items.capacity < used + newSize) {
+                GrowCountedBuffer(&points.items, static_cast<int>(newSize), 0);
+            }
+            begin = reinterpret_cast<unsigned char*>(points.items.begin);
+            points.items.size = newSize;
+            EraseCountedBytes(begin + offset, begin + newSize - sizeof(Vector2), begin + newSize);
+        }
+        {
+            Vector2* const slot = reinterpret_cast<Vector2*>(
+                reinterpret_cast<unsigned char*>(points.items.begin) + offset);
+            slot->x = px;
+            slot->y = py;
+            at = slot + 1;
+        }
+        rest = WrapAngleInline(to - from);
+        if (rest > kPi) {
+            rest = static_cast<float>(rest - kTwoPi);
+        }
+    } while (sign == SignInline(rest));
 }
 
 // RET 4. Script "RemoveTransport": closes the record's slot without
@@ -472,7 +726,7 @@ void KdTransportMover::AddTransport(const KdPtr<IPositionable>& transport)
         }
     }
     record.distance = 0.0f;
-    record.arrived = false;
+    record.atRoadside = false;
     record.moving = false;
     record.paused = false;
     count = records.Count() + 1;
@@ -483,10 +737,219 @@ void KdTransportMover::AddTransport(const KdPtr<IPositionable>& transport)
     records[count - 1] = record;
 }
 
-// RET 8. IUpdateable vtable+0x14 (ECX=this+8): advances the moving records.
-// STUB: VC1 0x0049e210
-void KdTransportMover::Update(unsigned, int)
+// Inferred name. ECX=this, EAX=record. The transport's script
+// "OnCellChange"(self, passable): whether its new cell is road.
+// FUNCTION: VC1 0x0049dd80
+void KdTransportMover::NotifyCellChange(KdTransportRecord& record)
 {
+    KdPtr<IScriptObject> object(record.transport.ptr
+        ? static_cast<IScriptObject*>(record.transport->QueryInterface(&g_iidScriptObject))
+        : 0);
+    SquirrelObject member;
+
+    object->GetMember(kScriptOnCellChange, &member);
+    if (member.GetObjectHandle()._type == OT_NULL) {
+        return;
+    }
+    {
+        const bool passable = (passableMask
+            & 1 << gridMap->GetCellValue(static_cast<unsigned short>(record.cell.x),
+                static_cast<unsigned short>(record.cell.y))) != 0;
+        SquirrelObject self(object);
+        SquirrelVM::BeginCall(member, self);
+        SquirrelVM::PushParam(passable);
+        SquirrelVM::EndCall();
+    }
+}
+
+// Inferred name. EAX=record. The transport's script "OnMovingFinish"(self).
+// FUNCTION: VC1 0x0049df10
+static void NotifyMovingFinish(KdTransportRecord& record)
+{
+    KdPtr<IScriptObject> object(record.transport.ptr
+        ? static_cast<IScriptObject*>(record.transport->QueryInterface(&g_iidScriptObject))
+        : 0);
+    SquirrelObject member;
+
+    object->GetMember(kScriptOnMovingFinish, &member);
+    if (member.GetObjectHandle()._type == OT_NULL) {
+        return;
+    }
+    {
+        SquirrelObject self(object);
+        SquirrelVM::BeginCall(member, self);
+        SquirrelVM::EndCall();
+    }
+}
+
+// Inferred name. Stack self, dt; EDI=record; RET 8. A moving, unpaused,
+// unblocked record advances speed per second along its route; the transport
+// is placed on the route turned along it, a new grid cell is reported, and
+// at the route end the route is dropped and "OnMovingFinish" called.
+// FUNCTION: VC1 0x0049e060
+void KdTransportMover::UpdateRecord(KdTransportRecord& record, int dt)
+{
+    if (!record.route.ptr || record.route->IsEmpty() || !record.moving || record.paused) {
+        return;
+    }
+    if (IsBlocked(record)) {
+        return;
+    }
+    record.distance = static_cast<float>(speed * dt / 1000.0 + record.distance);
+    record.distance = MinFloat(record.distance, record.route->GetLength());
+    {
+        const KdRouteSample sample = record.route->GetSampleAt(record.distance);
+        Matrix3 position;
+        KdGridCell cell;
+
+        memcpy(&position, &record.transport->GetPosition(), sizeof(position));
+        position._31 = sample.position.x;
+        position._32 = sample.position.y;
+        position._11 = sample.direction.x;
+        position._12 = sample.direction.y;
+        position._21 = -sample.direction.y;
+        position._22 = sample.direction.x;
+        record.transport->SetPosition(position);
+        {
+            const Vector2 grid = worldToGrid.MultVrt(sample.position);
+            cell.x = static_cast<short>(static_cast<int>(grid.x));
+            cell.y = static_cast<short>(static_cast<int>(grid.y));
+        }
+        if (record.cell != cell) {
+            record.cell = cell;
+            NotifyCellChange(record);
+        }
+    }
+    if (record.route->GetLength() == record.distance) {
+        AssignRouteFace(record.route, g_kdTransportMoverNullObject);
+        record.moving = false;
+        NotifyMovingFinish(record);
+    }
+}
+
+// RET 8. IUpdateable vtable+0x14 (ECX=this+8): advances every record.
+// FUNCTION: VC1 0x0049e210
+void KdTransportMover::Update(unsigned, int dt)
+{
+    KdTransportRecord* record;
+
+    for (record = records.Begin(); record != records.End(); ++record) {
+        UpdateRecord(*record, dt);
+    }
+}
+
+// Inferred name. ESI=this, stack result, route, fromRoadside; RET 0xc. The
+// world-space route a transport drives for a cell route: cell centres moved
+// cornerRadius to the right of the travel direction, corners sharper than 45
+// degrees replaced by arcs of radius 0.5 - cornerRadius, the start moved
+// cornerOuter - cornerRadius further right when leaving a roadside spot, all
+// through gridToWorld into a new "Route".
+// FUNCTION: VC1 0x0049e260
+KdPtr<IRoute> KdTransportMover::BuildDrivingRoute(KdPtr<IRoute> route, bool fromRoadside)
+{
+    KdObjArray<Vector2> points;
+    const KdObjArray<KdRoutePoint>& cells = *route->GetPoints();
+    unsigned i;
+
+    for (i = 0; i < cells.Count(); ++i) {
+        points.PushBack(Vector2(cells[i].position.x + 0.5f, cells[i].position.y + 0.5f));
+    }
+    {
+        const KdRoutePoint* const c = cells.Begin();
+        const float nx = -(c[1].position.y - c[0].position.y);
+        const float sy = cornerRadius * (c[1].position.x - c[0].position.x);
+        points[0].x = points[0].x + cornerRadius * nx;
+        points[0].y = points[0].y + sy;
+    }
+    for (i = 1; i < cells.Count(); ++i) {
+        const float dx = cells[i].position.x - cells[i - 1].position.x;
+        const float dy = cells[i].position.y - cells[i - 1].position.y;
+        const float nx = -dy;
+        const float sx = nx * cornerRadius;
+        const float sy = cornerRadius * dx;
+        points[i].x = sx + points[i].x;
+        points[i].y = points[i].y + sy;
+    }
+    {
+        Vector2 prev = points[0];
+        Vector2 cur = points[1];
+        Vector2* p = points.Begin() + 2;
+
+        while (p != points.End()) {
+            const Vector2 next = *p;
+            float dx = cur.x - prev.x;
+            float dy = cur.y - prev.y;
+            float scale = 1.0f / sqrtf(dx * dx + dy * dy);
+            const Vector2 d1(dx * scale, scale * dy);
+            dx = next.x - cur.x;
+            dy = next.y - cur.y;
+            scale = 1.0f / sqrtf(dx * dx + dy * dy);
+            const Vector2 d2(dx * scale, scale * dy);
+            const float angle = Vector2::AngleBetween(d2, d1);
+
+            if ((angle < 0.0f ? -angle : angle) > kQuarterPi) {
+                const float sign = angle > 0.0f ? 1.0f : (angle < 0.0f ? -1.0f : 0.0f);
+                const float bx = -d1.x;
+                const float by = -d1.y;
+                const float r = cornerRadius;
+                const float ox = bx * r;
+                const float oy = r * by;
+                float k;
+                float centerX;
+                float centerY;
+                Vector2* at;
+
+                cur.x = ox * sign + cur.x;
+                cur.y = cur.y + oy * sign;
+                k = static_cast<float>(0.5 - r);
+                centerX = k * bx + cur.x + k * by * sign;
+                centerY = cur.y + k * by + k * d1.x * sign;
+                EraseCountedBytes(p - 1, p, points.End());
+                points.items.size -= sizeof(Vector2);
+                at = points.Begin() + (p - 1 - points.Begin());
+                InsertArc(points, at, centerX, centerY, static_cast<float>(0.5 - cornerRadius),
+                    static_cast<float>(atan2(static_cast<double>(-sign * d1.x), static_cast<double>(-sign * by))),
+                    static_cast<float>(atan2(static_cast<double>(d1.y), static_cast<double>(d1.x))));
+                p = at;
+            }
+            prev = cur;
+            cur = next;
+            ++p;
+        }
+    }
+    if (fromRoadside) {
+        Vector2* const first = points.Begin();
+        const float dx = first[1].x - first[0].x;
+        const float ny = -(first[1].y - first[0].y);
+        const float scale = 1.0f / sqrtf(dx * dx + ny * ny);
+        const float sx = ny * scale;
+        const float sy = scale * dx;
+        const float shift = cornerOuter - cornerRadius;
+        first[0].x = first[0].x + sx * shift;
+        first[0].y = first[0].y + shift * sy;
+    }
+    {
+        KdPtr<IRoute> result;
+        void* unknown;
+        Vector2* point;
+
+        GetKdFactory()->QueryNamed(&unknown, &g_kdNameRoute);
+        if (unknown) {
+            result.ptr = static_cast<IRoute*>(
+                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidRoute));
+            if (result.ptr) {
+                result.ptr->AddRef();
+            }
+            static_cast<IUnknown*>(unknown)->Release();
+        }
+        for (point = points.Begin(); point != points.End(); ++point) {
+            const Vector2 world(gridToWorld._11 * point->x + point->y * gridToWorld._21
+                    + gridToWorld._31,
+                point->x * gridToWorld._12 + gridToWorld._22 * point->y + gridToWorld._32);
+            result->AddPoint(world);
+        }
+        return result;
+    }
 }
 
 // RET 8. Script "ReadTransportFromStream".
@@ -512,11 +975,28 @@ KdPtr<IUnknown> KdTransportMover::FindPathBetweenAreas(const Vector2&, const Rec
     return KdPtr<IUnknown>();
 }
 
-// RET 8. Script "InitMoving": gives the transport a route.
-// STUB: VC1 0x0049f020
-bool KdTransportMover::InitMoving(const KdPtr<IPositionable>&, const KdPtr<IRoute>&)
+// RET 8. Script "InitMoving": gives the transport the driving route of a
+// cell route (BuildDrivingRoute) from its start, stopped and off the
+// roadside; the cell is the cell route's first point.
+// FUNCTION: VC1 0x0049f020
+bool KdTransportMover::InitMoving(const KdPtr<IPositionable>& transport,
+    const KdPtr<IRoute>& route)
 {
-    return false;
+    if (!gridMap.ptr || !route.ptr || route->IsEmpty()) {
+        return false;
+    }
+    const int index = FindTransport(this, transport);
+    if (index < 0) {
+        return false;
+    }
+    KdTransportRecord& record = records[index];
+    record.distance = 0.0f;
+    AssignRoute(record.route, BuildDrivingRoute(route, record.atRoadside));
+    record.cell.x = static_cast<short>(static_cast<int>(route->GetSampleAt(0.0f).position.x));
+    record.atRoadside = false;
+    record.moving = false;
+    record.cell.y = static_cast<short>(static_cast<int>(route->GetSampleAt(0.0f).position.y));
+    return true;
 }
 
 // Script "CreateOptimalRouteFromPosition".

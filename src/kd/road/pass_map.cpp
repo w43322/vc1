@@ -54,8 +54,9 @@ static const char kCellForestCutted[] = "CELL_VALUE_ForestCutted";
 static const char kCellWaste[] = "CELL_VALUE_Waste";
 // STRING: VC1 0x004d1444
 static const char kCellRoadInvisible[] = "CELL_VALUE_RoadInvisible";
-// STRING: VC1 0x004d1460
-static const char kScriptOnCellChange[] = "OnCellChange";
+// Shared with transport_mover.cpp.
+// GLOBAL: VC1 0x004d1460
+extern const char kScriptOnCellChange[] = "OnCellChange";
 
 // The object as a script value: the IAbstract face QI'd twice (0x00401e90),
 // pushed through SquirrelObject::Set<KdPtr<IUnknown> > (0x004014a0).

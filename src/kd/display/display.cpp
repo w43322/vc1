@@ -159,7 +159,7 @@ static unsigned char DisplayD3DInit();
 static int ApplyWindowedMode(bool windowed);
 static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
-static float MinFloat(float a, float b);
+float MinFloat(float a, float b);
 
 IPyroDevice::~IPyroDevice()
 {
@@ -209,7 +209,7 @@ static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot)
 
 // cdecl two floats; returns min on the FPU stack.
 // FUNCTION: VC1 0x00402410
-static float MinFloat(float a, float b)
+float MinFloat(float a, float b)
 {
     if (a < b) {
         return a;

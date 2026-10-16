@@ -16,17 +16,27 @@
 
 namespace vc1 {
 
-// Inferred name. One transport moved along its route.
+// Inferred name. A grid cell as two shorts; != is out of line (0x00407600).
+// SIZE 0x04
+struct KdGridCell
+{
+    short x; // 0x00
+    short y; // 0x02
+
+    __declspec(noinline) bool operator!=(const KdGridCell& other) const;
+};
+
+// Inferred names. One transport moved along its route.
 // SIZE 0x1c
 struct KdTransportRecord
 {
     KdRef<IPositionable> transport; // 0x00
-    KdRef<IRoute> route;            // 0x04
+    KdRef<IRoute> route;            // 0x04 world space, built by InitMoving
     float distance;                 // 0x08 travelled along the route
-    int unknown0c;                  // 0x0c not set by AddTransport
-    bool arrived;                   // 0x10
+    KdGridCell cell;                // 0x0c current grid cell; not set by AddTransport
+    bool atRoadside;                // 0x10 parked beside the road: does not block
     bool moving;                    // 0x11 script "SetMoving"
-    KdRef<IUnknown> target;         // 0x14
+    KdRef<IAbstract> blocker;       // 0x14 the transport this one waits behind
     bool paused;                    // 0x18 script "PauseMoving"
 
     KdTransportRecord() {}
@@ -84,8 +94,8 @@ public:
     float cornerRadius;                 // 0x1c 0.2, the arcs inserted at route corners
     float cornerOuter;                  // 0x20 0.4, used as cornerOuter - cornerRadius
     int passableMask;                   // 0x24 road cell values
-    float unknown28;                    // 0x28 50, not read by the mapped functions
-    float unknown2c;                    // 0x2c 24, not read by the mapped functions
+    float lookAhead;                    // 0x28 50, world units checked ahead for a blocker
+    float vehicleWidth;                 // 0x2c 24, the blocker check's lane width
     bool visible;                       // 0x30
     KdRef<IGridMap> gridMap;            // 0x34
     Matrix3 worldToGrid;                // 0x38
@@ -143,6 +153,10 @@ public:
 
     static int __stdcall FindTransport(KdTransportMover* self,
         const KdPtr<IPositionable>& transport);
+    bool IsBlocked(KdTransportRecord& record);
+    void NotifyCellChange(KdTransportRecord& record);
+    void UpdateRecord(KdTransportRecord& record, int dt);
+    KdPtr<IRoute> BuildDrivingRoute(KdPtr<IRoute> route, bool fromRoadside);
 };
 
 typedef char Vc1KdTransportMoverSizeCheck[sizeof(KdTransportMover) == 0xb8 ? 1 : -1];
