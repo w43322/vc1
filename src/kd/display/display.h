@@ -130,6 +130,33 @@ public:
 // SYNTHETIC: VC1 0x0041aec0
 // ??_EKdPyroBuffer@vc1@@W3AEPAXI@Z
 
+// Inferred name. The default IPyroDevice::CreateVertexBuffer wraps a device
+// buffer from CreateBuffer in this when a device has no vertex buffer of its
+// own; Upload copies into the device buffer between Lock and Unlock, and the
+// wrapper owns (deletes) it.
+// SIZE 0x08
+// VTABLE: VC1 0x004d6278
+class PyroVertexBufferAdapter : public PyroVertexBuffer
+{
+public:
+    VC1_PYRO_HEAP
+
+    PyroDeviceBuffer* buffer; // 0x04
+
+    explicit PyroVertexBufferAdapter(PyroDeviceBuffer* inner) : buffer(inner) {}
+    ~PyroVertexBufferAdapter()
+    {
+        if (buffer) {
+            delete buffer;
+        }
+    }
+
+    int Upload(const void* source, int offset, int size, int discard);
+};
+
+// SYNTHETIC: VC1 0x0041ac60
+// vc1::PyroVertexBufferAdapter::`scalar deleting destructor'
+
 // Inferred name. Implements the Pyro device plus the device-level IDisplay
 // slots (SetSize builds g_displayPyro, CreateEffect) and Shutdown. Constructed
 // inline by KdDisplayBase() (0x004665c0). QI/AddRef/Release take the IDisplay

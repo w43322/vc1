@@ -332,6 +332,21 @@ const char* KdDisplayBase::GetTypeName()
     return kDisplay;
 }
 
+// RET 0x10. this = adapter.
+// FUNCTION: VC1 0x0041ac20
+int PyroVertexBufferAdapter::Upload(const void* source, int offset, int size, int discard)
+{
+    int result;
+
+    (void)discard;
+    result = buffer->Lock();
+    if (result == 0) {
+        memcpy(static_cast<unsigned char*>(buffer->GetData()) + offset, source, size);
+        result = buffer->Unlock();
+    }
+    return result;
+}
+
 // MOV EAX, 1; RET 0x14.
 // FUNCTION: VC1 0x0041aca0
 int IPyroDevice::CreateBuffer(PyroDeviceBuffer** out, int count, int stride, unsigned format,
@@ -345,10 +360,10 @@ int IPyroDevice::CreateBuffer(PyroDeviceBuffer** out, int count, int stride, uns
     return 1;
 }
 
-// RET 0x14. CreateBuffer into a local (reusing the last argument slot); on success
-// wraps it in an 8-byte object (vftable 0x004d6278, value at +4) into *out.
-// The wrapper class is not recovered yet.
-// STUB: VC1 0x0041acb0
+// RET 0x14. CreateBuffer into a local (the original reuses the last argument
+// slot); on success *out is a PyroVertexBufferAdapter over it (null when the
+// allocation fails, still returning 0).
+// FUNCTION: VC1 0x0041acb0
 int IPyroDevice::CreateVertexBuffer(PyroVertexBuffer** out, int count, int stride, unsigned format,
     int flags)
 {
@@ -359,7 +374,7 @@ int IPyroDevice::CreateVertexBuffer(PyroVertexBuffer** out, int count, int strid
     if (result) {
         return result;
     }
-    *out = 0;
+    *out = new PyroVertexBufferAdapter(inner);
     return 0;
 }
 
@@ -374,13 +389,13 @@ int IPyroDevice::DrawQuadBuffer(PyroDeviceBuffer* buffer, int first, int count, 
     return 1;
 }
 
-// RET 0x10. DrawQuadBuffer(a->+4, b, c, d) through the 0x004d6278 wrapper; the wrapper
-// class is not recovered yet.
-// STUB: VC1 0x0041ad20
+// RET 0x10. The default draw of a CreateVertexBuffer result: the adapter's
+// device buffer through DrawQuadBuffer.
+// FUNCTION: VC1 0x0041ad20
 int IPyroDevice::DrawQuads(PyroVertexBuffer* buffer, int first, int count, int flags)
 {
-    (void)buffer;
-    return DrawQuadBuffer(0, first, count, flags);
+    return DrawQuadBuffer(static_cast<PyroVertexBufferAdapter*>(buffer)->buffer, first, count,
+        flags);
 }
 
 // RET 0x10. this = PyroVertexBuffer face (data at +4).
