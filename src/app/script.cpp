@@ -5,8 +5,11 @@
 #include "bindings/sqplus.h"
 #include "bindings/vector2.h"
 #include "kd/font/font.h"
+#include "kd/iface/icamera.h"
 #include "kd/iface/idisplay.h"
+#include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
+#include "kd/tile/tile_manager.h"
 
 #include <new>
 #include <squirrel.h>
@@ -193,30 +196,180 @@ KdString ScriptEncodeUtf8(const KdArray<unsigned>& codes)
     return KdString(buffer, out);
 }
 
-// Script "renderFrame"(graphics, rect, frames, flags). Not recovered yet.
-// STUB: VC1 0x004bd350
+// Script "renderFrame"(graphics, rect, frames, color): a nine-tile frame.
+// frames holds the tiles corner/top/corner, left/centre/right,
+// corner/bottom/corner; the side tiles' sizes give the inner rectangle. The
+// centre and the sides repeat their tile and are cut with the game tile
+// manager's clip rect (VcTileManager+0x1068); the corners are drawn at the
+// inner rectangle's corners without a clip. TileManager is this function's
+// own static (guard 0x004ee780, value 0x004ee77c).
+// FUNCTION: VC1 0x004bd350
 void ScriptRenderFrame(const KdPtr<IGraphics>& graphics, const Rect& area,
-    const KdArray<int>& frames, int flags)
+    const KdArray<int>& frames, int color)
 {
-    (void)graphics;
-    (void)area;
-    (void)frames;
-    (void)flags;
+    static KdPtr<ITileManager> manager;
+    static bool initialized;
+
+    if (!initialized) {
+        void* unknown;
+
+        initialized = true;
+        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
+        if (unknown) {
+            manager.ptr = static_cast<ITileManager*>(
+                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
+            if (manager.ptr) {
+                manager.ptr->AddRef();
+            }
+            static_cast<IUnknown*>(unknown)->Release();
+        }
+        else {
+            manager.ptr = 0;
+        }
+    }
+
+    graphics.ptr->SetColor(color);
+    const int left = area.x + manager.ptr->GetRect(frames[3], 0).width;
+    const int right = area.x + area.width - manager.ptr->GetRect(frames[5], 0).width;
+    const int top = area.y + manager.ptr->GetRect(frames[1], 0).height;
+    const int bottom = area.y + area.height - manager.ptr->GetRect(frames[7], 0).height;
+    const SQFloat leftF = static_cast<SQFloat>(left);
+    const SQFloat topF = static_cast<SQFloat>(top);
+    const SQFloat widthF = static_cast<SQFloat>(right - left);
+    const SQFloat heightF = static_cast<SQFloat>(bottom - top);
+    VcTileManager* const game = static_cast<VcTileManager*>(manager.ptr);
+    RectF clip;
+    Rect step;
+    int x;
+    int y;
+
+    game->clip = &clip;
+    clip.x = leftF;
+    clip.y = topF;
+    clip.width = widthF;
+    clip.height = heightF;
+    step = manager.ptr->GetRect(frames[4], 0);
+    for (y = top; y < bottom; y += step.height) {
+        for (x = left; x < right; x += step.width) {
+            manager.ptr->Render(graphics, frames[4], static_cast<SQFloat>(x),
+                static_cast<SQFloat>(y), 0);
+        }
+    }
+
+    clip.x = leftF;
+    clip.y = static_cast<SQFloat>(area.y);
+    clip.width = widthF;
+    clip.height = static_cast<SQFloat>(area.height);
+    step = manager.ptr->GetRect(frames[1], 0);
+    for (x = left; x < right; x += step.width) {
+        manager.ptr->Render(graphics, frames[1], static_cast<SQFloat>(x), topF, 0);
+    }
+    step = manager.ptr->GetRect(frames[7], 0);
+    for (x = left; x < right; x += step.width) {
+        manager.ptr->Render(graphics, frames[7], static_cast<SQFloat>(x),
+            static_cast<SQFloat>(bottom), 0);
+    }
+
+    clip.x = static_cast<SQFloat>(area.x);
+    clip.y = topF;
+    clip.width = static_cast<SQFloat>(area.width);
+    clip.height = heightF;
+    step = manager.ptr->GetRect(frames[3], 0);
+    for (y = top; y < bottom; y += step.height) {
+        manager.ptr->Render(graphics, frames[3], leftF, static_cast<SQFloat>(y), 0);
+    }
+    step = manager.ptr->GetRect(frames[5], 0);
+    for (y = top; y < bottom; y += step.height) {
+        manager.ptr->Render(graphics, frames[5], static_cast<SQFloat>(right),
+            static_cast<SQFloat>(y), 0);
+    }
+
+    game->clip = 0;
+    const SQFloat rightF = static_cast<SQFloat>(right);
+    const SQFloat bottomF = static_cast<SQFloat>(bottom);
+    manager.ptr->Render(graphics, frames[0], leftF, topF, 0);
+    manager.ptr->Render(graphics, frames[2], rightF, topF, 0);
+    manager.ptr->Render(graphics, frames[6], leftF, bottomF, 0);
+    manager.ptr->Render(graphics, frames[8], rightF, bottomF, 0);
 }
 
 // Script "fillRectByTile"(graphics, rect, tile, spacing, origin, relative):
-// tiles area with ITileManager tile (static 0x004ee784) from origin, shifted
-// by the camera when relative is set. Not recovered yet.
-// STUB: VC1 0x004bd890
+// covers area with tile every (tile size + spacing) pixels, phased so a tile
+// starts at origin; with relative set origin is moved by the camera position
+// in screen space. Tiles that miss the graphics clip rect are skipped.
+// TileManager is this function's own static (guard 0x004ee788, value
+// 0x004ee784).
+// FUNCTION: VC1 0x004bd890
 void ScriptFillRectByTile(const KdPtr<IGraphics>& graphics, const Rect& area, int tile,
     int spacing, const Vector2& origin, bool relative)
 {
-    (void)graphics;
-    (void)area;
-    (void)tile;
-    (void)spacing;
-    (void)origin;
-    (void)relative;
+    static KdPtr<ITileManager> manager;
+    static bool initialized;
+
+    if (!initialized) {
+        void* unknown;
+
+        initialized = true;
+        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
+        if (unknown) {
+            manager.ptr = static_cast<ITileManager*>(
+                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
+            if (manager.ptr) {
+                manager.ptr->AddRef();
+            }
+            static_cast<IUnknown*>(unknown)->Release();
+        }
+        else {
+            manager.ptr = 0;
+        }
+    }
+
+    if (!graphics.ptr) {
+        return;
+    }
+    Vector2 offset = origin;
+    if (relative) {
+        ICamera* const camera = static_cast<ICamera*>(*graphics.ptr->GetCamera());
+        if (!camera) {
+            return;
+        }
+        const Matrix3& position = camera->GetPosition();
+        const Matrix3& m = camera->GetWorldToScreen();
+        const SQFloat screenX = position._32 * m._21 + position._31 * m._11 + m._31;
+        const SQFloat screenY = position._31 * m._12 + position._32 * m._22 + m._32;
+        offset.x -= screenX;
+        offset.y -= screenY;
+    }
+
+    const Rect bounds = manager.ptr->GetRect(tile, 0);
+    const int stepX = bounds.width + spacing;
+    const int stepY = bounds.height + spacing;
+    int shiftX = static_cast<int>(-offset.x) % stepX;
+    if (shiftX < 0) {
+        shiftX += stepX;
+    }
+    const int right = area.width - bounds.x + area.x;
+    int x = area.x - shiftX - bounds.x;
+    int shiftY = static_cast<int>(-offset.y) % stepY;
+    if (shiftY < 0) {
+        shiftY += stepY;
+    }
+    const int top = area.y - bounds.y - shiftY;
+    const int bottom = area.height - bounds.y + area.y;
+
+    for (; x < right; x += stepX) {
+        int y;
+        for (y = top; y < bottom; y += stepY) {
+            const int tileLeft = bounds.x + x;
+            const int tileTop = bounds.y + y;
+            const Rect& clip = graphics.ptr->GetClipRect();
+            if (clip.x < bounds.width + tileLeft && clip.y < bounds.height + tileTop
+                && clip.x + clip.width > tileLeft && clip.y + clip.height > tileTop) {
+                manager.ptr->Render(graphics, tile, static_cast<SQFloat>(x),
+                    static_cast<SQFloat>(y), 0);
+            }
+        }
+    }
 }
 
 // Script "setCursor": stores the resource id in the display window state
