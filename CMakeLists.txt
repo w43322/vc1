@@ -29,6 +29,7 @@ include(cmake/squirrel223.cmake)
 include(cmake/klibc.cmake)
 include(cmake/libtga.cmake)
 include(cmake/jpgd.cmake)
+include(cmake/libpng.cmake)
 include(cmake/sqplus.cmake)
 
 add_executable(vc1_recompiled
@@ -55,6 +56,7 @@ add_executable(vc1_recompiled
   src/kd/display/effect.cpp
   src/pyro/pyro_emitter.cpp
   src/pyro/pyro_file.cpp
+  src/pyro/pyro_image.cpp
   src/pyro/pyro_stream.cpp
   src/pyro/pyro_string.cpp
   src/kd/display/render_target.cpp
@@ -117,9 +119,12 @@ add_executable(vc1_recompiled
   ${KLIBC_SOURCES}
   ${LIBTGA_SOURCES}
   ${JPGD_SOURCES}
+  ${ZLIB_SOURCES}
+  ${LIBPNG_SOURCES}
   ${SQPLUS_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
-  third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b ${SQPLUS_INCLUDE_DIRS})
+  third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
+  ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
 target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi)

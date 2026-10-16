@@ -40,7 +40,7 @@ public:
     unsigned char Texture0c(void* arg);
     int GetWidth();
     int GetHeight();
-    void* Lock(void* region, int mode);
+    void* Lock(void* region, bool readOnly);
     void Unlock();
 };
 
@@ -66,7 +66,7 @@ public:
     unsigned char Texture0c(void* arg);
     int GetWidth();
     int GetHeight();
-    void* Lock(void* region, int mode);
+    void* Lock(void* region, bool readOnly);
     void Unlock();
 };
 

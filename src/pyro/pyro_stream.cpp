@@ -1,4 +1,5 @@
 #include "pyro/pyro_stream.h"
+#include "pyro/pyro_image.h"
 
 namespace vc1 {
 
@@ -26,8 +27,7 @@ int PyroStreamReader::Read(void* buffer, int size)
     return stream->Read(buffer, size);
 }
 
-// Also slot 1 of the 0x004d7cb8 stream (ICF).
-// FUNCTION: VC1 0x0042e830
+// FUNCTION: VC1 0x0042e830 FOLDED
 int PyroStreamReader::Write(const void* buffer, int size)
 {
     return stream->Write(buffer, size);
@@ -41,6 +41,39 @@ int PyroStreamReader::Seek(int offset, int origin)
 
 // FUNCTION: VC1 0x0042e850
 int PyroStreamReader::Tell()
+{
+    return stream->Tell();
+}
+
+// FUNCTION: VC1 0x0042e830 FOLDED
+int PyroImageStreamReader::Read(void* buffer, int size)
+{
+    return stream->Read(buffer, size);
+}
+
+// XOR EAX, EAX; RET 8.
+// FUNCTION: VC1 0x0042e860
+int PyroImageStreamReader::Write(const void* buffer, int size)
+{
+    (void)buffer;
+    (void)size;
+    return 0;
+}
+
+// FUNCTION: VC1 0x0042e870
+int PyroImageStreamReader::GetLength()
+{
+    return stream->GetLength();
+}
+
+// FUNCTION: VC1 0x0042e880
+int PyroImageStreamReader::Seek(int offset, int origin)
+{
+    return stream->Seek(offset, origin);
+}
+
+// FUNCTION: VC1 0x0042e890
+int PyroImageStreamReader::Tell()
 {
     return stream->Tell();
 }

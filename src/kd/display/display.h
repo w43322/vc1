@@ -4,6 +4,7 @@
 #include "kd/iface/iscript_object.h"
 #include "kd/iface/irender_target.h"
 #include "kd/iface/ipyro_device.h"
+#include "pyro/pyro_device.h"
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ishutdownable.h"
 #include "kd/iface/iabstract.h"
@@ -69,6 +70,22 @@ inline unsigned long D3dRelease(IUnknown* object)
     return reinterpret_cast<FnRelease>((*reinterpret_cast<void***>(object))[2])(object);
 }
 IUnknown* LoadTextureFile(const char* name);
+void* LockTextureRect(IUnknown* texture, int x, int y, bool readOnly, int width, int height);
+IUnknown* CreateManagedTexture(unsigned width, unsigned height);
+
+// Inferred name. Pyro device texture: holds the KD texture Pyro14 filled.
+// SIZE 0x08
+// VTABLE: VC1 0x004d6378
+class KdPyroTexture : public PyroDeviceObject
+{
+public:
+    KdRef<ITexture> texture; // 0x04
+
+    explicit KdPyroTexture(KdPtr<ITexture> source);
+};
+
+// SYNTHETIC: VC1 0x0041ae70
+// vc1::KdPyroTexture::`scalar deleting destructor'
 
 // Inferred name. Implements the Pyro device plus the device-level IDisplay
 // slots (SetSize builds g_displayPyro, Display3c) and Shutdown. Constructed
@@ -100,8 +117,8 @@ public:
     int Pyro08(void** out, void* b, void* c, void* d, void* e);
     int Pyro0c(void** out, void* b, void* c, void* d, void* e);
     int Pyro10(void* a, void* b, void* c, void* d);
-    int Pyro14(void* a, void* b, void* c);
-    int Pyro18(void** out, void* b, void* c, void* d, void* e);
+    int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags);
+    int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height, int flags);
     int Pyro1c(void* a);
     int Pyro20(void* a, unsigned value);
     int Pyro24(void* a, void* b, void* c, void* d);

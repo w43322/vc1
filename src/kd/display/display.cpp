@@ -376,6 +376,22 @@ int IPyroDevice::Pyro28(void* a, void* b, void* c, void* d)
     return Pyro24(a, b, c, d);
 }
 
+// ESI=this, RET 4. The by-value source is AddRef'd into the member, then
+// released on return.
+// FUNCTION: VC1 0x0041ae20
+KdPyroTexture::KdPyroTexture(KdPtr<ITexture> source)
+{
+    ITexture* const value = source.ptr;
+
+    if (value) {
+        value->AddRef();
+    }
+    if (texture.ptr) {
+        texture.ptr->Release();
+    }
+    texture = value;
+}
+
 // EAX=HRESULT. DXGetErrorString-style lookup; huge table, recovered as a stub.
 // STUB: VC1 0x00442e14
 static const char* DxGetErrorString(int hr)
@@ -460,16 +476,12 @@ int KdDisplayDevice::Pyro24(void* a, void* b, void* c, void* d)
     return 0;
 }
 
-// RET 0x14. malloc(0x14) object (vftable 0x004d6240) holding b..e; *out = it.
-// The object class is not recovered yet.
-// STUB: VC1 0x00463df0
-int KdDisplayDevice::Pyro18(void** out, void* b, void* c, void* d, void* e)
+// RET 0x14. Wraps the decoded pixels (adopted) in a device image.
+// FUNCTION: VC1 0x00463df0
+int KdDisplayDevice::Pyro18(PyroDeviceImage** out, void* pixels, int width, int height,
+    int flags)
 {
-    (void)b;
-    (void)c;
-    (void)d;
-    (void)e;
-    *out = 0;
+    *out = new PyroDeviceImage(pixels, width, height, flags);
     return 0;
 }
 
@@ -515,14 +527,45 @@ unsigned KdDisplayDevice::AddRef()
     return value;
 }
 
-// RET 0xc. QIs ITexture from the IDisplay CreateTexture result. Body not
-// recovered.
-// STUB: VC1 0x00463ed0
-int KdDisplayDevice::Pyro14(void* a, void* b, void* c)
+// RET 0xc. A KD texture from IDisplay::CreateTexture (QI ITexture; the
+// original never null-checks it), filled with the image's 32-bit pixels and
+// wrapped in a KdPyroTexture.
+// FUNCTION: VC1 0x00463ed0
+int KdDisplayDevice::Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags)
 {
-    (void)a;
-    (void)b;
-    (void)c;
+    IUnknown* created;
+    IUnknown** slot;
+    ITexture* texture;
+    int region[4];
+    void* bits;
+    KdPyroTexture* object;
+
+    (void)flags;
+    slot = reinterpret_cast<IUnknown**>(
+        static_cast<IDisplay*>(this)->CreateTexture(reinterpret_cast<void**>(&created)));
+    if (!*slot) {
+        texture = 0;
+    }
+    else {
+        texture = static_cast<ITexture*>((*slot)->QueryInterface(&g_iidTexture));
+        if (texture) {
+            texture->AddRef();
+        }
+    }
+    if (created) {
+        created->Release();
+    }
+    region[2] = image->width;
+    created = 0;
+    region[3] = image->height;
+    region[0] = 0;
+    region[1] = 0;
+    bits = texture->Lock(region, false);
+    memcpy(bits, image->pixels, image->width * image->height * 4);
+    texture->Unlock();
+    object = static_cast<KdPyroTexture*>(malloc(sizeof(KdPyroTexture)));
+    *out = object ? ::new (object) KdPyroTexture(KdPtr<ITexture>(texture)) : 0;
+    texture->Release();
     return 0;
 }
 
@@ -1490,6 +1533,54 @@ static unsigned char DisplayD3DInit()
     return 1;
 }
 
+// STRING: VC1 0x004d607c
+static const char kCantLockTexture[] = "Can't lock texture";
+
+// ESI=texture, ECX=x, EAX=y, cdecl readOnly/width/height. Inferred name.
+// Only A8R8G8B8/X8R8G8B8 textures lock; a zero width or height locks the whole
+// level. Returns the bits.
+// FUNCTION: VC1 0x00465690
+void* LockTextureRect(IUnknown* texture, int x, int y, bool readOnly, int width, int height)
+{
+    typedef int (__stdcall *FnLevelDesc)(IUnknown* tex, unsigned level, unsigned* desc);
+    typedef int (__stdcall *FnLockRect)(IUnknown* tex, unsigned level, int* locked,
+        const RECT* rect, unsigned flags);
+    unsigned desc[8];
+    RECT rect;
+    const RECT* area;
+    int locked[2];
+    int hr;
+    char buf[512];
+
+    reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(texture))[0xe])(texture, 0, desc);
+    if (desc[0] != 0x15 && desc[0] != 0x16) {
+        return 0;
+    }
+    if (width && height) {
+        rect.left = x;
+        rect.top = y;
+        rect.right = x + width;
+        rect.bottom = y + height;
+        area = &rect;
+    }
+    else {
+        area = 0;
+    }
+    hr = reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(texture))[0x10])(
+        texture, 0, locked, area, readOnly ? 0x10 : 0);
+    if (hr >= 0) {
+        return reinterpret_cast<void*>(locked[1]);
+    }
+    if (hr == 0) {
+        FormatBufferOpen(buf, kPercentS, kCantLockTexture);
+    }
+    else {
+        FormatBufferOpen(buf, kDxErrorFmt, kCantLockTexture, DxGetErrorString(hr));
+    }
+    HostLogError(&g_kdNameDisplay, buf);
+    return 0;
+}
+
 // GLOBAL: VC1 0x004d240c
 extern const char kReadBinary[] = "rb";
 // STRING: VC1 0x004d6014
@@ -1654,6 +1745,33 @@ static IUnknown* LoadPvrTexture(const char* name, int* width, int* height)
     KdFread(reinterpret_cast<void*>(locked[1]), header.dataSize, 1, file);
     reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(texture))[0x11])(texture, 0);
     KdFclose(file);
+    return texture;
+}
+
+// cdecl width/height. Inferred name. A managed one-level A8R8G8B8 texture at
+// the power-of-two size (KdTexture::Lock's lazy storage).
+// FUNCTION: VC1 0x00465b10
+IUnknown* CreateManagedTexture(unsigned width, unsigned height)
+{
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    IUnknown* texture;
+    int hr;
+    char buf[512];
+
+    DisplayD3dPow2Caps(&width, &height);
+    hr = reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+        g_d3dDevice, width, height, 1, 0, 0x15, 1, &texture);
+    if (hr < 0) {
+        if (hr == 0) {
+            FormatBufferOpen(buf, kPercentS, kCantCreateTexture);
+        }
+        else {
+            FormatBufferOpen(buf, kDxErrorFmt, kCantCreateTexture, DxGetErrorString(hr));
+        }
+        HostLogError(&g_kdNameDisplay, buf);
+        return 0;
+    }
     return texture;
 }
 

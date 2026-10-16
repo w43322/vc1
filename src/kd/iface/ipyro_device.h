@@ -3,6 +3,9 @@
 
 namespace vc1 {
 
+struct PyroDeviceImage;
+struct PyroDeviceObject;
+
 // Inferred name. KdDisplayDevice SetSize (0x004641b0) hands this base to the
 // Pyro library Init slot ("Can't init Pyro"). No IID and no IUnknown slots.
 // Slot names are inferred from vtable offsets. Defaults at 0x0041aca0..0x0041ad20.
@@ -15,8 +18,9 @@ struct IPyroDevice
     virtual int Pyro08(void** out, void* b, void* c, void* d, void* e); // vtable+0x08
     virtual int Pyro0c(void** out, void* b, void* c, void* d, void* e); // vtable+0x0c
     virtual int Pyro10(void* a, void* b, void* c, void* d) = 0;       // vtable+0x10
-    virtual int Pyro14(void* a, void* b, void* c) = 0;                // vtable+0x14
-    virtual int Pyro18(void** out, void* b, void* c, void* d, void* e) = 0; // vtable+0x18
+    virtual int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags) = 0; // vtable+0x14
+    virtual int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height,
+        int flags) = 0;                                               // vtable+0x18
     virtual int Pyro1c(void* a) = 0;                                  // vtable+0x1c
     virtual int Pyro20(void* a, unsigned value) = 0;                  // vtable+0x20
     virtual int Pyro24(void* a, void* b, void* c, void* d);           // vtable+0x24

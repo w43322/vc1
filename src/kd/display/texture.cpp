@@ -106,10 +106,10 @@ unsigned KdRenderTexture::AddRef()
 // RET 8. Copies the render target into a system-memory surface
 // (CreateImageSurface, CopyRects) and locks it; only one lock at a time.
 // STUB: VC1 0x0045be10
-void* KdRenderTexture::Lock(void* region, int mode)
+void* KdRenderTexture::Lock(void* region, bool readOnly)
 {
     (void)region;
-    (void)mode;
+    (void)readOnly;
     return 0;
 }
 
@@ -227,13 +227,20 @@ void** KdTexture::Clone(void** out)
     return out;
 }
 
-// Locks native storage and lazily creates it from region width/height.
-// STUB: VC1 0x0045c290
-void* KdTexture::Lock(void* region, int mode)
+// RET 8. this = ITexture. region is {x, y, width, height}. The first
+// writable lock of an empty texture creates the native texture at the
+// region's size (the old native is not released).
+// FUNCTION: VC1 0x0045c290
+void* KdTexture::Lock(void* region, bool readOnly)
 {
-    (void)region;
-    (void)mode;
-    return 0;
+    const int* const rect = static_cast<const int*>(region);
+
+    if (!readOnly && !width && !height) {
+        width = rect[2];
+        height = rect[3];
+        native = CreateManagedTexture(width, height);
+    }
+    return LockTextureRect(native, rect[0], rect[1], readOnly, rect[2], rect[3]);
 }
 
 // RET 8. Script method lookup over GetWidth/GetHeight (table 0x004ee4bc,

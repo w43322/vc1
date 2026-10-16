@@ -1,6 +1,7 @@
 #ifndef VC1_PYRO_FILE_H
 #define VC1_PYRO_FILE_H
 
+#include "pyro/pyro_device.h"
 #include "pyro/pyro_stream.h"
 #include "pyro/pyro_string.h"
 
@@ -32,16 +33,6 @@ struct PyroKey12
     int v[3];
 };
 
-// Object the device creates for a texture blob or a shape; deleted through
-// slot 2 with flag 1.
-// SIZE 0x04
-struct PyroDeviceObject
-{
-    virtual void Object00() = 0;                          // vtable+0x00
-    virtual void Object04() = 0;                          // vtable+0x04
-    virtual void* DeletingDestructor(unsigned flags) = 0; // vtable+0x08
-};
-
 // Raw texture file bytes stored in the .pyro file.
 // SIZE 0x18
 struct PyroTextureData
@@ -53,7 +44,7 @@ struct PyroTextureData
     void* data;               // 0x08
     int size;                 // 0x0c
     PyroDeviceObject* object; // 0x10
-    int field14;              // 0x14
+    PyroDeviceImage* image;   // 0x14  device image made by CreateTexture
 
     PyroTextureData() : owner(0), data(0), size(0), object(0) {}
     ~PyroTextureData()
@@ -62,7 +53,7 @@ struct PyroTextureData
             free(data);
         }
         if (object) {
-            object->DeletingDestructor(1);
+            delete object;
         }
     }
 
@@ -254,7 +245,7 @@ struct PyroShape
     VC1_PYRO_HEAP
 
     int field00;              // 0x00
-    int field04;              // 0x04
+    PyroDeviceImage* image;   // 0x04  only alive inside CreateTexture
     PyroDeviceObject* object; // 0x08
     PyroLibrary* library;     // 0x0c
     float field10;            // 0x10
@@ -262,7 +253,7 @@ struct PyroShape
     void* data;               // 0x18  frame 0 image bytes
     int dataSize;             // 0x1c
 
-    PyroShape() : field04(0), object(0), data(0), dataSize(0) {}
+    PyroShape() : image(0), object(0), data(0), dataSize(0) {}
     ~PyroShape()
     {
         if (data) {
@@ -270,13 +261,13 @@ struct PyroShape
             data = 0;
         }
         if (object) {
-            object->DeletingDestructor(1);
+            delete object;
             object = 0;
         }
     }
 
     void Read(PyroArchive& ar);
-    void CreateTexture();
+    bool CreateTexture();
 };
 
 // SYNTHETIC: VC1 0x0042edb0

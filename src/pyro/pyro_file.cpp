@@ -5,7 +5,9 @@
 
 #include "host/runtime.h"
 #include "kd/display/pyro.h"
+#include "kd/iface/ipyro_device.h"
 #include "pyro/pyro_emitter.h"
+#include "pyro/pyro_image.h"
 
 namespace vc1 {
 
@@ -99,7 +101,7 @@ void PyroFile::DestroyTextures()
     for (int i = 0; i < shapeCount; ++i) {
         PyroShape* const shape = &shapes[i];
         if (shape->object) {
-            shape->object->DeletingDestructor(1);
+            delete shape->object;
             shape->object = 0;
         }
     }
@@ -398,10 +400,31 @@ void PyroTextureData::Read(PyroArchive& ar)
     name.Release();
 }
 
-// Stack shape. Body not recovered yet.
-// STUB: VC1 0x00455a60
-void PyroShape::CreateTexture()
+// Stack shape, RET 4. Decodes frame 0, has the device wrap it in an image
+// (adopting the pixels) and build the texture, then frees the image.
+// FUNCTION: VC1 0x00455a60
+bool PyroShape::CreateTexture()
 {
+    if (object) {
+        return true;
+    }
+    PyroMemoryStream memory(data, dataSize);
+    PyroImageStreamReader reader(&memory);
+    PyroImage decoded;
+    if (!PyroDecodeImage(&reader, &decoded)) {
+        return false;
+    }
+    library->device->Pyro18(&image, decoded.pixels, decoded.width, decoded.height, 0);
+    library->device->Pyro14(&object, image, 0);
+    decoded.pixels = 0;
+    if (image && image->pixels) {
+        free(image->pixels);
+    }
+    if (image) {
+        delete image;
+        image = 0;
+    }
+    return true;
 }
 
 // EDI=this, stack ar and version. Graphic type 1 is the only known type; any
@@ -444,11 +467,21 @@ void PyroResources::Read(PyroArchive& ar, int version)
     }
 }
 
-// RET 8 (texture data, library). Body not recovered yet.
-// STUB: VC1 0x004561b0
+// RET 8 (texture data, library). Only the device image is made (it adopts
+// the decoded pixels); the decode result is not checked.
+// FUNCTION: VC1 0x004561b0
 void PyroTextureData::CreateTexture(PyroLibrary* library)
 {
-    (void)library;
+    if (object) {
+        return;
+    }
+    PyroMemoryStream memory(data, size);
+    PyroImageStreamReader reader(&memory);
+    PyroImage decoded;
+    PyroDecodeImage(&reader, &decoded);
+    library->device->Pyro18(&image, decoded.pixels, decoded.width, decoded.height, 0);
+    decoded.pixels = 0;
+    object = 0;
 }
 
 // ECX=this, EAX=version, stack ar.
