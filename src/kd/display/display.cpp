@@ -889,6 +889,57 @@ void* BeginQuadBatch(unsigned flags, IUnknown* texture, int* capacity)
     return reinterpret_cast<void*>(g_batchVertices);
 }
 
+struct BatchLineEntry
+{
+    BatchVertex from;
+    BatchVertex to;
+};
+
+// The batch pointer is re-read for every field, as in the original.
+static __forceinline BatchLineEntry& BatchLineAt(int index)
+{
+    return reinterpret_cast<BatchLineEntry*>(g_batchVertices)[index];
+}
+
+// cdecl, EDI=color. Inferred name. Appends one untextured line (two 0x18-byte
+// vertices at depth z) to a line-list batch, flushing first unless the batch
+// already holds lines (fewer than 2000) with flags 2 and no texture.
+// FUNCTION: VC1 0x004645a0
+void BatchLine(float x0, float y0, float x1, float y1, float z, unsigned color)
+{
+    typedef int (__stdcall *FnSetTexture)(IUnknown* device, unsigned stage, IUnknown* texture);
+
+    if (g_batchVertices == 0) {
+        return;
+    }
+    if (g_batchKind != 2 || g_batchCount >= 2000 || g_batchTexture != 0 || g_batchFlags != 2) {
+        FlushBatch(0);
+        g_batchKind = 2;
+        if (g_batchFlags != 2) {
+            SetBatchFlags(2);
+        }
+        if (g_batchTexture != 0) {
+            reinterpret_cast<FnSetTexture>((*reinterpret_cast<void***>(g_d3dDevice))[0x3d])(
+                g_d3dDevice, 0, 0);
+            g_batchTexture = 0;
+        }
+    }
+    const int index = g_batchCount;
+    BatchLineAt(index).from.x = x0;
+    g_batchCount = index + 1;
+    BatchLineAt(index).to.x = x1;
+    BatchLineAt(index).from.y = y0;
+    BatchLineAt(index).to.y = y1;
+    BatchLineAt(index).to.z = z;
+    BatchLineAt(index).from.z = z;
+    BatchLineAt(index).to.color = color;
+    BatchLineAt(index).from.color = color;
+    BatchLineAt(index).to.v = 0.0f;
+    BatchLineAt(index).from.v = 0.0f;
+    BatchLineAt(index).to.u = 0.0f;
+    BatchLineAt(index).from.u = 0.0f;
+}
+
 // EAX=matrix. View = world with the 2D axes/origin of matrix, then
 // SetTransform(D3DTS_VIEW, g_d3dView) via device vtable+0x94.
 // FUNCTION: VC1 0x00464710

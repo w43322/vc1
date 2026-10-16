@@ -11,6 +11,7 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/ifont.h"
 
+#include <math.h>
 #include <string.h>
 
 namespace vc1 {
@@ -79,14 +80,17 @@ KdGraphics::~KdGraphics()
     camera = 0;
 }
 
-// RET 0x10. Script "DrawRect"; draws through vtable+0x64. Body not recovered.
-// STUB: VC1 0x0045c610
+// RET 0x10. Script "DrawRect": the outline as four DrawLine calls
+// (vtable+0x64), clockwise from the top left.
+// FUNCTION: VC1 0x0045c610
 void KdGraphics::DrawRect(float x, float y, float width, float height)
 {
-    (void)x;
-    (void)y;
-    (void)width;
-    (void)height;
+    const float right = x + width;
+    DrawLine(x, y, right, y);
+    const float bottom = y + height;
+    DrawLine(right, y, right, bottom);
+    DrawLine(right, bottom, x, bottom);
+    DrawLine(x, bottom, x, y);
 }
 
 // LEA EAX, [ECX+0x54]; RET.
@@ -112,25 +116,32 @@ unsigned char KdGraphics::SetMember(void* a, void* b)
     return 0;
 }
 
-// RET 0x10. Script "DrawEllipse" (four floats, the same Call as DrawRect).
-// Body not recovered.
-// STUB: VC1 0x0045c700
+// RET 0x10. Script "DrawEllipse" (four floats, the same Call as DrawRect):
+// the ellipse inscribed in the rect as DrawLine segments of pi/10.
+// FUNCTION: VC1 0x0045c700
 void KdGraphics::DrawEllipse(float x, float y, float width, float height)
 {
-    (void)x;
-    (void)y;
-    (void)width;
-    (void)height;
+    const float halfWidth = static_cast<float>(width * 0.5);
+    const float centerX = x + halfWidth;
+    const float halfHeight = static_cast<float>(0.5 * height);
+    const float centerY = y + halfHeight;
+    float angle = 0.0f;
+
+    do {
+        const float next = static_cast<float>(angle + 0.3141592741012573);
+        DrawLine(static_cast<float>(cos(static_cast<double>(angle))) * halfWidth + centerX,
+            static_cast<float>(sin(static_cast<double>(angle))) * halfHeight + centerY,
+            static_cast<float>(cos(static_cast<double>(next))) * halfWidth + centerX,
+            static_cast<float>(sin(static_cast<double>(next))) * halfHeight + centerY);
+        angle = next;
+    } while (angle < 6.2831854820251465);
 }
 
-// RET 0x10. Script "DrawLine". Body not recovered.
-// STUB: VC1 0x0045c810
+// RET 0x10. Script "DrawLine": one line of the batch in the current color.
+// FUNCTION: VC1 0x0045c810
 void KdGraphics::DrawLine(float x0, float y0, float x1, float y1)
 {
-    (void)x0;
-    (void)y0;
-    (void)x1;
-    (void)y1;
+    BatchLine(x0, y0, x1, y1, 0.5f, state.color);
 }
 
 // RET 0xc. Inferred name. Without state.font (+0x40) nothing is drawn.

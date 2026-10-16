@@ -48,6 +48,7 @@ extern int g_batchCount; // display.cpp
 
 void PushQuad(const BatchQuad* quad);
 void* BeginQuadBatch(unsigned flags, IUnknown* texture, int* capacity);
+void BatchLine(float x0, float y0, float x1, float y1, float z, unsigned color);
 void DisplayD3dSetClip(int x, int y, int width, int height);
 
 // Inferred name. A texture loaded from a file and its image size (before the
