@@ -6,6 +6,15 @@
 
 namespace vc1 {
 
+// Inferred name. ECX=this, EAX=other. Strict overlap of two rectangles that
+// share no more than an edge.
+// FUNCTION: VC1 0x00402440
+bool Rect::Overlaps(const Rect& other) const
+{
+    return x < other.width + other.x && y < other.height + other.y
+        && width + x > other.x && height + y > other.y;
+}
+
 // Bound as "Union" (0x004d7418) via 0x004230a0 from 0x004c1419 (dispatcher
 // 0x004249b0). this in ECX, other on the stack; RET 4. In-place xywh union.
 // FUNCTION: VC1 0x00409b10

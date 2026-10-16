@@ -1460,8 +1460,8 @@ static unsigned char DisplayD3DInit()
     return 1;
 }
 
-// STRING: VC1 0x004d240c
-static const char kReadBinary[] = "rb";
+// GLOBAL: VC1 0x004d240c
+extern const char kReadBinary[] = "rb";
 // STRING: VC1 0x004d6014
 static const char kCantCreateTexture[] = "Can't create texture";
 // STRING: VC1 0x004d6044

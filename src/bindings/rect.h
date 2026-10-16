@@ -34,6 +34,7 @@ struct Rect
     bool IsEmpty() const;                              // "IsEmpty"
     bool IsPointIn(SQInteger px, SQInteger py) const;  // "IsPointIn"
     bool Intersect(const Rect& other);                 // "Intersect"
+    bool Overlaps(const Rect& other) const;
     KdString& ToString() const;                        // "_tostring"
 
     static SQInteger ConstructArgs(HSQUIRRELVM vm); // "constructor" with typemask "*"

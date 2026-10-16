@@ -265,6 +265,8 @@ char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
 void* OpenKdPath(const char* path, const char* mode);
 // 0x00487140; cdecl path + mode
 void* OpenKdFile(const char* path, const char* mode);
+// 0x004870c0; ESI=file, EBX=size out
+void* KdMapFile(void* file, unsigned* size);
 // 0x00476e60
 int ProbeDebuggerPresent();
 // 0x00477240

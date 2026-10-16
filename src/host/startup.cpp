@@ -544,6 +544,34 @@ static HANDLE DirFindFirst(const char* path, WIN32_FIND_DATAA* data)
     return FindFirstFileA(pattern, data);
 }
 
+// Inferred name. ESI=file, EBX=size out. The whole file: the driver's map
+// slot when it has one, else fstat, malloc and KdFread. The caller releases
+// it through the unmap slot, or free() without one.
+// FUNCTION: VC1 0x004870c0
+void* KdMapFile(void* file, unsigned* size)
+{
+    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    KdFileStat stat;
+    void* buffer;
+
+    if (!handle) {
+        errno = 0x11;
+        return 0;
+    }
+    if (handle->driver->map) {
+        return handle->driver->map(handle->driver, handle->native, size);
+    }
+    buffer = 0;
+    if (handle->driver->fstat(handle->driver, handle->native, &stat) == 0) {
+        buffer = malloc(static_cast<size_t>(stat.size));
+        if (buffer) {
+            KdFread(buffer, 1, static_cast<unsigned>(stat.size), file);
+            *size = static_cast<unsigned>(stat.size);
+        }
+    }
+    return buffer;
+}
+
 // cdecl path + mode. Strip leading '.' and '/', remap res/ via KD_LOCALE, then OpenKdPath.
 // FUNCTION: VC1 0x00487140
 void* OpenKdFile(const char* path, const char* mode)

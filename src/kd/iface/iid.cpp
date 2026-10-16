@@ -138,6 +138,9 @@ const char* g_iidClassifiable = kIidClassifiable;
 // GLOBAL: VC1 0x004d05e8
 // STRING: VC1 0x004d4d4c
 const char* g_iidVisible = "IVisible";
+// GLOBAL: VC1 0x004d0628
+// STRING: VC1 0x004d4c54
+const char* g_iidTileManager = "ITileManager";
 // GLOBAL: VC1 0x004d05f0
 // STRING: VC1 0x004d4d28
 const char* g_iidManualControl = "IManualControl";
