@@ -22,6 +22,7 @@
 #include "kd/route/transport_mover.h"
 #include "kd/render/group_renderer.h"
 #include "kd/road/road_cells_renderer.h"
+#include "kd/world/game_object.h"
 
 namespace vc1 {
 
@@ -862,6 +863,20 @@ void* KdGridRectRenderer::QueryInterface(const char** iid)
         return static_cast<IGridRenderer*>(this);
     }
     if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. KdScriptedObject's faces first, then IAbstract.
+// FUNCTION: VC1 0x004b0ae0
+void* KdGameObject::QueryInterface(const char** iid)
+{
+    void* face = KdScriptedObject::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidAbstract) {
         return static_cast<IAbstract*>(this);
     }
     return 0;
