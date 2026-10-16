@@ -198,6 +198,9 @@ class Symbols:
     def load_map(self, path, base_delta=0):
         pat = re.compile(r"^\s*[0-9a-fA-F]{4}:[0-9a-fA-F]{8}\s+(\S+)\s+([0-9a-fA-F]{8})\s")
         pairs = []
+        if not os.path.exists(path):
+            print("== no map file %s; addresses stay unsymbolized" % path)
+            return
         with open(path, "r", errors="replace") as f:
             for line in f:
                 m = pat.match(line)
@@ -326,6 +329,17 @@ def dump(hproc, hthread, syms, title):
     return ctx
 
 
+def arm_watch(hthread, addr):
+    """4-byte hardware write watchpoint in DR0."""
+    ctx = WOW64_CONTEXT()
+    ctx.ContextFlags = WOW64_CONTEXT_ALL
+    if not k32.Wow64GetThreadContext(hthread, ctypes.byref(ctx)):
+        return
+    ctx.Dr0 = addr
+    ctx.Dr7 = (ctx.Dr7 & ~0x000F0003) | 0x000D0001
+    k32.Wow64SetThreadContext(hthread, ctypes.byref(ctx))
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     ap = argparse.ArgumentParser()
@@ -337,6 +351,12 @@ def main():
     ap.add_argument("--bp-max", type=int, default=5, help="hits printed per breakpoint")
     ap.add_argument("--keep", action="store_true")
     ap.add_argument("--nolog", action="store_true", help="do not trace vc1::KdLog")
+    ap.add_argument("--watch", default=None, help="recompiled VA: hardware write watchpoint (4 bytes)")
+    ap.add_argument("--watch-ptr", default=None,
+                    help="recompiled VA of a pointer; each --bp hit re-arms --watch on its target")
+    ap.add_argument("--watch-ofs", type=lambda s: int(s, 0), default=0,
+                    help="signed offset added to the --watch-ptr target")
+    ap.add_argument("--watch-max", type=int, default=20, help="hits printed for --watch")
     ap.add_argument("args", nargs="*")
     a = ap.parse_args()
     mapfile = a.map or os.path.splitext(a.exe)[0] + ".map"
@@ -361,6 +381,8 @@ def main():
     seen_loader_bp = False
     exit_code = None
     log_addr = None
+    watch_addr = None
+    watch_hits = 0
     while True:
         if time.time() - start > a.timeout:
             print("== timeout after %.0fs; process still running" % a.timeout)
@@ -394,8 +416,14 @@ def main():
                     bps[addr] = orig
                     bp_hits[addr] = 0
                     print("  bp %08x %s" % (addr, syms.lookup(addr) or ""))
+            if a.watch:
+                watch_addr = int(a.watch, 16) + delta
+                arm_watch(pi.hThread, watch_addr)
+                print("  watch %08x %s" % (watch_addr, syms.lookup(watch_addr) or ""))
         elif code == CREATE_THREAD_DEBUG_EVENT:
             threads[ev.dwThreadId] = ev.u.CreateThread.hThread
+            if watch_addr is not None:
+                arm_watch(ev.u.CreateThread.hThread, watch_addr)
         elif code == EXIT_THREAD_DEBUG_EVENT:
             threads.pop(ev.dwThreadId, None)
         elif code == LOAD_DLL_DEBUG_EVENT:
@@ -435,6 +463,16 @@ def main():
                         sys.stdout.write("  log: " + msg.rstrip("\n") + "\n")
                     elif bp_hits[addr] <= a.bp_max:
                         dump(hproc, hthread, syms, "breakpoint %08x hit %d" % (addr, bp_hits[addr]))
+                    if a.watch_ptr and addr != log_addr:
+                        target = int.from_bytes(read(hproc, int(a.watch_ptr, 16) + delta, 4) or b"\0\0\0\0",
+                                                "little")
+                        if target:
+                            watch_addr = (target + a.watch_ofs) & 0xffffffff
+                            for h in threads.values():
+                                arm_watch(h, watch_addr)
+                            k32.Wow64GetThreadContext(hthread, ctypes.byref(ctx))
+                            print("  watch re-armed on %08x (ptr %08x, bytes %s)" % (
+                                watch_addr, target, (read(hproc, watch_addr, 16) or b"").hex(" ", 4)))
                     ctx.Eip = addr
                     ctx.EFlags |= 0x100  # single step to re-arm
                     k32.Wow64SetThreadContext(hthread, ctypes.byref(ctx))
@@ -446,9 +484,21 @@ def main():
                     dump(hproc, hthread, syms, "int3 at %08x" % addr)
             elif exc in (0x80000004, 0x4000001E):
                 re_addr = pending_rearm.pop(ev.dwThreadId, None)
+                ctx = WOW64_CONTEXT()
+                ctx.ContextFlags = WOW64_CONTEXT_ALL
+                k32.Wow64GetThreadContext(hthread, ctypes.byref(ctx))
+                watched = watch_addr is not None and bool(ctx.Dr6 & 1)
+                if watched:
+                    watch_hits += 1
+                    if watch_hits <= a.watch_max:
+                        value = int.from_bytes(read(hproc, watch_addr, 4) or b"\0\0\0\0", "little")
+                        dump(hproc, hthread, syms, "watch %08x write %d, now %08x" % (
+                            watch_addr, watch_hits, value))
+                    ctx.Dr6 = 0
+                    k32.Wow64SetThreadContext(hthread, ctypes.byref(ctx))
                 if re_addr is not None:
                     write(hproc, re_addr, b"\xcc")
-                else:
+                elif not watched:
                     status = DBG_EXCEPTION_NOT_HANDLED
             elif exc == 0x406D1388 or exc == 0xE06D7363:
                 status = DBG_EXCEPTION_NOT_HANDLED

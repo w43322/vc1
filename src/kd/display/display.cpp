@@ -13,6 +13,8 @@
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
 
+#include <tga.h>
+
 #include <errno.h>
 #include <new>
 #include <stdlib.h>
@@ -60,7 +62,7 @@ void* g_d3dChain;
 // GLOBAL: VC1 0x004ed604
 void* g_d3dLastMixer;
 // GLOBAL: VC1 0x004ed608
-void* g_d3dChain2;
+TrackedTexture* g_d3dChain2;
 // Inferred names for the 2D batch: locked vertex pointer, queued primitive
 // count, primitive kind (2 lines, 3 triangles, 4 indexed quads), render-state
 // flags and the bound D3D texture.
@@ -147,7 +149,7 @@ static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
 static void FlushBatch(char final);
 static void DisplayD3DTeardown();
 static void DisplayD3dSetBuffers(int right, int bottom, int left, int top);
-static void DisplayD3dLogHresult(int hr, char flag);
+static void DisplayD3dLogHresult(int hr, const char* message, char flag);
 static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
@@ -817,6 +819,33 @@ static void DisplayD3dPow2Caps(unsigned* w, unsigned* h)
     }
 }
 
+// ESI=texture. Inferred name. Unlinks the texture's node from g_d3dChain2 (if
+// tracked) and releases the texture.
+// FUNCTION: VC1 0x00464810
+void ReleaseTrackedTexture(IUnknown* texture)
+{
+    TrackedTexture* node = g_d3dChain2;
+    TrackedTexture* prev = 0;
+
+    while (node) {
+        if (node->texture == texture) {
+            if (prev) {
+                prev->next = node->next;
+            }
+            else {
+                g_d3dChain2 = node->next;
+            }
+            free(node);
+            break;
+        }
+        prev = node;
+        node = node->next;
+    }
+    if (texture) {
+        D3dRelease(texture);
+    }
+}
+
 // EDI=quad. Inferred name. Callers: KdGraphics::FillRect (0x0045ccb0) and
 // KdGraphics::DrawImage (0x0045cb10). Flushes when the batch kind, the
 // 1000-quad limit, the texture or the flags change, then appends the four
@@ -859,28 +888,18 @@ static void DisplayD3DTeardown()
     typedef int (__stdcall *Fn30)(IUnknown* object);
 
     while (g_d3dChain2) {
-        object = *reinterpret_cast<IUnknown**>(g_d3dChain2);
-        next = *reinterpret_cast<void**>(static_cast<unsigned char*>(g_d3dChain2) + 0xc);
-        if (g_d3dChain2 == g_d3dChain2) {
-            g_d3dChain2 = next;
-        }
-        free(g_d3dChain2);
-        if (object) {
-            object->Release();
-        }
-        g_d3dChain2 = next;
-        break;
+        ReleaseTrackedTexture(g_d3dChain2->texture);
     }
 
     if (g_d3dBackBuffer) {
-        g_d3dBackBuffer->Release();
+        D3dRelease(g_d3dBackBuffer);
         g_d3dBackBuffer = 0;
     }
     node = g_d3dChain;
     while (node) {
         object = *reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(node) + 8);
         if (object) {
-            object->Release();
+            D3dRelease(object);
         }
         next = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc);
         free(node);
@@ -892,7 +911,7 @@ static void DisplayD3DTeardown()
             reinterpret_cast<Fn154>((*reinterpret_cast<void***>(g_d3dDevice))[0x55])(
                 g_d3dDevice, 0, 0);
         }
-        g_d3dSurface->Release();
+        D3dRelease(g_d3dSurface);
         g_d3dSurface = 0;
     }
     if (g_d3dVertexBuffer) {
@@ -904,15 +923,15 @@ static void DisplayD3DTeardown()
             reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
                 g_d3dDevice, 0, 0, 0x18);
         }
-        g_d3dVertexBuffer->Release();
+        D3dRelease(g_d3dVertexBuffer);
         g_d3dVertexBuffer = 0;
     }
     if (g_d3dDevice) {
-        g_d3dDevice->Release();
+        D3dRelease(g_d3dDevice);
         g_d3dDevice = 0;
     }
     if (g_d3dObject) {
-        g_d3dObject->Release();
+        D3dRelease(g_d3dObject);
         g_d3dObject = 0;
     }
 }
@@ -1094,17 +1113,17 @@ static const char* g_d3dFormatNames[6] = {
     kFmtUnknown, kFmtR5G6B5, kFmtX1R5G5B5, kFmtA1R5G5B5, kFmtX8R8G8B8, kFmtA8R8G8B8
 };
 
-// EAX=HRESULT, ESI=prefix. cdecl flag. Logs via FormatBuffer; optional MB_ICONERROR.
+// EAX=HRESULT, ESI=message. cdecl flag. Optional MB_ICONERROR.
 // FUNCTION: VC1 0x00464d60
-static void DisplayD3dLogHresult(int hr, char flag)
+static void DisplayD3dLogHresult(int hr, const char* message, char flag)
 {
     char buf[512];
 
     if (hr == 0) {
-        FormatBuffer(buf, sizeof(buf), kPercentS, g_kdNameDisplay);
+        FormatBufferOpen(buf, kPercentS, message);
     }
     else {
-        FormatBuffer(buf, sizeof(buf), kDxErrorFmt, g_kdNameDisplay, DxGetErrorString(hr));
+        FormatBufferOpen(buf, kDxErrorFmt, message, DxGetErrorString(hr));
     }
     HostLogError(&g_kdNameDisplay, buf);
     if (flag != 0) {
@@ -1190,7 +1209,7 @@ static unsigned char DisplayD3dRecreate()
     hr = reinterpret_cast<FnLock>((*reinterpret_cast<void***>(g_d3dSurface))[0xb])(
         g_d3dSurface, 0, 0, &indices, 0);
     if (hr < 0) {
-        DisplayD3dLogHresult(hr, 0);
+        DisplayD3dLogHresult(hr, kCantLockIb, 0);
         return 0;
     }
     base = 2;
@@ -1263,24 +1282,24 @@ static unsigned char DisplayD3dReset()
     typedef int (__stdcall *FnReset)(IUnknown* device, void* present);
 
     if (g_d3dBackBuffer) {
-        g_d3dBackBuffer->Release();
+        D3dRelease(g_d3dBackBuffer);
     }
     for (node = g_d3dChain; node;
         node = *reinterpret_cast<void**>(static_cast<unsigned char*>(node) + 0xc)) {
         object = *reinterpret_cast<IUnknown**>(static_cast<unsigned char*>(node) + 8);
         if (object) {
-            object->Release();
+            D3dRelease(object);
         }
     }
     if (g_d3dSurface) {
         reinterpret_cast<Fn154>((*reinterpret_cast<void***>(g_d3dDevice))[0x55])(
             g_d3dDevice, 0, 0);
-        g_d3dSurface->Release();
+        D3dRelease(g_d3dSurface);
     }
     if (g_d3dVertexBuffer) {
         reinterpret_cast<Fn14c>((*reinterpret_cast<void***>(g_d3dDevice))[0x53])(
             g_d3dDevice, 0, 0, 0x18);
-        g_d3dVertexBuffer->Release();
+        D3dRelease(g_d3dVertexBuffer);
     }
     reinterpret_cast<FnReset>((*reinterpret_cast<void***>(g_d3dDevice))[0xe])(
         g_d3dDevice, g_displayMode);
@@ -1348,7 +1367,7 @@ static unsigned char DisplayD3DInit()
     hr = reinterpret_cast<FnMode>((*reinterpret_cast<void***>(g_d3dObject))[8])(
         g_d3dObject, 0, desktop);
     if (hr < 0 || desktop[3] == 0) {
-        DisplayD3dLogHresult(hr, g_displaySkipDevice);
+        DisplayD3dLogHresult(hr, kCantDesktopMode, g_displaySkipDevice);
         return 0;
     }
     memset(g_d3dPresentWindowed, 0, sizeof(g_d3dPresentWindowed));
@@ -1424,7 +1443,7 @@ static unsigned char DisplayD3DInit()
     hr = reinterpret_cast<FnCreateDev>((*reinterpret_cast<void***>(g_d3dObject))[0xf])(
         g_d3dObject, 0, 1, g_kdDisplayWindow, 0x20, present, &g_d3dDevice);
     if (hr < 0) {
-        DisplayD3dLogHresult(hr, 1);
+        DisplayD3dLogHresult(hr, kCantCreateDevice, 1);
         return 0;
     }
     Display28Finish();
@@ -1439,6 +1458,105 @@ static unsigned char DisplayD3DInit()
     }
     DisplayD3dClear(0);
     return 1;
+}
+
+// STRING: VC1 0x004d240c
+static const char kReadBinary[] = "rb";
+// STRING: VC1 0x004d6014
+static const char kCantCreateTexture[] = "Can't create texture";
+// STRING: VC1 0x004d6044
+static const char kUnsupportedTgaDepth[] = "Unsupported tga depth";
+
+// EAX=name, cdecl out width/height (the image size). Inferred name. 24- or
+// 32-bit TGA through libtga into a managed A8R8G8B8/X8R8G8B8 texture sized by
+// the power-of-two caps; rows are flipped unless the image is top-down and
+// 24-bit rows are widened in place.
+// FUNCTION: VC1 0x00465770
+static IUnknown* LoadTgaTexture(const char* name, int* width, int* height)
+{
+    typedef int (__stdcall *FnCreateTex)(IUnknown* device, unsigned w, unsigned h,
+        unsigned levels, unsigned usage, unsigned format, unsigned pool, IUnknown** out);
+    typedef int (__stdcall *FnLockRect)(IUnknown* tex, unsigned level, int* locked,
+        const RECT* rect, unsigned flags);
+    typedef int (__stdcall *FnUnlockRect)(IUnknown* tex, unsigned level);
+    IUnknown* texture;
+    unsigned texWidth;
+    unsigned texHeight;
+    int locked[2];
+    unsigned char* row;
+    int step;
+    int y;
+    int x;
+    int hr;
+    char buf[512];
+
+    TGA* const tga = TGAOpen(const_cast<char*>(name), const_cast<char*>(kReadBinary));
+    if (!tga) {
+        return 0;
+    }
+    if (tga->last != TGA_OK || TGAReadHeader(tga) != TGA_OK) {
+        FormatBufferOpen(buf, kPercentS, TGAStrError(static_cast<tuint8>(tga->last)));
+    }
+    else if (tga->hdr.depth != 32 && tga->hdr.depth != 24) {
+        FormatBufferOpen(buf, kPercentS, kUnsupportedTgaDepth);
+    }
+    else {
+        *width = tga->hdr.width;
+        *height = tga->hdr.height;
+        texWidth = tga->hdr.width;
+        texHeight = tga->hdr.height;
+        DisplayD3dPow2Caps(&texWidth, &texHeight);
+        hr = reinterpret_cast<FnCreateTex>((*reinterpret_cast<void***>(g_d3dDevice))[0x14])(
+            g_d3dDevice, texWidth, texHeight, 1, 0, tga->hdr.depth != 32 ? 0x16 : 0x15, 1,
+            &texture);
+        if (hr < 0) {
+            DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+            TGAClose(tga);
+            return 0;
+        }
+        hr = reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(texture))[0x10])(
+            texture, 0, locked, 0, 0);
+        if (hr < 0) {
+            DisplayD3dLogHresult(hr, kCantCreateTexture, 0);
+            D3dRelease(texture);
+            TGAClose(tga);
+            return 0;
+        }
+        row = reinterpret_cast<unsigned char*>(locked[1]);
+        step = locked[0];
+        if (!tga->hdr.vert) {
+            row += (*height - 1) * locked[0];
+            step = -locked[0];
+        }
+        for (y = 0; y < *height; y++) {
+            if (TGAReadScanlines(tga, row, y, 1, 0) != 1) {
+                break;
+            }
+            if (tga->hdr.depth == 24) {
+                for (x = *width - 1; x >= 0; x--) {
+                    reinterpret_cast<unsigned*>(row)[x] =
+                        *reinterpret_cast<unsigned*>(row + x * 3) | 0xff000000;
+                }
+            }
+            row += step;
+        }
+        reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(texture))[0x11])(texture, 0);
+        TGAClose(tga);
+        return texture;
+    }
+    HostLogError(&g_kdNameDisplay, buf);
+    TGAClose(tga);
+    return 0;
+}
+
+// EAX=name, cdecl out width/height. PVRTC loader.
+// STUB: VC1 0x00465990
+static IUnknown* LoadPvrTexture(const char* name, int* width, int* height)
+{
+    (void)name;
+    (void)width;
+    (void)height;
+    return 0;
 }
 
 // cdecl width/height. CreateTexture + GetLevelDesc; link node onto g_d3dChain.
@@ -1554,6 +1672,61 @@ static int Display28Apply(unsigned char windowed)
     g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
     DisplayD3dReset();
     return Display28Finish();
+}
+
+// cdecl name, out width/height. JPEG loader.
+// STUB: VC1 0x00465f10
+static IUnknown* LoadJpgTexture(const char* name, int* width, int* height)
+{
+    (void)name;
+    (void)width;
+    (void)height;
+    return 0;
+}
+
+// STRING: VC1 0x004d605c
+static const char kExtPvr[] = "pvr";
+// STRING: VC1 0x004d6060
+static const char kExtTga[] = "tga";
+// STRING: VC1 0x004d6064
+static const char kExtJpg[] = "jpg";
+// STRING: VC1 0x004d6068
+static const char kUnknownFormat[] = "unknown format: %s";
+
+// EDI=name. Inferred name. Picks the loader by extension and tracks the
+// texture with its image size on g_d3dChain2.
+// FUNCTION: VC1 0x00466100
+IUnknown* LoadTextureFile(const char* name)
+{
+    int width;
+    int height;
+    IUnknown* texture;
+    TrackedTexture* node;
+    const char* const ext = strchr(name, '.') + 1;
+
+    if (_stricmp(ext, kExtPvr) == 0) {
+        texture = LoadPvrTexture(name, &width, &height);
+    }
+    else if (_stricmp(ext, kExtTga) == 0) {
+        texture = LoadTgaTexture(name, &width, &height);
+    }
+    else if (_stricmp(ext, kExtJpg) == 0) {
+        texture = LoadJpgTexture(name, &width, &height);
+    }
+    else {
+        HostLogError(&g_kdNameTexture, kUnknownFormat, ext);
+        return 0;
+    }
+    if (!texture) {
+        return 0;
+    }
+    node = static_cast<TrackedTexture*>(malloc(sizeof(TrackedTexture)));
+    node->texture = texture;
+    node->width = width;
+    node->height = height;
+    node->next = g_d3dChain2;
+    g_d3dChain2 = node;
+    return texture;
 }
 
 // Primary vtable+0x18. Centers the window rect on the primary monitor and

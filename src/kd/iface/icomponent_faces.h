@@ -112,7 +112,7 @@ struct IPositionableUser : IUnknown
 // SIZE 0x04
 struct IBoundingInfo : IUnknown
 {
-    virtual const RectF& GetBoundingRect(IUnknown* const& space) = 0; // vtable+0x0c
+    virtual const RectF& GetBoundingRect(const RenderMask& mask) = 0; // vtable+0x0c
 };
 
 // setSlaveObject (0x004b5b90).

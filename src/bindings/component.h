@@ -3,10 +3,13 @@
 #include "squirrel_object.h"
 #include "memory/fixed_pool.h"
 #include "kd/iface/iabstract.h"
+#include "kd/iface/icamera.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
+#include "kd/iface/irenderable.h"
 #include "kd/iface/irender_target.h"
 #include "kd/iface/iscript_object.h"
+#include "kd/iface/itexture.h"
 
 namespace vc1 {
 
@@ -76,6 +79,12 @@ inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IRenderTarget>& value)
     vc1::KdPtr<vc1::IUnknown> object(value.ptr);
     Push(v, object);
 }
+// A returned texture (ObjectWatcher GetTexture) likewise.
+inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::ITexture>& value)
+{
+    vc1::KdPtr<vc1::IUnknown> object(value.ptr);
+    Push(v, object);
+}
 // A returned IAbstract face (GetCamera's Call, 0x0041b390) likewise.
 inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IAbstract>& value)
 {
@@ -105,6 +114,16 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IPositio
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITexture>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ICamera>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRenderable>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

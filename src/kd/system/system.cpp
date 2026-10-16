@@ -946,6 +946,9 @@ void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& 
     inputGroup->Add(out);
 }
 
+// GLOBAL: VC1 0x004cf8c8
+extern const char kScriptSetCamera[] = "SetCamera";
+
 // RET 8. Script method lookup (table 0x004ee5d8, guard bit 0x004ee5e8),
 // every entry a vcall thunk on the ISystem face.
 // FUNCTION: VC1 0x00463470
@@ -959,8 +962,7 @@ unsigned char KdSystemBase::Script0c(const char* name, SquirrelObject* out)
         methods[kScriptGetObject] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::FindObject);
         // STRING: VC1 0x004d5910
         methods["GetCamera"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::GetCamera);
-        // STRING: VC1 0x004cf8c8
-        methods["SetCamera"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::SetCamera);
+        methods[kScriptSetCamera] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::SetCamera);
         // STRING: VC1 0x004d638c
         methods["UpdateFrame"] = CreateScriptMethod<KdSystemBase>(&KdSystemBase::Update);
         // STRING: VC1 0x004d6398

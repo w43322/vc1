@@ -46,6 +46,30 @@ struct BatchQuad
 void PushQuad(const BatchQuad* quad);
 void DisplayD3dSetClip(int x, int y, int width, int height);
 
+// Inferred name. A texture loaded from a file and its image size (before the
+// power-of-two caps), linked on g_d3dChain2.
+// SIZE 0x10
+struct TrackedTexture
+{
+    IUnknown* texture;     // 0x00
+    int width;             // 0x04
+    int height;            // 0x08
+    TrackedTexture* next;  // 0x0c
+};
+
+extern TrackedTexture* g_d3dChain2;
+
+void ReleaseTrackedTexture(IUnknown* texture);
+
+// D3D8 objects are COM: methods are __stdcall with this pushed, unlike the
+// __thiscall vc1::IUnknown they are stored as.
+inline unsigned long D3dRelease(IUnknown* object)
+{
+    typedef unsigned long (__stdcall *FnRelease)(IUnknown* object);
+    return reinterpret_cast<FnRelease>((*reinterpret_cast<void***>(object))[2])(object);
+}
+IUnknown* LoadTextureFile(const char* name);
+
 // Inferred name. Implements the Pyro device plus the device-level IDisplay
 // slots (SetSize builds g_displayPyro, Display3c) and Shutdown. Constructed
 // inline by KdDisplayBase() (0x004665c0). QI/AddRef/Release take the IDisplay

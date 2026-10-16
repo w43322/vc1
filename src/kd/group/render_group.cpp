@@ -12,7 +12,6 @@
 
 namespace vc1 {
 
-extern IUnknown* g_boundingSpace;
 
 // Inferred name. Factory "RenderGroup": renders its IRenderable members in
 // Render14() order while visible.
@@ -79,11 +78,11 @@ void KdRenderGroup::SetVisible(bool value)
     visible = value;
 }
 
-// IRenderable+0x10: Render0c in the shared bounding space.
+// IRenderable+0x10: Render0c under g_defaultRenderMask.
 // FUNCTION: VC1 0x0046d0b0
 int KdRenderGroup::Render(void* graphics)
 {
-    return Render0c(graphics, &g_boundingSpace);
+    return Render0c(graphics, &g_defaultRenderMask);
 }
 
 // FUNCTION: VC1 0x0046d0d0

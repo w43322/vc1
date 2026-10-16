@@ -41,7 +41,7 @@ KdPtr<IUnknown> g_kdNullComponent;
 
 // Never written; getBoundingRect passes its address to GetBoundingRect.
 // GLOBAL: VC1 0x004ed6b0
-IUnknown* g_boundingSpace;
+RenderMask g_defaultRenderMask;
 
 // Inferred name. The cast inlined into every component native: the T face of
 // the script argument, AddRef'd; on failure "can't cast to <iid>" and the
@@ -417,7 +417,7 @@ RectF getBoundingRect(const KdPtr<IAbstract>& object)
     if (!bounds.ptr) {
         return RectF(0.0f, 0.0f, 0.0f, 0.0f);
     }
-    return bounds->GetBoundingRect(g_boundingSpace);
+    return bounds->GetBoundingRect(g_defaultRenderMask);
 }
 
 // FUNCTION: VC1 0x004b4ea0

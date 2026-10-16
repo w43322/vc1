@@ -2,6 +2,7 @@
 #include "kd/scene/compound_object.h"
 #include "kd/resource/resource_manager.h"
 #include "kd/scene/scripted_object.h"
+#include "kd/render/object_watcher.h"
 
 namespace vc1 {
 
@@ -247,6 +248,29 @@ void* KdCompoundObject::QueryInterface(const char** iid)
     }
     if (name == kIidPositionable) {
         return static_cast<IPositionable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004adb00
+void* KdObjectWatcher::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidUpdateable) {
+        return static_cast<IUpdateable*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

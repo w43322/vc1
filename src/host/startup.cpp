@@ -1,4 +1,5 @@
 #include "host/runtime.h"
+#include "kd/stream/file_reader.h"
 
 #include <direct.h>
 #include <errno.h>
@@ -440,6 +441,18 @@ void* DirRead(unsigned char* dir)
     }
     errno = 7;
     return 0;
+}
+
+// Inferred name. ECX=file; fread over an OpenKdFile handle (driver+0x120).
+// FUNCTION: VC1 0x00486e20
+int KdFread(void* buffer, unsigned size, unsigned count, void* file)
+{
+    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    if (!handle) {
+        errno = 0x11;
+        return 0;
+    }
+    return handle->driver->read(handle->driver, buffer, size, count, handle->native);
 }
 
 // Walk DAT_004ed4f8. Each node +0x114 is cdecl (self, path, mode); mode is EBX from the caller.

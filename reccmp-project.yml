@@ -5,6 +5,7 @@ targets:
       - src
       - third_party/squirrel223
       - third_party/klibc
+      - third_party/libtga
       - third_party/sqplus
     hash:
       sha256: bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695

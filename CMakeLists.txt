@@ -24,6 +24,7 @@ set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:NOREF /OP
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(cmake/squirrel223.cmake)
 include(cmake/klibc.cmake)
+include(cmake/libtga.cmake)
 include(cmake/sqplus.cmake)
 
 add_executable(vc1_recompiled
@@ -105,9 +106,10 @@ add_executable(vc1_recompiled
   src/memory/fixed_pool.cpp
   ${SQUIRREL223_SOURCES}
   ${KLIBC_SOURCES}
+  ${LIBTGA_SOURCES}
   ${SQPLUS_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
-  third_party/squirrel223/squirrel ${SQPLUS_INCLUDE_DIRS})
+  third_party/squirrel223/squirrel third_party/libtga ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
 target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi)

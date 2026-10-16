@@ -14,7 +14,6 @@
 
 namespace vc1 {
 
-extern IUnknown* g_boundingSpace; // host_api.cpp
 
 // STRING: VC1 0x004d4b90
 static const char kCompoundObject[] = "CompoundObject";
@@ -133,7 +132,7 @@ void KdCompoundObject::SetPositionProvider(const KdPtr<IAbstract>& provider)
 }
 
 // RET 4 (hidden return). Script "GetBoundingRect": the union of the
-// children's IBoundingInfo rectangles in g_boundingSpace.
+// children's IBoundingInfo rectangles under g_defaultRenderMask.
 // FUNCTION: VC1 0x00473010
 RectF KdCompoundObject::GetBoundingRect()
 {
@@ -155,7 +154,7 @@ RectF KdCompoundObject::GetBoundingRect()
             continue;
         }
         info->AddRef();
-        const RectF& rect = info->GetBoundingRect(g_boundingSpace);
+        const RectF& rect = info->GetBoundingRect(g_defaultRenderMask);
         if (result.IsEmpty()) {
             result = rect;
         }

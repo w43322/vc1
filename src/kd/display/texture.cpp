@@ -1,4 +1,5 @@
 #include "kd/display/texture.h"
+#include "kd/display/display.h"
 
 #include "bindings/sqplus.h"
 
@@ -57,7 +58,7 @@ void KdRenderTexture::Unlock()
 
     if (readback) {
         reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(readback))[0xa])(readback);
-        readback->Release();
+        D3dRelease(readback);
         readback = 0;
     }
 }
@@ -139,7 +140,7 @@ unsigned char KdTexture::Script10(void* a, void* b)
 // FUNCTION: VC1 0x0045c010
 void KdTexture::Unlock()
 {
-    typedef void (__thiscall *Fn)(IUnknown* object, int arg);
+    typedef void (__stdcall *Fn)(IUnknown* object, int arg);
     void** vtbl = *reinterpret_cast<void***>(native);
     reinterpret_cast<Fn>(vtbl[0x11])(native, 0);
 }
@@ -249,12 +250,28 @@ unsigned char KdTexture::Script0c(const char* name, SquirrelObject* out)
     return methods.Find(name, out);
 }
 
-// Loads native texture data from a named resource and records dimensions.
-// STUB: VC1 0x0045c570
+// RET 4. Replaces native with the file's texture; width/height come from
+// GetLevelDesc(0) (texture vtable+0x38), so they are the padded sizes.
+// FUNCTION: VC1 0x0045c570
 unsigned char KdTexture::Load(const char* name)
 {
-    (void)name;
-    return 0;
+    typedef int (__stdcall *FnLevelDesc)(IUnknown* texture, unsigned level, unsigned* desc);
+    unsigned desc[8];
+
+    if (native) {
+        ReleaseTrackedTexture(native);
+    }
+    native = LoadTextureFile(name);
+    if (!native) {
+        return 0;
+    }
+    width = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
+        native, 0, desc) < 0 ? 0 : desc[6];
+    height = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
+        native, 0, desc) < 0 ? 0 : desc[7];
+    // STRING: VC1 0x004d6804
+    HostLog(&g_kdNameTexture, "Loaded %s (size: %ix%i)", name, width, height);
+    return 1;
 }
 
 }

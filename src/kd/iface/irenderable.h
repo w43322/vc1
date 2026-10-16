@@ -5,6 +5,18 @@
 
 namespace vc1 {
 
+// Inferred name. 64-bit render flags (the script FLAG_* bits); renderers
+// receive it by pointer as the second Render0c argument.
+// SIZE 0x08
+struct RenderMask
+{
+    unsigned lo; // 0x00
+    unsigned hi; // 0x04
+};
+
+// Never written; the mask passed when no renderer-specific one applies.
+extern RenderMask g_defaultRenderMask;
+
 // SIZE 0x04
 struct IRenderable : IUnknown
 {
