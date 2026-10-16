@@ -381,7 +381,7 @@ void KdTerrainBuilder::SetGridMap(const KdPtr<IGridMap>& value)
 // RET 4. IGridRenderer vtable+0x0c: one CellColor filled unit square per
 // cell, in grid space (graphics transform * world to screen * grid map).
 // FUNCTION: VC1 0x004a5b50
-void KdTerrainBuilder::Render(void* graphics)
+void KdTerrainBuilder::RenderGrid(void* graphics)
 {
     const KdPtr<IGraphics>& target = *static_cast<const KdPtr<IGraphics>*>(graphics);
     Matrix3 saved;

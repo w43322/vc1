@@ -512,12 +512,12 @@ KdGraphics::KdGraphics()
 
 // STRING: VC1 0x004d58d4
 static const char kScriptGetClip[] = "GetClip";
-// STRING: VC1 0x004d2070
-static const char kScriptSetClip[] = "SetClip";
+// GLOBAL: VC1 0x004d2070
+extern const char kScriptSetClip[] = "SetClip";
 // STRING: VC1 0x004d58dc
 static const char kScriptGetColor[] = "GetColor";
-// STRING: VC1 0x004d2034
-static const char kScriptSetColor[] = "SetColor";
+// GLOBAL: VC1 0x004d2034
+extern const char kScriptSetColor[] = "SetColor";
 // STRING: VC1 0x004d58e8
 static const char kScriptGetBlendMode[] = "GetBlendMode";
 // STRING: VC1 0x004d58f8

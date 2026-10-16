@@ -11,17 +11,20 @@ namespace vc1 {
 // up in the SetDynamicLayer table. TileLayer::Render (0x004a3690) and its
 // depth sort (0x00409ee0) call vtable+0x30 with the graphics camera and
 // interleave the object before every tile whose y is larger, so +0x30 is
-// the object's depth (screen y). Slots +0x18..+0x2c are not analyzed yet.
+// the object's depth (screen y). Slots +0x18..+0x2c and +0x34 are the
+// script methods of KdTileObject (GetMember 0x004a1410 binds them through
+// vcall thunks).
 // SIZE 0x04
 struct ITileObject : IRenderable
 {
-    virtual void UnanalyzedSlot18() = 0;           // vtable+0x18
-    virtual void UnanalyzedSlot1c() = 0;           // vtable+0x1c
-    virtual void UnanalyzedSlot20() = 0;           // vtable+0x20
-    virtual void UnanalyzedSlot24() = 0;           // vtable+0x24
-    virtual void UnanalyzedSlot28() = 0;           // vtable+0x28
-    virtual void UnanalyzedSlot2c() = 0;           // vtable+0x2c
+    virtual int GetTile() = 0;                     // vtable+0x18 "GetTile"
+    virtual void SetTile(int tile) = 0;            // vtable+0x1c "SetTile"
+    virtual void SetRenderLayer(int layer) = 0;    // vtable+0x20 "SetRenderLayer"
+    virtual void SetColor(int color) = 0;          // vtable+0x24 "SetColor"
+    virtual void SetHighlighted(bool value) = 0;   // vtable+0x28 "SetHighlighted"
+    virtual void EnableFloatCoords(bool value) = 0; // vtable+0x2c "EnableFloatCoords"
     virtual float GetDepth(IUnknown** camera) = 0; // vtable+0x30
+    virtual KdPtr<IUnknown> GetJoint(int joint) = 0; // vtable+0x34 "GetJoint"
 };
 
 typedef char Vc1ITileObjectSizeCheck[sizeof(ITileObject) == 0x04 ? 1 : -1];

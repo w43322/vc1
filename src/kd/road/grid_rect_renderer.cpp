@@ -222,7 +222,7 @@ static KdPtr<ITileManager>& TileManagerRef()
 // cell, with the tile for the sides that border other cells of the same
 // rectangle.
 // FUNCTION: VC1 0x004b0740
-void KdGridRectRenderer::Render(void* graphics)
+void KdGridRectRenderer::RenderGrid(void* graphics)
 {
     const KdPtr<IGraphics>& target = *static_cast<const KdPtr<IGraphics>*>(graphics);
 

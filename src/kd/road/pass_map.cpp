@@ -281,7 +281,7 @@ int KdPassMap::Render(void* graphics)
     if (visible) {
         IUnknown** it;
         for (it = RefBegin(&renderers); it != RefEnd(&renderers); ++it) {
-            static_cast<IGridRenderer*>(*it)->Render(graphics);
+            static_cast<IGridRenderer*>(*it)->RenderGrid(graphics);
         }
     }
     return 0;

@@ -43,7 +43,7 @@ public:
     const char* GetTypeName();
 
     int Shutdown();
-    void Render(void* graphics);
+    void RenderGrid(void* graphics);
 
     void SetGridMap(const KdPtr<IGridMap>& map);
     void SetCellTiles(const KdArray<short>& tiles);

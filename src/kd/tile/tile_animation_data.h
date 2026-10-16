@@ -41,6 +41,12 @@ struct ITileAnimationData : IUnknown
 
 extern const char* g_iidTileAnimationData;
 
+template <>
+struct KdIid<ITileAnimationData>
+{
+    static const char** Get() { return &g_iidTileAnimationData; }
+};
+
 // Inferred name. Factory string "TileAnimationData" (0x004cfd9c). Animations
 // by name plus the names in script iteration order.
 // SIZE 0x30

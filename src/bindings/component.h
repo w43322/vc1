@@ -20,6 +20,7 @@ struct IGridRenderer;
 struct IGridRouter;
 struct IRoadRenderer;
 struct ITileLayer;
+struct ITileAnimationData;
 struct IPositionable;
 struct ITexture;
 
@@ -176,6 +177,12 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRoadRen
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITileLayer>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// BuildingBuilder SetBuildingData's animation data (Call 0x004016b0).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ITileAnimationData>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

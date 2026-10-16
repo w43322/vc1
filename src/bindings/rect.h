@@ -48,6 +48,9 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Rect, Rect)
 
 // SqPlus instantiations for Rect.
 
+// TEMPLATE: VC1 0x00401510
+// ??$Set@URect@vc1@@@SquirrelObject@@QAEAAV0@AAURect@vc1@@@Z
+
 // TEMPLATE: VC1 0x0041dd60 FOLDED
 // ?release@?$ConstructReleaseClass@URect@vc1@@@SqPlus@@SAHPAXH@Z
 

@@ -7,6 +7,7 @@
 namespace vc1 {
 
 class KdString;
+struct Vector2;
 
 // Inferred name. Script class "RectF" (0x004d4ffc); SqPlus ClassType at
 // 0x004ed844. Script fields X/Y/Width/Height (0x004d7400-0x004d7410).
@@ -29,6 +30,7 @@ struct RectF
     bool Intersect(const RectF& other);    // "Intersect"
     bool IsEmpty() const;                  // "IsEmpty"
     bool Union(const RectF& other);        // "Union"
+    void Include(const Vector2& p);
     KdString& ToString() const;            // "_tostring"
 
     static SQInteger ConstructArgs(HSQUIRRELVM vm); // "constructor" with typemask "*"

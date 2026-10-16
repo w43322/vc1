@@ -11,7 +11,7 @@ namespace vc1 {
 // SIZE 0x04
 struct IGridRenderer : IUnknown
 {
-    virtual void Render(void* graphics) = 0; // vtable+0x0c
+    virtual void RenderGrid(void* graphics) = 0; // vtable+0x0c
 };
 
 template <>

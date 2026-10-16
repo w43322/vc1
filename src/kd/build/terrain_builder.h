@@ -70,7 +70,7 @@ public:
 
     unsigned char OnKey(const unsigned* data);
     unsigned char OnPointer(const unsigned* data);
-    void Render(void* graphics);
+    void RenderGrid(void* graphics);
 
     void SetWasteLayer(const KdPtr<ITileLayer>& layer);
     void SetForestLayer(const KdPtr<ITileLayer>& layer);

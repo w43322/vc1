@@ -8,11 +8,13 @@
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/tile/tile_layer.h"
+#include "kd/tile/tile_object.h"
 #include "kd/blob/blob.h"
 #include "kd/road/grid_rect_renderer.h"
 #include "kd/road/grid_router.h"
 #include "kd/road/pass_map.h"
 #include "kd/road/road_renderer.h"
+#include "kd/build/building_builder.h"
 #include "kd/build/terrain_builder.h"
 #include "kd/scene/camera.h"
 #include "kd/render/classificated_renderer.h"
@@ -190,9 +192,10 @@ const char* g_iidPositionable = kIidPositionable;
 static const char kIidPositionableUser[] = "IPositionableUser";
 // GLOBAL: VC1 0x004d0604
 const char* g_iidPositionableUser = kIidPositionableUser;
-// GLOBAL: VC1 0x004d0608
 // STRING: VC1 0x004d4cc4
-const char* g_iidBoundingInfo = "IBoundingInfo";
+static const char kIidBoundingInfo[] = "IBoundingInfo";
+// GLOBAL: VC1 0x004d0608
+const char* g_iidBoundingInfo = kIidBoundingInfo;
 // STRING: VC1 0x004d4cac
 static const char kIidInputHandler[] = "IInputHandler";
 // GLOBAL: VC1 0x004d0610
@@ -211,9 +214,10 @@ const char* g_iidStateProvider = kIidStateProvider;
 static const char kIidTileAnimationData[] = "ITileAnimationData";
 // GLOBAL: VC1 0x004d0ac8
 const char* g_iidTileAnimationData = kIidTileAnimationData;
-// GLOBAL: VC1 0x004d0acc
 // STRING: VC1 0x004cfe20
-const char* g_iidTileObject = "ITileObject";
+static const char kIidTileObject[] = "ITileObject";
+// GLOBAL: VC1 0x004d0acc
+const char* g_iidTileObject = kIidTileObject;
 // STRING: VC1 0x004cfe14
 static const char kIidGridMap[] = "IGridMap";
 // GLOBAL: VC1 0x004d0ad0
@@ -530,6 +534,61 @@ void* KdCompoundObject::QueryInterface(const char** iid)
 }
 
 // RET 4.
+// FUNCTION: VC1 0x004a0250
+void* KdTileJointObject::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidPositionable) {
+        return this;
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. IRenderable shares the ITileObject face.
+// FUNCTION: VC1 0x004a0300
+void* KdTileObject::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidTileObject) {
+        return this;
+    }
+    if (name == kIidVisible) {
+        return static_cast<IVisible*>(this);
+    }
+    if (name == kIidBoundingInfo) {
+        return static_cast<IBoundingInfo*>(this);
+    }
+    if (name == kIidRenderable) {
+        return this;
+    }
+    if (name == kIidPositionableUser) {
+        return static_cast<IPositionableUser*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidClassifiable) {
+        return static_cast<IClassifiable*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
 // FUNCTION: VC1 0x004a2750
 void* KdTileLayer::QueryInterface(const char** iid)
 {
@@ -757,6 +816,29 @@ void* KdClassificatedRenderer::QueryInterface(const char** iid)
     void* face = KdScriptedObject::QueryInterface(iid);
     if (face) {
         return face;
+    }
+    if (*iid == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The compound's faces first (ECX kept in EDX across the call).
+// FUNCTION: VC1 0x004b2a90
+void* KdBuildingBuilder::QueryInterface(const char** iid)
+{
+    void* face = KdCompoundObject::QueryInterface(iid);
+    if (face) {
+        return face;
+    }
+    if (*iid == kIidInputHandler) {
+        return static_cast<IInputHandler*>(this);
+    }
+    if (*iid == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (*iid == kIidGridRenderer) {
+        return static_cast<IGridRenderer*>(this);
     }
     if (*iid == kIidAbstract) {
         return static_cast<IAbstract*>(this);

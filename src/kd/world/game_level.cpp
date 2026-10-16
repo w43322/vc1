@@ -127,7 +127,7 @@ int& KdLayerMap::operator[](const int& key)
 }
 
 // EAX=this, stack &key, RET 4. First entry whose layer is not below key.
-// FUNCTION: VC1 0x00403cf0
+// FUNCTION: VC1 0x00403cf0 FOLDED
 KdLayerEntry* KdLayerMap::LowerBound(const int& key)
 {
     KdLayerEntry* first = Begin();
@@ -146,7 +146,7 @@ KdLayerEntry* KdLayerMap::LowerBound(const int& key)
 }
 
 // ECX=this, EAX=count. Loose grow; the new entries are zeroed.
-// FUNCTION: VC1 0x0040b080
+// FUNCTION: VC1 0x0040b080 FOLDED
 void KdLayerMap::Reserve(unsigned count)
 {
     const unsigned old = items.capacity >> 3;

@@ -1,5 +1,6 @@
 #include "rectf.h"
 #include "value_types.h"
+#include "vector2.h"
 #include "kd/factory.h"
 
 #include <new>
@@ -27,6 +28,34 @@ bool RectF::Intersect(const RectF& other)
 bool RectF::IsEmpty() const
 {
     return width <= 0.0f || height <= 0.0f;
+}
+
+// Inferred name. Grows the rect to cover p (an empty rect becomes the 1x1
+// cell at p); right and bottom stay exclusive. The original only calls it on
+// TileObject's static bounds (0x004ee3b8), so LTCG bound this to that
+// address. ECX=&p.
+// FUNCTION: VC1 0x0040aa70
+void RectF::Include(const Vector2& p)
+{
+    if (width <= 0.0f || height <= 0.0f) {
+        x = p.x;
+        y = p.y;
+        width = 1.0f;
+        height = 1.0f;
+        return;
+    }
+    if (p.x < x) {
+        x = p.x;
+    }
+    if (p.y < y) {
+        y = p.y;
+    }
+    if (x + width <= p.x) {
+        width = p.x + 1.0f - x;
+    }
+    if (y + height <= p.y) {
+        height = p.y + 1.0f - y;
+    }
 }
 
 // Bound as "Union" (0x004d7418) via 0x00423360 from 0x004c14f1. In-place
