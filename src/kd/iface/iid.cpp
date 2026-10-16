@@ -8,6 +8,7 @@
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/tile/tile_layer.h"
+#include "kd/road/pass_map.h"
 #include "kd/display/effect.h"
 
 namespace vc1 {
@@ -205,10 +206,17 @@ const char* g_iidTileAnimationData = kIidTileAnimationData;
 // GLOBAL: VC1 0x004d0acc
 // STRING: VC1 0x004cfe20
 const char* g_iidTileObject = "ITileObject";
+// STRING: VC1 0x004cfe14
+static const char kIidGridMap[] = "IGridMap";
+// GLOBAL: VC1 0x004d0ad0
+const char* g_iidGridMap = kIidGridMap;
 // STRING: VC1 0x004cfdec
 static const char kIidTileLayer[] = "ITileLayer";
 // GLOBAL: VC1 0x004d0adc
 const char* g_iidTileLayer = kIidTileLayer;
+// GLOBAL: VC1 0x004d0ae0
+// STRING: VC1 0x004cfddc
+const char* g_iidGridRenderer = "IGridRenderer";
 
 // RET 4.
 // FUNCTION: VC1 0x0045a9c0
@@ -496,6 +504,47 @@ void* KdTileAnimationData::QueryInterface(const char** iid)
     }
     if (name == kIidScriptLoadable) {
         return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. IPositionable shares the IGridMap face.
+// FUNCTION: VC1 0x004ac8e0
+void* KdPassMap::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidGridMap) {
+        return static_cast<IGridMap*>(this);
+    }
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidReadable) {
+        return static_cast<IReadable*>(this);
+    }
+    if (name == kIidWriteable) {
+        return static_cast<IWriteable*>(this);
+    }
+    if (name == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (name == kIidPositionable) {
+        return static_cast<IGridMap*>(this);
+    }
+    if (name == kIidVisible) {
+        return static_cast<IVisible*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

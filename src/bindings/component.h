@@ -15,6 +15,7 @@
 namespace vc1 {
 
 struct IFunctionalGroup;
+struct IGridRenderer;
 struct IPositionable;
 struct ITexture;
 
@@ -142,6 +143,13 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::ICamera>
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
 }
 inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IRenderable>&>,
+    HSQUIRRELVM v, int idx)
+{
+    return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);
+}
+// PassMap AddRenderer / RemoveRenderer, QI'd to IGridRenderer in the Call
+// (0x00405e00).
+inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<const vc1::KdPtr<vc1::IGridRenderer>&>,
     HSQUIRRELVM v, int idx)
 {
     return Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >(), v, idx);

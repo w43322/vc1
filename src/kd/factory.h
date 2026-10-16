@@ -291,6 +291,15 @@ struct KdArray
         items.size = bytes;
         reinterpret_cast<T*>(reinterpret_cast<char*>(items.begin) + bytes)[-1] = value;
     }
+    // Out of line in the original (EAX=this, ESI=count).
+    __declspec(noinline) void Resize(unsigned count)
+    {
+        unsigned bytes = count * sizeof(T);
+        if (items.capacity < bytes) {
+            GrowCountedBuffer(&items, static_cast<int>(bytes), 1);
+        }
+        items.size = bytes;
+    }
     // Exact grow, then an element copy.
     void Assign(const KdArray& source)
     {
