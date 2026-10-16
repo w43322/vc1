@@ -57,6 +57,20 @@ SQUnsignedInteger Color::GetValue()
     return argb;
 }
 
+// EBX=this, out and other on the stack (cdecl). Used by LayerSetColor::Execute
+// (0x004188e0) to tint a recorded color by the target's.
+// FUNCTION: VC1 0x00419730
+Color Color::operator*(const Color& other) const
+{
+    return Color(
+        static_cast<unsigned char>(static_cast<int>(argb >> 24) * static_cast<int>(other.argb >> 24) / 255),
+        static_cast<unsigned char>(static_cast<int>((argb >> 16) & 0xff)
+            * static_cast<int>((other.argb >> 16) & 0xff) / 255),
+        static_cast<unsigned char>(static_cast<int>((argb >> 8) & 0xff)
+            * static_cast<int>((other.argb >> 8) & 0xff) / 255),
+        static_cast<unsigned char>(static_cast<int>(argb & 0xff) * static_cast<int>(other.argb & 0xff) / 255));
+}
+
 // Bound as "_tostring" (0x004d3710) through 0x00420540 (dispatcher
 // 0x00424470). Function-local static KdString (0x004ee408, guard 0x004ee418)
 // with 0x80 reserved characters; prints A, R, G, B.

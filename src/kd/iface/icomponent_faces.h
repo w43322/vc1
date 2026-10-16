@@ -121,11 +121,13 @@ struct IObjectControl : IUnknown
     virtual void SetSlaveObject(const KdPtr<IAbstract>& slave) = 0; // vtable+0x0c
 };
 
-// setAnimation (0x004b55e0).
+// setAnimation (0x004b55e0). Slot 0x10 from KdTileAnimation (0x004a4ca0),
+// inferred name.
 // SIZE 0x04
 struct IAnimateable : IUnknown
 {
-    virtual bool SetAnimation(const KdString& name, float speed) = 0; // vtable+0x0c
+    virtual bool SetAnimation(const KdString& name, float phase) = 0; // vtable+0x0c
+    virtual const KdStringList& GetAnimationNames() = 0;              // vtable+0x10
 };
 
 #define VC1_KD_IID(T, slot) \

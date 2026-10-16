@@ -32,6 +32,16 @@ struct GraphicsState
         clip.height = 0x7fffffff;
         font = 0;
     }
+    // Inlined where a state is saved (KdLayer::Render 0x00468a30).
+    GraphicsState(const GraphicsState& other)
+        : clip(other.clip), color(other.color), mode(other.mode),
+          transform(other.transform), font(other.font)
+    {
+        if (font) {
+            font->AddRef();
+        }
+    }
+    GraphicsState& operator=(const GraphicsState& other);
 
     ~GraphicsState()
     {

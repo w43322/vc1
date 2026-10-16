@@ -38,6 +38,7 @@ struct Color
     SQFloat GetGreen() const;
     SQFloat GetRed() const;
     SQFloat GetAlpha() const;
+    Color operator*(const Color& other) const; // per channel a * b / 255
 
     static SQInteger ConstructArgs(HSQUIRRELVM vm); // "constructor" with typemask "*"
 };

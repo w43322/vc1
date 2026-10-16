@@ -61,8 +61,23 @@ public:
     unsigned char SetView(const Rect* rect, IUnknown* const* newCamera);
 };
 
+extern const char kScriptGetClip[];
+extern const char kScriptSetClip[];
+extern const char kScriptGetColor[];
+extern const char kScriptSetColor[];
+extern const char kScriptGetBlendMode[];
+extern const char kScriptSetBlendMode[];
+extern const char kScriptSetFont[];
 extern const char kScriptGetTransform[];
 extern const char kScriptSetTransform[];
+extern const char kScriptGetTranslate[];
+extern const char kScriptTranslate[];
+extern const char kScriptDrawRect[];
+extern const char kScriptFillRect[];
+extern const char kScriptDrawTexture[];
+extern const char kScriptDrawString[];
+extern const char kScriptDrawLine[];
+extern const char kScriptDrawEllipse[];
 
 typedef char Vc1KdGraphicsSizeCheck[sizeof(KdGraphics) == 0x64 ? 1 : -1];
 

@@ -23,6 +23,8 @@
 #include "kd/render/group_renderer.h"
 #include "kd/road/road_cells_renderer.h"
 #include "kd/world/game_object.h"
+#include "kd/tile/tile_animation.h"
+#include "kd/scene/layer.h"
 
 namespace vc1 {
 
@@ -204,12 +206,14 @@ const char* g_iidBoundingInfo = kIidBoundingInfo;
 static const char kIidInputHandler[] = "IInputHandler";
 // GLOBAL: VC1 0x004d0610
 const char* g_iidInputHandler = kIidInputHandler;
-// GLOBAL: VC1 0x004d0614
 // STRING: VC1 0x004d4c9c
-const char* g_iidObjectControl = "IObjectControl";
-// GLOBAL: VC1 0x004d0620
+static const char kIidObjectControl[] = "IObjectControl";
+// GLOBAL: VC1 0x004d0614
+const char* g_iidObjectControl = kIidObjectControl;
 // STRING: VC1 0x004d4c74
-const char* g_iidAnimateable = "IAnimateable";
+static const char kIidAnimateable[] = "IAnimateable";
+// GLOBAL: VC1 0x004d0620
+const char* g_iidAnimateable = kIidAnimateable;
 // STRING: VC1 0x004d4c64
 static const char kIidStateProvider[] = "IStateProvider";
 // GLOBAL: VC1 0x004d0624
@@ -328,6 +332,32 @@ void* KdEffect::QueryInterface(const char** iid)
             return 0;
         }
         return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. IGraphics is the object itself; IAbstract without the null check.
+// FUNCTION: VC1 0x004689a0
+void* KdLayer::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidRenderable) {
+        if (!this) {
+            return 0;
+        }
+        return static_cast<IRenderable*>(this);
+    }
+    if (name == kIidGraphics) {
+        return static_cast<IGraphics*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
@@ -667,6 +697,35 @@ void* KdTileAnimationData::QueryInterface(const char** iid)
     }
     if (name == kIidScriptLoadable) {
         return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004a4d60
+void* KdTileAnimation::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidShutdownable) {
+        return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidPositionableUser) {
+        return static_cast<IPositionableUser*>(this);
+    }
+    if (name == kIidAnimateable) {
+        return static_cast<IAnimateable*>(this);
+    }
+    if (name == kIidObjectControl) {
+        return static_cast<IObjectControl*>(this);
+    }
+    if (name == kIidUpdateable) {
+        return static_cast<IUpdateable*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

@@ -46,6 +46,24 @@ void IGraphics::Translate(const Vector2& offset)
     SetTransform(*state.transform.LeftMultiply(&move));
 }
 
+// EBX=this, RET 4. Member copy; the font is counted (new AddRef'd first).
+// FUNCTION: VC1 0x00418b70
+GraphicsState& GraphicsState::operator=(const GraphicsState& other)
+{
+    clip = other.clip;
+    color = other.color;
+    mode = other.mode;
+    transform = other.transform;
+    if (other.font) {
+        other.font->AddRef();
+    }
+    if (font) {
+        font->Release();
+    }
+    font = other.font;
+    return *this;
+}
+
 // MOV EAX, 0x004d4c40; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041c8d0
 const char* KdGraphics::GetTypeName()
@@ -510,40 +528,40 @@ KdGraphics::KdGraphics()
     view.x = 0;
 }
 
-// STRING: VC1 0x004d58d4
-static const char kScriptGetClip[] = "GetClip";
+// GLOBAL: VC1 0x004d58d4
+extern const char kScriptGetClip[] = "GetClip";
 // GLOBAL: VC1 0x004d2070
 extern const char kScriptSetClip[] = "SetClip";
-// STRING: VC1 0x004d58dc
-static const char kScriptGetColor[] = "GetColor";
+// GLOBAL: VC1 0x004d58dc
+extern const char kScriptGetColor[] = "GetColor";
 // GLOBAL: VC1 0x004d2034
 extern const char kScriptSetColor[] = "SetColor";
-// STRING: VC1 0x004d58e8
-static const char kScriptGetBlendMode[] = "GetBlendMode";
-// STRING: VC1 0x004d58f8
-static const char kScriptSetBlendMode[] = "SetBlendMode";
-// STRING: VC1 0x004d5908
-static const char kScriptSetFont[] = "SetFont";
+// GLOBAL: VC1 0x004d58e8
+extern const char kScriptGetBlendMode[] = "GetBlendMode";
+// GLOBAL: VC1 0x004d58f8
+extern const char kScriptSetBlendMode[] = "SetBlendMode";
+// GLOBAL: VC1 0x004d5908
+extern const char kScriptSetFont[] = "SetFont";
 // GLOBAL: VC1 0x004d591c
 extern const char kScriptGetTransform[] = "GetTransform";
 // GLOBAL: VC1 0x004d592c
 extern const char kScriptSetTransform[] = "SetTransform";
-// STRING: VC1 0x004d593c
-static const char kScriptGetTranslate[] = "GetTranslate";
-// STRING: VC1 0x004d594c
-static const char kScriptTranslate[] = "Translate";
-// STRING: VC1 0x004d5958
-static const char kScriptDrawRect[] = "DrawRect";
-// STRING: VC1 0x004d5964
-static const char kScriptFillRect[] = "FillRect";
-// STRING: VC1 0x004d5970
-static const char kScriptDrawTexture[] = "DrawTexture";
-// STRING: VC1 0x004d597c
-static const char kScriptDrawString[] = "DrawString";
-// STRING: VC1 0x004d5988
-static const char kScriptDrawLine[] = "DrawLine";
-// STRING: VC1 0x004d5994
-static const char kScriptDrawEllipse[] = "DrawEllipse";
+// GLOBAL: VC1 0x004d593c
+extern const char kScriptGetTranslate[] = "GetTranslate";
+// GLOBAL: VC1 0x004d594c
+extern const char kScriptTranslate[] = "Translate";
+// GLOBAL: VC1 0x004d5958
+extern const char kScriptDrawRect[] = "DrawRect";
+// GLOBAL: VC1 0x004d5964
+extern const char kScriptFillRect[] = "FillRect";
+// GLOBAL: VC1 0x004d5970
+extern const char kScriptDrawTexture[] = "DrawTexture";
+// GLOBAL: VC1 0x004d597c
+extern const char kScriptDrawString[] = "DrawString";
+// GLOBAL: VC1 0x004d5988
+extern const char kScriptDrawLine[] = "DrawLine";
+// GLOBAL: VC1 0x004d5994
+extern const char kScriptDrawEllipse[] = "DrawEllipse";
 
 // RET 8. this = IScriptObject (+0x44); the dispatchers QI the instance to
 // IScriptObject and step back to KdGraphics. Every closure calls through the
