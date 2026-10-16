@@ -143,7 +143,7 @@ IUnknown* g_display1cObject;
 unsigned g_display1cGuard;
 
 static void Display1cAtexit();
-static unsigned char DisplayQueryReady();
+static unsigned char DisplayQueryReady(KdRenderTargetNode* node);
 static int Display28Finish();
 static int Display28Mode(unsigned format);
 static const char* DxGetErrorString(int hr);
@@ -262,7 +262,7 @@ void* IRenderTarget::Display0c(void* a, void* b)
     IUnknown* queried;
     Rect rect;
 
-    if (!DisplayQueryReady()) {
+    if (!DisplayQueryReady(static_cast<KdRenderTargetNode*>(extra))) {
         if (!g_graphicsQuery) {
             *out = 0;
             return out;
@@ -1669,14 +1669,25 @@ void* LookupRenderTargetTexture(unsigned width, unsigned height)
     return node;
 }
 
-// D3D TestCooperativeLevel / reset. Returns AL; EBX is the last mixer.
+// STRING: VC1 0x004d5fc8
+static const char kCantSetRenderTarget[] = "Gfx_BeginScene: Can't set render target";
+
+// EBX=node (IRenderTarget::extra; null for the back buffer). Returns AL.
+// Inferred name. TestCooperativeLevel / reset, then, when the node differs
+// from g_d3dLastMixer, binds its texture's level-0 surface (or the back
+// buffer) as the D3D render target with Z off and resets viewport,
+// projection and view; BeginScene and lock the batch vertex buffer.
 // FUNCTION: VC1 0x00465cc0
-static unsigned char DisplayQueryReady()
+static unsigned char DisplayQueryReady(KdRenderTargetNode* node)
 {
     typedef int (__stdcall *FnTest)(IUnknown* device);
     typedef int (__stdcall *FnBegin)(IUnknown* device);
-    typedef int (__stdcall *FnGetBack)(IUnknown* swap, int a, int b, unsigned* out, int c);
+    typedef int (__stdcall *FnGetSurface)(IUnknown* texture, unsigned level, IUnknown** out);
+    typedef int (__stdcall *FnSetTarget)(IUnknown* device, IUnknown* surface, IUnknown* depth);
+    typedef int (__stdcall *FnRenderState)(IUnknown* device, unsigned state, unsigned value);
+    typedef int (__stdcall *FnLock)(IUnknown* vb, int a, int b, unsigned* out, int c);
     typedef int (__stdcall *FnXform)(IUnknown* device, unsigned type, float* matrix);
+    IUnknown* surface;
     int hr;
     int i;
     char buf[520];
@@ -1696,11 +1707,35 @@ static unsigned char DisplayQueryReady()
         HostLogError(&g_kdNameDisplay, buf);
         return 0;
     }
-    if (g_d3dLastMixer) {
-        DisplayD3dSetBuffers(
-            static_cast<int*>(g_d3dLastMixer)[0],
-            static_cast<int*>(g_d3dLastMixer)[1],
-            0, 0);
+    if (node != g_d3dLastMixer) {
+        if (node) {
+            reinterpret_cast<FnGetSurface>((*reinterpret_cast<void***>(node->texture))[0xf])(
+                node->texture, 0, &surface);
+        }
+        else {
+            surface = g_d3dBackBuffer;
+        }
+        hr = reinterpret_cast<FnSetTarget>((*reinterpret_cast<void***>(g_d3dDevice))[0x1f])(
+            g_d3dDevice, surface, 0);
+        if (hr < 0) {
+            if (node) {
+                D3dRelease(surface);
+            }
+            DisplayD3dLogHresult(hr, kCantSetRenderTarget, 0);
+            return 0;
+        }
+        if (node) {
+            D3dRelease(surface);
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 7, 0);
+            DisplayD3dSetBuffers(static_cast<int>(node->width), static_cast<int>(node->height),
+                0, 0);
+        }
+        else {
+            reinterpret_cast<FnRenderState>((*reinterpret_cast<void***>(g_d3dDevice))[0x32])(
+                g_d3dDevice, 7, 0);
+            DisplayD3dSetBuffers(g_displayMode[0], g_displayMode[1], 0, 0);
+        }
         reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
             g_d3dDevice, 3, g_d3dProj);
         for (i = 0; i < 16; i++) {
@@ -1708,12 +1743,11 @@ static unsigned char DisplayQueryReady()
         }
         reinterpret_cast<FnXform>((*reinterpret_cast<void***>(g_d3dDevice))[0x25])(
             g_d3dDevice, 2, g_d3dView);
+        g_d3dLastMixer = node;
     }
     reinterpret_cast<FnBegin>((*reinterpret_cast<void***>(g_d3dDevice))[0x22])(g_d3dDevice);
-    if (g_d3dVertexBuffer) {
-        reinterpret_cast<FnGetBack>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xb])(
-            g_d3dVertexBuffer, 0, 0, &g_batchVertices, 0);
-    }
+    reinterpret_cast<FnLock>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xb])(
+        g_d3dVertexBuffer, 0, 0, &g_batchVertices, 0);
     return 1;
 }
 
@@ -2615,16 +2649,17 @@ void* KdDisplay::Display10()
             if (camera) {
                 camera->Release();
             }
-            if (view) {
-                view->SetTransform(matrix);
-                Rect clip(*reinterpret_cast<Rect*>(&g_displayViewRect));
-                view->SetClipRect(clip);
-                view->Clear(0xff000000);
-                view->DrawImage(*static_cast<const KdPtr<ITexture>*>(static_cast<IRenderTarget*>(
-                    static_cast<void*>(target))->Display1c()), 0.0f, 0.0f, 0.0f, 0.0f,
-                    static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
-                view->Release();
+            if (!view) {
+                return 0;
             }
+            view->SetTransform(matrix);
+            Rect clip(*reinterpret_cast<Rect*>(&g_displayViewRect));
+            view->SetClipRect(clip);
+            view->Clear(0xff000000);
+            view->DrawImage(*static_cast<const KdPtr<ITexture>*>(static_cast<IRenderTarget*>(
+                static_cast<void*>(target))->Display1c()), 0.0f, 0.0f, 0.0f, 0.0f,
+                static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
+            view->Release();
         }
     }
 
