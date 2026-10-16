@@ -243,32 +243,59 @@ static unsigned long long CurrentThreadId64()
     return GetCurrentThreadId();
 }
 
-// Try InterlockedCompareExchange on *ref; 0x10 if the mutex is busy.
-// STUB: VC1 0x0047b020
+// Try-lock. Original MutexRef in EAX. Takes a free mutex (a recursive one
+// records the owner), re-enters a recursive mutex this thread owns, else 0x10.
+// FUNCTION: VC1 0x0047b020
 static int MutexLockInner(MutexRef* ref)
 {
-    (void)ref;
-    return 0;
+    int status = 0;
+
+    if (reinterpret_cast<unsigned>(ref->mutex) >= 0xfffffffd) {
+        status = MutexCheck(ref);
+        if (status != 0) {
+            return status;
+        }
+    }
+    Mutex* const mutex = ref->mutex;
+    if (InterlockedCompareExchangeThunk(&mutex->state, 1, 0) == 0) {
+        if (mutex->kind != 0) {
+            mutex->recursion = 1;
+            const unsigned long long tid = CurrentThreadId64();
+            mutex->ownerLo = static_cast<DWORD>(tid);
+            mutex->ownerHi = static_cast<DWORD>(tid >> 32);
+        }
+        return status;
+    }
+    if (mutex->kind == 1) {
+        const unsigned long long tid = CurrentThreadId64();
+        if (static_cast<DWORD>(tid) == mutex->ownerLo
+            && static_cast<DWORD>(tid >> 32) == mutex->ownerHi) {
+            mutex->recursion += 1;
+            return status;
+        }
+    }
+    return kKdEbusy;
 }
 
 // Destroy the mutex behind *ref, spinning on 0x10 (busy). Original ref in EDI.
+// The try-lock and unlock go through a local copy because *ref is cleared
+// first.
 // FUNCTION: VC1 0x0047b0a0
 int MutexDestroy(MutexRef* ref)
 {
-    if (!ref) {
-        return kKdEinval;
-    }
-
     Mutex* mutex = ref->mutex;
     if (reinterpret_cast<unsigned>(mutex) < 0xfffffffd) {
-        const int inner = MutexLockInner(ref);
+        MutexRef local;
+        local.mutex = mutex;
+        const int inner = MutexLockInner(&local);
         if (inner == 0) {
+            mutex = local.mutex;
             if (mutex->kind == 1 && mutex->recursion != 1) {
                 mutex->recursion -= 1;
                 return kKdEbusy;
             }
             ref->mutex = 0;
-            const int unlocked = MutexUnlock(ref);
+            const int unlocked = MutexUnlock(&local);
             if (unlocked != 0) {
                 ref->mutex = mutex;
                 return unlocked;
@@ -313,8 +340,8 @@ void DestroyThreadLocal(void* thread)
     if (copy[0x0f]) {
         CloseHandle(copy[0x0f]);
     }
-    MutexDestroy(0);
-    MutexDestroy(0);
+    MutexDestroy(reinterpret_cast<MutexRef*>(&copy[0x0c]));
+    MutexDestroy(reinterpret_cast<MutexRef*>(&copy[0x0a]));
     if (copy[1]) {
         CloseHandle(copy[1]);
     }
@@ -328,37 +355,33 @@ int DestroyTlsBlock(TlsBlock* self)
         return 0;
     }
 
+    MutexRef* const lock =
+        reinterpret_cast<MutexRef*>(reinterpret_cast<unsigned char*>(self) + 8);
     if (self->waiters && self->destructor) {
-        MutexRef lockRef;
-        lockRef.mutex = reinterpret_cast<Mutex*>(reinterpret_cast<unsigned char*>(self) + 8);
-        if (MutexLock(&lockRef) == 0) {
+        if (MutexLock(lock) == 0) {
             void* waiter = self->waiters;
             while (waiter) {
-                MutexRef waiterLock;
-                unsigned char* const bytes = static_cast<unsigned char*>(waiter);
-                waiterLock.mutex = reinterpret_cast<Mutex*>(
-                    *reinterpret_cast<unsigned*>(bytes) + 0x28);
-                if (MutexLock(&waiterLock) == 0) {
+                MutexRef* const waiterLock = reinterpret_cast<MutexRef*>(
+                    *static_cast<unsigned char**>(waiter) + 0x28);
+                if (MutexLock(waiterLock) == 0) {
                     UnlinkWaiter(waiter);
-                    MutexUnlock(&waiterLock);
+                    MutexUnlock(waiterLock);
                 }
                 else {
                     UnlinkWaiter(waiter);
                 }
                 waiter = self->waiters;
             }
-            MutexUnlock(&lockRef);
+            MutexUnlock(lock);
         }
     }
 
     TlsFree(self->index);
     if (self->destructor) {
-        MutexRef inner;
-        inner.mutex = reinterpret_cast<Mutex*>(reinterpret_cast<unsigned char*>(self) + 8);
-        int busy = MutexDestroy(&inner);
+        int busy = MutexDestroy(lock);
         while (busy == kKdEbusy) {
             Sleep(1);
-            busy = MutexDestroy(&inner);
+            busy = MutexDestroy(lock);
         }
     }
     free(self);
