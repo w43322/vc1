@@ -19,6 +19,7 @@
 #include "kd/scene/camera.h"
 #include "kd/render/classificated_renderer.h"
 #include "kd/display/effect.h"
+#include "kd/route/route.h"
 #include "kd/route/transport_mover.h"
 #include "kd/render/group_renderer.h"
 #include "kd/road/road_cells_renderer.h"
@@ -748,6 +749,32 @@ void* KdTerrainBuilder::QueryInterface(const char** iid)
         return static_cast<IGridRenderer*>(this);
     }
     if (*iid == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x004a9050
+void* KdRoute::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidWriteable) {
+        return static_cast<IWriteable*>(this);
+    }
+    if (name == kIidReadable) {
+        return static_cast<IReadable*>(this);
+    }
+    if (name == kIidRoute) {
+        return static_cast<IRoute*>(this);
+    }
+    if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
     }
     return 0;
