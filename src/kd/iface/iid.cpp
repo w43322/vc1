@@ -20,6 +20,7 @@
 #include "kd/render/classificated_renderer.h"
 #include "kd/display/effect.h"
 #include "kd/route/transport_mover.h"
+#include "kd/render/group_renderer.h"
 
 namespace vc1 {
 
@@ -777,6 +778,24 @@ void* KdObjectWatcher::QueryInterface(const char** iid)
     }
     if (name == kIidShutdownable) {
         return static_cast<IShutdownable*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4. The ScriptedObject faces, then IVisible and IAbstract.
+// FUNCTION: VC1 0x004aeaa0
+void* KdGroupRenderer::QueryInterface(const char** iid)
+{
+    void* found = KdScriptedObject::QueryInterface(iid);
+    if (found) {
+        return found;
+    }
+    const char* name = *iid;
+    if (name == kIidVisible) {
+        return static_cast<IVisible*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);
