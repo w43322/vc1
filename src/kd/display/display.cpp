@@ -330,7 +330,8 @@ const char* KdDisplayBase::Script14()
 
 // MOV EAX, 1; RET 0x14.
 // FUNCTION: VC1 0x0041aca0
-int IPyroDevice::Pyro08(void** out, int count, int stride, unsigned format, int flags)
+int IPyroDevice::Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format,
+    int flags)
 {
     (void)out;
     (void)count;
@@ -344,9 +345,10 @@ int IPyroDevice::Pyro08(void** out, int count, int stride, unsigned format, int 
 // wraps it in an 8-byte object (vftable 0x004d6278, value at +4) into *out.
 // The wrapper class is not recovered yet.
 // STUB: VC1 0x0041acb0
-int IPyroDevice::Pyro0c(void** out, int count, int stride, unsigned format, int flags)
+int IPyroDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format,
+    int flags)
 {
-    void* inner;
+    PyroDeviceBuffer* inner;
     int result;
 
     result = Pyro08(&inner, count, stride, format, flags);
@@ -359,21 +361,31 @@ int IPyroDevice::Pyro0c(void** out, int count, int stride, unsigned format, int 
 
 // MOV EAX, 1; RET 0x10.
 // FUNCTION: VC1 0x0041ad10
-int IPyroDevice::Pyro24(void* a, void* b, void* c, void* d)
+int IPyroDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)buffer;
+    (void)first;
+    (void)count;
+    (void)flags;
     return 1;
 }
 
 // RET 0x10. Pyro24(a->+4, b, c, d) through the 0x004d6278 wrapper; the wrapper
 // class is not recovered yet.
 // STUB: VC1 0x0041ad20
-int IPyroDevice::Pyro28(void* a, void* b, void* c, void* d)
+int IPyroDevice::Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags)
 {
-    return Pyro24(a, b, c, d);
+    (void)buffer;
+    return Pyro24(0, first, count, flags);
+}
+
+// RET 0x10. this = PyroVertexBuffer face (data at +4).
+// FUNCTION: VC1 0x0041adc0
+int KdPyroBuffer::Upload(const void* source, int offset, int size, int discard)
+{
+    (void)discard;
+    memcpy(data + offset, source, size);
+    return 0;
 }
 
 // ESI=this, RET 4. The by-value source is AddRef'd into the member, then
@@ -392,6 +404,13 @@ KdPyroTexture::KdPyroTexture(KdPtr<ITexture> source)
     texture = value;
 }
 
+// MOV EAX, [ECX+8]; RET.
+// FUNCTION: VC1 0x0041fdc0
+void* KdPyroBuffer::GetData()
+{
+    return data;
+}
+
 // EAX=HRESULT. DXGetErrorString-style lookup; huge table, recovered as a stub.
 // STUB: VC1 0x00442e14
 static const char* DxGetErrorString(int hr)
@@ -407,20 +426,19 @@ int KdDisplayDevice::Pyro2c()
     return 0;
 }
 
-// RET 0x10. Pyro24(a ? a - 4 : 0, b, c, d) through vtable+0x24.
+// RET 0x10. Pyro24 with the PyroDeviceBuffer face of the same KdPyroBuffer.
 // FUNCTION: VC1 0x00463c80
-int KdDisplayDevice::Pyro28(void* a, void* b, void* c, void* d)
+int KdDisplayDevice::Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags)
 {
-    void* inner = a ? static_cast<char*>(a) - 4 : 0;
-    return Pyro24(inner, b, c, d);
+    return Pyro24(static_cast<KdPyroBuffer*>(buffer), first, count, flags);
 }
 
 // RET 8. Stores value at +0x14.
 // FUNCTION: VC1 0x00463cb0
-int KdDisplayDevice::Pyro20(void* a, unsigned value)
+int KdDisplayDevice::Pyro20(void* a, PyroDeviceObject* texture)
 {
     (void)a;
-    value14 = value;
+    pyroTexture = texture;
     return 0;
 }
 
@@ -457,22 +475,39 @@ int KdDisplayDevice::Pyro04(unsigned mode, unsigned value)
 
 // XOR EAX, EAX; RET 8.
 // FUNCTION: VC1 0x00463d10
-int KdDisplayDevice::Pyro00(void* a, void* b)
+int KdDisplayDevice::Pyro00(int a, int b)
 {
     (void)a;
     (void)b;
     return 0;
 }
 
-// RET 0x10. Uses g_graphics (0x004ed6f0); returns 1 when it is null. Body not
-// recovered.
-// STUB: VC1 0x00463d20
-int KdDisplayDevice::Pyro24(void* a, void* b, void* c, void* d)
+// RET 0x10. Draws count quads from quad first of the buffer through the
+// current graphics (1 when there is none) with the Pyro20 texture and the
+// Pyro04 blend mode, restoring the previous mode.
+// FUNCTION: VC1 0x00463d20
+int KdDisplayDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags)
 {
-    (void)a;
-    (void)b;
-    (void)c;
-    (void)d;
+    (void)flags;
+    if (!g_graphics) {
+        return 1;
+    }
+    KdPtr<ITexture> texture;
+    if (pyroTexture) {
+        ITexture* const value = static_cast<KdPyroTexture*>(pyroTexture)->texture.ptr;
+        if (value) {
+            value->AddRef();
+            if (texture.ptr) {
+                texture.ptr->Release();
+            }
+        }
+        texture.ptr = static_cast<KdPyroTexture*>(pyroTexture)->texture.ptr;
+    }
+    const unsigned mode = static_cast<IGraphics*>(g_graphics)->GetMode();
+    static_cast<IGraphics*>(g_graphics)->SetMode(mode18);
+    static_cast<IGraphics*>(g_graphics)->DrawQuads(texture,
+        static_cast<unsigned char*>(buffer->GetData()) + first * 0x60, count);
+    static_cast<IGraphics*>(g_graphics)->SetMode(mode);
     return 0;
 }
 
@@ -625,7 +660,7 @@ int KdDisplayDevice::Shutdown()
             queried->AddRef();
         }
     }
-    value14 = 0;
+    pyroTexture = 0;
     if (g_displayPyro) {
         g_displayPyro->Done();
     }
@@ -636,27 +671,38 @@ int KdDisplayDevice::Shutdown()
     return 0;
 }
 
-// RET 0x14. malloc(0x14) buffer object (vftables 0x004d6268 then 0x004d6368)
-// with a b*c byte block; *out = its +4 face. Not recovered yet.
-// STUB: VC1 0x004640e0
-int KdDisplayDevice::Pyro0c(void** out, int count, int stride, unsigned format, int flags)
+// RET 0x14. A KdPyroBuffer's PyroVertexBuffer face.
+// FUNCTION: VC1 0x004640e0
+int KdDisplayDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format,
+    int flags)
 {
-    (void)count;
-    (void)stride;
-    (void)format;
+    KdPyroBuffer* buffer;
+
     (void)flags;
+    buffer = static_cast<KdPyroBuffer*>(malloc(sizeof(KdPyroBuffer)));
+    if (buffer) {
+        ::new (buffer) KdPyroBuffer(count, stride, format);
+        *out = buffer;
+        return 0;
+    }
     *out = 0;
     return 0;
 }
 
-// RET 0x14. Same buffer object as Pyro0c; *out = the object itself.
-// STUB: VC1 0x00464150
-int KdDisplayDevice::Pyro08(void** out, int count, int stride, unsigned format, int flags)
+// RET 0x14. A KdPyroBuffer's PyroDeviceBuffer face.
+// FUNCTION: VC1 0x00464150
+int KdDisplayDevice::Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format,
+    int flags)
 {
-    (void)count;
-    (void)stride;
-    (void)format;
+    KdPyroBuffer* buffer;
+
     (void)flags;
+    buffer = static_cast<KdPyroBuffer*>(malloc(sizeof(KdPyroBuffer)));
+    if (buffer) {
+        ::new (buffer) KdPyroBuffer(count, stride, format);
+        *out = buffer;
+        return 0;
+    }
     *out = 0;
     return 0;
 }
@@ -816,6 +862,31 @@ static void FlushBatch(char final)
         return;
     }
     g_batchVertices = 0;
+}
+
+// cdecl, EAX=flags, EDI=texture. Inferred name. Starts a fresh quad batch with
+// those render flags and texture; returns the locked vertices with room for
+// *capacity quads (0 when the buffer is not locked).
+// FUNCTION: VC1 0x00464530
+void* BeginQuadBatch(unsigned flags, IUnknown* texture, int* capacity)
+{
+    typedef int (__stdcall *FnSetTexture)(IUnknown* device, unsigned stage, IUnknown* texture);
+
+    if (g_batchVertices == 0) {
+        return 0;
+    }
+    FlushBatch(0);
+    g_batchKind = 4;
+    if (g_batchFlags != flags) {
+        SetBatchFlags(flags);
+    }
+    if (texture != g_batchTexture) {
+        reinterpret_cast<FnSetTexture>((*reinterpret_cast<void***>(g_d3dDevice))[0x3d])(
+            g_d3dDevice, 0, texture);
+        g_batchTexture = texture;
+    }
+    *capacity = 1000;
+    return reinterpret_cast<void*>(g_batchVertices);
 }
 
 // EAX=matrix. View = world with the 2D axes/origin of matrix, then

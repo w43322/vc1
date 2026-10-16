@@ -74,7 +74,8 @@ struct IGraphics : IUnknown
     virtual void DrawRect(float x, float y, float width, float height) = 0;  // vtable+0x54
     virtual void DrawImage(const KdPtr<ITexture>& texture, float x, float y, float u,
         float v, float width, float height) = 0;                             // vtable+0x58
-    virtual void Graphics5c(void* a, void* b, unsigned c) = 0;                // vtable+0x5c
+    virtual void DrawQuads(const KdPtr<ITexture>& texture, const void* quads,
+        unsigned count) = 0;                                                 // vtable+0x5c
     virtual void DrawString(const char* text, float x, float y) = 0;        // vtable+0x60
     virtual void DrawLine(float x0, float y0, float x1, float y1) = 0;       // vtable+0x64
     virtual void DrawEllipse(float x, float y, float width, float height) = 0; // vtable+0x68

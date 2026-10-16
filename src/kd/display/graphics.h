@@ -48,7 +48,7 @@ public:
     void DrawRect(float x, float y, float width, float height);
     void DrawImage(const KdPtr<ITexture>& texture, float x, float y, float u, float v,
         float width, float height);
-    void Graphics5c(void* a, void* b, unsigned c);
+    void DrawQuads(const KdPtr<ITexture>& texture, const void* quads, unsigned count);
     void DrawString(const char* text, float x, float y);
     void DrawLine(float x0, float y0, float x1, float y1);
     void DrawEllipse(float x, float y, float width, float height);

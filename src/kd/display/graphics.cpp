@@ -11,6 +11,8 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/ifont.h"
 
+#include <string.h>
+
 namespace vc1 {
 
 // STRING: VC1 0x004d4c40
@@ -150,13 +152,36 @@ void KdGraphics::DrawString(const char* text, float x, float y)
     SetTransform(saved);
 }
 
-// RET 0xc. Batches 0x60-byte records through g_batchCount. Body not recovered.
-// STUB: VC1 0x0045c910
-void KdGraphics::Graphics5c(void* a, void* b, unsigned c)
+// RET 0xc. Inferred name. Copies count prebuilt quads (four 0x18-byte
+// vertices each) into the vertex batch, starting a new batch whenever the
+// current one is full. With count 0 the original still stores 1 into
+// g_batchCount.
+// FUNCTION: VC1 0x0045c910
+void KdGraphics::DrawQuads(const KdPtr<ITexture>& texture, const void* quads, unsigned count)
 {
-    (void)a;
-    (void)b;
-    (void)c;
+    IUnknown* const native = texture.ptr ? texture.ptr->native : 0;
+    const unsigned char* source = static_cast<const unsigned char*>(quads);
+    unsigned char* target = 0;
+    int capacity = 0;
+    int written = 1;
+    unsigned i;
+
+    for (i = 0; i < count; i++) {
+        if (written >= capacity) {
+            if (i > 0) {
+                g_batchCount = written;
+            }
+            target = static_cast<unsigned char*>(BeginQuadBatch(state.mode, native, &capacity));
+            written = 0;
+        }
+        memcpy(target, source, 0x60);
+        source += 0x60;
+        target += 0x60;
+        written++;
+    }
+    if (count == 0 || written != 0) {
+        g_batchCount = written;
+    }
 }
 
 // RET 4. REP MOVSD 9 dwords into state.transform, then 0x00464710 (EAX=matrix).

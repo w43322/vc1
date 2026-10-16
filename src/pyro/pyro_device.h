@@ -46,6 +46,40 @@ struct PyroDeviceObject
 // SYNTHETIC: VC1 0x0041abc0
 // vc1::PyroDeviceObject::`scalar deleting destructor'
 
+// Vertex buffer as the device draws it (IPyroDevice::Pyro08, Pyro24).
+// SIZE 0x04
+// VTABLE: VC1 0x004d6250
+struct PyroDeviceBuffer
+{
+    VC1_PYRO_HEAP
+
+    virtual int Buffer00() { return 0; } // vtable+0x00
+    virtual int Buffer04() { return 0; } // vtable+0x04
+    virtual int Buffer08() = 0;          // vtable+0x08
+    virtual int Buffer0c() = 0;          // vtable+0x0c
+    virtual void* GetData() = 0;         // vtable+0x10
+    virtual ~PyroDeviceBuffer() {}       // vtable+0x14
+};
+
+// SYNTHETIC: VC1 0x0041abe0
+// vc1::PyroDeviceBuffer::`scalar deleting destructor'
+
+// Vertex buffer as the library fills it (IPyroDevice::Pyro0c, Pyro28).
+// SIZE 0x04
+// VTABLE: VC1 0x004d6268
+struct PyroVertexBuffer
+{
+    VC1_PYRO_HEAP
+
+    virtual int Buffer00() { return 0; }                                  // vtable+0x00
+    virtual int Buffer04() { return 0; }                                  // vtable+0x04
+    virtual int Upload(const void* data, int offset, int size, int discard) = 0; // vtable+0x08
+    virtual ~PyroVertexBuffer() {}                                        // vtable+0x0c
+};
+
+// SYNTHETIC: VC1 0x0041ac00
+// vc1::PyroVertexBuffer::`scalar deleting destructor'
+
 typedef char Vc1PyroDeviceImageSizeCheck[sizeof(PyroDeviceImage) == 0x14 ? 1 : -1];
 
 }

@@ -58,6 +58,7 @@ add_executable(vc1_recompiled
   src/pyro/pyro_file.cpp
   src/pyro/pyro_image.cpp
   src/pyro/pyro_random.cpp
+  src/pyro/pyro_matrix.cpp
   src/pyro/pyro_stream.cpp
   src/pyro/pyro_string.cpp
   src/kd/display/render_target.cpp

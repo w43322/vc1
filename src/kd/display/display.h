@@ -44,7 +44,10 @@ struct BatchQuad
     unsigned flags;          // 0x64  GraphicsState::mode
 };
 
+extern int g_batchCount; // display.cpp
+
 void PushQuad(const BatchQuad* quad);
+void* BeginQuadBatch(unsigned flags, IUnknown* texture, int* capacity);
 void DisplayD3dSetClip(int x, int y, int width, int height);
 
 // Inferred name. A texture loaded from a file and its image size (before the
@@ -87,6 +90,43 @@ public:
 // SYNTHETIC: VC1 0x0041ae70
 // vc1::KdPyroTexture::`scalar deleting destructor'
 
+// Inferred name. Pyro device vertex buffer (Pyro08 hands out the
+// PyroDeviceBuffer face, Pyro0c the PyroVertexBuffer face): a plain heap block
+// of count * stride bytes the library uploads into and Pyro24 draws from.
+// SIZE 0x14
+// VTABLE: VC1 0x004d6350 vc1::PyroDeviceBuffer
+// VTABLE: VC1 0x004d6368 vc1::PyroVertexBuffer
+class KdPyroBuffer : public PyroDeviceBuffer, public PyroVertexBuffer
+{
+public:
+    VC1_PYRO_HEAP
+
+    unsigned char* data; // 0x08
+    unsigned format;     // 0x0c  0x10009 from PyroLibrary::Init
+    int stride;          // 0x10
+
+    KdPyroBuffer(int count, int size, unsigned value)
+    {
+        data = static_cast<unsigned char*>(malloc(count * size));
+        stride = size;
+        format = value;
+    }
+    ~KdPyroBuffer()
+    {
+        free(data);
+    }
+
+    int Buffer08() { return 0; }
+    int Buffer0c() { return 0; }
+    void* GetData();
+    int Upload(const void* source, int offset, int size, int discard);
+};
+
+// SYNTHETIC: VC1 0x0041ade0
+// vc1::KdPyroBuffer::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0041aec0
+// ??_EKdPyroBuffer@vc1@@W3AEPAXI@Z
+
 // Inferred name. Implements the Pyro device plus the device-level IDisplay
 // slots (SetSize builds g_displayPyro, Display3c) and Shutdown. Constructed
 // inline by KdDisplayBase() (0x004665c0). QI/AddRef/Release take the IDisplay
@@ -102,8 +142,8 @@ class KdDisplayDevice : public IPyroDevice,
                         public IAbstract
 {
 public:
-    unsigned value14; // 0x14  Pyro20 stores; Shutdown clears
-    unsigned mode18;  // 0x18  Pyro04: 0 for (4, 1), else 2
+    PyroDeviceObject* pyroTexture; // 0x14  Pyro20 stores; Shutdown clears
+    unsigned mode18;               // 0x18  Pyro04: 0 for (4, 1), else 2
 
     KdDisplayDevice();
     ~KdDisplayDevice();
@@ -112,17 +152,17 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
 
-    int Pyro00(void* a, void* b);
+    int Pyro00(int a, int b);
     int Pyro04(unsigned mode, unsigned value);
-    int Pyro08(void** out, int count, int stride, unsigned format, int flags);
-    int Pyro0c(void** out, int count, int stride, unsigned format, int flags);
+    int Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format, int flags);
+    int Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format, int flags);
     int Pyro10(void* a, void* b, void* c, void* d);
     int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags);
     int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height, int flags);
     int Pyro1c(void* a);
-    int Pyro20(void* a, unsigned value);
-    int Pyro24(void* a, void* b, void* c, void* d);
-    int Pyro28(void* a, void* b, void* c, void* d);
+    int Pyro20(void* a, PyroDeviceObject* texture);
+    int Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags);
+    int Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags);
     int Pyro2c();
 
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20

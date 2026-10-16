@@ -20,17 +20,6 @@ struct PyroVertex
     float v;        // 0x14
 };
 
-// Inferred name. Device vertex buffer owned by PyroLibrary+0x08 (made by
-// IPyroDevice::Pyro0c); deleted through its scalar deleting destructor at
-// vtable+0x0c.
-struct PyroVertexBuffer
-{
-    virtual void Buffer00() = 0;                                  // vtable+0x00
-    virtual void Buffer04() = 0;                                  // vtable+0x04
-    virtual int Upload(const void* data, int offset, int size, int discard) = 0; // vtable+0x08
-    virtual ~PyroVertexBuffer() {}                                // vtable+0x0c
-};
-
 // Inferred name. Pyro library object owned by g_displayPyro (0x004ed628).
 // Built by KdDisplayDevice::SetSize; Done then free in KdDisplayDevice::Shutdown.
 // Layers batch quads into vertices and upload them into the device buffer as

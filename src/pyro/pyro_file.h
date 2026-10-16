@@ -121,27 +121,6 @@ struct PyroFrame
     void Read(PyroArchive& ar);
 };
 
-// Device objects released by the frame table destructor through slots 3 and 5.
-// SIZE 0x04
-struct PyroDeviceBuffer
-{
-    virtual void Buffer00() = 0;                          // vtable+0x00
-    virtual void Buffer04() = 0;                          // vtable+0x04
-    virtual void Buffer08() = 0;                          // vtable+0x08
-    virtual void* DeletingDestructor(unsigned flags) = 0; // vtable+0x0c
-};
-
-// SIZE 0x04
-struct PyroDeviceBuffer2
-{
-    virtual void Buffer00() = 0;                          // vtable+0x00
-    virtual void Buffer04() = 0;                          // vtable+0x04
-    virtual void Buffer08() = 0;                          // vtable+0x08
-    virtual void Buffer0c() = 0;                          // vtable+0x0c
-    virtual void Buffer10() = 0;                          // vtable+0x10
-    virtual void* DeletingDestructor(unsigned flags) = 0; // vtable+0x14
-};
-
 // SIZE 0x818
 struct PyroFrameTable
 {
@@ -149,8 +128,8 @@ struct PyroFrameTable
     int keyCountA;              // 0x04
     PyroKey12* keysB;           // 0x08
     int keyCountB;              // 0x0c
-    PyroDeviceBuffer* buffer;   // 0x10
-    PyroDeviceBuffer2* buffer2; // 0x14
+    PyroVertexBuffer* buffer;   // 0x10  device buffers, deleted by the destructor
+    PyroDeviceBuffer* buffer2;  // 0x14
     PyroFrame frames[128];      // 0x18
 
     PyroFrameTable();
@@ -221,7 +200,7 @@ struct PyroGraphicRef
     VC1_PYRO_HEAP
 
     int value;                // 0x00
-    int fields[3];            // 0x04
+    float scale[3];           // 0x04  graphic object scale (PyroLayer quad path)
     PyroGraphicBase* graphic; // 0x10
 
     PyroGraphicRef() : graphic(0) {}

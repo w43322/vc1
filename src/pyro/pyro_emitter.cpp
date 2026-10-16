@@ -1,5 +1,7 @@
 #include "pyro/pyro_emitter.h"
 
+#include "kd/display/pyro.h"
+#include "pyro/pyro_matrix.h"
 #include "pyro/pyro_random.h"
 
 #include <math.h>
@@ -465,6 +467,52 @@ void PyroLayer::UpdateAngles()
     rotation[2][2] = cb * ca;
 }
 
+// ESI=this. Texture coordinates from the flips, quad size from the shape and
+// the pivot BuildQuad uses.
+// FUNCTION: VC1 0x0044f650
+void PyroLayer::PrepareQuads()
+{
+    float u0;
+    float u1;
+    float v0;
+    float v1;
+    float width;
+    float height;
+
+    if (!flipU) {
+        u0 = 0.0f;
+        u1 = 1.0f;
+    }
+    else {
+        u0 = 1.0f;
+        u1 = 0.0f;
+    }
+    if (flipV == emitter->Is3D()) {
+        v0 = 0.0f;
+        v1 = 1.0f;
+    }
+    else {
+        v0 = 1.0f;
+        v1 = 0.0f;
+    }
+    uv[0] = u0;
+    uv[1] = v0;
+    uv[2] = u1;
+    uv[3] = v1;
+    if (!shape) {
+        height = 64.0f;
+        width = 64.0f;
+    }
+    else {
+        width = shape->field10;
+        height = shape->field14;
+    }
+    size[0] = width;
+    size[1] = height;
+    pivot[0] = pivotSource[0];
+    pivot[1] = pivotSource[1];
+}
+
 // ECX=this, EBX=b, EDI=a, t/r/g on the stack; RET 0xc. With repeat > 1 the
 // key range wraps repeat times over t.
 // FUNCTION: VC1 0x0044f780
@@ -719,9 +767,9 @@ PyroLayer::PyroLayer()
     keyList.shared = false;
     time = 0.0f;
     particles = 0;
-    field2b0 = 0;
+    pivotSource[1] = 0;
     shape = 0;
-    field2ac = 0;
+    pivotSource[0] = 0;
     library = 0;
     active = false;
     subEmitterCount = 0;
@@ -834,11 +882,11 @@ void PyroLayer::Prepare(float now, float dt)
         vy = particle->cur3c * particle->velocity[1] + emitter->position[1] * particle->cur54;
         vz = particle->velocity[2] * particle->cur3c + emitter->position[2] * particle->cur54;
         if (!emitter->children) {
-            const float size = particle->cur40;
+            const float speed = particle->base4c;
 
-            x = particle->position[0] + size * vx * (dt + noiseX);
-            y = size * vy * (noiseY + dt) + particle->position[1];
-            z = particle->position[2] + (noiseZ + dt) * vz * size;
+            x = particle->position[0] + speed * vx * (dt + noiseX);
+            y = speed * vy * (noiseY + dt) + particle->position[1];
+            z = particle->position[2] + (noiseZ + dt) * vz * speed;
         }
         else {
             float position[3];
@@ -852,9 +900,9 @@ void PyroLayer::Prepare(float now, float dt)
             position[0] = particle->position[0];
             position[1] = particle->position[1];
             position[2] = particle->position[2];
-            step[0] = particle->cur40 * vx;
-            step[1] = particle->cur40 * vy;
-            step[2] = particle->cur40 * vz;
+            step[0] = particle->base4c * vx;
+            step[1] = particle->base4c * vy;
+            step[2] = particle->base4c * vz;
             velocity[0] = particle->velocity[0];
             velocity[1] = particle->velocity[1];
             velocity[2] = particle->velocity[2];
@@ -1026,13 +1074,416 @@ void PyroLayer::UpdateMatrix()
     }
 }
 
-// Stack this, a, b. Body not recovered yet.
-// STUB: VC1 0x00452140
-int PyroLayer::Render(int a, int b)
+// EAX=out, EBX=this, stack particle; RET 4. Four vertices for one particle:
+// colour between the key colour and the spawn colour, size from the shape,
+// position between the particle and the emitter (attach), rotated by the
+// spawn angle around the pivot, scaled and offset by the root emitter. 3D
+// layers rotate the layer axes around the layer normal instead and also hand
+// the particle's graphic object transform to the device (slot +0x1c); 2D
+// quads go through the root emitter matrix. The 3D path applies the pivot a
+// second time on top of the 2D one, and its object transform starts from a
+// zero matrix rather than identity.
+// FUNCTION: VC1 0x004513d0
+void PyroLayer::BuildQuad(PyroVertex* out, PyroParticle* particle)
 {
-    (void)a;
-    (void)b;
-    return 0;
+    float r;
+    float g;
+    float b;
+    float a;
+    float x;
+    float y;
+    float z;
+    float offset[3];
+    unsigned color;
+
+    const float blend = particle->fieldbc;
+    if (blend == 0.0f) {
+        r = particle->keyColor[0];
+        g = particle->keyColor[1];
+        b = particle->keyColor[2];
+        a = particle->keyColor[3];
+    }
+    else if (blend == 1.0f) {
+        r = particle->color[0];
+        g = particle->color[1];
+        b = particle->color[2];
+        a = particle->color[3];
+    }
+    else {
+        const float keep = 1.0f - blend;
+        r = particle->keyColor[0] * keep + particle->color[0] * blend;
+        g = particle->keyColor[1] * keep + particle->color[1] * blend;
+        b = particle->keyColor[2] * keep + particle->color[2] * blend;
+        a = keep * particle->keyColor[3] + particle->color[3] * blend;
+    }
+    const float particleSize = particle->cur40;
+    const float width = size[0] * particleSize;
+    const float height = particleSize * size[1];
+    const float pivotX = pivot[0];
+    const float pivotY = pivot[1];
+    if (attach == 0.0f) {
+        x = particle->position[0];
+        y = particle->position[1];
+        z = particle->position[2];
+    }
+    else if (attach == 1.0f) {
+        x = emitter->movePosition[0] + particle->offset[0];
+        y = emitter->movePosition[1] + particle->offset[1];
+        z = emitter->movePosition[2] + particle->offset[2];
+    }
+    else {
+        x = (emitter->movePosition[0] + particle->offset[0] - particle->position[0]) * attach +
+            particle->position[0];
+        y = (emitter->movePosition[1] + particle->offset[1] - particle->position[1]) * attach +
+            particle->position[1];
+        z = (emitter->movePosition[2] + particle->offset[2] - particle->position[2]) * attach +
+            particle->position[2];
+    }
+    const float s = sinf(-particle->spawnAngle);
+    const float c = cosf(particle->spawnAngle);
+    const float ax = c * width;
+    const float ay = -width * s;
+    const float bx = s * height;
+    const float by = c * height;
+    float cx = x - ax * pivotX - bx * pivotY;
+    float cy = y - ay * pivotX - by * pivotY;
+
+    const int red = static_cast<int>(r * 255.0f + 0.5f);
+    const int green = static_cast<int>(g * 255.0f + 0.5f);
+    const int blue = static_cast<int>(b * 255.0f + 0.5f);
+    const int alpha = static_cast<int>(particle->cur60 * a * 255.0f + 0.5f);
+    if (library->device->Pyro2c()) {
+        color = ((((alpha << 8) | blue) << 8 | green) << 8) | red;
+    }
+    else {
+        color = ((((alpha << 8) | red) << 8 | green) << 8) | blue;
+    }
+
+    PyroEmitter* root = emitter;
+    while (root->parent) {
+        root = root->parent;
+    }
+    const float scale = emitter->GetScale();
+    root->GetOffsetVec(offset);
+
+    if (emitter->Is3D() && (matrixMode == 1 || hasAngles)) {
+        float ux;
+        float uy;
+        float uz;
+        float vx;
+        float vy;
+        float vz;
+
+        if (particle->spawnAngle == 0.0f) {
+            ux = matrix[0][0];
+            uy = matrix[0][1];
+            uz = matrix[0][2];
+            vx = matrix[1][0];
+            vy = matrix[1][1];
+            vz = matrix[1][2];
+        }
+        else {
+            float spin[3][3];
+            const float half = particle->spawnAngle * 0.5f;
+            const float hc = cosf(half);
+            const float hs = sinf(half);
+            const float qx = matrix[2][0] * hs;
+            const float x2 = qx + qx;
+            const float xx = x2 * qx;
+            const float qy = matrix[2][1] * hs;
+            const float y2 = qy + qy;
+            const float yy = qy * y2;
+            const float qz = matrix[2][2] * hs;
+            const float z2 = qz + qz;
+            const float zz = z2 * qz;
+            const float wx = x2 * hc;
+            const float wy = y2 * hc;
+            const float wz = hc * z2;
+            const float xy = y2 * qx;
+            const float xz = qx * z2;
+            const float yz = qz * y2;
+
+            spin[0][0] = 1.0f - yy - zz;
+            spin[1][1] = 1.0f - xx - zz;
+            spin[2][2] = 1.0f - xx - yy;
+            spin[0][1] = xy - wz;
+            spin[1][0] = xy + wz;
+            spin[0][2] = xz + wy;
+            spin[2][0] = xz - wy;
+            spin[1][2] = yz - wx;
+            spin[2][1] = yz + wx;
+            ux = matrix[0][1] * spin[1][0] + matrix[0][0] * spin[0][0] + matrix[0][2] * spin[2][0];
+            uy = matrix[0][1] * spin[1][1] + matrix[0][0] * spin[0][1] + matrix[0][2] * spin[2][1];
+            uz = matrix[0][1] * spin[1][2] + matrix[0][0] * spin[0][2] + matrix[0][2] * spin[2][2];
+            vx = matrix[1][0] * spin[0][0] + matrix[1][1] * spin[1][0] + matrix[1][2] * spin[2][0];
+            vy = matrix[1][0] * spin[0][1] + matrix[1][1] * spin[1][1] + matrix[1][2] * spin[2][1];
+            vz = matrix[1][0] * spin[0][2] + spin[1][2] * matrix[1][1] + matrix[1][2] * spin[2][2];
+        }
+        ux *= width;
+        uy *= width;
+        uz *= width;
+        vx *= height;
+        vy *= height;
+        vz *= height;
+        cx = cx - ux * pivotX - vx * pivotY;
+        cy = cy - uy * pivotX - vy * pivotY;
+        const float cz = z - uz * pivotX - vz * pivotY;
+
+        out[0].x = offset[0] + (cx - ux - vx) * scale;
+        out[0].y = offset[1] + (cy - uy - vy) * scale;
+        out[0].z = offset[2] + (cz - uz - vz) * scale;
+        out[0].u = uv[0];
+        out[0].color = color;
+        out[0].v = uv[1];
+        out[1].x = offset[0] + (cx + ux - vx) * scale;
+        out[1].y = offset[1] + (cy + uy - vy) * scale;
+        out[1].z = offset[2] + (cz + uz - vz) * scale;
+        out[1].u = uv[2];
+        out[1].color = color;
+        out[1].v = uv[1];
+        out[2].x = offset[0] + (vx + (cx + ux)) * scale;
+        out[2].y = offset[1] + (vy + (cy + uy)) * scale;
+        out[2].z = offset[2] + (vz + (cz + uz)) * scale;
+        out[2].u = uv[2];
+        out[2].color = color;
+        out[2].v = uv[3];
+        out[3].x = offset[0] + (vx + (cx - ux)) * scale;
+        out[3].y = offset[1] + (vy + (cy - uy)) * scale;
+        out[3].z = offset[2] + (vz + (cz - uz)) * scale;
+        out[3].u = uv[0];
+        out[3].color = color;
+        out[3].v = uv[3];
+
+        if (particle->graphic) {
+            PyroMatrix34 zero;
+            PyroMatrix34 world;
+            PyroAxisAngle turn;
+            PyroQuat q;
+            PyroMatrix34 rotation;
+            PyroMatrix34 product;
+
+            memset(&zero, 0, sizeof(zero));
+            memcpy(&world, &zero, sizeof(world));
+            turn.angle = particle->angle;
+            turn.axis[0] = particle->axis[0];
+            turn.axis[1] = particle->axis[1];
+            turn.axis[2] = particle->axis[2];
+            q.FromAxisAngle(&turn);
+            rotation.SetRotation(&q);
+            const float objectScale = particle->scale;
+            rotation.Scale(objectScale * particle->graphic->scale[0],
+                particle->graphic->scale[1] * objectScale,
+                objectScale * particle->graphic->scale[2], 1.0f);
+            world.m[0][3] += cx;
+            world.m[1][3] += cy;
+            world.m[2][3] += cz;
+            world = *rotation.Multiply(&product, &world);
+            library->device->Pyro1c(&world);
+            library->device->Pyro1c(&zero);
+        }
+        return;
+    }
+
+    out[0].u = uv[0];
+    out[0].color = color;
+    out[0].v = uv[1];
+    out[1].u = uv[2];
+    out[1].color = color;
+    out[1].v = uv[1];
+    out[2].u = uv[2];
+    out[2].color = color;
+    out[2].v = uv[3];
+    out[3].u = uv[0];
+    out[3].color = color;
+    out[3].v = uv[3];
+    const float depth = scale * z + offset[2];
+    const float x0 = offset[0] + (cx - ax - bx) * scale;
+    const float y0 = offset[1] + (cy - ay - by) * scale;
+    const float x1 = offset[0] + (cx + ax - bx) * scale;
+    const float y1 = offset[1] + (cy + ay - by) * scale;
+    const float x2 = offset[0] + (bx + (cx + ax)) * scale;
+    const float y2 = offset[1] + ((cy + ay) + by) * scale;
+    const float x3 = offset[0] + (bx + (cx - ax)) * scale;
+    const float y3 = offset[1] + ((cy - ay) + by) * scale;
+    if (root->matrixIdentity) {
+        out[0].x = x0;
+        out[0].y = y0;
+        out[0].z = depth;
+        out[1].x = x1;
+        out[1].y = y1;
+        out[1].z = depth;
+        out[2].x = x2;
+        out[2].y = y2;
+        out[2].z = depth;
+        out[3].x = x3;
+        out[3].y = y3;
+        out[3].z = depth;
+        return;
+    }
+    const float (*const m)[4] = root->matrix;
+    out[0].x = y0 * m[0][1] + x0 * m[0][0] + depth * m[0][2] + m[0][3];
+    out[0].y = x0 * m[1][0] + y0 * m[1][1] + depth * m[1][2] + m[1][3];
+    out[0].z = y0 * m[2][1] + x0 * m[2][0] + depth * m[2][2] + m[2][3];
+    out[1].x = y1 * m[0][1] + x1 * m[0][0] + depth * m[0][2] + m[0][3];
+    out[1].y = x1 * m[1][0] + y1 * m[1][1] + depth * m[1][2] + m[1][3];
+    out[1].z = y1 * m[2][1] + x1 * m[2][0] + depth * m[2][2] + m[2][3];
+    out[2].x = y2 * m[0][1] + x2 * m[0][0] + depth * m[0][2] + m[0][3];
+    out[2].y = x2 * m[1][0] + y2 * m[1][1] + depth * m[1][2] + m[1][3];
+    out[2].z = y2 * m[2][1] + x2 * m[2][0] + depth * m[2][2] + m[2][3];
+    out[3].x = y3 * m[0][1] + x3 * m[0][0] + depth * m[0][2] + m[0][3];
+    out[3].y = x3 * m[1][0] + y3 * m[1][1] + depth * m[1][2] + m[1][3];
+    out[3].z = y3 * m[2][1] + x3 * m[2][0] + depth * m[2][2] + m[2][3];
+}
+
+// Stack this, limit, randomPick; RET 0xc. Child emitters first (limit split
+// by their particle share), then this layer's particles as quads batched into
+// the library scratch vertices and uploaded into the device buffer ring. A
+// positive limit caps the drawn count (random subset with randomPick). Returns
+// the number drawn.
+// FUNCTION: VC1 0x00452140
+int PyroLayer::Render(int limit, int randomPick)
+{
+    if (!particles || !limit) {
+        return 0;
+    }
+    int rendered = 0;
+    const int live = particleCount;
+    int seen = 0;
+    int total = 0;
+    if (limit > 0) {
+        total = CountParticles() + particleCount;
+    }
+    if (subEmitterCount) {
+        for (PyroParticle* particle = particles; particle; particle = particle->next) {
+            if (!particle->children) {
+                continue;
+            }
+            for (int i = 0; i < particle->childCount; ++i) {
+                int share;
+                if (limit < 0) {
+                    share = -1;
+                }
+                else {
+                    share = particle->children[i].emitter->GetParticleCount() * limit / total;
+                    if (!share) {
+                        continue;
+                    }
+                }
+                rendered += particle->children[i].emitter->Emitter04(share, randomPick);
+            }
+        }
+    }
+
+    PrepareQuads();
+    library->device->Pyro00(0, 1);
+    library->device->Pyro04(field14 ? 4 : 1, field0c ? 1 : 5);
+    library->device->Pyro20(0, shape ? shape->object : 0);
+
+    PyroParticle* particle = particles;
+    PyroVertexBuffer* const buffer = library->vertexBuffer;
+    const int capacity = library->capacity;
+    int start = library->vertexCursor;
+    PyroVertex* const scratch = library->vertices;
+    int batch = start / 4;
+    PyroVertex* write = scratch;
+    bool draw;
+
+    if (!field0c && field13) {
+        for (; particle; particle = particle->next) {
+            if (limit < 0) {
+                draw = true;
+            }
+            else if (limit == 0) {
+                draw = false;
+            }
+            else if (randomPick) {
+                draw = live <= limit ||
+                    static_cast<int>(PyroGetRandom()->Next() % static_cast<unsigned>(live)) < limit;
+            }
+            else {
+                draw = seen < limit;
+            }
+            if (!draw) {
+                continue;
+            }
+            ++seen;
+            if (0.01f < particle->cur60 && particle->alive) {
+                BuildQuad(write, particle);
+                ++batch;
+                write += 4;
+                if (batch == capacity) {
+                    const int count = write - scratch;
+                    buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex),
+                        start == 0);
+                    library->device->Pyro28(buffer, start / 4, count / 4, 0);
+                    start = 0;
+                    write = scratch;
+                    batch = 0;
+                }
+                ++rendered;
+            }
+        }
+    }
+    else {
+        if (limit > 0 && !randomPick) {
+            int skip = live < limit ? live : limit;
+            while (skip > 0) {
+                PyroParticle* const next = particle->next;
+                if (!next) {
+                    break;
+                }
+                --skip;
+                particle = next;
+            }
+        }
+        else {
+            while (particle->next) {
+                particle = particle->next;
+            }
+        }
+        for (; particle; particle = particle->prev) {
+            if (limit < 0) {
+                draw = true;
+            }
+            else if (limit == 0) {
+                draw = false;
+            }
+            else if (randomPick) {
+                draw = live <= limit ||
+                    static_cast<int>(PyroGetRandom()->Next() % static_cast<unsigned>(live)) < limit;
+            }
+            else {
+                draw = seen < limit;
+            }
+            if (!draw) {
+                continue;
+            }
+            ++seen;
+            if (0.01f < particle->cur60 && particle->alive) {
+                BuildQuad(write, particle);
+                ++batch;
+                write += 4;
+                if (batch == capacity) {
+                    const int count = write - scratch;
+                    buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex),
+                        start == 0);
+                    library->device->Pyro28(buffer, start / 4, count / 4, 0);
+                    start = 0;
+                    write = scratch;
+                    batch = 0;
+                }
+                ++rendered;
+            }
+        }
+    }
+    if (write != scratch) {
+        const int count = write - scratch;
+        buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex), start == 0);
+        library->device->Pyro28(buffer, start / 4, count / 4, 0);
+        start += count;
+    }
+    library->vertexCursor = start;
+    return rendered;
 }
 
 // ECX=this. Particles go back to the pool after their child emitters are
@@ -1608,9 +2059,9 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     ar.Read(&field04, 4);
     ar.Read(&field08, 4);
     ar.Read(&value, 4);
-    field0d = value != 0;
+    flipU = value != 0;
     ar.Read(&value, 4);
-    field0e = value != 0;
+    flipV = value != 0;
     ar.Read(&value, 4);
     flag1 = (value & 1) != 0;
     flag4 = (value & 4) != 0;
@@ -1639,7 +2090,7 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     curves[20].Read(ar, version);  // 0x110
     curves[32].Read(ar, version);  // 0x1a0
     curves[35].Read(ar, version);  // 0x1c4
-    ar.Read(&field18, 4);
+    ar.Read(&attach, 4);
     ar.Read(&value, 4);
     field13 = value != 0;
     curves[3].Read(ar, version);   // 0x44
@@ -1675,8 +2126,8 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     curves[5].Read(ar, version);   // 0x5c
     curves[26].Read(ar, version);  // 0x158
     curves[30].Read(ar, version);  // 0x188
-    ar.Read(&field2ac, 4);
-    ar.Read(&field2b0, 4);
+    ar.Read(&pivotSource[0], 4);
+    ar.Read(&pivotSource[1], 4);
     name.Release();
 }
 

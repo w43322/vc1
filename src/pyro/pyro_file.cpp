@@ -162,11 +162,11 @@ PyroFrameTable::~PyroFrameTable()
         delete[] keysB;
     }
     if (buffer) {
-        buffer->DeletingDestructor(1);
+        delete buffer;
         buffer = 0;
     }
     if (buffer2) {
-        buffer2->DeletingDestructor(1);
+        delete buffer2;
         buffer2 = 0;
     }
 }
@@ -510,9 +510,9 @@ void PyroHeader::Read(PyroArchive& ar, int version)
             ref = &refs[i];
             ref->graphic = found;
             ref->value = value;
-            ar.Read(&ref->fields[0], 4);
-            ar.Read(&ref->fields[1], 4);
-            ar.Read(&ref->fields[2], 4);
+            ar.Read(&ref->scale[0], 4);
+            ar.Read(&ref->scale[1], 4);
+            ar.Read(&ref->scale[2], 4);
         }
     }
 }

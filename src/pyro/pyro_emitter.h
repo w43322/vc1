@@ -5,6 +5,8 @@
 
 namespace vc1 {
 
+struct PyroVertex;
+
 // Inferred names throughout (Pyro particle library, no symbols).
 
 // SIZE 0x1c
@@ -204,16 +206,16 @@ struct PyroLayer
     bool isInstance;            // 0x000
     int field04;                // 0x004
     int field08;                // 0x008
-    bool field0c;               // 0x00c
-    bool field0d;               // 0x00d
-    bool field0e;               // 0x00e
+    bool field0c;               // 0x00c  Render: newest first, blend argument 1 instead of 5
+    bool flipU;                 // 0x00d
+    bool flipV;                 // 0x00e  relative to the emitter's Is3D
     bool flag1;                 // 0x00f
     bool flag2;                 // 0x010
     bool flag4;                 // 0x011
     bool active;                // 0x012
-    bool field13;               // 0x013
-    bool field14;               // 0x014
-    int field18;                // 0x018
+    bool field13;               // 0x013  Render: oldest first (unless field0c)
+    bool field14;               // 0x014  Render: blend mode 4 instead of 1
+    float attach;               // 0x018  0 world position, 1 follows the emitter
     float time;                 // 0x01c  fractional emission carried over
     PyroCurve curves[38];       // 0x020
     int matrixMode;             // 0x1e8  1: root rotation, 2: root orientation
@@ -232,9 +234,10 @@ struct PyroLayer
     PyroShape* shape;           // 0x280
     PyroLibrary* library;       // 0x284
     PyroFile* file;             // 0x288
-    int field28c[8];            // 0x28c
-    int field2ac;               // 0x2ac
-    int field2b0;               // 0x2b0
+    float uv[4];                // 0x28c  u0, v0, u1, v1 (PrepareQuads)
+    float size[2];              // 0x29c  shape size, 64 x 64 without a shape
+    float pivot[2];             // 0x2a4
+    float pivotSource[2];       // 0x2ac  from the file
     int field2b4;               // 0x2b4
 
     PyroLayer();
@@ -248,8 +251,10 @@ struct PyroLayer
     void UpdateAngles();
     void Prepare(float a, float b);
     void FreeParticle(PyroParticle* particle);
+    void PrepareQuads();
     void UpdateMatrix();
-    int Render(int a, int b);
+    void BuildQuad(PyroVertex* out, PyroParticle* particle);
+    int Render(int limit, int randomPick);
     PyroParticle* NewParticle();
     void Update(float time, float dt);
     void Emit(float time, float dt, bool emit);

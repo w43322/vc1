@@ -15,6 +15,7 @@ import ctypes.wintypes as wt
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import os
 import re
+import struct
 import sys
 import threading
 import time
@@ -412,6 +413,12 @@ def main():
     ap.add_argument("--watch-max", type=int, default=20, help="hits printed for --watch")
     ap.add_argument("--bp-args", type=int, default=0,
                     help="instead of a full dump, print N dwords at the first stack argument on every hit")
+    ap.add_argument("--bp-arg-index", type=int, default=0,
+                    help="with --bp-args: dereference this stack argument (0 = first) instead")
+    ap.add_argument("--bp-reg", default=None, choices=["eax", "ebx", "ecx", "edx", "esi", "edi"],
+                    help="with --bp-args: dereference this register instead of a stack argument")
+    ap.add_argument("--bp-floats", action="store_true",
+                    help="with --bp-args: print the dwords as floats")
     ap.add_argument("--click", action="append", default=[],
                     help="FX,FY@T: left-click at T s, fractions of the game client area")
     ap.add_argument("args", nargs="*")
@@ -522,12 +529,23 @@ def main():
                             msg = "<empty fmt %08x %r from %s>" % (fmtp, read(hproc, fmtp, 16), syms.lookup(ret))
                         sys.stdout.write("  log: " + msg.rstrip("\n") + "\n")
                     elif a.bp_args:
-                        # compact: first stack arg as a pointer, dump N dwords there
-                        argp = int.from_bytes(read(hproc, ctx.Esp + 4, 4) or b"\0\0\0\0", "little")
+                        # compact: a stack arg as a pointer, dump N dwords there
+                        argp = int.from_bytes(read(hproc, ctx.Esp + 4 + 4 * a.bp_arg_index, 4) or b"\0\0\0\0",
+                                              "little")
+                        if a.bp_reg:
+                            argp = getattr(ctx, a.bp_reg.capitalize())
                         raw = read(hproc, argp, 4 * a.bp_args) or b""
-                        words = [int.from_bytes(raw[i:i + 4], "little") for i in range(0, len(raw), 4)]
-                        print("== bp %08x hit %d ecx=%08x [arg0=%08x] %s" % (
-                            addr, bp_hits[addr], ctx.Ecx, argp, " ".join("%08x" % w for w in words)))
+                        if a.bp_floats:
+                            text = " ".join("%.4g" % struct.unpack("<f", raw[i:i + 4])[0]
+                                            for i in range(0, len(raw) - 3, 4))
+                        else:
+                            text = " ".join("%08x" % int.from_bytes(raw[i:i + 4], "little")
+                                            for i in range(0, len(raw), 4))
+                        stack = read(hproc, ctx.Esp + 4, 16) or b""
+                        args = " ".join("%08x" % int.from_bytes(stack[i:i + 4], "little")
+                                        for i in range(0, len(stack), 4))
+                        print("== bp %08x hit %d eax=%08x ecx=%08x args=(%s) [arg%d=%08x] %s" % (
+                            addr, bp_hits[addr], ctx.Eax, ctx.Ecx, args, a.bp_arg_index, argp, text))
                     elif bp_hits[addr] <= a.bp_max:
                         dump(hproc, hthread, syms, "breakpoint %08x hit %d" % (addr, bp_hits[addr]))
                     if a.watch_ptr and addr != log_addr:

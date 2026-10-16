@@ -38,7 +38,7 @@ void PyroLibrary::Init(IPyroDevice* value)
     device = value;
     capacity = 0x200;
     vertexCursor = 0;
-    value->Pyro0c(reinterpret_cast<void**>(&vertexBuffer), 0x800, 0x18, 0x10009, 0);
+    value->Pyro0c(&vertexBuffer, 0x800, 0x18, 0x10009, 0);
     vertices = new PyroVertex[capacity * 4];
 }
 
