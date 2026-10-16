@@ -67,7 +67,7 @@ static inline void AssignCounted(KdRef<T>& slot, T* value)
 
 // MOV EAX, "ObjectWatcher"; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x00405400
-const char* KdObjectWatcher::Script14()
+const char* KdObjectWatcher::GetTypeName()
 {
     return kObjectWatcher;
 }
@@ -102,7 +102,7 @@ void KdObjectWatcher::SetPositionable(const KdPtr<IPositionable>& value)
 
 // MOV EAX, 0x40; RET. IUpdateable vtable+0x0c.
 // FUNCTION: VC1 0x004ad910
-int KdObjectWatcher::Unmapped0c()
+int KdObjectWatcher::GetUpdateLayer()
 {
     return 0x40;
 }
@@ -117,7 +117,7 @@ int KdObjectWatcher::SetLayer(unsigned layer)
 
 // XOR AL, AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x004ad930
-unsigned char KdObjectWatcher::Script10(void* a, void* b)
+unsigned char KdObjectWatcher::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -133,7 +133,7 @@ KdPtr<ITexture> KdObjectWatcher::GetTexture()
         return KdPtr<ITexture>(g_kdNullObject.ptr
             ? static_cast<ITexture*>(g_kdNullObject.ptr->QueryInterface(&g_iidTexture)) : 0);
     }
-    return *static_cast<KdPtr<ITexture>*>(target->Display1c());
+    return *static_cast<KdPtr<ITexture>*>(target->GetRenderTexture());
 }
 
 // RET 8. Script "SetCamera": the camera and the offset added to the watched
@@ -215,10 +215,10 @@ void KdObjectWatcher::Update(unsigned sliceBit, int dt)
     correction.x = RoundToNearest(screen.x) - screen.x;
     correction.y = RoundToNearest(screen.y) - screen.y;
     KdPtr<IGraphics> graphics;
-    target->Display0c(&graphics.ptr, &camera);
+    target->BeginFrame(&graphics.ptr, &camera);
     if (graphics.ptr) {
-        renderable->Render0c(&graphics, &renderMask);
-        target->Display10();
+        renderable->RenderMasked(&graphics, &renderMask);
+        target->EndFrame();
     }
 }
 
@@ -273,7 +273,7 @@ void KdObjectWatcher::InitRender(int width, int height)
 // RET 8. Script method lookup (table 0x004ee7a0, guard bit 0x004ee7b0,
 // atexit destructor 0x004c9cd0).
 // FUNCTION: VC1 0x004ae400
-unsigned char KdObjectWatcher::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdObjectWatcher::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

@@ -6,7 +6,7 @@
 namespace vc1 {
 
 // Inferred name. 64-bit render flags (the script FLAG_* bits); renderers
-// receive it by pointer as the second Render0c argument.
+// receive it by pointer as the second RenderMasked argument.
 // SIZE 0x08
 struct RenderMask
 {
@@ -20,9 +20,9 @@ extern RenderMask g_defaultRenderMask;
 // SIZE 0x04
 struct IRenderable : IUnknown
 {
-    virtual int Render0c(void* graphics, void* unused); // vtable+0x0c
+    virtual int RenderMasked(void* graphics, void* unused); // vtable+0x0c
     virtual int Render(void* graphics) = 0;            // vtable+0x10
-    virtual int Render14() = 0;                        // vtable+0x14
+    virtual int GetRenderOrder() = 0;                        // vtable+0x14
 };
 
 typedef char Vc1IRenderableSizeCheck[sizeof(IRenderable) == 0x04 ? 1 : -1];

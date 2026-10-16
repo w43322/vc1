@@ -17,7 +17,8 @@ struct ITexture : IUnknown
     {
     }
 
-    virtual unsigned char Texture0c(void* arg) = 0;   // vtable+0x0c
+    // Guessed name: every implementation returns 0 and no caller is recovered.
+    virtual unsigned char Reload(void* arg) = 0;   // vtable+0x0c
     virtual int GetWidth() = 0;                       // vtable+0x10
     virtual int GetHeight() = 0;                      // vtable+0x14
     virtual void* Lock(void* region, bool readOnly) = 0;   // vtable+0x18

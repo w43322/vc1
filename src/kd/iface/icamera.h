@@ -14,7 +14,8 @@ struct ICamera : IUnknown
 {
     virtual void SetPosition(const Matrix3& value) = 0; // vtable+0x0c
     virtual const Matrix3& GetPosition() = 0;           // vtable+0x10
-    virtual void Camera14() = 0;                        // vtable+0x14
+    // KdGraphics::SetView passes (&graphics IAbstract, &view rect).
+    virtual void BindView() = 0;                        // vtable+0x14
     virtual const Matrix3& GetViewMatrix() = 0;         // vtable+0x18
 };
 

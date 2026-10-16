@@ -43,7 +43,7 @@ class KdComponentGroup : public IComponentGroup
 {
 public:
     KdRecordList records; // 0x04  sorted by name
-    KdRefList extra;      // 0x14  IUnknown* list filled by Unmapped1c
+    KdRefList extra;      // 0x14  IUnknown* list filled by CollectObjects
 
     ~KdComponentGroup();
 
@@ -51,9 +51,9 @@ public:
     void RegisterObject(const KdString& name, const KdPtr<IAbstract>& object); // vtable+0x10
     KdPtr<IUnknown> UnregisterObject(const KdString& name); // vtable+0x14
     KdPtr<IUnknown> FindObject(const KdString& name);       // vtable+0x18
-    KdFactory* Unmapped1c(const char** iid);  // vtable+0x1c
-    void* Unmapped20();                     // vtable+0x20
-    int Unmapped24();                       // vtable+0x24
+    KdFactory* CollectObjects(const char** iid);  // vtable+0x1c
+    void* GetRecords();                     // vtable+0x20
+    int ClearCollected();                       // vtable+0x24
 };
 
 typedef char Vc1KdComponentGroupSizeCheck[sizeof(KdComponentGroup) == 0x24 ? 1 : -1];

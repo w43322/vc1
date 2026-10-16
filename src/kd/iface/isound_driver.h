@@ -10,10 +10,10 @@ struct ISoundDriver : IUnknown
 {
     // RunApp passes IDisplay vtable+0x2c; KdSoundDriver ignores it.
     virtual bool SetEnabled(void* mixer) = 0; // vtable+0x0c
-    virtual void* Sound10(void* arg) = 0;  // vtable+0x10
-    virtual void* Sound14(void* arg) = 0;  // vtable+0x14
+    virtual void* CreateSound(void* arg) = 0;  // vtable+0x10
+    virtual void* CreateMusic(void* arg) = 0;  // vtable+0x14
     // Script "Start" / "Stop" / "Pause" / "GetVolume" / "SetVolume"
-    // (KdSoundDriver::Script0c, 0x00468610).
+    // (KdSoundDriver::GetMember, 0x00468610).
     virtual bool Start() = 0;              // vtable+0x18
     virtual bool Stop() = 0;               // vtable+0x1c
     virtual bool Pause() = 0;              // vtable+0x20

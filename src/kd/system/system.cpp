@@ -47,7 +47,7 @@ static __int64 SystemNow()
 
 // RET 8. Default IRenderable vtable+0x0c: forwards to Render (vtable+0x10).
 // FUNCTION: VC1 0x00401010
-int IRenderable::Render0c(void* graphics, void* unused)
+int IRenderable::RenderMasked(void* graphics, void* unused)
 {
     (void)unused;
     return Render(graphics);
@@ -331,14 +331,14 @@ void KdRefList::Reserve(unsigned count)
 
 // XOR EAX,EAX; RET. IRenderable vtable+0x14; ICF-folded return-0.
 // FUNCTION: VC1 0x0041adb0 FOLDED
-int KdSystemBase::Render14()
+int KdSystemBase::GetRenderOrder()
 {
     return 0;
 }
 
 // MOV EAX, 0x004d4be4; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041af30
-const char* KdSystemBase::Script14()
+const char* KdSystemBase::GetTypeName()
 {
     return kSystem;
 }
@@ -385,7 +385,7 @@ void KdSystemBase::Frame()
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x00461ef0
-unsigned char KdSystemBase::Script10(void* a, void* b)
+unsigned char KdSystemBase::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -405,11 +405,11 @@ static void SystemPointerCallback(const KdEvent* event)
     input->OnPointer(event->data);
 }
 
-// LEA EAX, [ECX+0x10]; RET. KdComponentGroup::Unmapped20 inlined.
+// LEA EAX, [ECX+0x10]; RET. KdComponentGroup::GetRecords inlined.
 // FUNCTION: VC1 0x00461f60
-void* KdSystemBase::Unmapped20()
+void* KdSystemBase::GetRecords()
 {
-    return KdComponentGroup::Unmapped20();
+    return KdComponentGroup::GetRecords();
 }
 
 // RET 4. Null selects the default camera; otherwise QI ICamera.
@@ -732,16 +732,16 @@ KdSystemBase::KdSystemBase() throw()
 
 // ADD ECX, 0xc; JMP 0x00472870.
 // FUNCTION: VC1 0x00462700
-int KdSystemBase::Unmapped24()
+int KdSystemBase::ClearCollected()
 {
-    return KdComponentGroup::Unmapped24();
+    return KdComponentGroup::ClearCollected();
 }
 
 // ADD ECX, 0xc; JMP 0x004728f0.
 // FUNCTION: VC1 0x00462710
-KdFactory* KdSystemBase::Unmapped1c(const char** iid)
+KdFactory* KdSystemBase::CollectObjects(const char** iid)
 {
-    return KdComponentGroup::Unmapped1c(iid);
+    return KdComponentGroup::CollectObjects(iid);
 }
 
 static void RebindService(IUnknown** slot, const char** iid)
@@ -857,29 +857,29 @@ KdPtr<IUnknown> KdSystemBase::FindObject(const KdString& name)
     return KdComponentGroup::FindObject(name);
 }
 
-// STRING: VC1 0x004d5424
-static const char kObjectNotFound[] = "Object %s not found";
+// GLOBAL: VC1 0x004d5424
+extern const char kSystemObjectNotFound[] = "Object %s not found";
 
 // RET 8. Removes key; on success also removes it from the update, render and
-// input groups and runs Unmapped24.
+// input groups and runs ClearCollected.
 // FUNCTION: VC1 0x004630f0
 KdPtr<IUnknown> KdSystemBase::UnregisterObject(const KdString& name)
 {
     KdPtr<IUnknown> found = KdComponentGroup::UnregisterObject(name);
     if (!found.ptr) {
-        HostLogError(&g_kdNameSystem, kObjectNotFound,
+        HostLogError(&g_kdNameSystem, kSystemObjectNotFound,
             *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(&name) + 4));
         return found;
     }
     updateGroup->Remove(reinterpret_cast<void**>(&found.ptr));
     renderGroup->Remove(reinterpret_cast<void**>(&found.ptr));
     inputGroup->Remove(reinterpret_cast<void**>(&found.ptr));
-    Unmapped24();
+    ClearCollected();
     return found;
 }
 
-// STRING: VC1 0x004d53f4
-static const char kObjectExists[] = "Object %s already exists";
+// GLOBAL: VC1 0x004d53f4
+extern const char kSystemObjectExists[] = "Object %s already exists";
 
 static unsigned char IsRealService(IUnknown* object)
 {
@@ -908,12 +908,12 @@ void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& 
         flag = IsRealService(existing.ptr);
     }
     if (flag) {
-        HostLogError(&g_kdNameSystem, kObjectExists,
+        HostLogError(&g_kdNameSystem, kSystemObjectExists,
             *reinterpret_cast<void* const*>(reinterpret_cast<const char*>(&name) + 4));
         return;
     }
     KdComponentGroup::RegisterObject(name, object);
-    Unmapped24();
+    ClearCollected();
 
     if (*out) {
         ident = static_cast<IUnknown*>(
@@ -954,7 +954,7 @@ extern const char kScriptSetCamera[] = "SetCamera";
 // RET 8. Script method lookup (table 0x004ee5d8, guard bit 0x004ee5e8),
 // every entry a vcall thunk on the ISystem face.
 // FUNCTION: VC1 0x00463470
-unsigned char KdSystemBase::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdSystemBase::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 
@@ -993,7 +993,7 @@ void KdSystemBase::Render() throw()
     IGraphics* graphics;
     IFont* font;
 
-    display->Display0c(&graphics, &activeCamera);
+    display->BeginFrame(&graphics, &activeCamera);
     if (!graphics) {
         return;
     }
@@ -1015,7 +1015,7 @@ void KdSystemBase::Render() throw()
         graphics->SetColor(0xffffffff);
         graphics->DrawString(consoleText, 0.0f, 0.0f);
     }
-    display->Display10();
+    display->EndFrame();
     if (graphics) {
         graphics->Release();
     }
@@ -1023,7 +1023,7 @@ void KdSystemBase::Render() throw()
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x004a8c30
-unsigned char KdSystem::Script10(void* a, void* b)
+unsigned char KdSystem::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -1143,11 +1143,11 @@ unsigned char KdSystem::Start(IUnknown** object)
     return 1;
 }
 
-// RET 8. KdSystemBase::Script0c.
+// RET 8. KdSystemBase::GetMember.
 // FUNCTION: VC1 0x004a8f20
-unsigned char KdSystem::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdSystem::GetMember(const char* name, SquirrelObject* out)
 {
-    return KdSystemBase::Script0c(name, out) != 0;
+    return KdSystemBase::GetMember(name, out) != 0;
 }
 
 }

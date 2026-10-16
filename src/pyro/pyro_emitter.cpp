@@ -248,9 +248,9 @@ void PyroEmitter::Update(float time, float dt)
 }
 
 // FUNCTION: VC1 0x0044eb20
-void PyroEmitter::Emitter08()
+void PyroEmitter::Render()
 {
-    Emitter04(-1, 0);
+    RenderLimited(-1, 0);
 }
 
 // RET 4. Copies a 3x4 matrix and records whether it is the identity.
@@ -1152,7 +1152,7 @@ void PyroLayer::BuildQuad(PyroVertex* out, PyroParticle* particle)
     const int green = static_cast<int>(g * 255.0f + 0.5f);
     const int blue = static_cast<int>(b * 255.0f + 0.5f);
     const int alpha = static_cast<int>(particle->cur60 * a * 255.0f + 0.5f);
-    if (library->device->Pyro2c()) {
+    if (library->device->IsRgba()) {
         color = ((((alpha << 8) | blue) << 8 | green) << 8) | red;
     }
     else {
@@ -1278,8 +1278,8 @@ void PyroLayer::BuildQuad(PyroVertex* out, PyroParticle* particle)
             world.m[1][3] += cy;
             world.m[2][3] += cz;
             world = *rotation.Multiply(&product, &world);
-            library->device->Pyro1c(&world);
-            library->device->Pyro1c(&zero);
+            library->device->SetWorldMatrix(&world);
+            library->device->SetWorldMatrix(&zero);
         }
         return;
     }
@@ -1369,15 +1369,15 @@ int PyroLayer::Render(int limit, int randomPick)
                         continue;
                     }
                 }
-                rendered += particle->children[i].emitter->Emitter04(share, randomPick);
+                rendered += particle->children[i].emitter->RenderLimited(share, randomPick);
             }
         }
     }
 
     PrepareQuads();
-    library->device->Pyro00(0, 1);
-    library->device->Pyro04(field14 ? 4 : 1, field0c ? 1 : 5);
-    library->device->Pyro20(0, shape ? shape->object : 0);
+    library->device->SetRenderState(0, 1);
+    library->device->SetBlendMode(field14 ? 4 : 1, field0c ? 1 : 5);
+    library->device->SetTexture(0, shape ? shape->object : 0);
 
     PyroParticle* particle = particles;
     PyroVertexBuffer* const buffer = library->vertexBuffer;
@@ -1415,7 +1415,7 @@ int PyroLayer::Render(int limit, int randomPick)
                     const int count = write - scratch;
                     buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex),
                         start == 0);
-                    library->device->Pyro28(buffer, start / 4, count / 4, 0);
+                    library->device->DrawQuads(buffer, start / 4, count / 4, 0);
                     start = 0;
                     write = scratch;
                     batch = 0;
@@ -1467,7 +1467,7 @@ int PyroLayer::Render(int limit, int randomPick)
                     const int count = write - scratch;
                     buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex),
                         start == 0);
-                    library->device->Pyro28(buffer, start / 4, count / 4, 0);
+                    library->device->DrawQuads(buffer, start / 4, count / 4, 0);
                     start = 0;
                     write = scratch;
                     batch = 0;
@@ -1479,7 +1479,7 @@ int PyroLayer::Render(int limit, int randomPick)
     if (write != scratch) {
         const int count = write - scratch;
         buffer->Upload(scratch, start * sizeof(PyroVertex), count * sizeof(PyroVertex), start == 0);
-        library->device->Pyro28(buffer, start / 4, count / 4, 0);
+        library->device->DrawQuads(buffer, start / 4, count / 4, 0);
         start += count;
     }
     library->vertexCursor = start;
@@ -1636,7 +1636,7 @@ void PyroEmitter::Prepare(float a, float b)
 
 // RET 8.
 // FUNCTION: VC1 0x00453700
-int PyroEmitter::Emitter04(int a, int b)
+int PyroEmitter::RenderLimited(int a, int b)
 {
     int total = 0;
     for (int i = 0; i < layerCount; ++i) {

@@ -139,14 +139,14 @@ static const char kWindowName[] = "Window";
 static const char kCantInitPyro[] = "Can't init Pyro";
 
 // GLOBAL: VC1 0x004ee284
-IUnknown* g_display1cObject;
+IUnknown* g_nullRenderTexture;
 // GLOBAL: VC1 0x004ee288
-unsigned g_display1cGuard;
+unsigned g_nullRenderTextureGuard;
 
-static void Display1cAtexit();
+static void ReleaseNullRenderTexture();
 static unsigned char DisplayQueryReady(KdRenderTargetNode* node);
-static int Display28Finish();
-static int Display28Mode(unsigned format);
+static int UpdateWindowFrame();
+static int FormatPresentInterval(unsigned format);
 static const char* DxGetErrorString(int hr);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
 static void FlushBatch(char final);
@@ -156,7 +156,7 @@ static void DisplayD3dLogHresult(int hr, const char* message, char flag);
 static unsigned char DisplayD3dRecreate();
 static unsigned char DisplayD3dReset();
 static unsigned char DisplayD3DInit();
-static int Display28Apply(bool windowed);
+static int ApplyWindowedMode(bool windowed);
 static void* CreateKdWindow();
 static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot);
 static float MinFloat(float a, float b);
@@ -257,7 +257,7 @@ IRenderTarget::IRenderTarget()
 // this=IRenderTarget. RET 8. a = IGraphics** out, b = IUnknown** camera.
 // SetView(ECX=b, EAX={0, 0, GetWidth(), GetHeight()}) on graphics.
 // FUNCTION: VC1 0x0041a500
-void* IRenderTarget::Display0c(void* a, void* b)
+void* IRenderTarget::BeginFrame(void* a, void* b)
 {
     IUnknown** out = static_cast<IUnknown**>(a);
     IUnknown* queried;
@@ -301,9 +301,9 @@ void* IRenderTarget::Display0c(void* a, void* b)
 }
 
 // IRenderTarget vtable+0x10. Rebind the graphics scene, end and present
-// (the same sequence as KdDisplayBase::Display10).
+// (the same sequence as KdDisplayBase::EndFrame).
 // FUNCTION: VC1 0x0041a600
-void* IRenderTarget::Display10()
+void* IRenderTarget::EndFrame()
 {
     typedef void* (__stdcall *FnEndScene)(IUnknown* device);
     typedef void* (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
@@ -323,14 +323,14 @@ void* IRenderTarget::Display10()
 
 // MOV EAX, 0x004d4c4c; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041a650
-const char* KdDisplayBase::Script14()
+const char* KdDisplayBase::GetTypeName()
 {
     return kDisplay;
 }
 
 // MOV EAX, 1; RET 0x14.
 // FUNCTION: VC1 0x0041aca0
-int IPyroDevice::Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format,
+int IPyroDevice::CreateBuffer(PyroDeviceBuffer** out, int count, int stride, unsigned format,
     int flags)
 {
     (void)out;
@@ -341,17 +341,17 @@ int IPyroDevice::Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned 
     return 1;
 }
 
-// RET 0x14. Pyro08 into a local (reusing the last argument slot); on success
+// RET 0x14. CreateBuffer into a local (reusing the last argument slot); on success
 // wraps it in an 8-byte object (vftable 0x004d6278, value at +4) into *out.
 // The wrapper class is not recovered yet.
 // STUB: VC1 0x0041acb0
-int IPyroDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format,
+int IPyroDevice::CreateVertexBuffer(PyroVertexBuffer** out, int count, int stride, unsigned format,
     int flags)
 {
     PyroDeviceBuffer* inner;
     int result;
 
-    result = Pyro08(&inner, count, stride, format, flags);
+    result = CreateBuffer(&inner, count, stride, format, flags);
     if (result) {
         return result;
     }
@@ -361,7 +361,7 @@ int IPyroDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned 
 
 // MOV EAX, 1; RET 0x10.
 // FUNCTION: VC1 0x0041ad10
-int IPyroDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags)
+int IPyroDevice::DrawQuadBuffer(PyroDeviceBuffer* buffer, int first, int count, int flags)
 {
     (void)buffer;
     (void)first;
@@ -370,13 +370,13 @@ int IPyroDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flag
     return 1;
 }
 
-// RET 0x10. Pyro24(a->+4, b, c, d) through the 0x004d6278 wrapper; the wrapper
+// RET 0x10. DrawQuadBuffer(a->+4, b, c, d) through the 0x004d6278 wrapper; the wrapper
 // class is not recovered yet.
 // STUB: VC1 0x0041ad20
-int IPyroDevice::Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags)
+int IPyroDevice::DrawQuads(PyroVertexBuffer* buffer, int first, int count, int flags)
 {
     (void)buffer;
-    return Pyro24(0, first, count, flags);
+    return DrawQuadBuffer(0, first, count, flags);
 }
 
 // RET 0x10. this = PyroVertexBuffer face (data at +4).
@@ -421,21 +421,21 @@ static const char* DxGetErrorString(int hr)
 
 // XOR EAX, EAX; RET.
 // FUNCTION: VC1 0x00463c70
-int KdDisplayDevice::Pyro2c()
+int KdDisplayDevice::IsRgba()
 {
     return 0;
 }
 
-// RET 0x10. Pyro24 with the PyroDeviceBuffer face of the same KdPyroBuffer.
+// RET 0x10. DrawQuadBuffer with the PyroDeviceBuffer face of the same KdPyroBuffer.
 // FUNCTION: VC1 0x00463c80
-int KdDisplayDevice::Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags)
+int KdDisplayDevice::DrawQuads(PyroVertexBuffer* buffer, int first, int count, int flags)
 {
-    return Pyro24(static_cast<KdPyroBuffer*>(buffer), first, count, flags);
+    return DrawQuadBuffer(static_cast<KdPyroBuffer*>(buffer), first, count, flags);
 }
 
 // RET 8. Stores value at +0x14.
 // FUNCTION: VC1 0x00463cb0
-int KdDisplayDevice::Pyro20(void* a, PyroDeviceObject* texture)
+int KdDisplayDevice::SetTexture(void* a, PyroDeviceObject* texture)
 {
     (void)a;
     pyroTexture = texture;
@@ -444,7 +444,7 @@ int KdDisplayDevice::Pyro20(void* a, PyroDeviceObject* texture)
 
 // XOR EAX, EAX; RET 4.
 // FUNCTION: VC1 0x00463cc0
-int KdDisplayDevice::Pyro1c(void* a)
+int KdDisplayDevice::SetWorldMatrix(void* a)
 {
     (void)a;
     return 0;
@@ -452,7 +452,7 @@ int KdDisplayDevice::Pyro1c(void* a)
 
 // MOV EAX, 1; RET 0x10.
 // FUNCTION: VC1 0x00463cd0
-int KdDisplayDevice::Pyro10(void* a, void* b, void* c, void* d)
+int KdDisplayDevice::Unused(void* a, void* b, void* c, void* d)
 {
     (void)a;
     (void)b;
@@ -463,7 +463,7 @@ int KdDisplayDevice::Pyro10(void* a, void* b, void* c, void* d)
 
 // RET 8. mode18 = 0 for (4, 1), else 2.
 // FUNCTION: VC1 0x00463ce0
-int KdDisplayDevice::Pyro04(unsigned mode, unsigned value)
+int KdDisplayDevice::SetBlendMode(unsigned mode, unsigned value)
 {
     if (mode == 4 && value == 1) {
         mode18 = 0;
@@ -475,7 +475,7 @@ int KdDisplayDevice::Pyro04(unsigned mode, unsigned value)
 
 // XOR EAX, EAX; RET 8.
 // FUNCTION: VC1 0x00463d10
-int KdDisplayDevice::Pyro00(int a, int b)
+int KdDisplayDevice::SetRenderState(int a, int b)
 {
     (void)a;
     (void)b;
@@ -483,10 +483,10 @@ int KdDisplayDevice::Pyro00(int a, int b)
 }
 
 // RET 0x10. Draws count quads from quad first of the buffer through the
-// current graphics (1 when there is none) with the Pyro20 texture and the
-// Pyro04 blend mode, restoring the previous mode.
+// current graphics (1 when there is none) with the SetTexture texture and the
+// SetBlendMode blend mode, restoring the previous mode.
 // FUNCTION: VC1 0x00463d20
-int KdDisplayDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags)
+int KdDisplayDevice::DrawQuadBuffer(PyroDeviceBuffer* buffer, int first, int count, int flags)
 {
     (void)flags;
     if (!g_graphics) {
@@ -513,7 +513,7 @@ int KdDisplayDevice::Pyro24(PyroDeviceBuffer* buffer, int first, int count, int 
 
 // RET 0x14. Wraps the decoded pixels (adopted) in a device image.
 // FUNCTION: VC1 0x00463df0
-int KdDisplayDevice::Pyro18(PyroDeviceImage** out, void* pixels, int width, int height,
+int KdDisplayDevice::CreateImage(PyroDeviceImage** out, void* pixels, int width, int height,
     int flags)
 {
     *out = new PyroDeviceImage(pixels, width, height, flags);
@@ -566,7 +566,7 @@ unsigned KdDisplayDevice::AddRef()
 // original never null-checks it), filled with the image's 32-bit pixels and
 // wrapped in a KdPyroTexture.
 // FUNCTION: VC1 0x00463ed0
-int KdDisplayDevice::Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags)
+int KdDisplayDevice::CreateImageTexture(PyroDeviceObject** out, PyroDeviceImage* image, int flags)
 {
     IUnknown* created;
     IUnknown** slot;
@@ -606,7 +606,7 @@ int KdDisplayDevice::Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int 
 
 // RET 4. A new KdEffect's IAbstract face (CreateTexture's pattern).
 // FUNCTION: VC1 0x00463fc0
-void** KdDisplayDevice::Display3c(void** out)
+void** KdDisplayDevice::CreateEffect(void** out)
 {
     KdEffect* object;
     IUnknown* queried;
@@ -673,7 +673,7 @@ int KdDisplayDevice::Shutdown()
 
 // RET 0x14. A KdPyroBuffer's PyroVertexBuffer face.
 // FUNCTION: VC1 0x004640e0
-int KdDisplayDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format,
+int KdDisplayDevice::CreateVertexBuffer(PyroVertexBuffer** out, int count, int stride, unsigned format,
     int flags)
 {
     KdPyroBuffer* buffer;
@@ -691,7 +691,7 @@ int KdDisplayDevice::Pyro0c(PyroVertexBuffer** out, int count, int stride, unsig
 
 // RET 0x14. A KdPyroBuffer's PyroDeviceBuffer face.
 // FUNCTION: VC1 0x00464150
-int KdDisplayDevice::Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format,
+int KdDisplayDevice::CreateBuffer(PyroDeviceBuffer** out, int count, int stride, unsigned format,
     int flags)
 {
     KdPyroBuffer* buffer;
@@ -731,7 +731,7 @@ unsigned char KdDisplayDevice::SetSize(unsigned width, unsigned height)
 
 // GetWindowLong/SetWindowPos after skip-device change. GWL_STYLE -16, GWL_EXSTYLE -20.
 // FUNCTION: VC1 0x00464210
-static int Display28Finish()
+static int UpdateWindowFrame()
 {
     LONG style;
     LONG ex;
@@ -763,7 +763,7 @@ static int Display28Finish()
 
 // EAX=D3DFORMAT from the mode record +8. Maps 0x15..0x19 to present intervals.
 // FUNCTION: VC1 0x004642e0
-static int Display28Mode(unsigned format)
+static int FormatPresentInterval(unsigned format)
 {
     switch (format) {
     case 0x15:
@@ -1029,7 +1029,7 @@ static void DisplayD3DTeardown()
     IUnknown* object;
     typedef int (__stdcall *Fn154)(IUnknown* device, int a, int b);
     typedef int (__stdcall *Fn14c)(IUnknown* device, int a, int b, int c);
-    typedef int (__stdcall *Fn30)(IUnknown* object);
+    typedef int (__stdcall *FnUnlock)(IUnknown* object);
 
     while (g_d3dChain2) {
         ReleaseTrackedTexture(g_d3dChain2->texture);
@@ -1060,7 +1060,7 @@ static void DisplayD3DTeardown()
     }
     if (g_d3dVertexBuffer) {
         if (g_batchVertices) {
-            reinterpret_cast<Fn30>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xc])(g_d3dVertexBuffer);
+            reinterpret_cast<FnUnlock>((*reinterpret_cast<void***>(g_d3dVertexBuffer))[0xc])(g_d3dVertexBuffer);
             g_batchVertices = 0;
         }
         if (g_d3dDevice) {
@@ -1452,14 +1452,14 @@ static unsigned char DisplayD3dReset()
 
 static IUnknown* CallDirect3DCreate8(unsigned sdk)
 {
-    typedef IUnknown* (__stdcall *FnCreate8)(unsigned version);
-    static FnCreate8 create8;
+    typedef IUnknown* (__stdcall *FnDirect3DCreate8)(unsigned version);
+    static FnDirect3DCreate8 create8;
     HMODULE dll;
 
     if (!create8) {
         dll = LoadLibraryA("d3d8.dll");
         if (dll) {
-            create8 = reinterpret_cast<FnCreate8>(GetProcAddress(dll, "Direct3DCreate8"));
+            create8 = reinterpret_cast<FnDirect3DCreate8>(GetProcAddress(dll, "Direct3DCreate8"));
         }
     }
     if (!create8) {
@@ -1544,11 +1544,11 @@ static unsigned char DisplayD3DInit()
                     continue;
                 }
                 if (g_displayPresentInterval == 0x10) {
-                    if (Display28Mode(enumMode[3]) > Display28Mode(0x19)) {
+                    if (FormatPresentInterval(enumMode[3]) > FormatPresentInterval(0x19)) {
                         continue;
                     }
                 }
-                if (Display28Mode(enumMode[3]) > Display28Mode(format)) {
+                if (FormatPresentInterval(enumMode[3]) > FormatPresentInterval(format)) {
                     format = enumMode[3];
                 }
             }
@@ -1574,7 +1574,7 @@ static unsigned char DisplayD3DInit()
         g_d3dPresentFull[11] = 0;
         g_d3dPresentFull[12] = 1;
         HostLog(&g_kdNameDisplay, kFullScreenMode, viewW, viewH,
-            g_d3dFormatNames[Display28Mode(format)]);
+            g_d3dFormatNames[FormatPresentInterval(format)]);
         if (g_displaySkipDevice == 0) {
             present = g_d3dPresentFull;
         }
@@ -1583,14 +1583,14 @@ static unsigned char DisplayD3DInit()
         }
     }
     g_displayMode = reinterpret_cast<int*>(present);
-    g_displayPresentInterval = ((Display28Mode(present[2]) < 4) - 1 & 0xfffffff0) + 0x20;
+    g_displayPresentInterval = ((FormatPresentInterval(present[2]) < 4) - 1 & 0xfffffff0) + 0x20;
     hr = reinterpret_cast<FnCreateDev>((*reinterpret_cast<void***>(g_d3dObject))[0xf])(
         g_d3dObject, 0, 1, g_kdDisplayWindow, 0x20, present, &g_d3dDevice);
     if (hr < 0) {
         DisplayD3dLogHresult(hr, kCantCreateDevice, 1);
         return 0;
     }
-    Display28Finish();
+    UpdateWindowFrame();
     g_batchVertices = 0;
     g_d3dChain2 = 0;
     DisplayD3dSetBuffers(present[0], present[1], 0, 0);
@@ -1971,7 +1971,7 @@ static unsigned char DisplayQueryReady(KdRenderTargetNode* node)
 // BL=windowed (SetWindowed argument). Switches g_displaySkipDevice and resets
 // the device when the mode actually changes.
 // FUNCTION: VC1 0x00465e70
-static int Display28Apply(bool windowed)
+static int ApplyWindowedMode(bool windowed)
 {
     int interval;
 
@@ -1989,10 +1989,10 @@ static int Display28Apply(bool windowed)
         GetWindowRect(g_kdDisplayWindow, &g_displayWindowRect);
     }
     g_displaySkipDevice = windowed;
-    interval = Display28Mode(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
+    interval = FormatPresentInterval(g_displayMode ? static_cast<unsigned>(g_displayMode[2]) : 0);
     g_displayPresentInterval = ((3 < interval) - 1 & 0xfffffff0) + 0x20;
     DisplayD3dReset();
-    return Display28Finish();
+    return UpdateWindowFrame();
 }
 
 // cdecl name, out width/height (the image size). Inferred name. jpgd 0.93b
@@ -2169,7 +2169,7 @@ bool KdDisplayBase::IsWindowed()
 
 // XOR AL, AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x004662d0
-unsigned char KdDisplayBase::Script10(void* a, void* b)
+unsigned char KdDisplayBase::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -2178,19 +2178,19 @@ unsigned char KdDisplayBase::Script10(void* a, void* b)
 
 // Guarded static IUnknown*. IRenderTarget vtable+0x1c; IDisplay thunk SUB ECX, 0x10.
 // FUNCTION: VC1 0x004662e0
-void* KdDisplayBase::Display1c()
+void* KdDisplayBase::GetRenderTexture()
 {
-    if ((g_display1cGuard & 1) == 0) {
-        g_display1cGuard |= 1;
-        g_display1cObject = 0;
-        atexit(Display1cAtexit);
+    if ((g_nullRenderTextureGuard & 1) == 0) {
+        g_nullRenderTextureGuard |= 1;
+        g_nullRenderTexture = 0;
+        atexit(ReleaseNullRenderTexture);
     }
-    return &g_display1cObject;
+    return &g_nullRenderTexture;
 }
 
 // RET 4. IDisplay vtable+0x30.
 // FUNCTION: VC1 0x00466310
-void KdDisplayBase::Display30(int unused)
+void KdDisplayBase::ShowKeyboard(int unused)
 {
     (void)unused;
 }
@@ -2352,7 +2352,7 @@ static void DisplayEventCallback(const KdEvent* event)
 
 // IRenderTarget vtable+0x10. Rebind the graphics scene, end and present.
 // FUNCTION: VC1 0x00466570
-void* KdDisplayBase::Display10()
+void* KdDisplayBase::EndFrame()
 {
     typedef int (__stdcall *FnEndScene)(IUnknown* device);
     typedef int (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
@@ -2377,11 +2377,11 @@ KdDisplayBase::KdDisplayBase()
     mixer = 0;
 }
 
-// RET 8. IRenderTarget::Display0c(a, b); return a.
+// RET 8. IRenderTarget::BeginFrame(a, b); return a.
 // FUNCTION: VC1 0x00466640
-void* KdDisplayBase::Display0c(void* a, void* b)
+void* KdDisplayBase::BeginFrame(void* a, void* b)
 {
-    IRenderTarget::Display0c(a, b);
+    IRenderTarget::BeginFrame(a, b);
     return a;
 }
 
@@ -2394,12 +2394,12 @@ KdPtr<IRenderTarget> KdDisplayBase::CreateRenderTarget(unsigned width, unsigned 
     return result;
 }
 
-// RET 4. BL=arg into Display28Apply. The script closure (0x00466830) reads
+// RET 4. BL=arg into ApplyWindowedMode. The script closure (0x00466830) reads
 // the argument with SqPlus Get(TypeWrapper<bool>), so scripts pass bools.
 // FUNCTION: VC1 0x00466680
 int KdDisplayBase::SetWindowed(bool arg)
 {
-    return Display28Apply(arg);
+    return ApplyWindowedMode(arg);
 }
 
 // this=IDisplay. HostLog Init, CreateKdWindow into mixer, ShowWindow, D3D init,
@@ -2464,7 +2464,7 @@ unsigned char KdDisplayBase::SetSize(unsigned width, unsigned height)
 // atexit destructor 0x004cacd0). "GetHeight" is bound to the same vcall
 // thunk as "GetWidth" (0x0041be20, vtable+0x14) in the original.
 // FUNCTION: VC1 0x00466b00
-unsigned char KdDisplayBase::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdDisplayBase::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 
@@ -2478,7 +2478,7 @@ unsigned char KdDisplayBase::Script0c(const char* name, SquirrelObject* out)
         // STRING: VC1 0x004d5d9c
         methods["SetWindowed"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::SetWindowed);
         // STRING: VC1 0x004d5da8
-        methods["ShowKeyboard"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::Display30);
+        methods["ShowKeyboard"] = CreateScriptMethod<KdDisplayBase>(&KdDisplayBase::ShowKeyboard);
     }
     return methods.Find(name, out);
 }
@@ -2721,7 +2721,7 @@ int KdDisplay::FitWindow()
 }
 
 // FUNCTION: VC1 0x004b1d30
-unsigned char KdDisplay::Script10(void* a, void* b)
+unsigned char KdDisplay::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -2839,7 +2839,7 @@ void** CreateKdDisplay(void** out)
 // this = IRenderTarget. If target is set, draws it into this display's
 // graphics through matrix, then rebinds and presents like KdDisplayBase.
 // FUNCTION: VC1 0x004b1f50
-void* KdDisplay::Display10()
+void* KdDisplay::EndFrame()
 {
     typedef int (__stdcall *FnEndScene)(IUnknown* device);
     typedef int (__stdcall *FnPresent)(IUnknown* device, void* a, void* b, void* c,
@@ -2851,7 +2851,7 @@ void* KdDisplay::Display10()
     if (g_displaySkipDevice == 0) {
         source = static_cast<IRenderTarget*>(static_cast<void*>(target));
         if (source) {
-            source->Display10();
+            source->EndFrame();
             if (g_kdQueryUnknown) {
                 camera = static_cast<IUnknown*>(
                     g_kdQueryUnknown->QueryInterface(&g_iidCamera));
@@ -2862,7 +2862,7 @@ void* KdDisplay::Display10()
             else {
                 camera = 0;
             }
-            IRenderTarget::Display0c(&view, &camera);
+            IRenderTarget::BeginFrame(&view, &camera);
             if (camera) {
                 camera->Release();
             }
@@ -2874,7 +2874,7 @@ void* KdDisplay::Display10()
             view->SetClipRect(clip);
             view->Clear(0xff000000);
             view->DrawImage(*static_cast<const KdPtr<ITexture>*>(static_cast<IRenderTarget*>(
-                static_cast<void*>(target))->Display1c()), 0.0f, 0.0f, 0.0f, 0.0f,
+                static_cast<void*>(target))->GetRenderTexture()), 0.0f, 0.0f, 0.0f, 0.0f,
                 static_cast<float>(g_displayWidth), static_cast<float>(g_displayHeight));
             view->Release();
         }
@@ -2893,15 +2893,15 @@ void* KdDisplay::Display10()
 
 // this = IRenderTarget. RET 8. Forwards to target when drawing offscreen.
 // FUNCTION: VC1 0x004b20c0
-void* KdDisplay::Display0c(void* a, void* b)
+void* KdDisplay::BeginFrame(void* a, void* b)
 {
     IRenderTarget* source = static_cast<IRenderTarget*>(static_cast<void*>(target));
 
     if (g_displaySkipDevice == 0 && source) {
-        source->Display0c(a, b);
+        source->BeginFrame(a, b);
         return a;
     }
-    IRenderTarget::Display0c(a, b);
+    IRenderTarget::BeginFrame(a, b);
     return a;
 }
 
@@ -2910,7 +2910,7 @@ void* KdDisplay::Display0c(void* a, void* b)
 int KdDisplay::SetWindowed(bool arg)
 {
     if (arg == 0 || enabled58 != 0) {
-        return Display28Apply(arg);
+        return ApplyWindowedMode(arg);
     }
     return 0;
 }
@@ -2970,20 +2970,20 @@ unsigned char KdDisplay::SetSize(unsigned width, unsigned height)
 }
 
 // STUB: VC1 0x004b22e0
-unsigned char KdDisplay::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdDisplay::GetMember(const char* name, SquirrelObject* out)
 {
-    return KdDisplayBase::Script0c(name, out);
+    return KdDisplayBase::GetMember(name, out);
 }
 
-// Release the Display1c static if set. Registered with atexit from 0x004662e0.
+// Release the GetRenderTexture static if set. Registered with atexit from 0x004662e0.
 // FUNCTION: VC1 0x004cad30
-static void Display1cAtexit()
+static void ReleaseNullRenderTexture()
 {
-    IUnknown* object = g_display1cObject;
+    IUnknown* object = g_nullRenderTexture;
     if (object) {
         object->Release();
     }
-    g_display1cObject = 0;
+    g_nullRenderTexture = 0;
 }
 
 }

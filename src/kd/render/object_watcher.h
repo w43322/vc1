@@ -47,11 +47,11 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
     int Shutdown();                         // IShutdownable vtable+0x0c
-    int Unmapped0c();                       // IUpdateable vtable+0x0c
+    int GetUpdateLayer();                       // IUpdateable vtable+0x0c
     int SetLayer(unsigned layer);           // IUpdateable vtable+0x10
     void Update(unsigned sliceBit, int dt); // IUpdateable vtable+0x14
 

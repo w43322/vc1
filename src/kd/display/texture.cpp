@@ -9,14 +9,14 @@ namespace vc1 {
 
 // XOR AL,AL; RET 4. ITexture vtable+0x0c.
 // FUNCTION: VC1 0x00418000 FOLDED
-unsigned char KdTexture::Texture0c(void* arg)
+unsigned char KdTexture::Reload(void* arg)
 {
     (void)arg;
     return 0;
 }
 
 // FUNCTION: VC1 0x00418000 FOLDED
-unsigned char KdRenderTexture::Texture0c(void* arg)
+unsigned char KdRenderTexture::Reload(void* arg)
 {
     (void)arg;
     return 0;
@@ -129,7 +129,7 @@ int KdTexture::GetWidth()
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x0045c000
-unsigned char KdTexture::Script10(void* a, void* b)
+unsigned char KdTexture::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -183,12 +183,12 @@ unsigned KdTexture::Release()
 {
     IUnknown* face;
     unsigned result;
-    typedef void (__thiscall *Fn0c)(void* object, int arg);
+    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
 
     face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
     result = --refs;
     if (result == 0) {
-        reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
+        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
         return 0;
     }
     return result;
@@ -214,7 +214,7 @@ KdTexture::KdTexture()
     height = 0;
 }
 
-const char* KdTexture::Script14()
+const char* KdTexture::GetTypeName()
 {
     return 0;
 }
@@ -246,7 +246,7 @@ void* KdTexture::Lock(void* region, bool readOnly)
 // RET 8. Script method lookup over GetWidth/GetHeight (table 0x004ee4bc,
 // guard bit 0x004ee4cc, atexit destructor 0x004cb030).
 // FUNCTION: VC1 0x0045c3c0
-unsigned char KdTexture::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdTexture::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

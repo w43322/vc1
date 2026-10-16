@@ -45,12 +45,12 @@ unsigned KdRenderTarget::Release()
 {
     IUnknown* face;
     unsigned result;
-    typedef void (__thiscall *Fn0c)(void* object, int arg);
+    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
 
     face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
     result = --refs;
     if (result == 0) {
-        reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
+        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
         return 0;
     }
     return result;
@@ -72,7 +72,7 @@ unsigned KdRenderTarget::AddRef()
 // texture, created on first use; its native is re-read every call. A failed
 // create still Releases the null slot, as in the original.
 // FUNCTION: VC1 0x0045bd40
-void* KdRenderTarget::Display1c()
+void* KdRenderTarget::GetRenderTexture()
 {
     KdRenderTexture* object;
     IUnknown* ident;

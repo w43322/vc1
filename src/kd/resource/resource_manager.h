@@ -39,9 +39,9 @@ public:
     void FreeResource(const KdString& name);
     void FreeUnusedResources();
 
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* name, void* value);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* name, void* value);
+    const char* GetTypeName();
 };
 
 typedef char Vc1KdResourceManagerSizeCheck[sizeof(KdResourceManager) == 0x34 ? 1 : -1];

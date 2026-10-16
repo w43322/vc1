@@ -109,10 +109,10 @@ void PyroFile::DestroyTextures()
 
 // Calls slot 1 of each shape's device object.
 // FUNCTION: VC1 0x0044f070
-void PyroFile::File18()
+void PyroFile::RestoreTextures()
 {
     for (int i = 0; i < shapeCount; ++i) {
-        shapes[i].object->Object04();
+        shapes[i].object->Restore();
     }
 }
 
@@ -177,7 +177,7 @@ PyroFrameTable::~PyroFrameTable()
 // FUNCTION: VC1 0x00452ed0
 void PyroCreateFrameBuffers(IPyroDevice* device, PyroFrameTable* frames)
 {
-    device->Pyro0c(&frames->buffer, frames->keyCountB * 3, 0x18, 0x10009, 0);
+    device->CreateVertexBuffer(&frames->buffer, frames->keyCountB * 3, 0x18, 0x10009, 0);
     const int vertexCount = frames->keyCountB * 3;
     PyroVertex* const vertices = new PyroVertex[vertexCount];
     PyroVertex* out = vertices;
@@ -442,8 +442,8 @@ bool PyroShape::CreateTexture()
     if (!PyroDecodeImage(&reader, &decoded)) {
         return false;
     }
-    library->device->Pyro18(&image, decoded.pixels, decoded.width, decoded.height, 0);
-    library->device->Pyro14(&object, image, 0);
+    library->device->CreateImage(&image, decoded.pixels, decoded.width, decoded.height, 0);
+    library->device->CreateImageTexture(&object, image, 0);
     decoded.pixels = 0;
     if (image && image->pixels) {
         free(image->pixels);
@@ -507,7 +507,7 @@ void PyroTextureData::CreateTexture(PyroLibrary* library)
     PyroImageStreamReader reader(&memory);
     PyroImage decoded;
     PyroDecodeImage(&reader, &decoded);
-    library->device->Pyro18(&image, decoded.pixels, decoded.width, decoded.height, 0);
+    library->device->CreateImage(&image, decoded.pixels, decoded.width, decoded.height, 0);
     decoded.pixels = 0;
     object = 0;
 }

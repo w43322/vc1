@@ -8,7 +8,7 @@ namespace vc1 {
 // Inferred names. Objects the Pyro device creates for the library. The
 // library deletes them through the virtual destructor (heap free).
 
-// Decoded 32-bit image handed to the device (IPyroDevice::Pyro18). The
+// Decoded 32-bit image handed to the device (IPyroDevice::CreateImage). The
 // library frees the pixels itself before deleting the image.
 // SIZE 0x14
 // VTABLE: VC1 0x004d6240
@@ -31,32 +31,35 @@ struct PyroDeviceImage
 // SYNTHETIC: VC1 0x0041aba0
 // vc1::PyroDeviceImage::`scalar deleting destructor'
 
-// Device texture made from an image (IPyroDevice::Pyro14).
+// Device texture made from an image (IPyroDevice::CreateImageTexture).
 // SIZE 0x04
 // VTABLE: VC1 0x004d6244
 struct PyroDeviceObject
 {
     VC1_PYRO_HEAP
 
-    virtual int Object00() { return 0; } // vtable+0x00
-    virtual int Object04() { return 0; } // vtable+0x04
+    // Guessed device-lost pair: PyroFile::RestoreTextures calls slot 1 on
+    // every shape's object.
+    virtual int Invalidate() { return 0; } // vtable+0x00
+    virtual int Restore() { return 0; } // vtable+0x04
     virtual ~PyroDeviceObject() {}       // vtable+0x08
 };
 
 // SYNTHETIC: VC1 0x0041abc0
 // vc1::PyroDeviceObject::`scalar deleting destructor'
 
-// Vertex buffer as the device draws it (IPyroDevice::Pyro08, Pyro24).
+// Vertex buffer as the device draws it (IPyroDevice::CreateBuffer, DrawQuadBuffer).
 // SIZE 0x04
 // VTABLE: VC1 0x004d6250
 struct PyroDeviceBuffer
 {
     VC1_PYRO_HEAP
 
-    virtual int Buffer00() { return 0; } // vtable+0x00
-    virtual int Buffer04() { return 0; } // vtable+0x04
-    virtual int Buffer08() = 0;          // vtable+0x08
-    virtual int Buffer0c() = 0;          // vtable+0x0c
+    virtual int Invalidate() { return 0; } // vtable+0x00
+    virtual int Restore() { return 0; } // vtable+0x04
+    // Guessed names: no-ops in KdPyroBuffer, ahead of GetData.
+    virtual int Lock() = 0;          // vtable+0x08
+    virtual int Unlock() = 0;          // vtable+0x0c
     virtual void* GetData() = 0;         // vtable+0x10
     virtual ~PyroDeviceBuffer() {}       // vtable+0x14
 };
@@ -64,15 +67,15 @@ struct PyroDeviceBuffer
 // SYNTHETIC: VC1 0x0041abe0
 // vc1::PyroDeviceBuffer::`scalar deleting destructor'
 
-// Vertex buffer as the library fills it (IPyroDevice::Pyro0c, Pyro28).
+// Vertex buffer as the library fills it (IPyroDevice::CreateVertexBuffer, DrawQuads).
 // SIZE 0x04
 // VTABLE: VC1 0x004d6268
 struct PyroVertexBuffer
 {
     VC1_PYRO_HEAP
 
-    virtual int Buffer00() { return 0; }                                  // vtable+0x00
-    virtual int Buffer04() { return 0; }                                  // vtable+0x04
+    virtual int Invalidate() { return 0; }                                  // vtable+0x00
+    virtual int Restore() { return 0; }                                  // vtable+0x04
     virtual int Upload(const void* data, int offset, int size, int discard) = 0; // vtable+0x08
     virtual ~PyroVertexBuffer() {}                                        // vtable+0x0c
 };

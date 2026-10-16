@@ -8,7 +8,7 @@ namespace vc1 {
 
 // Inferred names. The script half of a scripted engine object: the Squirrel
 // instance made from the class (or table) given to LoadFromScript. The
-// owner's Script0c / Script10 consult its members before their own method
+// owner's GetMember / SetMember consult its members before their own method
 // table, so script code sees engine methods and script members on one object.
 // Neither face answers an IID (QueryInterface 0x004059e0 returns 0) and the
 // reference count is a no-op (0x0041adb0): the holder lives inside its owner.

@@ -8,7 +8,7 @@ namespace vc1 {
 class KdString;
 
 // Primary face of the resource manager (vftable 0x004d55dc). Slot names are
-// the script methods bound to them (KdResourceManager::Script0c, 0x0046db00).
+// the script methods bound to them (KdResourceManager::GetMember, 0x0046db00).
 // Each getter returns the loaded resource registered under name, loading it
 // on first use.
 // SIZE 0x04

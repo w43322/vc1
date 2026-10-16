@@ -45,7 +45,7 @@ public:
     }
 
     virtual PyroFile* LoadFile(IPyroStream* stream); // vtable+0x00
-    virtual int Pyro04(void* a);              // vtable+0x04
+    virtual int LoadFromPath(void* a);              // vtable+0x04
     virtual void Init(IPyroDevice* device);   // vtable+0x08
     virtual void Done();                      // vtable+0x0c
     virtual ~PyroLibrary();                   // vtable+0x10

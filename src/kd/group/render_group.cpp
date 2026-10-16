@@ -14,7 +14,7 @@ namespace vc1 {
 
 
 // Inferred name. Factory "RenderGroup": renders its IRenderable members in
-// Render14() order while visible.
+// GetRenderOrder() order while visible.
 // SIZE 0x3c
 // VTABLE: VC1 0x004d5654 vc1::IFunctionalGroup
 // VTABLE: VC1 0x004d566c vc1::IRenderable
@@ -39,9 +39,9 @@ public:
     unsigned char Add(void** object);
     void Remove(void** object);
     void Clear();
-    int Render0c(void* graphics, void* space);
+    int RenderMasked(void* graphics, void* space);
     int Render(void* graphics);
-    int Render14();
+    int GetRenderOrder();
     void SetVisible(bool value);
     bool IsVisible();
 };
@@ -59,7 +59,7 @@ KdPtr<IUnknown> g_kdNullRenderable;
 
 // IRenderable+0x14: render order 0.
 // FUNCTION: VC1 0x0041adb0 FOLDED
-int KdRenderGroup::Render14()
+int KdRenderGroup::GetRenderOrder()
 {
     return 0;
 }
@@ -78,11 +78,11 @@ void KdRenderGroup::SetVisible(bool value)
     visible = value;
 }
 
-// IRenderable+0x10: Render0c under g_defaultRenderMask.
+// IRenderable+0x10: RenderMasked under g_defaultRenderMask.
 // FUNCTION: VC1 0x0046d0b0
 int KdRenderGroup::Render(void* graphics)
 {
-    return Render0c(graphics, &g_defaultRenderMask);
+    return RenderMasked(graphics, &g_defaultRenderMask);
 }
 
 // FUNCTION: VC1 0x0046d0d0
@@ -137,15 +137,15 @@ void KdRenderGroup::Clear()
     RefClear(&members);
 }
 
-// IRenderable+0x0c. Every member's Render0c while visible.
+// IRenderable+0x0c. Every member's RenderMasked while visible.
 // FUNCTION: VC1 0x0046d190
-int KdRenderGroup::Render0c(void* graphics, void* space)
+int KdRenderGroup::RenderMasked(void* graphics, void* space)
 {
     if (visible) {
         IUnknown** it;
         IUnknown** const last = RefEnd(&members);
         for (it = RefBegin(&members); it != last; ++it) {
-            static_cast<IRenderable*>(*it)->Render0c(graphics, space);
+            static_cast<IRenderable*>(*it)->RenderMasked(graphics, space);
         }
     }
     return 0;

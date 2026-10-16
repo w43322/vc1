@@ -24,11 +24,11 @@ struct IRenderTarget : IUnknown
         graphics = 0;
     }
 
-    virtual void* Display0c(void* a, void* b);     // vtable+0x0c
-    virtual void* Display10();                     // vtable+0x10
+    virtual void* BeginFrame(void* a, void* b);     // vtable+0x0c
+    virtual void* EndFrame();                     // vtable+0x10
     virtual int GetWidth() = 0;                    // vtable+0x14
     virtual int GetHeight() = 0;                   // vtable+0x18
-    virtual void* Display1c() = 0;                // vtable+0x1c
+    virtual void* GetRenderTexture() = 0;                // vtable+0x1c
 };
 
 typedef char Vc1IRenderTargetSizeCheck[sizeof(IRenderTarget) == 0x0c ? 1 : -1];

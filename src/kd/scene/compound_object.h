@@ -53,9 +53,9 @@ public:
     void* QueryInterface(const char** iid);
     unsigned AddRef();
     unsigned Release();
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* name, void* value);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* name, void* value);
+    const char* GetTypeName();
     bool LoadFromScript(SquirrelObject& table);
     void SetPosition(const Matrix3& value);
     const Matrix3& GetPosition();

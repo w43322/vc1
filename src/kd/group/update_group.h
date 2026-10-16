@@ -37,7 +37,7 @@ public:
     void* QueryInterface(const char** iid);
     unsigned AddRef();
     unsigned Release();
-    int Unmapped0c();
+    int GetUpdateLayer();
     int SetLayer(unsigned value);
     void Update(unsigned slice, int dt);
     unsigned char Add(void** object);

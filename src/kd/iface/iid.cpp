@@ -2,6 +2,7 @@
 #include "kd/scene/compound_object.h"
 #include "kd/resource/resource_manager.h"
 #include "kd/scene/scripted_object.h"
+#include "kd/scene/scene.h"
 #include "kd/render/object_watcher.h"
 #include "kd/tile/tile_animation_data.h"
 #include "kd/display/effect.h"
@@ -297,6 +298,41 @@ void* KdResourceManager::QueryInterface(const char** iid)
     }
     if (name == kIidScriptObject) {
         return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidAbstract) {
+        return static_cast<IAbstract*>(this);
+    }
+    return 0;
+}
+
+// RET 4.
+// FUNCTION: VC1 0x0046e430
+void* KdScene::QueryInterface(const char** iid)
+{
+    const char* name = *iid;
+    if (name == kIidScriptObject) {
+        return static_cast<IScriptObject*>(this);
+    }
+    if (name == kIidRenderable) {
+        return static_cast<IRenderable*>(this);
+    }
+    if (name == kIidUpdateable) {
+        return static_cast<IUpdateable*>(this);
+    }
+    if (name == kIidInputHandler) {
+        return static_cast<IInputHandler*>(this);
+    }
+    if (name == kIidVisible) {
+        return static_cast<IVisible*>(this);
+    }
+    if (name == kIidIdentifiable) {
+        return static_cast<IIdentifiable*>(this);
+    }
+    if (name == kIidScriptLoadable) {
+        return static_cast<IScriptLoadable*>(this);
+    }
+    if (name == kIidComponentGroup || name == kIidShutdownable) {
+        return static_cast<KdComponentGroup*>(this);
     }
     if (name == kIidAbstract) {
         return static_cast<IAbstract*>(this);

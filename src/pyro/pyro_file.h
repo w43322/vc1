@@ -155,7 +155,7 @@ public:
     PyroGraphicBase() : owner(0) {}
     virtual ~PyroGraphicBase() {}                           // vtable+0x00
     virtual int GetType() = 0;                              // vtable+0x04
-    virtual void Graphic08() {}                             // vtable+0x08
+    virtual void Unused() {}                             // vtable+0x08
     virtual void Deserialize(PyroArchive& ar, int version); // vtable+0x0c
 };
 
@@ -269,7 +269,7 @@ public:
     virtual int GetEmitterCount() = 0;                        // vtable+0x0c
     virtual PyroEmitter* FindEmitter(const char* name) = 0;   // vtable+0x10
     virtual PyroEmitter* GetEmitter(int index) = 0;           // vtable+0x14
-    virtual void File18() = 0;                                // vtable+0x18
+    virtual void RestoreTextures() = 0;                                // vtable+0x18
     virtual ~PyroFileBase() {}                                // vtable+0x1c
 };
 
@@ -316,7 +316,7 @@ public:
     int GetEmitterCount();
     PyroEmitter* FindEmitter(const char* name);
     PyroEmitter* GetEmitter(int index);
-    void File18();
+    void RestoreTextures();
 };
 
 // SYNTHETIC: VC1 0x0042ed90

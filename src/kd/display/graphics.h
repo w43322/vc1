@@ -7,7 +7,7 @@
 
 namespace vc1 {
 
-// Inferred name from Script14 "Graphics" (0x004d4c40). IRenderTarget() mallocs
+// Inferred name from GetTypeName "Graphics" (0x004d4c40). IRenderTarget() mallocs
 // 0x64 bytes and constructs it (0x0045cff0). QI 0x0045caa0: IGraphics this,
 // IScriptObject +0x44, IAbstract +0x48.
 // SIZE 0x64
@@ -53,9 +53,9 @@ public:
     void DrawLine(float x0, float y0, float x1, float y1);
     void DrawEllipse(float x, float y, float width, float height);
 
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
 
     void BindScene();
     unsigned char SetView(const Rect* rect, IUnknown* const* newCamera);

@@ -27,7 +27,7 @@ const char* g_kdNameSound = kSound;
 
 // MOV EAX, 0x004d4bf4; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041be80
-const char* KdSound::Script14()
+const char* KdSound::GetTypeName()
 {
     return kSound;
 }
@@ -274,7 +274,7 @@ int KdSound::Play(bool restart)
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x0045f860
-unsigned char KdSound::Script10(void* a, void* b)
+unsigned char KdSound::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -429,7 +429,7 @@ static const char kScriptStopChannel[] = "StopChannel";
 // RET 8. IScriptObject vtable+0x0c. Method table 0x004ee4e4 (guard bit
 // 0x004ee4f4, atexit 0x004caef0). The ISound slots bind through vcall thunks.
 // FUNCTION: VC1 0x0045ff20
-unsigned char KdSound::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdSound::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

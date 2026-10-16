@@ -52,15 +52,15 @@ static __forceinline SquirrelObject ScriptSelf(IAbstract* face)
 
 // MOV EAX, "ScriptedObject"; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x00416520
-const char* KdScriptedObject::Script14()
+const char* KdScriptedObject::GetTypeName()
 {
     return kScriptedObject;
 }
 
 // IScriptObject vtable+0x10: the script instance's SetMember (tail call
-// through its vftable), as in KdCompoundObject::Script10.
+// through its vftable), as in KdCompoundObject::SetMember.
 // FUNCTION: VC1 0x00470e40
-unsigned char KdScriptedObject::Script10(void* name, void* value)
+unsigned char KdScriptedObject::SetMember(void* name, void* value)
 {
     IScriptInstance* instance = &script;
     return instance->SetMember(static_cast<const char*>(name),
@@ -263,7 +263,7 @@ int KdScriptedObject::Render(void* graphics)
 
 // IRenderable vtable+0x14: script "GetRenderLayer"(), or 0.
 // FUNCTION: VC1 0x00471d60
-int KdScriptedObject::Render14()
+int KdScriptedObject::GetRenderOrder()
 {
     SquirrelObject member = script.GetValue(kScriptGetRenderLayer);
     if (member.GetObjectHandle()._type == OT_NULL) {
@@ -311,7 +311,7 @@ static const char kScriptGetUpdateLayer[] = "GetUpdateLayer";
 
 // IUpdateable vtable+0x0c: script "GetUpdateLayer"(), or 1.
 // FUNCTION: VC1 0x00472190
-int KdScriptedObject::Unmapped0c()
+int KdScriptedObject::GetUpdateLayer()
 {
     SquirrelObject member = script.GetValue(kScriptGetUpdateLayer);
     if (member.GetObjectHandle()._type == OT_NULL) {
@@ -382,14 +382,14 @@ bool KdScriptedObject::LoadFromScript(SquirrelObject& table)
 
 // RET 8. The script instance's members, then the compound's table.
 // FUNCTION: VC1 0x00472750
-unsigned char KdScriptedObject::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdScriptedObject::GetMember(const char* name, SquirrelObject* out)
 {
     IScriptInstance* instance = &script;
 
     if (instance->GetMember(name, *out)) {
         return 1;
     }
-    return KdCompoundObject::Script0c(name, out) != 0;
+    return KdCompoundObject::GetMember(name, out) != 0;
 }
 
 }

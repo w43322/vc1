@@ -46,7 +46,7 @@ typedef char Vc1GraphicsStateSizeCheck[sizeof(GraphicsState) == 0x40 ? 1 : -1];
 
 // IID "IGraphics" (g_iidGraphics 0x004d05a0); KdGraphics QI returns its +0x00.
 // Slot names are inferred from the KdGraphics bodies (vtable 0x004d6770) and
-// the script names in KdGraphics::Script0c (0x0045dc20). The getters the
+// the script names in KdGraphics::GetMember (0x0045dc20). The getters the
 // script table binds return references: SqPlus pushes those as copies.
 // SIZE 0x44
 struct IGraphics : IUnknown

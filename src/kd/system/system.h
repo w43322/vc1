@@ -62,9 +62,9 @@ public:
     void RegisterObject(const KdString& name, const KdPtr<IAbstract>& object);
     KdPtr<IUnknown> UnregisterObject(const KdString& name);
     KdPtr<IUnknown> FindObject(const KdString& name);
-    KdFactory* Unmapped1c(const char** iid);
-    void* Unmapped20();
-    int Unmapped24();
+    KdFactory* CollectObjects(const char** iid);
+    void* GetRecords();
+    int ClearCollected();
     unsigned char Start(IUnknown** object);
     void Update();
     void Render() throw();
@@ -78,11 +78,11 @@ public:
     void SetTimeScale(float scale);
 
     int Render(void* graphics);
-    int Render14();
+    int GetRenderOrder();
 
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
 };
 
 typedef char Vc1KdSystemBaseSizeCheck[sizeof(KdSystemBase) == 0xd8 ? 1 : -1];
@@ -116,11 +116,11 @@ typedef char Vc1KdSystemBaseSizeCheck[sizeof(KdSystemBase) == 0xd8 ? 1 : -1];
 // SYNTHETIC: VC1 0x0041b4e0
 // ?AddRef@KdSystemBase@vc1@@WM@AEIXZ
 // SYNTHETIC: VC1 0x004074c0
-// ?Unmapped1c@KdSystemBase@vc1@@WM@AEPAVKdFactory@2@PAPBD@Z
+// ?CollectObjects@KdSystemBase@vc1@@WM@AEPAVKdFactory@2@PAPBD@Z
 // SYNTHETIC: VC1 0x00407520
-// ?Unmapped20@KdSystemBase@vc1@@WM@AEPAXXZ
+// ?GetRecords@KdSystemBase@vc1@@WM@AEPAXXZ
 // SYNTHETIC: VC1 0x00407560
-// ?Unmapped24@KdSystemBase@vc1@@WM@AEHXZ
+// ?ClearCollected@KdSystemBase@vc1@@WM@AEHXZ
 // SYNTHETIC: VC1 0x00407570
 // ?RegisterObject@KdSystemBase@vc1@@WM@AEXABVKdString@2@ABV?$KdPtr@UIAbstract@vc1@@@2@@Z
 // SYNTHETIC: VC1 0x004075c0
@@ -145,8 +145,8 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
     unsigned char Start(IUnknown** object); // vtable+0x28
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
 };
 
 typedef char Vc1KdSystemSizeCheck[sizeof(KdSystem) == 0xd8 ? 1 : -1];

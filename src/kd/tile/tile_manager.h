@@ -128,9 +128,9 @@ public:
     KdPtr<ITexture>& GetTexture(int index);
     void SetTexture(int index, const KdPtr<ITexture>& texture);
 
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* name, void* value);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* name, void* value);
+    const char* GetTypeName();
     bool LoadFromScript(SquirrelObject& table);
     int Shutdown();
     unsigned char Load(const char* name);
@@ -165,8 +165,8 @@ public:
     unsigned AddRef();
     unsigned Release();
     void Render(const KdPtr<IGraphics>& graphics, int tile, float x, float y, unsigned flags);
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* name, void* value);
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* name, void* value);
 
     void ResetTextureUsage();
     void SetHighlightColor(unsigned color);

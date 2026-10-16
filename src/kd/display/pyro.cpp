@@ -38,13 +38,13 @@ void PyroLibrary::Init(IPyroDevice* value)
     device = value;
     capacity = 0x200;
     vertexCursor = 0;
-    value->Pyro0c(&vertexBuffer, 0x800, 0x18, 0x10009, 0);
+    value->CreateVertexBuffer(&vertexBuffer, 0x800, 0x18, 0x10009, 0);
     vertices = new PyroVertex[capacity * 4];
 }
 
 // RET 4. Body not recovered.
 // STUB: VC1 0x004566b0
-int PyroLibrary::Pyro04(void* a)
+int PyroLibrary::LoadFromPath(void* a)
 {
     (void)a;
     return 0;

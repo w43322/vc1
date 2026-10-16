@@ -48,7 +48,7 @@ void IGraphics::Translate(const Vector2& offset)
 
 // MOV EAX, 0x004d4c40; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041c8d0
-const char* KdGraphics::Script14()
+const char* KdGraphics::GetTypeName()
 {
     return kGraphics;
 }
@@ -87,7 +87,7 @@ IUnknown** KdGraphics::GetCamera()
 
 // XOR AL, AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x0045c6f0
-unsigned char KdGraphics::Script10(void* a, void* b)
+unsigned char KdGraphics::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -448,7 +448,7 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
 {
     IUnknown* face;
     IUnknown* ident;
-    typedef void (__thiscall *Fn14)(IUnknown* object, IUnknown** ident, Rect* view);
+    typedef void (__thiscall *FnBindView)(IUnknown* object, IUnknown** ident, Rect* view);
 
     view = *rect;
     {
@@ -475,7 +475,7 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
                 ident->AddRef();
             }
         }
-        reinterpret_cast<Fn14>((*reinterpret_cast<void***>(camera))[5])(camera, &ident, &view);
+        reinterpret_cast<FnBindView>((*reinterpret_cast<void***>(camera))[5])(camera, &ident, &view);
         if (ident) {
             ident->Release();
         }
@@ -549,7 +549,7 @@ static const char kScriptDrawEllipse[] = "DrawEllipse";
 // IScriptObject and step back to KdGraphics. Every closure calls through the
 // IGraphics vtable (vcall thunks 0x00417bb0..0x0041d2d0).
 // FUNCTION: VC1 0x0045dc20
-unsigned char KdGraphics::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdGraphics::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

@@ -36,7 +36,7 @@ extern const char kScriptGetTexture[] = "GetTexture";
 
 // MOV EAX, "ResourceManager"; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x00417910
-const char* KdResourceManager::Script14()
+const char* KdResourceManager::GetTypeName()
 {
     return kResourceManager;
 }
@@ -71,7 +71,7 @@ IResourceManager** GetKdResourceManager(IResourceManager** out)
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x0046d510
-unsigned char KdResourceManager::Script10(void* name, void* value)
+unsigned char KdResourceManager::SetMember(void* name, void* value)
 {
     (void)name;
     (void)value;
@@ -185,7 +185,7 @@ void** CreateKdResourceManager(void** out)
 // STRING: VC1 0x004d5598
 static const char kUnusedDeleted[] = "FreeUnusedResources: %s deleted";
 
-// Script "FreeUnusedResources": after the group's Unmapped24, every resource
+// Script "FreeUnusedResources": after the group's ClearCollected, every resource
 // only the group still references is logged, dropped and erased.
 // FUNCTION: VC1 0x0046d9a0
 void KdResourceManager::FreeUnusedResources()
@@ -193,7 +193,7 @@ void KdResourceManager::FreeUnusedResources()
     IComponentGroup* group = this;
     unsigned char* it;
 
-    group->Unmapped24();
+    group->ClearCollected();
     it = reinterpret_cast<unsigned char*>(records.items.begin);
     while (it != reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size) {
         NamedRecord* record = reinterpret_cast<NamedRecord*>(it);
@@ -236,7 +236,7 @@ static const char kScriptFreeUnusedResources[] = "FreeUnusedResources";
 // RET 8. IScriptObject vtable+0x0c. Method table 0x004ee600 (guard bit
 // 0x004ee610, atexit 0x004ca950).
 // FUNCTION: VC1 0x0046db00
-unsigned char KdResourceManager::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdResourceManager::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 
@@ -273,7 +273,7 @@ KdPtr<IUnknown> KdResourceManager::GetMusic(const KdString& name)
     }
     KdPtr<IUnknown> music;
     KdPtr<IUnknown> result = LoadResource(this,
-        *static_cast<KdPtr<IUnknown>*>(driver->Sound14(&music)), name);
+        *static_cast<KdPtr<IUnknown>*>(driver->CreateMusic(&music)), name);
     driver->Release();
     return result;
 }
@@ -298,7 +298,7 @@ KdPtr<IUnknown> KdResourceManager::GetSound(const KdString& name)
     }
     KdPtr<IUnknown> sound;
     KdPtr<IUnknown> result = LoadResource(this,
-        *static_cast<KdPtr<IUnknown>*>(driver->Sound10(&sound)), name);
+        *static_cast<KdPtr<IUnknown>*>(driver->CreateSound(&sound)), name);
     driver->Release();
     return result;
 }
@@ -334,7 +334,7 @@ KdPtr<IUnknown> KdResourceManager::GetEffect(const KdString& name)
     IDisplay* face = *reinterpret_cast<IDisplay**>(
         system->GetDisplay(reinterpret_cast<void**>(&display.ptr)));
     return LoadResource(this,
-        *reinterpret_cast<KdPtr<IUnknown>*>(face->Display3c(reinterpret_cast<void**>(&effect.ptr))),
+        *reinterpret_cast<KdPtr<IUnknown>*>(face->CreateEffect(reinterpret_cast<void**>(&effect.ptr))),
         name);
 }
 

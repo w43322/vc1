@@ -9,7 +9,7 @@ struct Matrix3;
 
 // Inferred name; IID string "IEffectEmitter" (0x004d4e1c). A running
 // instance of one emitter of an effect file. Slot names from the script
-// methods of KdEffectEmitter::Script0c.
+// methods of KdEffectEmitter::GetMember.
 // SIZE 0x04
 // VTABLE: VC1 0x004d7a5c
 struct IEffectEmitter : IRenderable
@@ -22,7 +22,7 @@ struct IEffectEmitter : IRenderable
 };
 
 // Inferred name; IID string "IEffect" (0x004d4e2c). A loaded .pyro file
-// (ResourceManager GetEffect, IDisplay::Display3c).
+// (ResourceManager GetEffect, IDisplay::CreateEffect).
 // SIZE 0x04
 struct IEffect : IUnknown
 {

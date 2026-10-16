@@ -26,7 +26,7 @@ public:
     unsigned Release();                     // vtable+0x08
     int GetWidth();
     int GetHeight();
-    void* Display1c();
+    void* GetRenderTexture();
 };
 
 // The D3D texture of a render-target node (LookupRenderTargetTexture).

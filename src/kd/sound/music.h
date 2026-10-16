@@ -48,9 +48,9 @@ public:
     bool IsPaused();                                               // ISound vtable+0x3c
     bool IsSliding();                                              // ISound vtable+0x40
     unsigned char Load(const char* name);                          // ILoadable vtable+0x0c
-    unsigned char Script0c(const char* name, SquirrelObject* out); // IScriptObject vtable+0x0c
-    unsigned char Script10(void* a, void* b);                      // IScriptObject vtable+0x10
-    const char* Script14();                                        // IScriptObject vtable+0x14
+    unsigned char GetMember(const char* name, SquirrelObject* out); // IScriptObject vtable+0x0c
+    unsigned char SetMember(void* a, void* b);                      // IScriptObject vtable+0x10
+    const char* GetTypeName();                                        // IScriptObject vtable+0x14
 
     float GetPosition();
     bool SetPosition(float seconds);
@@ -87,7 +87,7 @@ void** CreateKdMusic(void** out);
 // SYNTHETIC: VC1 0x0041c8c0
 // ?Release@KdMusic@vc1@@W3AEIXZ
 
-// Script methods (Script0c).
+// Script methods (GetMember).
 
 // TEMPLATE: VC1 0x0041c400
 // ??$CreateScriptMethod@VKdMusic@vc1@@P812@AEH_N@Z@vc1@@YA?AVSquirrelObject@@P8KdMusic@0@AEH_N@Z@Z

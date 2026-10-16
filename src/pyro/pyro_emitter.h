@@ -286,8 +286,8 @@ public:
     VC1_PYRO_HEAP
 
     virtual void Reset() = 0;                                     // vtable+0x00
-    virtual int Emitter04(int a, int b) = 0;                      // vtable+0x04
-    virtual void Emitter08() = 0;                                 // vtable+0x08
+    virtual int RenderLimited(int limit, int randomPick) = 0;         // vtable+0x04
+    virtual void Render() = 0;                                 // vtable+0x08
     virtual void Move(float time, float dt, float x, float y, float z, bool emit) = 0; // vtable+0x0c
     virtual void Update(float time, float dt) = 0;                // vtable+0x10
     virtual void Prepare(float a, float b) = 0;                   // vtable+0x14
@@ -377,8 +377,8 @@ public:
         int angleMode, float angleDegrees, int index, float minPitch, float maxPitch);
 
     void Reset();
-    int Emitter04(int a, int b);
-    void Emitter08();
+    int RenderLimited(int a, int b);
+    void Render();
     void Move(float time, float dt, float x, float y, float z, bool emit);
     void Update(float time, float dt);
     void Prepare(float a, float b);

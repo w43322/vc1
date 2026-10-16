@@ -76,7 +76,7 @@ IUnknown* LoadTextureFile(const char* name);
 void* LockTextureRect(IUnknown* texture, int x, int y, bool readOnly, int width, int height);
 IUnknown* CreateManagedTexture(unsigned width, unsigned height);
 
-// Inferred name. Pyro device texture: holds the KD texture Pyro14 filled.
+// Inferred name. Pyro device texture: holds the KD texture CreateImageTexture filled.
 // SIZE 0x08
 // VTABLE: VC1 0x004d6378
 class KdPyroTexture : public PyroDeviceObject
@@ -90,9 +90,9 @@ public:
 // SYNTHETIC: VC1 0x0041ae70
 // vc1::KdPyroTexture::`scalar deleting destructor'
 
-// Inferred name. Pyro device vertex buffer (Pyro08 hands out the
-// PyroDeviceBuffer face, Pyro0c the PyroVertexBuffer face): a plain heap block
-// of count * stride bytes the library uploads into and Pyro24 draws from.
+// Inferred name. Pyro device vertex buffer (CreateBuffer hands out the
+// PyroDeviceBuffer face, CreateVertexBuffer the PyroVertexBuffer face): a plain heap block
+// of count * stride bytes the library uploads into and DrawQuadBuffer draws from.
 // SIZE 0x14
 // VTABLE: VC1 0x004d6350 vc1::PyroDeviceBuffer
 // VTABLE: VC1 0x004d6368 vc1::PyroVertexBuffer
@@ -116,8 +116,8 @@ public:
         free(data);
     }
 
-    int Buffer08() { return 0; }
-    int Buffer0c() { return 0; }
+    int Lock() { return 0; }
+    int Unlock() { return 0; }
     void* GetData();
     int Upload(const void* source, int offset, int size, int discard);
 };
@@ -128,7 +128,7 @@ public:
 // ??_EKdPyroBuffer@vc1@@W3AEPAXI@Z
 
 // Inferred name. Implements the Pyro device plus the device-level IDisplay
-// slots (SetSize builds g_displayPyro, Display3c) and Shutdown. Constructed
+// slots (SetSize builds g_displayPyro, CreateEffect) and Shutdown. Constructed
 // inline by KdDisplayBase() (0x004665c0). QI/AddRef/Release take the IDisplay
 // this (+0x04).
 // SIZE 0x1c
@@ -142,8 +142,8 @@ class KdDisplayDevice : public IPyroDevice,
                         public IAbstract
 {
 public:
-    PyroDeviceObject* pyroTexture; // 0x14  Pyro20 stores; Shutdown clears
-    unsigned mode18;               // 0x18  Pyro04: 0 for (4, 1), else 2
+    PyroDeviceObject* pyroTexture; // 0x14  SetTexture stores; Shutdown clears
+    unsigned mode18;               // 0x18  SetBlendMode: 0 for (4, 1), else 2
 
     KdDisplayDevice();
     ~KdDisplayDevice();
@@ -152,21 +152,21 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
 
-    int Pyro00(int a, int b);
-    int Pyro04(unsigned mode, unsigned value);
-    int Pyro08(PyroDeviceBuffer** out, int count, int stride, unsigned format, int flags);
-    int Pyro0c(PyroVertexBuffer** out, int count, int stride, unsigned format, int flags);
-    int Pyro10(void* a, void* b, void* c, void* d);
-    int Pyro14(PyroDeviceObject** out, PyroDeviceImage* image, int flags);
-    int Pyro18(PyroDeviceImage** out, void* pixels, int width, int height, int flags);
-    int Pyro1c(void* a);
-    int Pyro20(void* a, PyroDeviceObject* texture);
-    int Pyro24(PyroDeviceBuffer* buffer, int first, int count, int flags);
-    int Pyro28(PyroVertexBuffer* buffer, int first, int count, int flags);
-    int Pyro2c();
+    int SetRenderState(int a, int b);
+    int SetBlendMode(unsigned mode, unsigned value);
+    int CreateBuffer(PyroDeviceBuffer** out, int count, int stride, unsigned format, int flags);
+    int CreateVertexBuffer(PyroVertexBuffer** out, int count, int stride, unsigned format, int flags);
+    int Unused(void* a, void* b, void* c, void* d);
+    int CreateImageTexture(PyroDeviceObject** out, PyroDeviceImage* image, int flags);
+    int CreateImage(PyroDeviceImage** out, void* pixels, int width, int height, int flags);
+    int SetWorldMatrix(void* a);
+    int SetTexture(void* a, PyroDeviceObject* texture);
+    int DrawQuadBuffer(PyroDeviceBuffer* buffer, int first, int count, int flags);
+    int DrawQuads(PyroVertexBuffer* buffer, int first, int count, int flags);
+    int IsRgba();
 
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20
-    void** Display3c(void** out);                           // IDisplay vtable+0x3c
+    void** CreateEffect(void** out);                           // IDisplay vtable+0x3c
     int Shutdown();                                         // IShutdownable vtable+0x0c
 };
 
@@ -190,7 +190,7 @@ typedef char Vc1KdDisplayDeviceSizeCheck[sizeof(KdDisplayDevice) == 0x1c ? 1 : -
 // ?QueryInterface@KdDisplayDevice@vc1@@W7AEPAXPAPBD@Z
 
 // Inferred name. Adds the script and render-target faces and the window
-// (mixer). Script14 "Display". Constructor 0x004665c0 (ESI=this) is called by
+// (mixer). GetTypeName "Display". Constructor 0x004665c0 (ESI=this) is called by
 // KdDisplay(); destructor body 0x004664a0.
 // SIZE 0x30
 // VTABLE: VC1 0x004d5e00 vc1::IScriptObject
@@ -212,19 +212,19 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
-    void* Display0c(void* a, void* b);
-    void* Display10();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
+    void* BeginFrame(void* a, void* b);
+    void* EndFrame();
     int GetWidth();
     int GetHeight();
-    void* Display1c();
+    void* GetRenderTexture();
     unsigned char SetSize(unsigned width, unsigned height);
     bool IsWindowed();
     int SetWindowed(bool arg);
     void* GetMixer();
-    void Display30(int unused);
+    void ShowKeyboard(int unused);
     void** CreateTexture(void** out);
     KdPtr<IRenderTarget> CreateRenderTarget(unsigned width, unsigned height);
     int Shutdown() throw();
@@ -236,11 +236,11 @@ public:
 // SYNTHETIC: VC1 0x00402360
 // ?GetHeight@KdDisplayBase@vc1@@WBA@AEHXZ
 // SYNTHETIC: VC1 0x004023b0
-// ?Display1c@KdDisplayBase@vc1@@WBA@AEPAXXZ
+// ?GetRenderTexture@KdDisplayBase@vc1@@WBA@AEPAXXZ
 // SYNTHETIC: VC1 0x0041a660
 // vc1::KdDisplayBase::`scalar deleting destructor'
 // SYNTHETIC: VC1 0x0041a930
-// ?Display0c@KdDisplayBase@vc1@@WBA@AEPAXPAX0@Z
+// ?BeginFrame@KdDisplayBase@vc1@@WBA@AEPAXPAX0@Z
 // SYNTHETIC: VC1 0x0041a940
 // ?Release@KdDisplayBase@vc1@@WBI@AEIXZ
 // SYNTHETIC: VC1 0x0041a950
@@ -250,7 +250,7 @@ public:
 // SYNTHETIC: VC1 0x0041a970
 // ?QueryInterface@KdDisplayBase@vc1@@WBM@AEPAXPAPBD@Z
 // SYNTHETIC: VC1 0x0041a980
-// ?Display10@KdDisplayBase@vc1@@WBA@AEPAXXZ
+// ?EndFrame@KdDisplayBase@vc1@@WBA@AEPAXXZ
 // SYNTHETIC: VC1 0x0041a990
 // ?AddRef@KdDisplayBase@vc1@@WBE@AEIXZ
 // SYNTHETIC: VC1 0x0041a9a0
@@ -293,10 +293,10 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Script0c(const char* name, SquirrelObject* out); // vtable+0x0c
-    unsigned char Script10(void* a, void* b); // vtable+0x10
-    void* Display0c(void* a, void* b);      // IRenderTarget vtable+0x0c
-    void* Display10();                       // IRenderTarget vtable+0x10
+    unsigned char GetMember(const char* name, SquirrelObject* out); // vtable+0x0c
+    unsigned char SetMember(void* a, void* b); // vtable+0x10
+    void* BeginFrame(void* a, void* b);      // IRenderTarget vtable+0x0c
+    void* EndFrame();                       // IRenderTarget vtable+0x10
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20
     int SetWindowed(bool arg);              // IDisplay vtable+0x28
     int Shutdown();                         // IShutdownable vtable+0x0c
@@ -310,7 +310,7 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x004022e0
 // ?AddRef@KdDisplay@vc1@@W3AEIXZ
 // SYNTHETIC: VC1 0x004022f0
-// ?Display0c@KdDisplay@vc1@@WBA@AEPAXPAX0@Z
+// ?BeginFrame@KdDisplay@vc1@@WBA@AEPAXPAX0@Z
 // SYNTHETIC: VC1 0x00402300
 // ??_EKdDisplay@vc1@@WBA@AEPAXI@Z
 // SYNTHETIC: VC1 0x00402310
@@ -326,7 +326,7 @@ typedef char Vc1KdDisplaySizeCheck[sizeof(KdDisplay) == 0x5c ? 1 : -1];
 // SYNTHETIC: VC1 0x00402380
 // ?QueryInterface@KdDisplay@vc1@@WBM@AEPAXPAPBD@Z
 // SYNTHETIC: VC1 0x00402390
-// ?Display10@KdDisplay@vc1@@WBA@AEPAXXZ
+// ?EndFrame@KdDisplay@vc1@@WBA@AEPAXXZ
 // SYNTHETIC: VC1 0x004023a0
 // ?AddRef@KdDisplay@vc1@@WBE@AEIXZ
 // SYNTHETIC: VC1 0x004023c0

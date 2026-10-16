@@ -107,7 +107,7 @@ bool IsRectVisible(const KdPtr<IGraphics>& graphics, const Rect& rect)
 
 // MOV EAX, "TileManager"; RET. IScriptObject vtable+0x14 of both classes.
 // FUNCTION: VC1 0x0041b4f0
-const char* KdTileManager::Script14()
+const char* KdTileManager::GetTypeName()
 {
     return kTileManager;
 }
@@ -131,7 +131,7 @@ void TileRectList::Reserve(unsigned count)
 
 // IScriptObject vtable+0x10: the script instance's SetMember (tail call).
 // FUNCTION: VC1 0x00460430
-unsigned char KdTileManager::Script10(void* name, void* value)
+unsigned char KdTileManager::SetMember(void* name, void* value)
 {
     IScriptInstance* instance = &script;
     return instance->SetMember(static_cast<const char*>(name),
@@ -224,13 +224,13 @@ bool KdTileManager::HitTest(int tile, int x, int y, unsigned flags)
         {
             KdPtr<ICamera> camera(g_kdNullObject.ptr
                 ? static_cast<ICamera*>(g_kdNullObject.ptr->QueryInterface(&g_iidCamera)) : 0);
-            target->Display0c(&graphics.ptr, &camera);
+            target->BeginFrame(&graphics.ptr, &camera);
         }
         if (graphics.ptr) {
             graphics->Clear(0xffff00ff);
             Render(graphics, tile, static_cast<float>(-x), static_cast<float>(-y), flags);
-            target->Display10();
-            KdPtr<ITexture> texture(*static_cast<KdPtr<ITexture>*>(target->Display1c()));
+            target->EndFrame();
+            KdPtr<ITexture> texture(*static_cast<KdPtr<ITexture>*>(target->GetRenderTexture()));
             if (texture.ptr) {
                 Rect region(0, 0, 1, 1);
                 const unsigned* pixel = static_cast<const unsigned*>(texture->Lock(&region, 1));
@@ -546,7 +546,7 @@ bool KdTileManager::LoadFromScript(SquirrelObject& table)
 // RET 8. The script instance's members first, then the method table (table
 // 0x004ee63c, guard bit 0x004ee64c, atexit destructor 0x004cae70).
 // FUNCTION: VC1 0x00461700
-unsigned char KdTileManager::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdTileManager::GetMember(const char* name, SquirrelObject* out)
 {
     IScriptInstance* instance = &script;
 
@@ -723,7 +723,7 @@ void VcTileManager::SetHighlightBlendMode(unsigned mode)
 
 // XOR AL, AL; RET 8. IScriptObject vtable+0x10: script members are read-only.
 // FUNCTION: VC1 0x004a1960
-unsigned char VcTileManager::Script10(void* name, void* value)
+unsigned char VcTileManager::SetMember(void* name, void* value)
 {
     (void)name;
     (void)value;
@@ -826,9 +826,9 @@ void** CreateKdTileManager(void** out)
 // RET 8. KdTileManager's members and methods, then this table (table
 // 0x004ee68c, guard bit 0x004ee69c, atexit destructor 0x004ca250).
 // FUNCTION: VC1 0x004a1e50
-unsigned char VcTileManager::Script0c(const char* name, SquirrelObject* out)
+unsigned char VcTileManager::GetMember(const char* name, SquirrelObject* out)
 {
-    if (KdTileManager::Script0c(name, out)) {
+    if (KdTileManager::GetMember(name, out)) {
         return 1;
     }
     static ScriptMethodTable methods;

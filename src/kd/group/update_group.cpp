@@ -15,7 +15,7 @@ const char* g_kdNameUpdateGroup = kUpdateGroup;
 
 // OR EAX, -1; RET. IUpdateable+0x0c: the group itself runs in every slice.
 // FUNCTION: VC1 0x0046f610
-int KdUpdateGroup::Unmapped0c()
+int KdUpdateGroup::GetUpdateLayer()
 {
     return -1;
 }
@@ -133,7 +133,7 @@ void KdUpdateGroup::AddMember(IUnknown* const* object)
     if (wasMember) {
         RemoveMember(object);
     }
-    layers = static_cast<unsigned>(static_cast<IUpdateable*>(*object)->Unmapped0c());
+    layers = static_cast<unsigned>(static_cast<IUpdateable*>(*object)->GetUpdateLayer());
     for (bit = 1; bit != 0x100; bit *= 2) {
         if (layers & static_cast<unsigned>(bit)) {
             PtrListPush(SliceMapAt(&slices, &bit), object);

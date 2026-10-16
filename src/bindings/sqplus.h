@@ -15,11 +15,11 @@ namespace vc1 {
 // Engine side of the SqPlus call layer (third_party/sqplus, the 20080713
 // snapshot). Value types (Vector3, Color, ...) are plain SQClassDef classes
 // on the stock DirectCallInstanceMemberFunction. Kd objects instead keep
-// their methods in a ScriptMethodTable handed out by IScriptObject::Script0c;
+// their methods in a ScriptMethodTable handed out by IScriptObject::GetMember;
 // those closures use ScriptMethodCall, whose instance user pointer is an
 // IUnknown QI'd to IScriptObject (ScriptInstance).
 
-// Script method names shared by several Script0c tables.
+// Script method names shared by several GetMember tables.
 extern const char kScriptGetWidth[];
 extern const char kScriptGetHeight[];
 extern const char kScriptRegisterObject[];
@@ -156,7 +156,7 @@ void DestroyScriptMethods(ScriptMethod* first, ScriptMethod* last);
 void ConstructScriptMethods(ScriptMethod* first, ScriptMethod* last);
 
 // Inferred name. Name-sorted ScriptMethod array in a KdFactory buffer; each
-// Script0c builds one as a function-local static on first use.
+// GetMember builds one as a function-local static on first use.
 // SIZE 0x10
 struct ScriptMethodTable
 {
@@ -187,7 +187,7 @@ struct ScriptMethodTable
     ScriptMethod* InsertSlot(ScriptMethod* pos);
     SquirrelObject& operator[](const char* const& name);
 
-    // Script0c body: copies the closure for name into *out.
+    // GetMember body: copies the closure for name into *out.
     unsigned char Find(const char* name, SquirrelObject* out)
     {
         ScriptMethod* found = LowerBound(name);
@@ -205,7 +205,7 @@ struct ScriptMethodTable
 
 typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1 : -1];
 
-// KdTexture / KdFont script methods (Script0c). The original inlines the
+// KdTexture / KdFont script methods (GetMember). The original inlines the
 // GetHeight Call into its Dispatch; the other Calls are SqPlus
 // ReturnSpecialization<RT>::Call with the free Call wrapper inlined.
 

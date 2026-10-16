@@ -38,7 +38,7 @@ extern const char kScriptGetPosition[] = "GetPosition";
 
 // MOV EAX, 0x004d4bec; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x0041c3a0
-const char* KdMusic::Script14()
+const char* KdMusic::GetTypeName()
 {
     return kMusic;
 }
@@ -181,7 +181,7 @@ int KdMusic::Play(bool restart)
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x0045e780
-unsigned char KdMusic::Script10(void* a, void* b)
+unsigned char KdMusic::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -384,7 +384,7 @@ unsigned char KdMusic::Load(const char* name)
 // 0x004ee4e0, atexit 0x004caf50). The ISound slots bind through vcall thunks
 // (0x0041c390 Play ... 0x0041c820 IsPaused).
 // FUNCTION: VC1 0x0045eed0
-unsigned char KdMusic::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdMusic::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

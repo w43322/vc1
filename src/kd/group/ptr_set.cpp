@@ -342,7 +342,7 @@ static void ConstructSliceEntries(KdSliceEntry* first, KdSliceEntry* last)
 }
 
 // cdecl first, last. Stable insertion sort of IRenderables by their
-// Render14() order; each element is rotated back past every greater one.
+// GetRenderOrder() order; each element is rotated back past every greater one.
 // FUNCTION: VC1 0x00417c00
 void SortByRenderOrder(IUnknown** first, IUnknown** last)
 {
@@ -351,8 +351,8 @@ void SortByRenderOrder(IUnknown** first, IUnknown** last)
     for (current = first + 1; current < last; ++current) {
         IUnknown** pos = current;
         while (pos > first
-            && static_cast<IRenderable*>(pos[-1])->Render14()
-                > static_cast<IRenderable*>(*current)->Render14()) {
+            && static_cast<IRenderable*>(pos[-1])->GetRenderOrder()
+                > static_cast<IRenderable*>(*current)->GetRenderOrder()) {
             --pos;
         }
         EraseCountedBytes(pos, current, current + 1);

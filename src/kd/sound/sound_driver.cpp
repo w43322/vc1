@@ -22,7 +22,7 @@ const char* g_kdNameSoundDriver = kSoundDriver;
 
 // MOV EAX, 0x004d4bfc; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x004197f0
-const char* KdSoundDriver::Script14()
+const char* KdSoundDriver::GetTypeName()
 {
     return kSoundDriver;
 }
@@ -73,7 +73,7 @@ int KdSoundDriver::Shutdown()
 
 // XOR AL,AL; RET 8. IScriptObject vtable+0x10.
 // FUNCTION: VC1 0x00468150
-unsigned char KdSoundDriver::Script10(void* a, void* b)
+unsigned char KdSoundDriver::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -133,7 +133,7 @@ unsigned KdSoundDriver::AddRef()
 
 // RET 4. ResourceManager GetMusic: a new KdMusic's IAbstract face to *arg.
 // FUNCTION: VC1 0x00468220
-void* KdSoundDriver::Sound14(void* arg)
+void* KdSoundDriver::CreateMusic(void* arg)
 {
     CreateKdMusic(static_cast<void**>(arg));
     return arg;
@@ -141,7 +141,7 @@ void* KdSoundDriver::Sound14(void* arg)
 
 // RET 4. ResourceManager GetSound: a new KdSound's IAbstract face to *arg.
 // FUNCTION: VC1 0x00468230
-void* KdSoundDriver::Sound10(void* arg)
+void* KdSoundDriver::CreateSound(void* arg)
 {
     CreateKdSound(static_cast<void**>(arg));
     return arg;
@@ -228,7 +228,7 @@ extern const char kScriptSetVolume[] = "SetVolume";
 // RET 8. IScriptObject vtable+0x0c. Method table 0x004ee4f8 (guard bit
 // 0x004ee508, atexit 0x004cabb0).
 // FUNCTION: VC1 0x00468610
-unsigned char KdSoundDriver::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdSoundDriver::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

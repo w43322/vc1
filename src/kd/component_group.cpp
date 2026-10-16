@@ -18,12 +18,12 @@ KdComponentGroup::~KdComponentGroup()
 
 // LEA EAX, [ECX+4]; RET.
 // FUNCTION: VC1 0x00472790
-void* KdComponentGroup::Unmapped20()
+void* KdComponentGroup::GetRecords()
 {
     return &records.items;
 }
 
-// Unmapped24 (virtual), then every record: notify IGroupMember with
+// ClearCollected (virtual), then every record: notify IGroupMember with
 // g_groupNotify and Shutdown its IShutdownable face; empties the table.
 // FUNCTION: VC1 0x004727a0
 int KdComponentGroup::Shutdown()
@@ -35,7 +35,7 @@ int KdComponentGroup::Shutdown()
     IShutdownable* face;
     typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
-    Unmapped24();
+    ClearCollected();
 
     it = reinterpret_cast<unsigned char*>(records.items.begin);
     end = it + records.items.size;
@@ -69,9 +69,9 @@ int KdComponentGroup::Shutdown()
     return 0;
 }
 
-// Every record's IComponentGroup gets Unmapped24; then empties extra.
+// Every record's IComponentGroup gets ClearCollected; then empties extra.
 // FUNCTION: VC1 0x00472870
-int KdComponentGroup::Unmapped24()
+int KdComponentGroup::ClearCollected()
 {
     unsigned char* it;
     unsigned char* end;
@@ -88,7 +88,7 @@ int KdComponentGroup::Unmapped24()
         group = static_cast<IComponentGroup*>(object->QueryInterface(&g_iidComponentGroup));
         if (group) {
             group->AddRef();
-            group->Unmapped24();
+            group->ClearCollected();
             group->Release();
         }
     }
@@ -102,7 +102,7 @@ int KdComponentGroup::Unmapped24()
 // RET 4. Collects into extra every record (and nested group member) that
 // answers iid; returns &extra.items (the KdFactory).
 // FUNCTION: VC1 0x004728f0
-KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
+KdFactory* KdComponentGroup::CollectObjects(const char** iid)
 {
     unsigned char* it;
     IUnknown* object;
@@ -130,7 +130,7 @@ KdFactory* KdComponentGroup::Unmapped1c(const char** iid)
             : 0;
         if (group) {
             group->AddRef();
-            nested = group->Unmapped1c(iid);
+            nested = group->CollectObjects(iid);
             AppendCountedRange(&appended, nested->begin,
                 reinterpret_cast<unsigned char*>(nested->begin) + nested->size, &extra.items);
         }

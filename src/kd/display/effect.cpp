@@ -95,7 +95,7 @@ __declspec(noinline) IUnknown** AssignGraphics(IUnknown** slot, const KdPtr<IUnk
 
 // MOV EAX, "Effect"; RET.
 // FUNCTION: VC1 0x0041d630
-const char* KdEffect::Script14()
+const char* KdEffect::GetTypeName()
 {
     return kEffect;
 }
@@ -145,7 +145,7 @@ int KdPyroStream::Tell()
 
 // MOV EAX, "EffectEmitter"; RET.
 // FUNCTION: VC1 0x0042dfa0
-const char* KdEffectEmitter::Script14()
+const char* KdEffectEmitter::GetTypeName()
 {
     return kEffectEmitter;
 }
@@ -215,7 +215,7 @@ void KdEffectEmitter::SetVisible(bool value)
 
 // The render layer.
 // FUNCTION: VC1 0x0045a8b0
-int KdEffectEmitter::Render14()
+int KdEffectEmitter::GetRenderOrder()
 {
     return renderLayer;
 }
@@ -230,7 +230,7 @@ int KdEffectEmitter::SetLayer(unsigned layer)
 
 // MOV EAX, 0x40; RET.
 // FUNCTION: VC1 0x0045a8d0
-int KdEffectEmitter::Unmapped0c()
+int KdEffectEmitter::GetUpdateLayer()
 {
     return 0x40;
 }
@@ -250,7 +250,7 @@ int KdEffectEmitter::GetLifeTime()
 
 // XOR AL,AL; RET 8.
 // FUNCTION: VC1 0x0045a910
-unsigned char KdEffectEmitter::Script10(void* a, void* b)
+unsigned char KdEffectEmitter::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -297,12 +297,12 @@ unsigned KdEffectEmitter::Release()
 {
     IUnknown* face;
     unsigned result;
-    typedef void (__thiscall *Fn0c)(void* object, int arg);
+    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
 
     face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
     result = --refs;
     if (result == 0) {
-        reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
+        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
         return 0;
     }
     return result;
@@ -390,7 +390,7 @@ int KdEffectEmitter::Render(void* graphics)
             static_cast<SQInteger>(bounds.height));
         if (IsRectVisible(target, rect)) {
             SetGraphics(target);
-            emitter->Emitter08();
+            emitter->Render();
             AssignGraphics(&g_graphics, g_effectNoTarget);
         }
     }
@@ -415,7 +415,7 @@ KdEffectEmitter::~KdEffectEmitter()
 // RET 8. Method table 0x004ee3f4 (guard bit 0x004ee404, atexit destructor
 // 0x004cb450); every closure calls through the vtable.
 // FUNCTION: VC1 0x0045b150
-unsigned char KdEffectEmitter::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdEffectEmitter::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 
@@ -484,7 +484,7 @@ KdPtr<IAbstract> CreateEffectEmitter(IPyroEmitter* emitter, IEffect* effect)
 
 // XOR AL,AL; RET 8.
 // FUNCTION: VC1 0x0045b5f0
-unsigned char KdEffect::Script10(void* a, void* b)
+unsigned char KdEffect::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -513,12 +513,12 @@ unsigned KdEffect::Release()
 {
     IUnknown* face;
     unsigned result;
-    typedef void (__thiscall *Fn0c)(void* object, int arg);
+    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
 
     face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
     result = --refs;
     if (result == 0) {
-        reinterpret_cast<Fn0c>((*reinterpret_cast<void***>(face))[3])(face, 1);
+        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
         return 0;
     }
     return result;
@@ -602,7 +602,7 @@ KdPtr<IEffectEmitter> KdEffect::CreateEmitter(const char* name)
 // RET 8. Method table 0x004ee574 (guard bit 0x004ee584, atexit destructor
 // 0x004cb0f0).
 // FUNCTION: VC1 0x0045ba60
-unsigned char KdEffect::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdEffect::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

@@ -37,7 +37,7 @@ public:
 typedef char Vc1KdPyroStreamSizeCheck[sizeof(KdPyroStream) == 0x08 ? 1 : -1];
 
 // Inferred name. Script class name "Effect" (0x004d4c18). A loaded .pyro
-// file: IDisplay::Display3c creates it, ResourceManager GetEffect loads it
+// file: IDisplay::CreateEffect creates it, ResourceManager GetEffect loads it
 // and applies the PyroEffects.nut entry (BoundingRect). QI at 0x0045b650:
 // IEffect this, ILoadable+4, IScriptLoadable+8, IScriptObject+0x0c,
 // IAbstract+0x10.
@@ -65,9 +65,9 @@ public:
     KdPtr<IEffectEmitter> CreateEmitter(const char* name);        // IEffect vtable+0x0c
     unsigned char Load(const char* name);                         // ILoadable vtable+0x0c
     bool LoadFromScript(SquirrelObject& table);                   // IScriptLoadable vtable+0x0c
-    unsigned char Script0c(const char* name, SquirrelObject* out); // IScriptObject vtable+0x0c
-    unsigned char Script10(void* a, void* b);                     // IScriptObject vtable+0x10
-    const char* Script14();                                       // IScriptObject vtable+0x14
+    unsigned char GetMember(const char* name, SquirrelObject* out); // IScriptObject vtable+0x0c
+    unsigned char SetMember(void* a, void* b);                     // IScriptObject vtable+0x10
+    const char* GetTypeName();                                       // IScriptObject vtable+0x14
 
     KdPtr<IEffectEmitter> CreateFirstEmitter();
     void FreeFile();
@@ -125,13 +125,13 @@ public:
     unsigned AddRef();                                              // vtable+0x04
     unsigned Release();                                             // vtable+0x08
     int Render(void* graphics);                                     // IRenderable vtable+0x10
-    int Render14();                                                 // IRenderable vtable+0x14
+    int GetRenderOrder();                                                 // IRenderable vtable+0x14
     void Reset();
     void SetRenderLayer(int layer);
     void SetEnabled(bool value);
     void SetLocalMode(bool local);
     void SetLocalMatrix(const Matrix3& matrix);
-    int Unmapped0c();                                               // IUpdateable vtable+0x0c
+    int GetUpdateLayer();                                               // IUpdateable vtable+0x0c
     int SetLayer(unsigned layer);                                   // IUpdateable vtable+0x10
     void Update(unsigned sliceBit, int dt);                         // IUpdateable vtable+0x14
     int GetLifeTime();
@@ -141,9 +141,9 @@ public:
     const Matrix3& GetPosition();
     void SetVisible(bool value);
     bool IsVisible();
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
     int Shutdown();
 
     static void operator delete(void* p) { free(p); }

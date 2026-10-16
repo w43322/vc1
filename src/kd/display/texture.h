@@ -34,10 +34,10 @@ public:
     unsigned Release();                     // vtable+0x08
     unsigned char Load(const char* name);   // ILoadable vtable+0x0c
     void** Clone(void** out);               // ICloneable vtable+0x0c
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
-    unsigned char Texture0c(void* arg);
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
+    unsigned char Reload(void* arg);
     int GetWidth();
     int GetHeight();
     void* Lock(void* region, bool readOnly);
@@ -46,8 +46,8 @@ public:
 
 typedef char Vc1KdTextureSizeCheck[sizeof(KdTexture) == 0x24 ? 1 : -1];
 
-// Inferred name. Texture face of a render target (KdRenderTarget::Display1c):
-// borrows the target's D3D texture; native is refreshed on every Display1c.
+// Inferred name. Texture face of a render target (KdRenderTarget::GetRenderTexture):
+// borrows the target's D3D texture; native is refreshed on every GetRenderTexture.
 // SIZE 0x1c
 // VTABLE: VC1 0x004d68e4 vc1::ITexture
 // VTABLE: VC1 0x004d6904 vc1::IAbstract
@@ -63,7 +63,7 @@ public:
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
-    unsigned char Texture0c(void* arg);
+    unsigned char Reload(void* arg);
     int GetWidth();
     int GetHeight();
     void* Lock(void* region, bool readOnly);

@@ -28,17 +28,17 @@ public:
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08
     bool SetEnabled(void* mixer);           // vtable+0x0c
-    void* Sound10(void* arg);               // vtable+0x10
-    void* Sound14(void* arg);               // vtable+0x14
+    void* CreateSound(void* arg);               // vtable+0x10
+    void* CreateMusic(void* arg);               // vtable+0x14
     bool Start();                           // vtable+0x18
     bool Stop();                            // vtable+0x1c
     bool Pause();                           // vtable+0x20
     int GetVolume();                        // vtable+0x24
     bool SetVolume(int volume);             // vtable+0x28
     int Shutdown();                         // vtable+0x0c
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
 };
 
 typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
@@ -66,7 +66,7 @@ typedef char Vc1KdSoundDriverSizeCheck[sizeof(KdSoundDriver) == 0x14 ? 1 : -1];
 // SYNTHETIC: VC1 0x00419af0
 // ?AddRef@KdSoundDriver@vc1@@WM@AEIXZ
 
-// Script methods (Script0c): Start / Stop / Pause share one closure type.
+// Script methods (GetMember): Start / Stop / Pause share one closure type.
 
 // TEMPLATE: VC1 0x00419850
 // ??$CreateScriptMethod@VKdSoundDriver@vc1@@P812@AE_NXZ@vc1@@YA?AVSquirrelObject@@P8KdSoundDriver@0@AE_NXZ@Z

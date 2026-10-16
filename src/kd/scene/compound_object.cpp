@@ -41,7 +41,7 @@ static inline void AssignPositionable(KdRef<IPositionable>& slot, IUnknown* sour
 
 static inline KdFactory* ChildRecords(KdComponentGroup* group)
 {
-    return static_cast<KdFactory*>(group->Unmapped20());
+    return static_cast<KdFactory*>(group->GetRecords());
 }
 
 static inline IUnknown* RecordObject(unsigned char* record)
@@ -51,7 +51,7 @@ static inline IUnknown* RecordObject(unsigned char* record)
 
 // MOV EAX, "CompoundObject"; RET. IScriptObject vtable+0x14.
 // FUNCTION: VC1 0x00415aa0
-const char* KdCompoundObject::Script14()
+const char* KdCompoundObject::GetTypeName()
 {
     return kCompoundObject;
 }
@@ -86,7 +86,7 @@ bool IsNotNullObject(IUnknown* const& object)
 // IScriptObject vtable+0x10: the script instance's SetMember (tail call
 // through its vftable).
 // FUNCTION: VC1 0x00472e70
-unsigned char KdCompoundObject::Script10(void* name, void* value)
+unsigned char KdCompoundObject::SetMember(void* name, void* value)
 {
     IScriptInstance* instance = &script;
     return instance->SetMember(static_cast<const char*>(name),
@@ -383,7 +383,7 @@ static const char kScriptGetBoundingRect[] = "GetBoundingRect";
 // RET 8. The script instance's members first, then the method table (table
 // 0x004ee678, guard bit 0x004ee688).
 // FUNCTION: VC1 0x00473a90
-unsigned char KdCompoundObject::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdCompoundObject::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
     IScriptInstance* instance = &script;

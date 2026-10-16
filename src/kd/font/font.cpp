@@ -118,7 +118,7 @@ KdRef<IFont>* AssignFont(KdRef<IFont>* self, IUnknown* const* source)
 
 // MOV EAX, "Font"; RET.
 // FUNCTION: VC1 0x00419b00
-const char* KdFont::Script14()
+const char* KdFont::GetTypeName()
 {
     return kFont;
 }
@@ -206,7 +206,7 @@ int KdFont::GetHeight()
 
 // XOR AL, AL; RET 8.
 // FUNCTION: VC1 0x00466e50
-unsigned char KdFont::Script10(void* a, void* b)
+unsigned char KdFont::SetMember(void* a, void* b)
 {
     (void)a;
     (void)b;
@@ -466,7 +466,7 @@ KdStringList KdFont::WrapText(const char* text, int width)
 // four IFont methods under their script names. A GLOBAL marker here would
 // name it vc1::methods, which no recompiled symbol matches.
 // FUNCTION: VC1 0x004676e0
-unsigned char KdFont::Script0c(const char* name, SquirrelObject* out)
+unsigned char KdFont::GetMember(const char* name, SquirrelObject* out)
 {
     static ScriptMethodTable methods;
 

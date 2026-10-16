@@ -429,7 +429,7 @@ KdPtr<IUnknown> getRenderTargetTexture(const KdPtr<IAbstract>& object)
     if (!target.ptr) {
         return g_kdNullComponent;
     }
-    texture = *static_cast<IUnknown**>(target->Display1c());
+    texture = *static_cast<IUnknown**>(target->GetRenderTexture());
     return KdPtr<IUnknown>(texture
         ? static_cast<IUnknown*>(texture->QueryInterface(&g_iidAbstract)) : 0);
 }
@@ -439,7 +439,7 @@ KdPtr<IUnknown> getRenderTargetTexture(const KdPtr<IAbstract>& object)
 void endRender(const KdPtr<IAbstract>& object)
 {
     ScriptFace<IRenderTarget> target(object);
-    target->Display10();
+    target->EndFrame();
 }
 
 // FUNCTION: VC1 0x004b4fe0
@@ -453,7 +453,7 @@ KdPtr<IUnknown> beginRender(const KdPtr<IAbstract>& object, const KdPtr<IAbstrac
     }
     KdPtr<ICamera> camera(view);
     KdPtr<IUnknown> drawn;
-    graphics = *static_cast<IUnknown**>(target->Display0c(&drawn, &camera));
+    graphics = *static_cast<IUnknown**>(target->BeginFrame(&drawn, &camera));
     return KdPtr<IUnknown>(graphics
         ? static_cast<IUnknown*>(graphics->QueryInterface(&g_iidAbstract)) : 0);
 }

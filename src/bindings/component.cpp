@@ -162,7 +162,7 @@ SQInteger ComponentTypeOf(HSQUIRRELVM vm)
     if (!script) {
         return -1;
     }
-    sq_pushstring(SquirrelVM::_VM, script->Script14(), -1);
+    sq_pushstring(SquirrelVM::_VM, script->GetTypeName(), -1);
     return 1;
 }
 
@@ -188,7 +188,7 @@ SQInteger ComponentNextI(HSQUIRRELVM vm)
     }
     StackHandler sa(vm);
     key = sa.GetType(2) == OT_NULL ? 0 : sa.GetString(2);
-    records = static_cast<KdFactory*>(group->Unmapped20());
+    records = static_cast<KdFactory*>(group->GetRecords());
     if (!key) {
         g_componentCursor = reinterpret_cast<unsigned char*>(records->begin);
     }
@@ -206,7 +206,7 @@ SQInteger ComponentNextI(HSQUIRRELVM vm)
     return 1;
 }
 
-// "_set": IScriptObject::Script10(key, value) first. Otherwise the group
+// "_set": IScriptObject::SetMember(key, value) first. Otherwise the group
 // removes key (vtable+0x14) and re-adds it (vtable+0x10) with the value's
 // IAbstract face (SquirrelObject::Get 0x0041b830). Returns -1 for neither.
 // FUNCTION: VC1 0x004bf2f0
@@ -229,7 +229,7 @@ SQInteger ComponentSet(HSQUIRRELVM vm)
     }
     SquirrelObject value(handle);
     script = static_cast<IScriptObject*>(self->QueryInterface(&g_iidScriptObject));
-    if (script && script->Script10(const_cast<char*>(key), &value)) {
+    if (script && script->SetMember(const_cast<char*>(key), &value)) {
         return 0;
     }
     group = static_cast<IComponentGroup*>(self->QueryInterface(&g_iidComponentGroup));
@@ -248,7 +248,7 @@ SQInteger ComponentSet(HSQUIRRELVM vm)
     return 0;
 }
 
-// "_get": IScriptObject::Script0c(key, &out) first. Otherwise the group's
+// "_get": IScriptObject::GetMember(key, &out) first. Otherwise the group's
 // lookup (vtable+0x18) wrapped as a Component instance (SquirrelObject::Set
 // 0x004014a0). Returns -1 when neither has key.
 // FUNCTION: VC1 0x004bf490
@@ -267,7 +267,7 @@ SQInteger ComponentGet(HSQUIRRELVM vm)
     script = static_cast<IScriptObject*>(self->QueryInterface(&g_iidScriptObject));
     if (script) {
         SquirrelObject out;
-        if (script->Script0c(key, &out)) {
+        if (script->GetMember(key, &out)) {
             sq_pushobject(vm, out.GetObjectHandle());
             return 1;
         }

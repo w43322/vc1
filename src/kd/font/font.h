@@ -57,7 +57,7 @@ void ConstructGlyphs(Glyph* first, Glyph* last);
 extern const char kFont[];
 extern const unsigned g_utf8Limits[6];
 
-// Inferred name. Script14 "Font"; created by the factory (0x00466f50) and
+// Inferred name. GetTypeName "Font"; created by the factory (0x00466f50) and
 // cached by the resource manager. Bitmap pages plus a code-sorted glyph table.
 // SIZE 0x44
 // VTABLE: VC1 0x004d5cd0 vc1::IFont
@@ -92,9 +92,9 @@ public:
 
     unsigned char Load(const char* name) throw();
 
-    unsigned char Script0c(const char* name, SquirrelObject* out);
-    unsigned char Script10(void* a, void* b);
-    const char* Script14();
+    unsigned char GetMember(const char* name, SquirrelObject* out);
+    unsigned char SetMember(void* a, void* b);
+    const char* GetTypeName();
 
     Glyph* Find(unsigned code)
     {
