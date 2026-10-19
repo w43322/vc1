@@ -1,6 +1,8 @@
 # Virtual City decomp
 
-Early VC9 SP1 x86 `/GL /LTCG` reimplementation of `VirtualCity.Unwrapped.exe`, compared against the original with [reccmp](https://github.com/isledecomp/reccmp). The build is not the full game.
+A playable decompilation and reimplementation of `VirtualCity.Unwrapped.exe`, built with early VC9 SP1 x86 `/GL /LTCG` and compared against the original with [reccmp](https://github.com/isledecomp/reccmp).
+
+**Both campaign and sandbox modes are playable.** Function mapping and assembly matching are still in progress; the project has not yet reached 100% function coverage or a 100% binary match.
 
 Original binary (keep it next to the repo, not in Git):
 
