@@ -5,7 +5,9 @@
 #include "bindings/rectf.h"
 #include "bindings/sqplus.h"
 
+#if !defined(VC1_USE_SDL3)
 #include <mmsystem.h>
+#endif
 
 #include <errno.h>
 #include <math.h>
@@ -200,6 +202,7 @@ void InitHostServices()
 }
 
 // Cache KD_LOCALE or lang_COUNTRY from GetLocaleInfoA into DAT_004ed504.
+#if !defined(VC1_USE_SDL3)
 // FUNCTION: VC1 0x004bab00
 const char* GetResourceLocale()
 {
@@ -239,6 +242,7 @@ const char* GetResourceLocale()
     }
     return g_resourceLocale;
 }
+#endif
 
 // Preserve this WinMM implementation in its original translation unit:
 // moving it into a header changes VC9 register allocation. The SDL3 target

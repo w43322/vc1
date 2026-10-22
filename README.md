@@ -140,20 +140,23 @@ live in `src/platform/win32/`, selected by `cmake/platform-win32.cmake` in the
 original translation-unit order. `host/runtime.h` is a compatibility umbrella for
 remaining consumers of the Win32 runtime; shared code should use `host/platform.h`.
 
-`host/window.h` exposes opaque KD window creation. Win32 window state, class
-registration, message processing and resource cursors live in
-`src/platform/win32/window.{h,cpp}`; native key/character/pointer translation lives
-in `src/platform/win32/input.cpp`. `app/script.h` declares script initialization
-and bindings without native types, so `app/script.cpp` no longer includes the
-Windows runtime. Both current targets still select the Win32 window/input backend.
+`host/window.h` exposes opaque KD window creation. The reference window,
+message translation and resource cursors live in `src/platform/win32/`; the
+optional SDL target selects only `src/platform/sdl3/` implementations.
+`app/script.h` declares script initialization and bindings without native types.
 
-An optional SDL3 transition build uses SDL performance counters and gamepad input.
-`host/clock.h` selects the counter implementation at compile time; the VC9 build
-keeps its original QPC calls. SDL gamepad edges enter the existing KD event queue,
-including dpad and disconnect releases. Modern CRT file mappings keep their own
-handles instead of accessing VC9's private `FILE` layout.
+The SDL backend owns windows, keyboard/text/mouse/gamepad input, performance
+counters, events and timers, texture storage/locking/readback, geometry batches,
+alpha/additive blending, the texture-plus-diffuse color operation, clipping,
+transforms and render targets. It renders with SDL3 and plays music/effects with
+SDL3_mixer, including eight sample voices, looping, seeking, pan/frequency/volume
+and attribute fades. Files and directories use SDL I/O/filesystem APIs; threads,
+mutexes, TLS, locale, URL opening and logging also use SDL. It compiles no Win32
+backend source and imports neither D3D8 nor BASS. The old sound function names are
+local compatibility entry points in `platform/sdl3/audio.cpp`, not DLL imports.
 
-Build with modern Visual Studio C++ tools (2017 or newer), Ninja and CMake 3.16+:
+Build with modern Visual Studio C++ tools (2017 or newer), Ninja, Python 3 and
+CMake 3.16+:
 
 ```powershell
 .\tools\build-sdl3.cmd
@@ -161,28 +164,45 @@ cd build\sdl3
 ctest --output-on-failure
 ```
 
-The script selects x86 and prefers Visual Studio's bundled CMake. `VC1_CMAKE` can
-override it. CMake uses an installed SDL3 3.4.16 SDK or downloads the pinned
-official release into the build tree; set `VC1_SDL3_SOURCE_DIR` to an extracted
-source directory for an offline build. The game output is
-`build/sdl3/bin/VirtualCity.SDL3.exe`. Run from the same game data directory, or use
-`tools/run-debug.py --exe build/sdl3/bin/VirtualCity.SDL3.exe --map build/sdl3/bin/VirtualCity.SDL3.map --timeout 60 --keep`
-from the repository root. Interact manually; `--keep` leaves the window open.
+The script selects x86 and prefers Visual Studio's bundled CMake. `VC1_CMAKE`
+overrides it. CMake uses installed SDL3 3.4.16 / SDL3_mixer 3.2.4 SDKs or downloads
+the pinned official sources into `build/`. For offline builds, set
+`VC1_SDL3_SOURCE_DIR` and `VC1_SDL3_MIXER_SOURCE_DIR` to extracted source trees.
+`tools/msvc-showincludes.py` normalizes localized compiler include messages so
+Ninja tracks header changes; `build-sdl3.cmd --clean-first` forces a full rebuild.
 
-This is still a Windows/x86 build using the existing window, D3D8 renderer and
-BASS audio. Those backends and the remaining native calls need further separation
-before a cross-platform port. The default `tools/build-vc9.cmd` explicitly disables
-SDL3 and preserves `/GL /LTCG` and reccmp; the modern target has separate flags and
-is not used for binary matching. SDL counter and virtual-gamepad integration tests
-pass. Startup reaches the main-menu music; a subsequent manual run loads
-`Level_01_05` and exits with code 0 without logged script errors or fatal exceptions.
-This does not establish full campaign gameplay coverage.
+Output: `build/sdl3/bin/VirtualCity.SDL3.exe`. Run from the same game data directory,
+or use this from the repository root:
+
+```powershell
+$env:VC1_WINDOWED = '1'   # optional; fullscreen is the default
+.\.venv\Scripts\python.exe tools/run-debug.py --exe build/sdl3/bin/VirtualCity.SDL3.exe --map build/sdl3/bin/VirtualCity.SDL3.map --timeout 60 --keep
+```
+
+Interact manually; `--keep` leaves the window open. At configure time,
+`tools/extract-sdl-resources.py` converts the original's cursor/icon resources into
+`build/sdl3/bin/platform-resources/`. These generated game assets stay local.
+SDL3_mixer is built statically by default; BASS.dll is not required by this target.
+
+The SDL build is currently supported/tested with Windows MSVC x86. Engine pointer
+handles, layout checks and the remaining VC9-specific code still need work for
+other compilers or 64-bit builds. The default `tools/build-vc9.cmd` disables SDL3
+and preserves `/GL /LTCG` and reccmp; SDL implementations have no original mapping
+markers. All 4698 reference comparison entries retain their pre-port scores.
+
+CTest covers real SDL virtual-gamepad input and an asset-free software-renderer /
+dummy-audio backend run: geometry, alpha/additive/color-operation blending, clip,
+transform, render targets/readback, eight voices, custom streams/seeking/fades,
+file I/O, keys, timers, mutex concurrency and TLS destruction. The manual SDL run
+loads `Level_01_05`; the user confirmed controls and music/effects work. This is
+not full campaign validation. Existing unrecovered archive/HTTP drivers remain
+outside this backend port.
 
 ## Toolchain
 
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.
 - `/MT /GS- /GR- /O2 /Ob2 /Z7 /GL` (no `/EH`) and linker `/LTCG /OPT:NOREF /OPT:NOICF`. Do not drop `/GL /LTCG`.
-- VC9-era C++ only in `src/` (no `auto`, `nullptr`, range-for, `override`, lambdas).
+- Matching/shared source stays VC9-compatible. The separately selected `src/platform/sdl3/` backend uses C++17.
 - Vendored library bodies stay upstream except documented, evidence-backed game/VC9 patches; mapping additions are comments only. Do not add inline asm. Do not invent mappings.
 
 ## Do not commit

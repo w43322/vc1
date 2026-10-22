@@ -1,0 +1,20 @@
+# Pin the official SDL3_mixer source; the SDL backend never loads BASS.dll.
+find_package(SDL3_mixer 3.2.4 EXACT CONFIG QUIET)
+if(NOT TARGET SDL3_mixer::SDL3_mixer)
+  include(FetchContent)
+  if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+  endif()
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_INSTALL OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_TESTS OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_EXAMPLES OFF CACHE BOOL "" FORCE)
+  set(SDLMIXER_VORBIS_STB ON CACHE BOOL "" FORCE)
+  foreach(codec FLAC GME MOD MIDI OPUS WAVPACK VORBIS_VORBISFILE VORBIS_TREMOR MP3_MPG123)
+    set(SDLMIXER_${codec} OFF CACHE BOOL "" FORCE)
+  endforeach()
+  FetchContent_Declare(SDL3_mixer
+    URL https://github.com/libsdl-org/SDL_mixer/releases/download/release-3.2.4/SDL3_mixer-3.2.4.tar.gz
+    URL_HASH SHA256=182a07c745375e113dc740d43964ff21b0be29f29f59876c4dbc4db3d32f6901)
+  FetchContent_MakeAvailable(SDL3_mixer)
+endif()

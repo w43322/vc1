@@ -8,7 +8,7 @@
 #include "kd/iface/ipositionable.h"
 #include "kd/iface/itile_object.h"
 #include "kd/group/ptr_set.h"
-#include "platform/win32/runtime.h"
+#include "host/runtime.h"
 #include "bindings/component.h"
 #include "bindings/matrix3.h"
 #include "bindings/sqplus.h"
@@ -17,7 +17,9 @@
 #include <limits>
 #include <new>
 #include <stdlib.h>
+#if !defined(VC1_USE_SDL3)
 #include <windows.h>
+#endif
 
 namespace vc1 {
 
@@ -383,15 +385,22 @@ KdGameLevel::KdGameLevel() throw()
         IDisplay* display = unknown
             ? static_cast<IDisplay*>(static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidDisplay))
             : 0;
+#if !defined(VC1_USE_SDL3)
         RECT client;
+#endif
 
         if (display) {
             display->AddRef();
         }
+#if defined(VC1_USE_SDL3)
+        clientWidth = display->GetWidth();
+        clientHeight = display->GetHeight();
+#else
         if (GetClientRect(static_cast<HWND*>(display->GetMixer())[1], &client)) {
             clientWidth = client.right - client.left;
             clientHeight = client.bottom - client.top;
         }
+#endif
         display->Release();
     }
     if (unknown) {

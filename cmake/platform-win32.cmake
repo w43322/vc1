@@ -1,6 +1,6 @@
 # Matching host backend. Preserve the existing host translation-unit ordering.
-# Both targets currently use this window/input backend; SDL3 replaces selected
-# services (entry, clock and gamepad), not the native window or D3D8 renderer.
+# Selected only for the reference target. The SDL3 target supplies its own
+# complete host/display sources and does not compile this backend.
 set(VC1_HOST_SOURCES
   src/platform/win32/win_main.cpp
   src/platform/win32/runtime.cpp

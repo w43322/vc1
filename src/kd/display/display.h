@@ -72,8 +72,13 @@ void ReleaseTrackedTexture(IUnknown* texture);
 // __thiscall vc1::IUnknown they are stored as.
 inline unsigned long D3dRelease(IUnknown* object)
 {
+#if defined(VC1_USE_SDL3)
+    extern unsigned long SdlReleaseTexture(IUnknown* object);
+    return SdlReleaseTexture(object);
+#else
     typedef unsigned long (__stdcall *FnRelease)(IUnknown* object);
     return reinterpret_cast<FnRelease>((*reinterpret_cast<void***>(object))[2])(object);
+#endif
 }
 IUnknown* LoadTextureFile(const char* name);
 void* LockTextureRect(IUnknown* texture, int x, int y, bool readOnly, int width, int height);

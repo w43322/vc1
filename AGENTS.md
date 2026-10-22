@@ -89,26 +89,29 @@ renderer headers. Win32 host implementations/state live in `src/platform/win32/`
 `cmake/platform-win32.cmake` preserves the matching translation-unit order.
 `host/runtime.h` remains a compatibility umbrella; do not add native types to the
 shared contract. `host/clock.h` selects inline QPC or SDL performance counters.
-`host/window.h` exposes opaque KD window creation; native window records and
-messages stay in `platform/win32/window.h`. Window/class/cursor implementations
-are in `platform/win32/window.cpp`, native event translation in `input.cpp`.
-`app/script.h` is the native-free script binding contract. Both current targets
-still use these Win32 window/input implementations; moving them does not imply
-that SDL owns the window or keyboard/mouse events.
-The optional `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86) uses
-SDL3 for timing/gamepads while retaining the Windows window, D3D8 and BASS. It is
-a transition build, not a completed cross-platform port. Its new implementations
-have no original mapping markers; preserve the VC9 path and `/GL /LTCG`. Modern
-CRT adaptations are conditional and must not alter the matching build. SDL
-dependencies/build output stay under `build/`; tests use a virtual gamepad and
-no game assets. Run CTest from `build/sdl3`. x86 ABI/layout checks remain.
+`host/window.h` exposes opaque KD window creation; native window records stay in
+`platform/win32/window.h`. `app/script.h` is the native-free binding contract.
+The `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86, C++17) selects
+only `platform/sdl3/` host/display/texture implementations. SDL owns windows,
+keyboard/text/pointer/gamepad input, rendering/targets/readback, files, clocks,
+events/timers, mutexes/TLS, locale/URL/logging; SDL3_mixer owns music and effects.
+The `BASS_*` entry points in its audio bridge are local compatibility functions;
+the SDL executable must not import BASS or D3D8 or compile Win32 backend sources.
+The reference target preserves its original source ordering, VC9 flags and
+`/GL /LTCG`. New SDL implementations have no original mapping markers. Keep all
+modern C++ confined to the SDL backend; shared and matching code stay VC9-safe.
+SDL dependencies and extracted cursor/icon assets stay under `build/`, never Git.
+`tools/msvc-showincludes.py` normalizes localized cl output for Ninja dependencies;
+do not remove it without verifying header rebuilds. Run CTest in `build/sdl3`:
+`sdl3_host` uses a virtual gamepad; `sdl3_backend` uses dummy video/audio and no game
+data. Engine x86 ABI/layout assumptions still prevent a 64-bit port.
 For mechanical backend moves, preserve recovered bodies and markers, build and
 compare every mapped entity against the pre-refactor baseline. Matching scores
 alone are not a runtime test; also exercise startup after changing dependencies.
 
 ## Write source
 
-- Toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, no `/EH` (the original game code has no C++ EH frames; only the CRT sets up `fs:[0]`). Keep `/GL /LTCG`.
+- Matching/shared-source toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, no `/EH` (the original game code has no C++ EH frames; only the CRT sets up `fs:[0]`). Keep `/GL /LTCG`.
 - Linker is already `/SUBSYSTEM:WINDOWS` so the CRT entry is `WinMainCRTStartup`, matching the original WinMain path. Do not switch back to a console `main`.
 - Game functions: `// FUNCTION: VC1 0x00......` immediately above the definition, **sorted by address within that file**. Reccmp decomplint fails if they are out of order.
 - Empty or dishonest bodies: `// STUB: VC1 0x00......` so asmcmp skips them. Do not mass-convert incomplete-but-honest `FUNCTION`s to stubs to inflate accuracy.
@@ -205,7 +208,7 @@ The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-
 
 This section records prior runtime observations, not full-game validation. Later library/template mappings alone do not establish new gameplay coverage.
 
-- SDL3 transition build: modern MSVC x86 build and virtual-gamepad/counter CTest pass. A manual run loads `Level_01_05`, logs no script errors or fatal exceptions and exits with code 0. Window/render/audio remain Win32/D3D8/BASS; this is not full campaign validation. Default VC9 reccmp scores for all 4698 mapped entities remain unchanged after the split.
+- SDL3 backend: modern MSVC x86 build, virtual-gamepad and full dummy-video/audio CTests pass. The SDL executable imports only SDL3.dll and CRT-required KERNEL32.dll and compiles no Win32 backend source. A manual run loads `Level_01_05`; the user confirmed controls, music and effects work. This is not full campaign validation. Default VC9 scores for all 4698 mapped entities remain unchanged.
 
 - Recent source/build changes: `src/platform/win32/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 now uses a generated import library (`cmake/d3d8.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
 - Works: CRT/WinMain, script VM and natives, `Main.nut` `initApp`, window class + `KdWindowProc`, D3D8 device, main loop with Begin/EndScene/Present per frame, System/UpdateGroup/RenderGroup/InputGroup, Display script methods, System `GetMember` (RegisterObject/GetObject/RenderFrame/...), CompoundObject, ScriptedObject (`src/kd/scene/scripted_object.cpp`), `KdScriptInstance` (`src/kd/script_instance.cpp`), SquirrelVM `BeginCall`/`PushParam`/`EndCall`. `Game.nut` loads as a ScriptedObject; its `Update`/`Render`/`OnKeyPressed` run every frame (SplashScene).

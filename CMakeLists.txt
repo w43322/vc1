@@ -5,10 +5,23 @@ if(POLICY CMP0091)
 endif()
 project(VirtualCityDecomp VERSION 0.1.0 LANGUAGES C CXX)
 
-option(VC1_USE_SDL3 "Build the staged SDL3 game (Windows x86, modern MSVC)" OFF)
+option(VC1_USE_SDL3 "Build the SDL3 backend (Windows x86, modern MSVC)" OFF)
 if(VC1_USE_SDL3)
+  # Normalize redirected cl output so a localized compiler cannot silently lose
+  # Ninja header dependencies. This affects the modern target only.
+  if(EXISTS "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
+    set(VC1_BUILD_PYTHON "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
+  else()
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(VC1_BUILD_PYTHON "${Python3_EXECUTABLE}")
+  endif()
+  set(CMAKE_C_COMPILER_LAUNCHER "${VC1_BUILD_PYTHON};${CMAKE_SOURCE_DIR}/tools/msvc-showincludes.py")
+  set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_C_COMPILER_LAUNCHER}")
+  set(CMAKE_CL_SHOWINCLUDES_PREFIX "Note: including file: ")
+  set(CMAKE_C_CL_SHOWINCLUDES_PREFIX "${CMAKE_CL_SHOWINCLUDES_PREFIX}")
+  set(CMAKE_CXX_CL_SHOWINCLUDES_PREFIX "${CMAKE_CL_SHOWINCLUDES_PREFIX}")
   if(NOT WIN32 OR NOT MSVC OR MSVC_VERSION LESS 1910)
-    message(FATAL_ERROR "The SDL3 transition build currently requires modern MSVC on Windows x86.")
+    message(FATAL_ERROR "The SDL3 build currently requires modern MSVC on Windows x86.")
   endif()
   set(VC1_TARGET vc1_sdl3)
   set(VC1_OUTPUT_NAME "VirtualCity.SDL3")
@@ -53,14 +66,32 @@ include(cmake/jpgd.cmake)
 include(cmake/libpng.cmake)
 include(cmake/lzma.cmake)
 include(cmake/sqplus.cmake)
-include(cmake/bass.cmake)
-include(cmake/d3d8.cmake)
-include(cmake/platform-win32.cmake)
+if(NOT VC1_USE_SDL3)
+  include(cmake/bass.cmake)
+  include(cmake/d3d8.cmake)
+  include(cmake/platform-win32.cmake)
+endif()
+set(VC1_DISPLAY_SOURCE src/kd/display/display.cpp)
+set(VC1_TEXTURE_SOURCE src/kd/display/texture.cpp)
 if(VC1_USE_SDL3)
   include(cmake/sdl3.cmake)
-  list(REMOVE_ITEM VC1_HOST_SOURCES src/platform/win32/win_main.cpp)
-  list(INSERT VC1_HOST_SOURCES 0 src/platform/sdl3/win_main.cpp)
-  list(APPEND VC1_HOST_SOURCES src/platform/sdl3/gamepad.cpp)
+  include(cmake/sdl3-mixer.cmake)
+  set(VC1_HOST_SOURCES
+    src/platform/sdl3/main.cpp
+    src/platform/sdl3/runtime.cpp
+    src/platform/sdl3/events.cpp
+    src/platform/sdl3/kd_services.cpp
+    src/platform/sdl3/filesystem.cpp
+    src/platform/sdl3/thread.cpp
+    src/platform/sdl3/log.cpp
+    src/platform/sdl3/sqstd_system.cpp
+    src/platform/sdl3/gamepad.cpp
+    src/platform/sdl3/window.cpp
+    src/platform/sdl3/audio.cpp
+    src/platform/sdl3/self_test.cpp
+    src/host/sqstd_math.cpp)
+  set(VC1_DISPLAY_SOURCE src/platform/sdl3/display.cpp)
+  set(VC1_TEXTURE_SOURCE src/platform/sdl3/texture.cpp)
 endif()
 
 add_executable(${VC1_TARGET}
@@ -74,7 +105,7 @@ add_executable(${VC1_TARGET}
   src/kd/iface/iabstract.cpp
   src/kd/factory.cpp
   src/kd/script_instance.cpp
-  src/kd/display/display.cpp
+  ${VC1_DISPLAY_SOURCE}
   src/kd/display/graphics.cpp
   src/kd/display/pyro.cpp
   src/kd/display/effect.cpp
@@ -86,7 +117,7 @@ add_executable(${VC1_TARGET}
   src/pyro/pyro_stream.cpp
   src/pyro/pyro_string.cpp
   src/kd/display/render_target.cpp
-  src/kd/display/texture.cpp
+  ${VC1_TEXTURE_SOURCE}
   src/kd/system/system.cpp
   src/kd/component_group.cpp
   src/kd/sound/sound_driver.cpp
@@ -161,14 +192,25 @@ if(VC1_USE_SDL3)
   # Keep the vendored scanf definitions instead of UCRT's header-inline copies.
   target_compile_definitions(${VC1_TARGET} PRIVATE VC1_USE_SDL3 _NO_CRT_STDIO_INLINE
     sscanf=vc1_klibc_sscanf vsscanf=vc1_klibc_vsscanf)
-  target_link_libraries(${VC1_TARGET} SDL3::SDL3 legacy_stdio_definitions)
+  target_link_libraries(${VC1_TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer legacy_stdio_definitions)
+  get_target_property(VC1_MIXER_TYPE SDL3_mixer::SDL3_mixer TYPE)
+  if(VC1_MIXER_TYPE STREQUAL "SHARED_LIBRARY")
+    add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3_mixer::SDL3_mixer>
+        $<TARGET_FILE_DIR:${VC1_TARGET}>)
+  endif()
+  add_test(NAME sdl3_backend COMMAND ${VC1_TARGET} --backend-test)
+  set_tests_properties(sdl3_backend PROPERTIES TIMEOUT 30 ENVIRONMENT
+    "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy;SDL_RENDER_DRIVER=software")
   add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3>
       $<TARGET_FILE_DIR:${VC1_TARGET}>)
 endif()
 
-target_link_libraries(${VC1_TARGET} user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
-if(EXISTS "${VC1_GAME_BASS_DLL}")
+if(NOT VC1_USE_SDL3)
+  target_link_libraries(${VC1_TARGET} user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
+endif()
+if(NOT VC1_USE_SDL3 AND EXISTS "${VC1_GAME_BASS_DLL}")
   add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_GAME_BASS_DLL}"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/BASS.dll")
@@ -178,7 +220,15 @@ endif()
 # configure time and linked in (local copy only, like BASS.dll).
 set(VC1_ORIGINAL_EXE "${CMAKE_SOURCE_DIR}/Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe")
 set(VC1_PYTHON "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
-if(EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
+if(VC1_USE_SDL3 AND EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
+  execute_process(COMMAND "${VC1_PYTHON}" "${CMAKE_SOURCE_DIR}/tools/extract-sdl-resources.py"
+    "${VC1_ORIGINAL_EXE}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/platform-resources"
+    RESULT_VARIABLE VC1_SDL_RSRC_RESULT)
+  if(NOT VC1_SDL_RSRC_RESULT EQUAL 0)
+    message(FATAL_ERROR "SDL cursor/icon extraction failed")
+  endif()
+endif()
+if(NOT VC1_USE_SDL3 AND EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
   set(VC1_RSRC_RES "${CMAKE_BINARY_DIR}/original-rsrc/original.res")
   execute_process(COMMAND "${VC1_PYTHON}" "${CMAKE_SOURCE_DIR}/tools/extract-rsrc.py"
     "${VC1_ORIGINAL_EXE}" "${VC1_RSRC_RES}" RESULT_VARIABLE VC1_RSRC_RESULT)

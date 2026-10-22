@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 
 namespace vc1 {
-// Transitional window backend: the existing KD window owns the event userptr.
+// The selected KD window backend owns the event userptr.
 // SDL3 input deliberately knows no HWND, WinMM JOYINFOEX, or D3D interfaces.
 namespace {
 SDL_Gamepad* gamepad = 0;
