@@ -10,6 +10,7 @@ static bool s_drawing;
 static KdRenderTargetNode* s_target;
 static KdRenderTargetNode* s_targets;
 static int s_mode[3];
+static SDL_Texture* s_frameTexture;
 
 struct SdlTexture {
     SDL_Texture* texture;
@@ -226,9 +227,25 @@ bool SdlBeginTarget(KdRenderTargetNode* node)
 {
     if(!g_sdlRenderer) return 0;
     FlushBatch(0);
-    SDL_SetRenderTarget(g_sdlRenderer,node ? Native(node->texture)->texture : 0);
+    // Rasterize the complete game frame at its logical resolution. Scaling
+    // individual atlas quads to fractional window pixels exposes tile seams.
+    // Only the completed frame is filtered when the window changes size.
+    if(!node) {
+        if(s_frameTexture && (s_frameTexture->w!=g_displayWidth || s_frameTexture->h!=g_displayHeight)) {
+            SDL_SetRenderTarget(g_sdlRenderer,nullptr);
+            SDL_DestroyTexture(s_frameTexture);s_frameTexture=nullptr;
+        }
+        if(!s_frameTexture) {
+            s_frameTexture=SDL_CreateTexture(g_sdlRenderer,SDL_PIXELFORMAT_ARGB8888,
+                SDL_TEXTUREACCESS_TARGET,g_displayWidth,g_displayHeight);
+            if(!s_frameTexture) return false;
+            SDL_SetTextureBlendMode(s_frameTexture,SDL_BLENDMODE_NONE);
+            SDL_SetTextureScaleMode(s_frameTexture,SDL_SCALEMODE_LINEAR);
+        }
+    }
+    if(!SDL_SetRenderTarget(g_sdlRenderer,node ? Native(node->texture)->texture : s_frameTexture)) return false;
     SDL_SetRenderLogicalPresentation(g_sdlRenderer,node ? node->width : g_displayWidth,
-        node ? node->height : g_displayHeight,node ? SDL_LOGICAL_PRESENTATION_DISABLED : SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        node ? node->height : g_displayHeight,SDL_LOGICAL_PRESENTATION_DISABLED);
     SDL_SetRenderViewport(g_sdlRenderer,0);
     SDL_SetRenderClipRect(g_sdlRenderer,0);
     s_target=node; s_transform=Matrix3::Identity; s_drawing=true;
@@ -238,7 +255,16 @@ static unsigned char DisplayQueryReady(KdRenderTargetNode* node) { return SdlBeg
 void SdlEndFrame()
 {
     FlushBatch(1); s_drawing=false;
-    if(!s_target) SDL_RenderPresent(g_sdlRenderer);
+    if(!s_target) {
+        SDL_SetRenderTarget(g_sdlRenderer,nullptr);
+        SDL_SetRenderLogicalPresentation(g_sdlRenderer,g_displayWidth,g_displayHeight,SDL_LOGICAL_PRESENTATION_LETTERBOX);
+        SDL_SetRenderViewport(g_sdlRenderer,nullptr);
+        SDL_SetRenderClipRect(g_sdlRenderer,nullptr);
+        SDL_SetRenderDrawColor(g_sdlRenderer,0,0,0,255);
+        SDL_RenderClear(g_sdlRenderer);
+        SDL_RenderTexture(g_sdlRenderer,s_frameTexture,nullptr,nullptr);
+        SDL_RenderPresent(g_sdlRenderer);
+    }
 }
 void* IRenderTarget::EndFrame() { static_cast<KdGraphics*>(graphics)->BindScene(); SdlEndFrame(); return 0; }
 void* KdDisplayBase::EndFrame() { return IRenderTarget::EndFrame(); }
@@ -273,6 +299,8 @@ int KdDisplayBase::Shutdown() throw()
     KdInstallCallback(0,0,mixer);
     while(g_d3dChain2) ReleaseTrackedTexture(g_d3dChain2->texture);
     while(s_targets) { KdRenderTargetNode* n=s_targets->next; SdlReleaseTexture(s_targets->texture); free(s_targets); s_targets=n; }
+    SDL_SetRenderTarget(g_sdlRenderer,nullptr);
+    SDL_DestroyTexture(s_frameTexture);s_frameTexture=nullptr;
     s_drawing=false; g_batchCount=0; s_target=0;
     SdlDestroyDisplay(); mixer=0;
     return 0;
