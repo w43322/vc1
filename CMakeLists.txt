@@ -30,6 +30,7 @@ include(cmake/klibc.cmake)
 include(cmake/libtga.cmake)
 include(cmake/jpgd.cmake)
 include(cmake/libpng.cmake)
+include(cmake/lzma.cmake)
 include(cmake/sqplus.cmake)
 include(cmake/bass.cmake)
 include(cmake/d3d8.cmake)
@@ -130,6 +131,7 @@ add_executable(vc1_recompiled
   ${JPGD_SOURCES}
   ${ZLIB_SOURCES}
   ${LIBPNG_SOURCES}
+  ${LZMA457_SOURCES}
   ${SQPLUS_SOURCES})
 target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
