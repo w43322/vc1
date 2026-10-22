@@ -34,6 +34,9 @@ static void KdFileDestroy(KdObject*)
 {
 }
 
+#if defined(VC1_USE_SDL3)
+#include "platform/sdl3/file_mapping_impl.h"
+#else
 // FUNCTION: VC1 0x0047cc90
 static void KdFileUnmap(KdObject*, int handle, void* view)
 {
@@ -66,6 +69,8 @@ static void* KdFileMap(KdObject*, int handle, unsigned* size)
     file->_tmpfname = reinterpret_cast<char*>(mapping);
     return view;
 }
+
+#endif
 
 // FUNCTION: VC1 0x0047cd30
 static __int64 KdFileTell(KdObject*, int handle)
@@ -727,10 +732,16 @@ void InitKdFilesystem()
     g_kdObjectIt0 = g_kdObjects;
     g_kdObjectIt1 = g_kdObjects;
     g_kdObjectIt2 = g_kdObjects;
+#if defined(VC1_USE_SDL3)
+    g_kdPath0 = stdin;
+    g_kdPath1 = stdout;
+    g_kdPath2 = stderr;
+#else
     iob = __iob_func();
     g_kdPath0 = iob;
     g_kdPath1 = iob + 1;
     g_kdPath2 = iob + 2;
+#endif
     dir = DirOpen();
 
     {

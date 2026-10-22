@@ -1,4 +1,6 @@
-#include "host/runtime.h"
+#include "app/script.h"
+#include "host/platform.h"
+#include "memory/fixed_pool.h"
 
 #include "bindings/component.h"
 #include "bindings/rect.h"
@@ -369,26 +371,6 @@ void ScriptFillRectByTile(const KdPtr<IGraphics>& graphics, const Rect& area, in
                     static_cast<SQFloat>(y), 0);
             }
         }
-    }
-}
-
-// Script "setCursor": stores the resource id in the display window state
-// (+0x0c), loads it from the module and makes it the window class cursor.
-// FUNCTION: VC1 0x004bdb20
-void ScriptSetCursor(int cursor)
-{
-    IDisplay* display = static_cast<IDisplay*>(AcquireNamed(&g_kdNameDisplay, &g_iidDisplay));
-    unsigned char* window;
-    HCURSOR handle;
-
-    if (display) {
-        window = static_cast<unsigned char*>(display->GetMixer());
-        *reinterpret_cast<int*>(window + 0x0c) = cursor;
-        handle = LoadCursorA(GetKdWindowClass()->hInstance, MAKEINTRESOURCEA(cursor & 0xffff));
-        SetCursor(handle);
-        SetClassLongA(*reinterpret_cast<HWND*>(window + 0x04), GCL_HCURSOR,
-            reinterpret_cast<LONG>(handle));
-        display->Release();
     }
 }
 

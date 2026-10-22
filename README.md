@@ -124,7 +124,7 @@ The working directory must be `Virtual-City_Win_EN_Full/VirtualCity`. Helpers (P
 
 `decompile-nut.ps1` uses [w43322/NutCracker](https://github.com/w43322/NutCracker) (branch `sq2-vc1`), cloned and built into `build/NutCracker`. Current runtime status and the next blockers are in `AGENTS.md` ("Run the game").
 
-The recorded runtime reaches the main menu, intro comic and Level_01_01, with graphics, particles and BASS music/sound. This is not a full-game validation; transport gameplay still needs runtime exercise. `run-debug.py` leaves the process running on timeout: stop that instance before another run or the game mutex will reject it. Screenshots can be black in fullscreen.
+The recorded runtime reaches the main menu, intro comic and Level_01_01, with graphics, particles and BASS music/sound. This is not a full-game validation; transport gameplay still needs runtime exercise. `run-debug.py` stops the process on timeout unless `--keep` is supplied; close a kept instance before another run or the game mutex will reject it. Screenshots can be black in fullscreen.
 
 ## Included libraries and tools
 
@@ -140,10 +140,43 @@ live in `src/platform/win32/`, selected by `cmake/platform-win32.cmake` in the
 original translation-unit order. `host/runtime.h` is a compatibility umbrella for
 remaining consumers of the Win32 runtime; shared code should use `host/platform.h`.
 
-This prepares the host boundary for an SDL3 backend. It does not add an SDL3 build:
-the display/D3D8, BASS and several engine-side Windows calls still need backend
-separation, and the original x86 pointer/layout assumptions remain. Keep the VC9
-matching target and its `/GL /LTCG` flags while adding future portable targets.
+`host/window.h` exposes opaque KD window creation. Win32 window state, class
+registration, message processing and resource cursors live in
+`src/platform/win32/window.{h,cpp}`; native key/character/pointer translation lives
+in `src/platform/win32/input.cpp`. `app/script.h` declares script initialization
+and bindings without native types, so `app/script.cpp` no longer includes the
+Windows runtime. Both current targets still select the Win32 window/input backend.
+
+An optional SDL3 transition build uses SDL performance counters and gamepad input.
+`host/clock.h` selects the counter implementation at compile time; the VC9 build
+keeps its original QPC calls. SDL gamepad edges enter the existing KD event queue,
+including dpad and disconnect releases. Modern CRT file mappings keep their own
+handles instead of accessing VC9's private `FILE` layout.
+
+Build with modern Visual Studio C++ tools (2017 or newer), Ninja and CMake 3.16+:
+
+```powershell
+.\tools\build-sdl3.cmd
+cd build\sdl3
+ctest --output-on-failure
+```
+
+The script selects x86 and prefers Visual Studio's bundled CMake. `VC1_CMAKE` can
+override it. CMake uses an installed SDL3 3.4.16 SDK or downloads the pinned
+official release into the build tree; set `VC1_SDL3_SOURCE_DIR` to an extracted
+source directory for an offline build. The game output is
+`build/sdl3/bin/VirtualCity.SDL3.exe`. Run from the same game data directory, or use
+`tools/run-debug.py --exe build/sdl3/bin/VirtualCity.SDL3.exe --map build/sdl3/bin/VirtualCity.SDL3.map --timeout 60 --keep`
+from the repository root. Interact manually; `--keep` leaves the window open.
+
+This is still a Windows/x86 build using the existing window, D3D8 renderer and
+BASS audio. Those backends and the remaining native calls need further separation
+before a cross-platform port. The default `tools/build-vc9.cmd` explicitly disables
+SDL3 and preserves `/GL /LTCG` and reccmp; the modern target has separate flags and
+is not used for binary matching. SDL counter and virtual-gamepad integration tests
+pass. Startup reaches the main-menu music; a subsequent manual run loads
+`Level_01_05` and exits with code 0 without logged script errors or fatal exceptions.
+This does not establish full campaign gameplay coverage.
 
 ## Toolchain
 

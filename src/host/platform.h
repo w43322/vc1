@@ -12,7 +12,6 @@ namespace vc1 {
 
 struct TlsBlock;
 struct MutexRef;
-struct KdWindow;
 
 // Inferred name. OpenKODE KDEvent (timestamp, type, userptr, data union) plus
 // G5's queue links. kdCreateEvent (0x004964a0) hands out the 16 static slots

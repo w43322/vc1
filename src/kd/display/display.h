@@ -329,7 +329,7 @@ public:
     void* EndFrame();                       // IRenderTarget vtable+0x10
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20
     int SetWindowed(bool arg);              // IDisplay vtable+0x28
-    int Shutdown();                         // IShutdownable vtable+0x0c
+    int Shutdown() throw();                 // IShutdownable vtable+0x0c
     int FitWindow();                        // IScriptObject vtable+0x18
 };
 

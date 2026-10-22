@@ -21,7 +21,7 @@ if not "%~1"=="" (
 )
 where cl
 where link
-cmake -S "%REPO_ROOT%" -B "%REPO_ROOT%\build\vc9" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake -S "%REPO_ROOT%" -B "%REPO_ROOT%\build\vc9" -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DVC1_USE_SDL3=OFF
 if errorlevel 1 exit /b 1
 cmake --build "%REPO_ROOT%\build\vc9"
 exit /b %ERRORLEVEL%

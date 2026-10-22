@@ -5,7 +5,21 @@ if(POLICY CMP0091)
 endif()
 project(VirtualCityDecomp VERSION 0.1.0 LANGUAGES C CXX)
 
-if(NOT MSVC OR NOT MSVC_VERSION EQUAL 1500)
+option(VC1_USE_SDL3 "Build the staged SDL3 game (Windows x86, modern MSVC)" OFF)
+if(VC1_USE_SDL3)
+  if(NOT WIN32 OR NOT MSVC OR MSVC_VERSION LESS 1910)
+    message(FATAL_ERROR "The SDL3 transition build currently requires modern MSVC on Windows x86.")
+  endif()
+  set(VC1_TARGET vc1_sdl3)
+  set(VC1_OUTPUT_NAME "VirtualCity.SDL3")
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+else()
+  set(VC1_TARGET vc1_recompiled)
+  set(VC1_OUTPUT_NAME "VirtualCity.Unwrapped")
+endif()
+
+if(NOT VC1_USE_SDL3 AND (NOT MSVC OR NOT MSVC_VERSION EQUAL 1500))
   message(FATAL_ERROR "Reference builds require VC9 / MSVC 1500. Use tools/build-vc9.cmd.")
 endif()
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -24,6 +38,13 @@ set(CMAKE_CXX_FLAGS "/nologo /W3 /MT /GS- /GR-")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG /GL")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:NOREF /OPT:NOICF /SAFESEH:NO /LTCG")
+if(VC1_USE_SDL3)
+  # Portable branch only: do not change the reference VC9 flags above.
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG")
+  set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG")
+  set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF")
+endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(cmake/squirrel223.cmake)
 include(cmake/klibc.cmake)
@@ -35,8 +56,14 @@ include(cmake/sqplus.cmake)
 include(cmake/bass.cmake)
 include(cmake/d3d8.cmake)
 include(cmake/platform-win32.cmake)
+if(VC1_USE_SDL3)
+  include(cmake/sdl3.cmake)
+  list(REMOVE_ITEM VC1_HOST_SOURCES src/platform/win32/win_main.cpp)
+  list(INSERT VC1_HOST_SOURCES 0 src/platform/sdl3/win_main.cpp)
+  list(APPEND VC1_HOST_SOURCES src/platform/sdl3/gamepad.cpp)
+endif()
 
-add_executable(vc1_recompiled
+add_executable(${VC1_TARGET}
   ${VC1_HOST_SOURCES}
   src/app/script.cpp
   src/app/host_services.cpp
@@ -125,14 +152,24 @@ add_executable(vc1_recompiled
   ${LIBPNG_SOURCES}
   ${LZMA457_SOURCES}
   ${SQPLUS_SOURCES})
-target_include_directories(vc1_recompiled PRIVATE src third_party/squirrel223/include
+target_include_directories(${VC1_TARGET} PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
   ${SQPLUS_INCLUDE_DIRS})
-target_compile_definitions(vc1_recompiled PRIVATE _CRT_SECURE_NO_WARNINGS)
-set_target_properties(vc1_recompiled PROPERTIES OUTPUT_NAME "VirtualCity.Unwrapped")
-target_link_libraries(vc1_recompiled user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
+target_compile_definitions(${VC1_TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS)
+set_target_properties(${VC1_TARGET} PROPERTIES OUTPUT_NAME "${VC1_OUTPUT_NAME}")
+if(VC1_USE_SDL3)
+  # Keep the vendored scanf definitions instead of UCRT's header-inline copies.
+  target_compile_definitions(${VC1_TARGET} PRIVATE VC1_USE_SDL3 _NO_CRT_STDIO_INLINE
+    sscanf=vc1_klibc_sscanf vsscanf=vc1_klibc_vsscanf)
+  target_link_libraries(${VC1_TARGET} SDL3::SDL3 legacy_stdio_definitions)
+  add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3>
+      $<TARGET_FILE_DIR:${VC1_TARGET}>)
+endif()
+
+target_link_libraries(${VC1_TARGET} user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
 if(EXISTS "${VC1_GAME_BASS_DLL}")
-  add_custom_command(TARGET vc1_recompiled POST_BUILD
+  add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_GAME_BASS_DLL}"
       "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/BASS.dll")
 endif()
@@ -146,15 +183,17 @@ if(EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
   execute_process(COMMAND "${VC1_PYTHON}" "${CMAKE_SOURCE_DIR}/tools/extract-rsrc.py"
     "${VC1_ORIGINAL_EXE}" "${VC1_RSRC_RES}" RESULT_VARIABLE VC1_RSRC_RESULT)
   if(VC1_RSRC_RESULT EQUAL 0)
-    target_link_options(vc1_recompiled PRIVATE "${VC1_RSRC_RES}")
+    target_link_options(${VC1_TARGET} PRIVATE "${VC1_RSRC_RES}")
   endif()
 endif()
-target_link_options(vc1_recompiled PRIVATE
+target_link_options(${VC1_TARGET} PRIVATE
   "/SUBSYSTEM:WINDOWS"
-  "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/VirtualCity.Unwrapped.map")
-configure_file(cmake/reccmp-build.yml.in "${CMAKE_BINARY_DIR}/reccmp-build.yml" @ONLY)
-# Full reccmp pass: decomplint, asmcmp (json/html/svg), round-to-round aggregate,
-# datacmp, vtable, and roadmap. Stack layout is tools/stackcmp-reccmp.ps1 <offset>.
-add_custom_target(compare
-  COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${CMAKE_SOURCE_DIR}/tools/compare-reccmp.ps1"
-  DEPENDS vc1_recompiled USES_TERMINAL)
+  "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${VC1_OUTPUT_NAME}.map")
+if(NOT VC1_USE_SDL3)
+  configure_file(cmake/reccmp-build.yml.in "${CMAKE_BINARY_DIR}/reccmp-build.yml" @ONLY)
+  # Full reccmp pass: decomplint, asmcmp (json/html/svg), round-to-round aggregate,
+  # datacmp, vtable, and roadmap. Stack layout is tools/stackcmp-reccmp.ps1 <offset>.
+  add_custom_target(compare
+    COMMAND powershell -NoProfile -ExecutionPolicy Bypass -File "${CMAKE_SOURCE_DIR}/tools/compare-reccmp.ps1"
+    DEPENDS ${VC1_TARGET} USES_TERMINAL)
+endif()

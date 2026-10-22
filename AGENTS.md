@@ -88,7 +88,20 @@ Shared host consumers use `src/host/platform.h`, which must not include Win32 or
 renderer headers. Win32 host implementations/state live in `src/platform/win32/`;
 `cmake/platform-win32.cmake` preserves the matching translation-unit order.
 `host/runtime.h` remains a compatibility umbrella; do not add native types to the
-shared contract. SDL3 integration is future work; x86 ABI/layout checks remain.
+shared contract. `host/clock.h` selects inline QPC or SDL performance counters.
+`host/window.h` exposes opaque KD window creation; native window records and
+messages stay in `platform/win32/window.h`. Window/class/cursor implementations
+are in `platform/win32/window.cpp`, native event translation in `input.cpp`.
+`app/script.h` is the native-free script binding contract. Both current targets
+still use these Win32 window/input implementations; moving them does not imply
+that SDL owns the window or keyboard/mouse events.
+The optional `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86) uses
+SDL3 for timing/gamepads while retaining the Windows window, D3D8 and BASS. It is
+a transition build, not a completed cross-platform port. Its new implementations
+have no original mapping markers; preserve the VC9 path and `/GL /LTCG`. Modern
+CRT adaptations are conditional and must not alter the matching build. SDL
+dependencies/build output stay under `build/`; tests use a virtual gamepad and
+no game assets. Run CTest from `build/sdl3`. x86 ABI/layout checks remain.
 For mechanical backend moves, preserve recovered bodies and markers, build and
 compare every mapped entity against the pre-refactor baseline. Matching scores
 alone are not a runtime test; also exercise startup after changing dependencies.
@@ -178,7 +191,7 @@ Follow the original call graph from `WinMain` (`0x00486b00`) and from existing `
 
 The current goal beyond per-function matching is a recompiled exe that runs: first a window that renders the loading screen, then the game. Run it from the game data directory `Virtual-City_Win_EN_Full/VirtualCity` (scripts and `res/` are relative to it; the original exe and `bass.dll` sit one level up).
 
-- `.venv/Scripts/python.exe tools/run-debug.py --timeout 20 [--nolog] [--bp HEX ...]`: Win32 debugger over the recompiled exe. Prints `KdLog`/script errors, and on a fatal exception the registers, code bytes and a symbolized stack scan (symbols from `build/vc9/bin/VirtualCity.Unwrapped.map`). `--bp` takes **recompiled** VAs (look them up in the `.map`); each hit prints regs + stack. `--bp-args N` switches to one compact line per hit: the first four raw stack arguments plus N dwords dumped at stack argument `--bp-arg-index K` (or at a register with `--bp-reg ecx`), `--bp-floats` prints them as floats. Diffing such dumps between the original and the recompiled exe (same `--click`, same timeout) is the fastest way to find which stage of a pipeline diverges. Output redirected with PowerShell `>` is UTF-16. `run-debug` leaves the game running at timeout and a leftover instance holds the `VirtualCity` mutex (new runs exit with code 1), so kill it after every run: `Get-CimInstance Win32_Process | Where-Object { $_.Name -like "VirtualCity*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }`. `--click FX,FY@T` moves the real cursor and clicks at client fractions after T seconds (the WM_TIMER handler re-reads `GetCursorPos`, so posted messages do not work); `--click 0.84,0.53@14` presses PLAY GAME. `--exe Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe --map <one-line map naming KdLog at 0x00496a40>` traces the original for comparison. Blank `<empty fmt ... %s%s\n>` lines are empty prints.
+- `.venv/Scripts/python.exe tools/run-debug.py --timeout 20 [--nolog] [--bp HEX ...]`: Win32 debugger over the recompiled exe. Prints `KdLog`/script errors, and on a fatal exception the registers, code bytes and a symbolized stack scan (symbols from `build/vc9/bin/VirtualCity.Unwrapped.map`). `--bp` takes **recompiled** VAs (look them up in the `.map`); each hit prints regs + stack. `--bp-args N` switches to one compact line per hit: the first four raw stack arguments plus N dwords dumped at stack argument `--bp-arg-index K` (or at a register with `--bp-reg ecx`), `--bp-floats` prints them as floats. Diffing such dumps between the original and the recompiled exe (same `--click`, same timeout) is the fastest way to find which stage of a pipeline diverges. Output redirected with PowerShell `>` is UTF-16. `run-debug` stops the process at timeout by default; `--keep` leaves it running. Close a kept instance before the next run because it holds the `VirtualCity` mutex (new runs exit with code 1). For interactive validation, let the user click; do not automate clicks unless explicitly requested. `--click FX,FY@T` moves the real cursor and clicks at client fractions after T seconds (the WM_TIMER handler re-reads `GetCursorPos`, so posted messages do not work); `--click 0.84,0.53@14` presses PLAY GAME. `--exe Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe --map <one-line map naming KdLog at 0x00496a40>` traces the original for comparison. Blank `<empty fmt ... %s%s\n>` lines are empty prints.
 - `.venv/Scripts/python.exe tools/run-screenshot.py [out.png] [seconds] [exe]`: run for N seconds, screenshot, kill. Pass `Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe` as `exe` to capture the original for comparison (at 8 s it shows the "Loading... Please wait" screen).
 - Loop: run, read the first error or crash, find the responsible function in the original (Ghidra), recover it (usually a `STUB` or an unrecovered factory), rebuild, rerun. Each fix is still a normal recovered function with markers and a reccmp diff.
 
@@ -191,6 +204,8 @@ The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-
 ### Runtime status (update when it changes)
 
 This section records prior runtime observations, not full-game validation. Later library/template mappings alone do not establish new gameplay coverage.
+
+- SDL3 transition build: modern MSVC x86 build and virtual-gamepad/counter CTest pass. A manual run loads `Level_01_05`, logs no script errors or fatal exceptions and exits with code 0. Window/render/audio remain Win32/D3D8/BASS; this is not full campaign validation. Default VC9 reccmp scores for all 4698 mapped entities remain unchanged after the split.
 
 - Recent source/build changes: `src/platform/win32/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 now uses a generated import library (`cmake/d3d8.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
 - Works: CRT/WinMain, script VM and natives, `Main.nut` `initApp`, window class + `KdWindowProc`, D3D8 device, main loop with Begin/EndScene/Present per frame, System/UpdateGroup/RenderGroup/InputGroup, Display script methods, System `GetMember` (RegisterObject/GetObject/RenderFrame/...), CompoundObject, ScriptedObject (`src/kd/scene/scripted_object.cpp`), `KdScriptInstance` (`src/kd/script_instance.cpp`), SquirrelVM `BeginCall`/`PushParam`/`EndCall`. `Game.nut` loads as a ScriptedObject; its `Update`/`Render`/`OnKeyPressed` run every frame (SplashScene).

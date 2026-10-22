@@ -1,3 +1,4 @@
+#include "host/clock.h"
 #include "kd/system/system.h"
 
 #include "kd/factory.h"
@@ -12,7 +13,7 @@
 #include "bindings/squirrel_object.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
-#include "platform/win32/runtime.h"
+#include "host/platform.h"
 #include "memory/fixed_pool.h"
 
 #include <new>
@@ -39,9 +40,9 @@ static void ReserveRecordTable(void* factory, unsigned newCount);
 // QPC in nanoseconds; inlined at every use (fild, fmul g_nsPerTick, _ftol2).
 static __int64 SystemNow()
 {
-    LARGE_INTEGER qpc;
+    PlatformClockSample qpc;
 
-    QueryPerformanceCounter(&qpc);
+    PlatformReadCounter(&qpc);
     return static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick);
 }
 

@@ -5,6 +5,8 @@
 #include <stdarg.h>
 
 #include "host/platform.h"
+#include "platform/win32/window.h"
+#include "app/script.h"
 
 #include "bindings/squirrel_object.h"
 #include "memory/fixed_pool.h"
@@ -30,31 +32,6 @@ struct SocketNode
     SocketNode* prev;   // +0x08
     SocketNode* next;   // +0x0c
 };
-
-// Inferred name. kdCreateWindow block (0x004961b0), the window's GWL_USERDATA.
-// SIZE 0x18
-struct KdWindow
-{
-    void* userptr;       // +0x00 event userptr; the block itself
-    HWND hwnd;           // +0x04
-    LPARAM lastPointer;  // +0x08 last WM_MOUSEMOVE/timer position
-    unsigned pad0c;      // +0x0c
-    int width;           // +0x10 client size for WM_GETMINMAXINFO
-    int height;          // +0x14
-};
-
-// Inferred name. The window procedure's input message for TranslateInput:
-// kind 0 key down, 1 key up, 2 char, 3 button down, 4 button up, 5 move,
-// 6 wheel.
-struct KdWinInput
-{
-    int kind;
-    WPARAM wparam;
-    LPARAM lparam;
-};
-
-void TranslateInput(const KdWindow* window, const KdWinInput* input, KdEvent* event);
-void DropPointerMoves(const KdEvent* event);
 
 struct Mutex
 {
@@ -94,12 +71,10 @@ extern SocketNode* g_socketHead;  // 0x004ed510
 extern SocketNode* g_socketCursor; // 0x004ed50c
 extern HWND g_kdNetworkWindow;    // 0x004ed514
 extern WNDCLASSA g_kdNetworkClass; // 0x004e89d8; hInstance at +0x10 is 0x004e89e8
-WNDCLASSA* GetKdWindowClass(); // 0x00496020, registers the display class once
 
 extern double g_nsPerTick;        // 0x004f0a20, 1e9 / QPC frequency
 extern KdEvent* g_heapHead;       // 0x004ed448
 extern KdEvent* g_heapTail;       // 0x004ed44c
-extern void* g_kdWindowMixer;     // 0x004ed450, the KD window (userptr first)
 extern KdEvent* g_bumpCursor;     // 0x004ed144, last event kdWaitEvent returned
 extern unsigned char g_bumpArena[0x300]; // 0x004ed148..0x004ed447
 extern KdCallback* g_kdCallbacks; // 0x004e95c8
@@ -236,8 +211,6 @@ void FreeBumpHeaps();
 KdEvent* PopTimedEvent();
 // 0x00496950; original name in ESI
 const char* GetKdEnv(const char* name);
-extern const char kKdParentWindow[]; // "KD_PARENT_WINDOW", display.cpp
-extern const char kKdWindowClass[];  // "G5__OpenKODE", display.cpp
 extern const char kPercentS[]; // "%s", display.cpp
 // 0x004969c0; original EDX=cap, stack buf/fmt/varargs; ECX unused leftover
 int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
