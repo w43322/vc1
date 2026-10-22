@@ -1,4 +1,5 @@
 #include "kd/display/texture.h"
+#include "platform/win32/native.h"
 #include "kd/display/display.h"
 
 #include "bindings/sqplus.h"

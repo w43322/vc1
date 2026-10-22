@@ -2,7 +2,7 @@
 #define VC1_BINDINGS_SQPLUS_H
 
 #include "bindings/squirrel_object.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 #include "kd/factory.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/iscript_object.h"

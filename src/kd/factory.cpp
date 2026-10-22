@@ -3,7 +3,7 @@
 #include "bindings/squirrel_object.h"
 
 #include "kd/iface/iunknown.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 
 #include <new>
 #include <stdlib.h>

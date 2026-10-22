@@ -10,7 +10,7 @@ Do not spawn sub-agents. Do not upload game assets. Do not commit Ghidra databas
 
 1. `git status --short`. Keep other people's and the user's uncommitted files. Do not reset or clean the tree.
 2. Confirm the original binary hash matches README. Every Ghidra read must name program `VirtualCity.Unwrapped.exe`.
-3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and `third_party/squirrel223`, and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/host/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
+3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and `third_party/squirrel223`, and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/platform/win32/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
 
 For documentation/tool maintenance without recovery or mapping changes, inspect the tracked files and their callers; the recovery round below is not required. Leave untracked and ignored files untouched unless explicitly requested. Do not delete a standalone diagnostic merely because no build script calls it. Initial Ghidra analysis uses `tools/init-ghidra.ps1`; recovered names and types use `tools/import-ghidra.ps1`, with no hardcoded annotation replay.
 
@@ -81,6 +81,17 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
 // FUNCTION: VC1 0x0047eaa0
 // ?AddInstruction@SQFuncState@@QAEXAAUSQInstruction@@@Z
 ```
+
+## Platform separation
+
+Shared host consumers use `src/host/platform.h`, which must not include Win32 or
+renderer headers. Win32 host implementations/state live in `src/platform/win32/`;
+`cmake/platform-win32.cmake` preserves the matching translation-unit order.
+`host/runtime.h` remains a compatibility umbrella; do not add native types to the
+shared contract. SDL3 integration is future work; x86 ABI/layout checks remain.
+For mechanical backend moves, preserve recovered bodies and markers, build and
+compare every mapped entity against the pre-refactor baseline. Matching scores
+alone are not a runtime test; also exercise startup after changing dependencies.
 
 ## Write source
 
@@ -181,7 +192,7 @@ The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-
 
 This section records prior runtime observations, not full-game validation. Later library/template mappings alone do not establish new gameplay coverage.
 
-- Recent source/build changes: `src/host/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 now uses a generated import library (`cmake/d3d8.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
+- Recent source/build changes: `src/platform/win32/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 now uses a generated import library (`cmake/d3d8.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
 - Works: CRT/WinMain, script VM and natives, `Main.nut` `initApp`, window class + `KdWindowProc`, D3D8 device, main loop with Begin/EndScene/Present per frame, System/UpdateGroup/RenderGroup/InputGroup, Display script methods, System `GetMember` (RegisterObject/GetObject/RenderFrame/...), CompoundObject, ScriptedObject (`src/kd/scene/scripted_object.cpp`), `KdScriptInstance` (`src/kd/script_instance.cpp`), SquirrelVM `BeginCall`/`PushParam`/`EndCall`. `Game.nut` loads as a ScriptedObject; its `Update`/`Render`/`OnKeyPressed` run every frame (SplashScene).
 - The main menu renders (background, zeppelin scene, menu buttons and font text). Recovered for that: graphics `GetMember` (`0x0045dc20`), TGA (`libtga`) and PVR (`LoadPvrTexture` `0x00465990`, 32-bit only) textures, TileManager (`src/kd/tile/tile_manager.cpp`: engine `KdTileManager` + game `VcTileManager`, factory `0x004a1aa0`, tile command interpreter in `Render`), D3D8 COM calls through `D3dRelease` / stdcall typedefs. The game starts fullscreen like the original (`run-screenshot.py` captures black in fullscreen; it works if the window is not minimized in windowed mode). Menu clicks work; PLAY GAME starts the intro comic (`scripts/comics/*`) and its JPEG backgrounds load (`LoadJpgTexture` `0x00465f10`). The comic runs to the end of the run without script errors.
 - Pyro effects: `.pyro` files load (`[Effect] Loaded ... (emitters: n)`). The statically linked Fenomen Pyro library (proprietary, do not vendor its SDK) is recovered under `src/pyro/` (archive strings, stream adapter, file/header/resource/shape/frame readers, emitter and layer deserializers). The game side is in `src/kd/display/effect.*`: `KdEffect` (CreateEffect), `KdPyroStream` and `KdEffectEmitter` (the scene object that `CreateEmitter` returns). Particles render: the intro comic's car smoke and emergency signal (about 45 s with `--click 0.84,0.53@14`) match the original apart from noise. Pipeline: `PyroLayer::Update`/`Prepare` (simulation), `Render` `0x00452140` → `BuildQuad` `0x004513d0` → `PyroVertexBuffer::Upload` → `KdDisplayDevice::DrawQuads`/`DrawQuadBuffer` → `KdGraphics::DrawQuads` `0x0045c910` → `BeginQuadBatch` `0x00464530`; textures come from `CreateImage`/`CreateImageTexture` (a `KdTexture` locked to the image size). Turbulence is `PyroNoise` `0x0044d5c0` (`src/pyro/pyro_random.cpp`). Still a stub: `PyroLibrary::LoadFromPath` `0x004566b0` (filename loader, no callers).

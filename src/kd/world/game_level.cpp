@@ -8,7 +8,7 @@
 #include "kd/iface/ipositionable.h"
 #include "kd/iface/itile_object.h"
 #include "kd/group/ptr_set.h"
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 #include "bindings/component.h"
 #include "bindings/matrix3.h"
 #include "bindings/sqplus.h"

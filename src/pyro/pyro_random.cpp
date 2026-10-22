@@ -1,6 +1,6 @@
 #include "pyro/pyro_random.h"
 
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 
 #include <math.h>
 #include <stdlib.h>

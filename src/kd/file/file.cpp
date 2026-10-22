@@ -2,7 +2,7 @@
 
 #include "kd/factory.h"
 #include "kd/iface/iid.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 #include "bindings/sqplus.h"
 
 #include <errno.h>

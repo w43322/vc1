@@ -8,7 +8,7 @@
 #include "kd/iface/ishutdownable.h"
 #include "kd/iface/isound_driver.h"
 #include "kd/iface/isystem.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
 

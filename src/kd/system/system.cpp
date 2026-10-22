@@ -12,7 +12,7 @@
 #include "bindings/squirrel_object.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 #include "memory/fixed_pool.h"
 
 #include <new>

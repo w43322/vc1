@@ -5,7 +5,7 @@
 // performance counter in whole seconds, remove and rename translate
 // "data/..." paths. Changes are marked VC1; every function keeps its name
 // comment in sqstdsystem.h.
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 
 #include <shellapi.h>
 #include <squirrel.h>

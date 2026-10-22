@@ -34,18 +34,10 @@ include(cmake/lzma.cmake)
 include(cmake/sqplus.cmake)
 include(cmake/bass.cmake)
 include(cmake/d3d8.cmake)
+include(cmake/platform-win32.cmake)
 
 add_executable(vc1_recompiled
-  src/host/win_main.cpp
-  src/host/runtime.cpp
-  src/host/crash.cpp
-  src/host/thread.cpp
-  src/host/network.cpp
-  src/host/sqstd_math.cpp
-  src/host/sqstd_system.cpp
-  src/host/startup.cpp
-  src/host/heap.cpp
-  src/host/kd_log.cpp
+  ${VC1_HOST_SOURCES}
   src/app/script.cpp
   src/app/host_services.cpp
   src/app/host_api.cpp

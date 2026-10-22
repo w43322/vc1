@@ -5,7 +5,7 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/itexture.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 #include "kd/iface/iresource_manager.h"
 #include "kd/stream/file_reader.h"
 

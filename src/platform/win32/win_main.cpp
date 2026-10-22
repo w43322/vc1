@@ -1,4 +1,4 @@
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 
 namespace vc1 {
 // GLOBAL: VC1 0x004d0c48

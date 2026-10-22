@@ -3,7 +3,7 @@
 #include "kd/iface/ifunctional_group.h"
 #include "kd/iface/iid.h"
 #include "kd/group/ptr_set.h"
-#include "host/runtime.h"
+#include "host/platform.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
 

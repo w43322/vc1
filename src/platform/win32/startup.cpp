@@ -1,4 +1,4 @@
-#include "host/runtime.h"
+#include "platform/win32/runtime.h"
 #include "kd/stream/file_reader.h"
 
 #include <direct.h>

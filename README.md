@@ -10,7 +10,7 @@ Original binary (keep it next to the repo, not in Git):
 
 SHA-256: `bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695`
 
-Game entry is stdcall `WinMain` at `0x00486b00` (`src/host/win_main.cpp`). The PE entry is stock VC9 `WinMainCRTStartup`. Subsystem is WINDOWS.
+Game entry is stdcall `WinMain` at `0x00486b00` (`src/platform/win32/win_main.cpp`). The PE entry is stock VC9 `WinMainCRTStartup`. Subsystem is WINDOWS.
 
 Every recovered function needs Ghidra evidence from that original and a reccmp asm diff of the recompiled bytes. Put evidence in source comments.
 
@@ -131,6 +131,19 @@ The recorded runtime reaches the main menu, intro comic and Level_01_01, with gr
 The build includes Squirrel 2.2.3, SqPlus, klibc's scanf family, libtga, jpgd 0.93b, libpng 1.0.2, zlib 1.1.3 inflate and the LZMA SDK 4.57 C decoder subset (7z/LZMA/BCJ/BCJ2). Integration and compile options live in `cmake/`. The LZMA library is built for comparison; the host `bar` driver is still a stub. BASS and D3D8 use generated import libraries; the original resources and BASS DLL are copied locally into the build, not committed.
 
 Keep the build/compare, Ghidra setup/import and runtime helpers in `tools/`. `disasm-orig.py` provides supplementary raw assembly/data views; `crt-ident.py` finds candidate CRT symbols by byte patterns and still requires Ghidra evidence and reccmp verification. `extract-rsrc.py` is called by CMake, and `report-progress.py` by the compare script.
+
+## Platform boundary
+
+`src/host/platform.h` declares the shared KD services and event/file types without
+including Windows headers. The matching host implementation and its native state
+live in `src/platform/win32/`, selected by `cmake/platform-win32.cmake` in the
+original translation-unit order. `host/runtime.h` is a compatibility umbrella for
+remaining consumers of the Win32 runtime; shared code should use `host/platform.h`.
+
+This prepares the host boundary for an SDL3 backend. It does not add an SDL3 build:
+the display/D3D8, BASS and several engine-side Windows calls still need backend
+separation, and the original x86 pointer/layout assumptions remain. Keep the VC9
+matching target and its `/GL /LTCG` flags while adding future portable targets.
 
 ## Toolchain
 
