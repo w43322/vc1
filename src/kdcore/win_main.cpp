@@ -33,9 +33,9 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR cmdLine, in
         vc1::ShutdownNetwork();
         vc1::FreeBumpHeaps();
         vc1::DestroyKdObjects();
-        vc1::DestroyTlsBlock(vc1::g_tlsPrimary);
-        vc1::DestroyTlsBlock(vc1::g_tlsSecondary);
-        vc1::ShutdownApcAndLibraries();
+        pthread_key_delete(vc1::g_kdUserKey);
+        pthread_key_delete(vc1::g_kdThreadKey);
+        pthread_win32_process_detach_np();
         return result;
     }
 }

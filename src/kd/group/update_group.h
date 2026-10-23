@@ -55,4 +55,7 @@ void** CreateKdUpdateGroup(void** out);
 
 }
 
+// SYNTHETIC: VC1 0x00416bf0
+// vc1::KdUpdateGroup::`scalar deleting destructor'
+
 #endif

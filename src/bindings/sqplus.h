@@ -1508,4 +1508,7 @@ inline BOOL SquirrelObject::ArrayAppend(T item)
 // TEMPLATE: VC1 0x0040e2c0
 // ??0?$KdArray@PAUProfilerBlock@vc1@@@vc1@@QAE@ABU01@@Z
 
+// TEMPLATE: VC1 0x0041a890
+// ??$Call@VKdDisplayBase@vc1@@II@?$ReturnSpecialization@V?$KdPtr@UIRenderTarget@vc1@@@vc1@@@SqPlus@@SAHAAVKdDisplayBase@vc1@@P823@AE?AV?$KdPtr@UIRenderTarget@vc1@@@3@II@ZPAUSQVM@@H@Z
+
 #endif

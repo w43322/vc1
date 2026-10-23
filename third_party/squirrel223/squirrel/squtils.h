@@ -107,6 +107,8 @@ private:
 // ??1?$sqvector@USQObjectPtr@@@@QAE@XZ
 // TEMPLATE: VC1 0x0040e0c0
 // ?remove@?$sqvector@USQObjectPtr@@@@QAEXI@Z
+// TEMPLATE: VC1 0x0040eb90
+// ??1?$sqvector@UCallInfo@SQVM@@@@QAE@XZ
 // TEMPLATE: VC1 0x0040ed20
 // ?push_back@?$sqvector@USQExceptionTrap@@@@QAEAAUSQExceptionTrap@@ABU2@@Z
 // TEMPLATE: VC1 0x0040fc20

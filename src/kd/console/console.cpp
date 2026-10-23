@@ -380,14 +380,14 @@ void KdConsole::OnSpecialKey(unsigned key)
 // FUNCTION: VC1 0x0046b060
 void KdConsole::Enqueue(const KdString& line)
 {
-    MutexRef* const lock = mutex;
+    pthread_mutex_t* const lock = mutex;
 
     if (lock) {
-        MutexLock(lock);
+        pthread_mutex_lock(lock);
     }
     pending.Push(line);
     if (lock) {
-        MutexUnlock(lock);
+        pthread_mutex_unlock(lock);
     }
 }
 
@@ -433,7 +433,7 @@ unsigned KdConsole::Write(const void* buffer, unsigned size)
 // cdecl console. Inferred name. The stdin reader thread: one byte at a time
 // from the stdin driver while the console exists; every line is queued.
 // FUNCTION: VC1 0x0046b300
-static unsigned ReadStdin(void* arg)
+static void* ReadStdin(void* arg)
 {
     KdString line;
 
@@ -444,13 +444,13 @@ static unsigned ReadStdin(void* arg)
         }
         if (c == '\n' || c == '\r') {
             KdConsole* const console = static_cast<KdConsole*>(arg);
-            MutexRef* const lock = console->mutex;
+            pthread_mutex_t* const lock = console->mutex;
             if (lock) {
-                MutexLock(lock);
+                pthread_mutex_lock(lock);
             }
             console->pending.Push(line);
             if (lock) {
-                MutexUnlock(lock);
+                pthread_mutex_unlock(lock);
             }
             line.Reset();
         }
@@ -467,13 +467,13 @@ KdConsole::~KdConsole() throw()
 {
     g_kdConsolePrint = 0;
     if (thread) {
-        if (JoinPthread(thread->handle.thread, thread->handle.reuse) == 0) {
+        if (pthread_join(thread->handle, 0) == 0) {
             free(thread);
         }
         thread = 0;
     }
     if (mutex) {
-        if (MutexDestroy(mutex) == 0) {
+        if (pthread_mutex_destroy(mutex) == 0) {
             free(mutex);
         }
         mutex = 0;
@@ -657,39 +657,19 @@ KdConsole::KdConsole() throw()
         return;
     }
 
-    MutexRef* lock = static_cast<MutexRef*>(malloc(sizeof(MutexRef)));
-    int status = 0;
-    if (lock) {
-        Mutex* created = static_cast<Mutex*>(calloc(1, sizeof(Mutex)));
-        if (!created) {
-            status = kKdEnomem;
-        }
-        else {
-            created->state = 0;
-            created->recursion = 0;
-            created->kind = 0;
-            created->ownerLo = 0;
-            created->event = CreateEventA(0, FALSE, FALSE, 0);
-            if (!created->event) {
-                status = 0x1c;
-                free(created);
-                created = 0;
-            }
-        }
-        lock->mutex = created;
-    }
-    if (!lock || status != 0) {
+    pthread_mutex_t* lock = static_cast<pthread_mutex_t*>(malloc(sizeof(pthread_mutex_t)));
+    if (!lock || pthread_mutex_init(lock, 0) != 0) {
         free(lock);
         lock = 0;
     }
     mutex = lock;
 
-    ConsoleThread* const reader = static_cast<ConsoleThread*>(malloc(sizeof(ConsoleThread)));
-    ConsoleThread* started = reader;
-    reader->result = 0;
+    KdThread* const reader = static_cast<KdThread*>(malloc(sizeof(KdThread)));
+    KdThread* started = reader;
+    reader->autoFree = 0;
     reader->arg = this;
     reader->proc = ReadStdin;
-    if (CreatePthread(&reader->handle, reader) != 0) {
+    if (pthread_create(&reader->handle, 0, KdThreadStart, reader) != 0) {
         free(reader);
         started = 0;
     }
@@ -746,10 +726,10 @@ int KdConsole::Render(void* graphics)
     KdPtr<IGraphics>& g = *static_cast<KdPtr<IGraphics>*>(graphics);
     float share = height;
     bool shown = true;
-    MutexRef* const lock = mutex;
+    pthread_mutex_t* const lock = mutex;
 
     if (lock) {
-        MutexLock(lock);
+        pthread_mutex_lock(lock);
     }
     while ((pending.list.items.size >> 4) != pending.done) {
         Execute(reinterpret_cast<KdString*>(pending.list.items.begin)[pending.done]);
@@ -760,7 +740,7 @@ int KdConsole::Render(void* graphics)
         }
     }
     if (lock) {
-        MutexUnlock(lock);
+        pthread_mutex_unlock(lock);
     }
 
     if (!open) {

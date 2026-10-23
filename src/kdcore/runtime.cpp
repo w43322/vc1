@@ -4,42 +4,12 @@
 
 namespace vc1 {
 
+// The two KD thread keys (pthread_key_create in AllocPrimaryTls). The
+// pthreads-win32 globals around them are listed in config/verified.csv.
 // GLOBAL: VC1 0x004ed530
-TlsBlock* g_tlsPrimary;
+pthread_key_t g_kdUserKey;
 // GLOBAL: VC1 0x004ed534
-TlsBlock* g_tlsSecondary;
-// GLOBAL: VC1 0x004ed51c
-TlsBlock* g_tlsSlot0;
-// GLOBAL: VC1 0x004ed520
-TlsBlock* g_tlsSlot1;
-// GLOBAL: VC1 0x004ed518
-unsigned g_threadingReady;
-// GLOBAL: VC1 0x004ed524
-unsigned g_cpuFlags;
-// GLOBAL: VC1 0x004e89bc
-unsigned g_multiCpu;
-// GLOBAL: VC1 0x004eb0e8
-HMODULE g_quserex;
-// GLOBAL: VC1 0x004eb0ec
-HMODULE g_kernel32Sync;
-// GLOBAL: VC1 0x004ed528
-FARPROC g_interlockedCompareExchange;
-// GLOBAL: VC1 0x004ed52c
-FARPROC g_queueUserApcEx;
-// GLOBAL: VC1 0x004ef9c0
-CRITICAL_SECTION g_csList;
-// GLOBAL: VC1 0x004efa00
-CRITICAL_SECTION g_csMutex;
-// GLOBAL: VC1 0x004ef980
-CRITICAL_SECTION g_csPad0;
-// GLOBAL: VC1 0x004ef9e0
-CRITICAL_SECTION g_csPad1;
-// GLOBAL: VC1 0x004ef9a0
-CRITICAL_SECTION g_csPad2;
-// GLOBAL: VC1 0x004ef960
-CRITICAL_SECTION g_csPad3;
-// GLOBAL: VC1 0x004e89b4
-void* g_threadNodeSentinel = reinterpret_cast<void*>(1);
+pthread_key_t g_kdThreadKey;
 
 // GLOBAL: VC1 0x004ed510
 SocketNode* g_socketHead;

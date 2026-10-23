@@ -83,6 +83,8 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::Error
 // FUNCTION: VC1 0x0040ff40
 // SQCompiler::IsEndOfStatement
+// FUNCTION: VC1 0x0040ff60
+// ?MoveIfCurrentTargetIsLocal@SQCompiler@@QAEXXZ
 // FUNCTION: VC1 0x0040ffe0
 // SQCompiler::Compile
 // FUNCTION: VC1 0x00410330

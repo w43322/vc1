@@ -10,8 +10,6 @@
 
 namespace vc1 {
 
-struct TlsBlock;
-struct MutexRef;
 
 // Inferred name. OpenKODE KDEvent (timestamp, type, userptr, data union) plus
 // G5's queue links. kdCreateEvent (0x004964a0) hands out the 16 static slots
@@ -154,15 +152,6 @@ void DestroyKdObjects();
 void InitKdFilesystem();
 const char* GetKdEnv(const char* name);
 const char* GetResourceLocale();
-
-int AllocTlsBlock(void* destructor, TlsBlock** out);
-int DestroyTlsBlock(TlsBlock* self);
-void DestroyThreadLocal(void* thread);
-int MutexUnlock(MutexRef* ref);
-int MutexLock(MutexRef* ref);
-int MutexDestroy(MutexRef* ref);
-void ShutdownThreading();
-int InitThreading();
 
 int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 void FormatBufferOpen(char* buf, const char* fmt, ...);

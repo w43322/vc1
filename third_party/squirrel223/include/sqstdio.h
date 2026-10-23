@@ -73,6 +73,8 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 // SQFile::Tell
 // FUNCTION: VC1 0x0048f240
 // _file_releasehook
+// FUNCTION: VC1 0x0048f260
+// sqstd_fclose
 // FUNCTION: VC1 0x0048f310
 // sqstd_fseek
 // FUNCTION: VC1 0x0048f3f0

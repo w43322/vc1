@@ -14,17 +14,6 @@ namespace vc1 {
 
 extern const char* g_kdNameConsole;
 
-// Inferred name. The stdin reader thread's record: the pthread handle, then
-// what the thread trampoline calls (proc(arg)).
-// SIZE 0x14
-struct ConsoleThread
-{
-    PthreadHandle handle;          // 0x00
-    void* result;                  // 0x08
-    unsigned (*proc)(void* arg);   // 0x0c
-    void* arg;                     // 0x10
-};
-
 // Inferred name. Lines read from stdin, executed by Render. done counts the
 // executed ones; the next push erases them first.
 // SIZE 0x14
@@ -76,8 +65,8 @@ public:
     float height;             // 0x8c  share of the view when open
     float pageStep;           // 0x90  share of a page per PageUp / PageDown
     __int64 errorTime;        // 0x98  ns of the last output line naming "error"
-    MutexRef* mutex;          // 0xa0  only with KD_ENABLE_STDIO
-    ConsoleThread* thread;    // 0xa4  only with KD_ENABLE_STDIO
+    pthread_mutex_t* mutex;   // 0xa0  only with KD_ENABLE_STDIO
+    KdThread* thread;         // 0xa4  stdin reader, only with KD_ENABLE_STDIO
 
     KdConsole() throw();
     ~KdConsole() throw();

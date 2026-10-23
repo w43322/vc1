@@ -367,8 +367,14 @@ private:
     KdArray& operator=(const KdArray&);
 };
 
+// SYNTHETIC: VC1 0x00401fb0
+// ??1KdString@vc1@@UAE@XZ
 // TEMPLATE: VC1 0x00402480
 // ??0?$KdArray@I@vc1@@QAE@ABU01@@Z
+// SYNTHETIC: VC1 0x00417be0
+// vc1::KdRenderGroup::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0041a340
+// vc1::KdInputGroup::`scalar deleting destructor'
 
 // SIZE 0x08
 struct FactoryInsert

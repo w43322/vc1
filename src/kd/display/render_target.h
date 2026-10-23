@@ -45,4 +45,7 @@ void** CreateRenderTargetBody(void** out, unsigned width, unsigned height);
 
 }
 
+// SYNTHETIC: VC1 0x0041d480
+// vc1::KdRenderTarget::`scalar deleting destructor'
+
 #endif

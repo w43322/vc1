@@ -77,4 +77,7 @@ void** CreateKdCompoundObject(void** out);
 
 }
 
+// SYNTHETIC: VC1 0x00415ab0
+// vc1::KdCompoundObject::`scalar deleting destructor'
+
 #endif

@@ -2,6 +2,7 @@
 #define VC1_KDCORE_RUNTIME_H
 
 #include "kdcore/native.h"
+#include <pthread.h>
 #include <stdarg.h>
 
 #include "kdcore/platform.h"
@@ -15,16 +16,6 @@ namespace vc1 {
 
 // Inferred names; not original symbols. Layout from WinMain callees.
 
-struct TlsBlock
-{
-    DWORD index;     // +0x00 TlsAlloc result
-    void* destructor; // +0x04, set when AllocTlsBlock gets a callback
-    DWORD cookie;    // +0x08 0xffffffff when destructor is set
-    void* waiters;   // +0x0c list head used by DestroyTlsBlock
-};
-
-typedef char Vc1TlsBlockSizeCheck[sizeof(TlsBlock) == 0x10 ? 1 : -1];
-
 struct SocketNode
 {
     SOCKET socket;      // +0x00
@@ -33,39 +24,22 @@ struct SocketNode
     SocketNode* next;   // +0x0c
 };
 
-struct Mutex
+// Inferred name. A KD thread: the pthread handle, then what KdThreadStart
+// calls (proc(arg)); the thread key's destructor frees records that ask for
+// it.
+// SIZE 0x14
+struct KdThread
 {
-    LONG state;          // +0x00
-    LONG recursion;      // +0x04
-    LONG kind;           // +0x08 0 = simple, else recursive
-    DWORD ownerLo;       // +0x0c
-    DWORD ownerHi;       // +0x10
-    HANDLE event;        // +0x14
+    pthread_t handle;            // 0x00
+    void* autoFree;              // 0x08  nonzero: freed by the key destructor
+    void* (*proc)(void* arg);    // 0x0c
+    void* arg;                   // 0x10
 };
 
-struct MutexRef
-{
-    Mutex* mutex;
-};
+typedef char Vc1KdThreadSizeCheck[sizeof(KdThread) == 0x14 ? 1 : -1];
 
-extern TlsBlock* g_tlsPrimary;    // 0x004ed530
-extern TlsBlock* g_tlsSecondary;  // 0x004ed534
-extern TlsBlock* g_tlsSlot0;      // 0x004ed51c
-extern TlsBlock* g_tlsSlot1;      // 0x004ed520
-extern unsigned g_threadingReady; // 0x004ed518
-extern unsigned g_cpuFlags;       // 0x004ed524
-extern unsigned g_multiCpu;       // 0x004e89bc
-extern HMODULE g_quserex;         // 0x004eb0e8
-extern HMODULE g_kernel32Sync;    // 0x004eb0ec
-extern FARPROC g_interlockedCompareExchange; // 0x004ed528
-extern FARPROC g_queueUserApcEx;  // 0x004ed52c
-extern CRITICAL_SECTION g_csList;     // 0x004ef9c0
-extern CRITICAL_SECTION g_csMutex;    // 0x004efa00
-extern CRITICAL_SECTION g_csPad0;     // 0x004ef980
-extern CRITICAL_SECTION g_csPad1;     // 0x004ef9e0
-extern CRITICAL_SECTION g_csPad2;     // 0x004ef9a0
-extern CRITICAL_SECTION g_csPad3;     // 0x004ef960
-extern void* g_threadNodeSentinel; // 0x004e89b4, walk stops at 1
+extern pthread_key_t g_kdUserKey;   // 0x004ed530
+extern pthread_key_t g_kdThreadKey; // 0x004ed534, holds the running KdThread
 
 extern SocketNode* g_socketHead;  // 0x004ed510
 extern SocketNode* g_socketCursor; // 0x004ed50c
@@ -151,39 +125,10 @@ int LoadDbgHelp();
 void LogCrashHeader(const EXCEPTION_RECORD* record, const CONTEXT* context);
 // 0x00477a90; original info in EAX
 int WriteCrashDump(EXCEPTION_POINTERS* info);
-// 0x0047a270; original: destructor=[esp+4], out=EDI
-int AllocTlsBlock(void* destructor, TlsBlock** out);
-// 0x0047a600; original this in EAX
-void UnlinkWaiter(void* node);
-// 0x0047a7c0; original this in EAX
-int MutexUnlock(MutexRef* ref);
-// 0x0047a840; original this in EAX
-int MutexLock(MutexRef* ref);
-// 0x0047b0a0; original this in EDI
-int MutexDestroy(MutexRef* ref);
-// 0x0047b2f0
-void DestroyThreadLocal(void* thread);
-// pthreads-win32 pthread_t: the thread record and its reuse counter.
-struct PthreadHandle
-{
-    void* thread;   // +0x00
-    unsigned reuse; // +0x04
-};
-// 0x0047ba20 pthread_create / 0x0047bbd0 pthread_join (inferred, stubs)
-int CreatePthread(PthreadHandle* thread, void* start);
-int JoinPthread(void* thread, unsigned reuse);
-// 0x0047b380; original this in EBX
-int DestroyTlsBlock(TlsBlock* self);
-// 0x0047b6b0
-void ShutdownThreading();
-// 0x0047b770
-int InitThreading();
-// 0x0047b890
-int ShutdownApcAndLibraries();
-// 0x0047bc70
-int LoadSyncLibraries();
-// 0x0047bdf0
+// 0x0047bdf0; pthread_win32_process_attach_np and the two KD thread keys
 void AllocPrimaryTls();
+// 0x0047b850; the pthread start routine of every KdThread
+void* KdThreadStart(void* thread);
 // 0x0047c100
 void ShutdownNetwork();
 // 0x0047c190

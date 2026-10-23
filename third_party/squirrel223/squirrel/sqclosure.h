@@ -152,6 +152,8 @@ public:
 // SQGenerator::Create
 // FUNCTION: VC1 0x0040e650
 // SQGenerator::~SQGenerator
+// FUNCTION: VC1 0x0040e740
+// ?Kill@SQGenerator@@QAEXXZ
 // FUNCTION: VC1 0x0040e7c0
 // SQGenerator::Release
 // FUNCTION: VC1 0x0040e7e0

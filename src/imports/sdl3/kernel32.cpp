@@ -103,8 +103,8 @@ LONG WINAPI InterlockedCompareExchange(volatile LONG* target, LONG exchange, LON
     }
 }
 
-// Only the console's queue mutex creates an event (KD_ENABLE_STDIO). Waiters
-// spin on the mutex state, so the event never has to block or wake anyone.
+// pthreads-win32 makes its mutex, cancel and thread events here. With one
+// running thread nothing waits on them, so they never block or wake anyone.
 HANDLE WINAPI CreateEventA(void* attributes, BOOL manualReset, BOOL initialState, LPCSTR name)
 {
     (void)attributes;
@@ -125,6 +125,119 @@ DWORD WINAPI WaitForSingleObject(HANDLE handle, DWORD milliseconds)
     (void)handle;
     (void)milliseconds;
     return 0;
+}
+
+LONG WINAPI InterlockedIncrement(volatile LONG* target)
+{
+    return SDL_AddAtomicInt(Atomic(target), 1) + 1;
+}
+
+LONG WINAPI InterlockedDecrement(volatile LONG* target)
+{
+    return SDL_AddAtomicInt(Atomic(target), -1) - 1;
+}
+
+LONG WINAPI InterlockedExchangeAdd(volatile LONG* target, LONG value)
+{
+    return SDL_AddAtomicInt(Atomic(target), value);
+}
+
+BOOL WINAPI ResetEvent(HANDLE event)
+{
+    (void)event;
+    return TRUE;
+}
+
+// Like WaitForSingleObject: nothing blocks, the first handle is signalled.
+DWORD WINAPI WaitForMultipleObjects(DWORD count, const HANDLE* handles, BOOL all, DWORD milliseconds)
+{
+    (void)count;
+    (void)handles;
+    (void)all;
+    (void)milliseconds;
+    return WAIT_OBJECT_0;
+}
+
+// pthread_create's threads (only the console's stdin reader, which needs
+// KD_ENABLE_STDIO) stay suspended: there is no thread control here.
+DWORD WINAPI ResumeThread(HANDLE thread)
+{
+    (void)thread;
+    return 0;
+}
+
+DWORD WINAPI SuspendThread(HANDLE thread)
+{
+    (void)thread;
+    return 0;
+}
+
+int WINAPI GetThreadPriority(HANDLE thread)
+{
+    (void)thread;
+    return THREAD_PRIORITY_NORMAL;
+}
+
+BOOL WINAPI SetThreadPriority(HANDLE thread, int priority)
+{
+    (void)thread;
+    (void)priority;
+    return TRUE;
+}
+
+BOOL WINAPI DuplicateHandle(HANDLE sourceProcess, HANDLE source, HANDLE targetProcess,
+    HANDLE* target, DWORD access, BOOL inherit, DWORD options)
+{
+    (void)sourceProcess;
+    (void)targetProcess;
+    (void)access;
+    (void)inherit;
+    (void)options;
+    *target = source;
+    return TRUE;
+}
+
+DWORD WINAPI QueueUserAPC(PAPCFUNC function, HANDLE thread, ULONG_PTR data)
+{
+    (void)function;
+    (void)thread;
+    (void)data;
+    return 0;
+}
+
+BOOL WINAPI SetThreadContext(HANDLE thread, const CONTEXT* context)
+{
+    (void)thread;
+    (void)context;
+    return FALSE;
+}
+
+HANDLE WINAPI OpenProcess(DWORD access, BOOL inherit, DWORD processId)
+{
+    (void)access;
+    (void)inherit;
+    (void)processId;
+    return GetCurrentProcess();
+}
+
+// Semaphores are dummies like the events.
+HANDLE WINAPI CreateSemaphoreA(void* attributes, LONG initialCount, LONG maximumCount, LPCSTR name)
+{
+    (void)attributes;
+    (void)initialCount;
+    (void)maximumCount;
+    (void)name;
+    return reinterpret_cast<HANDLE>(1);
+}
+
+BOOL WINAPI ReleaseSemaphore(HANDLE semaphore, LONG releaseCount, LONG* previousCount)
+{
+    (void)semaphore;
+    (void)releaseCount;
+    if (previousCount) {
+        *previousCount = 0;
+    }
+    return TRUE;
 }
 
 BOOL WINAPI CloseHandle(HANDLE handle)

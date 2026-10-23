@@ -72,6 +72,8 @@ public:
 
 typedef char Vc1KdRenderTextureSizeCheck[sizeof(KdRenderTexture) == 0x1c ? 1 : -1];
 
+// SYNTHETIC: VC1 0x0041d2f0
+// vc1::KdTexture::`scalar deleting destructor'
 // SYNTHETIC: VC1 0x0041d580
 // vc1::KdRenderTexture::`scalar deleting destructor'
 // SYNTHETIC: VC1 0x0041d5f0

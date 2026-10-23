@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <string.h>
 
 // Like the SDK's windef.h, so SqPlus takes BOOL / INT / FLOAT from here.
 #define _WINDEF_
@@ -308,6 +309,50 @@ DWORD WINAPI WaitForSingleObject(HANDLE handle, DWORD milliseconds);
 BOOL WINAPI CloseHandle(HANDLE handle);
 HANDLE WINAPI CreateMutexA(void* attributes, BOOL owner, LPCSTR name);
 HANDLE WINAPI CreateEventA(void* attributes, BOOL manualReset, BOOL initialState, LPCSTR name);
+#define CreateEvent CreateEventA
+
+// What pthreads-win32 (third_party/pthreads-w32-2-8-0) uses besides the above.
+typedef LONG* LPLONG;
+typedef unsigned long ULONG_PTR;
+typedef void VOID;
+typedef void* LPVOID;
+typedef void (CALLBACK* PAPCFUNC)(ULONG_PTR parameter);
+#define CREATE_SUSPENDED 0x00000004
+#define DUPLICATE_SAME_ACCESS 0x00000002
+#define WAIT_OBJECT_0 0x00000000
+#define WAIT_ABANDONED 0x00000080
+#define WAIT_TIMEOUT 0x00000102
+#define WAIT_FAILED 0xffffffffu
+#define THREAD_PRIORITY_LOWEST (-2)
+#define THREAD_PRIORITY_BELOW_NORMAL (-1)
+#define THREAD_PRIORITY_NORMAL 0
+#define THREAD_PRIORITY_HIGHEST 2
+#define THREAD_PRIORITY_ABOVE_NORMAL 1
+#define THREAD_PRIORITY_ERROR_RETURN 0x7fffffff
+#define THREAD_PRIORITY_TIME_CRITICAL 15
+#define THREAD_PRIORITY_IDLE (-15)
+LONG WINAPI InterlockedIncrement(volatile LONG* target);
+LONG WINAPI InterlockedDecrement(volatile LONG* target);
+LONG WINAPI InterlockedExchangeAdd(volatile LONG* target, LONG value);
+BOOL WINAPI ResetEvent(HANDLE event);
+DWORD WINAPI WaitForMultipleObjects(DWORD count, const HANDLE* handles, BOOL all, DWORD milliseconds);
+DWORD WINAPI ResumeThread(HANDLE thread);
+DWORD WINAPI SuspendThread(HANDLE thread);
+int WINAPI GetThreadPriority(HANDLE thread);
+BOOL WINAPI SetThreadPriority(HANDLE thread, int priority);
+BOOL WINAPI DuplicateHandle(HANDLE sourceProcess, HANDLE source, HANDLE targetProcess,
+    HANDLE* target, DWORD access, BOOL inherit, DWORD options);
+DWORD WINAPI QueueUserAPC(PAPCFUNC function, HANDLE thread, ULONG_PTR data);
+#define CONTEXT_CONTROL 0x00010001
+BOOL WINAPI SetThreadContext(HANDLE thread, const CONTEXT* context);
+#define TEXT(text) text
+#define LoadLibrary LoadLibraryA
+#define PROCESS_SET_INFORMATION 0x0200
+#define PROCESS_QUERY_INFORMATION 0x0400
+HANDLE WINAPI OpenProcess(DWORD access, BOOL inherit, DWORD processId);
+HANDLE WINAPI CreateSemaphoreA(void* attributes, LONG initialCount, LONG maximumCount, LPCSTR name);
+#define CreateSemaphore CreateSemaphoreA
+BOOL WINAPI ReleaseSemaphore(HANDLE semaphore, LONG releaseCount, LONG* previousCount);
 DWORD WINAPI GetLastError();
 void WINAPI SetLastError(DWORD error);
 HMODULE WINAPI LoadLibraryA(LPCSTR name);

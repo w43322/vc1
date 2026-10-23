@@ -60,12 +60,20 @@ inline int KdStdioFlush(void* file)
     return handle->driver->flush(handle->driver, handle->native);
 }
 
+// sqstd_fclose (0x0048f260): errno 0x11 without a handle, else the driver's
+// close result.
 inline int KdStdioClose(void* file)
 {
     KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
-    handle->driver->close(handle->driver, handle->native);
+    int result;
+
+    if (!handle) {
+        errno = 0x11;
+        return -1;
+    }
+    result = handle->driver->close(handle->driver, handle->native);
     free(handle);
-    return 0;
+    return result;
 }
 
 inline int KdStdioEof(void* file)
