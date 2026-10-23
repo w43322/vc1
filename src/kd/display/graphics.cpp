@@ -1,9 +1,5 @@
 #include "kd/display/graphics.h"
 #include "kd/display/display.h"
-#if defined(VC1_USE_SDL3)
-#include "platform/sdl3/render.h"
-#endif
-
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
 #include "kd/iface/icomponent_faces.h"
@@ -235,15 +231,11 @@ Matrix3& KdGraphics::GetTransform()
 // FUNCTION: VC1 0x0045c9d0
 void KdGraphics::Clear(unsigned color)
 {
-#if defined(VC1_USE_SDL3)
-    SdlClear(color);
-#else
     typedef int (__stdcall *FnClear)(IUnknown* device, unsigned count, void* rects,
         unsigned flags, unsigned value, float z, unsigned stencil);
 
     reinterpret_cast<FnClear>((*reinterpret_cast<void***>(g_d3dDevice))[0x24])(
         g_d3dDevice, 0, 0, 1, color, 1.0f, 0);
-#endif
 }
 
 // RET 4. AddRef new, Release old, store at +0x40.

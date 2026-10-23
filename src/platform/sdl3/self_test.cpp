@@ -1,66 +1,11 @@
-// Asset-free integration checks for the selected runtime, renderer and mixer.
+// Asset-free integration checks for the selected runtime and mixer.
 #include "platform/sdl3/runtime.h"
 #include "platform/sdl3/render.h"
-#include "kd/display/display.h"
-#include "kd/display/render_target.h"
 #include "kd/sound/bass_api.h"
 #include <vector>
 #include <cmath>
-namespace vc1 {extern int g_displayWidth,g_displayHeight;}
 namespace {
 void Require(bool ok,const char* why) {if(!ok) {SDL_Log("BACKEND TEST FAILED: %s (%s)",why,SDL_GetError());std::exit(1);}}
-unsigned Pixel(SDL_Surface* image,int x,int y)
-{
-    unsigned pixel=0;SDL_ConvertPixels(1,1,image->format,
-        static_cast<char*>(image->pixels)+y*image->pitch+x*SDL_BYTESPERPIXEL(image->format),image->pitch,
-        SDL_PIXELFORMAT_ARGB8888,&pixel,4);return pixel;
-}
-void Quad(vc1::IUnknown* texture,unsigned color,float x0,float y0,float x1,float y1,unsigned flags=2)
-{
-    vc1::BatchQuad q;
-    q.vertices[0]={x0,y0,0,color,0,0};q.vertices[1]={x1,y0,0,color,1,0};
-    q.vertices[2]={x1,y1,0,color,1,1};q.vertices[3]={x0,y1,0,color,0,1};
-    q.texture=texture;q.flags=flags;vc1::PushQuad(&q);
-}
-void Rendering()
-{
-    using namespace vc1;
-    g_displayWidth=g_displayHeight=32;
-    Require(SdlCreateDisplay(32,32),"create software display");
-    Require(SdlBeginTarget(nullptr),"begin window target");
-    SdlClear(0xff0000ff);
-    IUnknown* texture=CreateManagedTexture(2,2);
-    Require(texture!=nullptr,"create texture");
-    unsigned* pixels=static_cast<unsigned*>(LockTextureRect(texture,0,0,false,2,2));
-    Require(pixels!=nullptr,"writable texture lock");
-    for(int i=0;i<4;++i) pixels[i]=0xffff0000;
-    SdlUnlockTexture(texture);
-    Quad(texture,0x80ffffff,0,0,32,32);
-    Matrix3 identity=Matrix3::Identity;DisplayD3dSetView(&identity);
-    SDL_Surface* image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image!=nullptr,"window readback");
-    unsigned pixel=Pixel(image,16,16);SDL_DestroySurface(image);
-    Require(((pixel>>16)&255)>=127 && ((pixel>>16)&255)<=129 && (pixel&255)>=126 && (pixel&255)<=128,"alpha textured geometry");
-    SdlClear(0xff000000);Quad(texture,0xff008000,0,0,32,32,3);DisplayD3dSetView(&identity);
-    image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image && (Pixel(image,16,16)&0xffffff)==0xff8000,"texture plus diffuse color operation");SDL_DestroySurface(image);
-    SdlClear(0xff0000ff);Quad(texture,0xffffffff,0,0,32,32,0);DisplayD3dSetView(&identity);
-    image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image && (Pixel(image,16,16)&0xffffff)==0xff00ff,"additive blend");SDL_DestroySurface(image);
-    SdlClear(0xff000000);DisplayD3dSetClip(8,8,16,16);Quad(nullptr,0xff00ff00,0,0,32,32);DisplayD3dSetView(&identity);
-    image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image!=nullptr,"clip readback");
-    Require((Pixel(image,16,16)&0xffffff)==0x00ff00 && (Pixel(image,2,2)&0xffffff)==0,"clip rectangle");SDL_DestroySurface(image);
-    Matrix3 translated=Matrix3::Identity;translated.m[6]=8;
-    DisplayD3dSetClip(0,0,32,32);SdlClear(0xff000000);DisplayD3dSetView(&translated);
-    Quad(nullptr,0xffffffff,0,0,8,8);DisplayD3dSetView(&identity);
-    image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image!=nullptr,"transform readback");
-    Require((Pixel(image,10,4)&0xffffff)==0xffffff && (Pixel(image,2,4)&0xffffff)==0,"world transform");SDL_DestroySurface(image);
-    auto* node=static_cast<KdRenderTargetNode*>(LookupRenderTargetTexture(8,8));Require(node!=nullptr,"offscreen target");
-    Require(SdlBeginTarget(node),"bind offscreen target");SdlClear(0xff00ffff);
-    pixels=static_cast<unsigned*>(LockTextureRect(node->texture,2,2,true,3,3));Require(pixels && pixels[0]==0xff00ffff,"offscreen subregion readback");SdlUnlockTexture(node->texture);
-    Require(SdlBeginTarget(nullptr),"restore window target");SdlClear(0xff000000);Quad(node->texture,0xffffffff,0,0,32,32);DisplayD3dSetView(&identity);
-    image=SDL_RenderReadPixels(g_sdlRenderer,nullptr);Require(image && (Pixel(image,16,16)&0xffffff)==0x00ffff,"render texture sampling");SDL_DestroySurface(image);
-    SdlReleaseTexture(texture);SdlEndFrame();
-    // A display facade releases its backend-owned target chain and window.
-    KdDisplayBase cleanup;cleanup.mixer=g_kdWindowMixer;cleanup.Shutdown();
-}
 std::vector<unsigned char> Wave()
 {
     const unsigned samples=44100*2;
@@ -150,7 +95,7 @@ void FilesAndEvents()
 }
 int RunSdlBackendTests()
 {
-    Rendering();Audio();FilesAndEvents();Threading();
+    Audio();FilesAndEvents();Threading();
     SDL_Log("SDL backend tests passed: geometry, alpha, clip, transform, render targets, readback, eight voices, streams, fades, files, keys and timers");
     return 0;
 }

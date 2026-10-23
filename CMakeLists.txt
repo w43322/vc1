@@ -71,8 +71,6 @@ if(NOT VC1_USE_SDL3)
   include(cmake/d3d8.cmake)
   include(cmake/platform-win32.cmake)
 endif()
-set(VC1_DISPLAY_SOURCE src/kd/display/display.cpp)
-set(VC1_TEXTURE_SOURCE src/kd/display/texture.cpp)
 if(VC1_USE_SDL3)
   include(cmake/sdl3.cmake)
   include(cmake/sdl3-mixer.cmake)
@@ -88,12 +86,11 @@ if(VC1_USE_SDL3)
     src/platform/sdl3/gamepad.cpp
     src/platform/sdl3/window.cpp
     src/platform/sdl3/audio.cpp
+    src/platform/sdl3/d3d8.cpp
     src/platform/sdl3/mod_io.cpp
     src/mod/mods.cpp
     src/platform/sdl3/self_test.cpp
     src/host/sqstd_math.cpp)
-  set(VC1_DISPLAY_SOURCE src/platform/sdl3/display.cpp)
-  set(VC1_TEXTURE_SOURCE src/platform/sdl3/texture.cpp)
 endif()
 
 add_executable(${VC1_TARGET}
@@ -107,7 +104,7 @@ add_executable(${VC1_TARGET}
   src/kd/iface/iabstract.cpp
   src/kd/factory.cpp
   src/kd/script_instance.cpp
-  ${VC1_DISPLAY_SOURCE}
+  src/kd/display/display.cpp
   src/kd/display/graphics.cpp
   src/kd/display/pyro.cpp
   src/kd/display/effect.cpp
@@ -119,7 +116,7 @@ add_executable(${VC1_TARGET}
   src/pyro/pyro_stream.cpp
   src/pyro/pyro_string.cpp
   src/kd/display/render_target.cpp
-  ${VC1_TEXTURE_SOURCE}
+  src/kd/display/texture.cpp
   src/kd/system/system.cpp
   src/kd/component_group.cpp
   src/kd/sound/sound_driver.cpp

@@ -92,7 +92,14 @@ shared contract. `host/clock.h` selects inline QPC or SDL performance counters.
 `host/window.h` exposes opaque KD window creation; native window records stay in
 `platform/win32/window.h`. `app/script.h` is the native-free binding contract.
 The `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86, C++17) selects
-only `platform/sdl3/` host/display/texture implementations. SDL owns windows,
+only `platform/sdl3/` host implementations; both targets compile the recovered
+`kd/display/` sources. Their D3D8 and Win32 window calls see native types through
+`host/d3d8.h`: `platform/sdl3/d3d8.cpp` implements `Direct3DCreate8` and the used
+device/texture/surface/buffer slots over SDL (CPU vertex transform, unused slots
+abort) and `platform/sdl3/window.cpp` the used Win32 window calls (`win32.h`,
+HWND is the SDL window), like the BASS bridge, so recovered display sources need
+no SDL branches. Texture mods hook the first full unlock of a texture created
+while its file is open. SDL owns windows,
 keyboard/text/pointer/gamepad input, rendering/targets/readback, files, clocks,
 events/timers, mutexes/TLS, locale/URL/logging; SDL3_mixer owns music and effects.
 The `BASS_*` entry points in its audio bridge are local compatibility functions;

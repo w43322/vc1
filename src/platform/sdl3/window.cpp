@@ -1,4 +1,5 @@
 #include "platform/sdl3/render.h"
+#include "platform/sdl3/win32.h"
 #include "host/platform.h"
 #include "host/window.h"
 #include "app/script.h"
@@ -9,8 +10,12 @@
 namespace vc1 {
 void SdlUpdateAudio();
 void* g_kdWindowMixer;
+SDL_Window* g_sdlWindow;
 extern const char kKdParentWindow[] = "KD_PARENT_WINDOW";
-struct SdlWindowState { void* userptr; SDL_Window* window; int cursor; };
+// The KdWindow layout the recovered display code reads (+0x04 window) and
+// writes (+0x10/+0x14 client size).
+struct SdlWindowState { void* userptr; SDL_Window* window; int cursor; unsigned pad0c; int width,height; };
+static_assert(sizeof(SdlWindowState)==0x18,"KdWindow layout");
 static unsigned pointerButtons;
 static std::set<unsigned> pressedKeys;
 static SDL_Cursor* cursors[6];
@@ -35,7 +40,9 @@ void* CreateKdWindow()
 {
     SdlWindowState* state=static_cast<SdlWindowState*>(calloc(1,sizeof(SdlWindowState)));
     state->userptr=state;
-    state->window=SDL_CreateWindow("Virtual City",1024,768,SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    // Hidden until the display's ShowWindow, like the Win32 window.
+    state->window=SDL_CreateWindow("Virtual City",1024,768,
+        SDL_WINDOW_HIDDEN|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if(!state->window) { free(state);return 0; }
     g_sdlWindow=state->window;g_kdWindowMixer=state;
     SDL_Surface* icon=Resource("icon",100,nullptr,nullptr);
@@ -43,23 +50,92 @@ void* CreateKdWindow()
     SDL_StartTextInput(g_sdlWindow);
     return state;
 }
-bool SdlCreateDisplay(unsigned width,unsigned height)
+
+// Win32 window subset (platform/sdl3/win32.h). There is one window. The frame
+// metrics are 0, so window and client rectangles are the same.
+static LONG windowStyle=WS_CAPTION,windowExStyle;
+static SDL_Window* Window(HWND window) { return reinterpret_cast<SDL_Window*>(window); }
+static SDL_DisplayID WindowDisplay(HWND window)
 {
-    if(!g_sdlWindow && !CreateKdWindow()) return false;
-    SDL_SetWindowSize(g_sdlWindow,width,height);
-    g_sdlRenderer=SDL_CreateRenderer(g_sdlWindow,0);
-    if(!g_sdlRenderer) return false;
-    SDL_SetRenderVSync(g_sdlRenderer,1);
-    SDL_SetRenderLogicalPresentation(g_sdlRenderer,width,height,SDL_LOGICAL_PRESENTATION_LETTERBOX);
-    return true;
+    SDL_DisplayID display=window ? SDL_GetDisplayForWindow(Window(window)) : 0;
+    return display ? display : SDL_GetPrimaryDisplay();
 }
-void SdlDestroyDisplay()
+LONG GetWindowLongA(HWND window,int index)
 {
+    if(index==GWL_STYLE) return windowStyle|(window && !(SDL_GetWindowFlags(Window(window))&SDL_WINDOW_HIDDEN) ? WS_VISIBLE : 0);
+    return index==GWL_EXSTYLE ? windowExStyle : 0;
+}
+LONG SetWindowLongA(HWND,int index,LONG value)
+{
+    LONG old=0;
+    if(index==GWL_STYLE) {old=windowStyle;windowStyle=value&~WS_VISIBLE;}
+    else if(index==GWL_EXSTYLE) {old=windowExStyle;windowExStyle=value;}
+    return old;
+}
+// A frame change applies the style: no caption is desktop fullscreen.
+BOOL SetWindowPos(HWND window,HWND,int x,int y,int width,int height,unsigned flags)
+{
+    SDL_Window* w=Window(window);if(!w) return 0;
+    if(flags&SWP_FRAMECHANGED) {
+        const bool fullscreen=!(windowStyle&WS_CAPTION);
+        SDL_SetWindowFullscreen(w,fullscreen);
+        if(fullscreen) {SDL_SyncWindow(w);return 1;}
+    }
+    if(!(flags&SWP_NOSIZE)) SDL_SetWindowSize(w,width,height);
+    if(!(flags&SWP_NOMOVE)) SDL_SetWindowPosition(w,x,y);
+    SDL_SyncWindow(w);return 1;
+}
+BOOL GetWindowRect(HWND window,RECT* rect)
+{
+    int x=0,y=0,w=0,h=0;
+    if(!Window(window) || !SDL_GetWindowPosition(Window(window),&x,&y) || !SDL_GetWindowSize(Window(window),&w,&h)) return 0;
+    rect->left=x;rect->top=y;rect->right=x+w;rect->bottom=y+h;return 1;
+}
+BOOL GetClientRect(HWND window,RECT* rect)
+{
+    int w=0,h=0;
+    if(!Window(window) || !SDL_GetWindowSize(Window(window),&w,&h)) return 0;
+    rect->left=rect->top=0;rect->right=w;rect->bottom=h;return 1;
+}
+int GetSystemMetrics(int index)
+{
+    if(index!=SM_CXSCREEN && index!=SM_CYSCREEN) return 0;
+    SDL_Rect bounds;
+    if(!SDL_GetDisplayBounds(WindowDisplay(reinterpret_cast<HWND>(g_sdlWindow)),&bounds)) return 0;
+    return index==SM_CXSCREEN ? bounds.w : bounds.h;
+}
+// The desktop mode in pixels, the full-screen back buffer size.
+BOOL EnumDisplaySettingsA(const char*,DWORD,DEVMODEA* out)
+{
+    const SDL_DisplayMode* mode=SDL_GetDesktopDisplayMode(WindowDisplay(reinterpret_cast<HWND>(g_sdlWindow)));
+    if(!mode) return 0;
+    out->dmPelsWidth=DWORD(mode->w*mode->pixel_density+0.5f);
+    out->dmPelsHeight=DWORD(mode->h*mode->pixel_density+0.5f);
+    return 1;
+}
+BOOL SystemParametersInfoA(unsigned action,unsigned,void* out,unsigned)
+{
+    SDL_Rect area;
+    if(action!=SPI_GETWORKAREA || !SDL_GetDisplayUsableBounds(WindowDisplay(reinterpret_cast<HWND>(g_sdlWindow)),&area)) return 0;
+    RECT* rect=static_cast<RECT*>(out);
+    rect->left=area.x;rect->top=area.y;rect->right=area.x+area.w;rect->bottom=area.y+area.h;return 1;
+}
+BOOL ShowWindow(HWND window,int) { return Window(window) && SDL_ShowWindow(Window(window)); }
+BOOL SetWindowTextA(HWND window,const char* text) { return Window(window) && SDL_SetWindowTitle(Window(window),text); }
+int MessageBoxA(HWND window,const char* text,const char* caption,unsigned)
+{
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,caption,text,Window(window));return 1;
+}
+BOOL KillTimer(HWND,unsigned) { return 1; }
+// The display frees the window record itself before this.
+BOOL DestroyWindow(HWND window)
+{
+    if(!Window(window)) return 0;
     for(unsigned i=0;i<6;++i) { if(cursors[i]) SDL_DestroyCursor(cursors[i]);cursors[i]=0; }
-    SDL_DestroyRenderer(g_sdlRenderer);g_sdlRenderer=0;
-    SDL_DestroyWindow(g_sdlWindow);g_sdlWindow=0;
-    free(g_kdWindowMixer);g_kdWindowMixer=0;
+    SDL_DestroyWindow(Window(window));
+    if(g_sdlWindow==Window(window)) {g_sdlWindow=0;g_kdWindowMixer=0;}
     pressedKeys.clear();pointerButtons=0;
+    return 1;
 }
 void ScriptSetCursor(int cursor)
 {

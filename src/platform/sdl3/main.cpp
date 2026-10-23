@@ -9,7 +9,7 @@
 #include <ctime>
 
 namespace vc1 { extern const char kVirtualCity[]="Virtual City"; }
-namespace vc1 { void InitSdlMods(); }
+namespace vc1 { void InitSdlMods(); extern bool g_displaySkipDevice; }
 int RunSdlBackendTests();
 int main(int argc,char** argv)
 {
@@ -26,6 +26,8 @@ int main(int argc,char** argv)
         vc1::ShutdownSdlGamepad();vc1::FreeBumpHeaps();vc1::DestroyKdObjects();SDL_Quit();return result;
     }
     vc1::InitSdlMods();
+    // The recovered display starts full screen unless already windowed.
+    vc1::g_displaySkipDevice=SDL_getenv("VC1_WINDOWED")!=nullptr;
     int result=vc1::RunApp();
     vc1::ShutdownMods();
     vc1::ShutdownSdlGamepad();

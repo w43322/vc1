@@ -1,4 +1,5 @@
 #include "host/platform.h"
+#include "platform/sdl3/d3d8.h"
 #include <SDL3/SDL.h>
 #include <cstdlib>
 #include <cstring>
@@ -28,17 +29,35 @@ char* CopyExeDir(const char* path,char* dest)
     memcpy(dest,full.c_str(),full.size()+1);return dest;
 }
 static void Destroy(KdObject*) {}
+// The texture file open for reading names the texture the display creates
+// from it (texture mods, d3d8.cpp).
+static File* imageFile;
+static bool IsImage(const char* path,const char* mode)
+{
+    const char* ext=strrchr(path,'.');
+    return !strchr(mode,'w') && !strchr(mode,'a') && ext &&
+        (!SDL_strcasecmp(ext,".tga") || !SDL_strcasecmp(ext,".pvr") || !SDL_strcasecmp(ext,".jpg"));
+}
 static int Open(KdObject*,const char* path,const char* mode)
 {
+    const char* name=path;
     char translated[260];path=CopyExeDir(path,translated);if(!path) return 0;
     if(strchr(mode,'w') || strchr(mode,'a')) {
         std::string parent=path;size_t last=parent.find_last_of("/\\");
         if(last!=std::string::npos) SDL_CreateDirectory(parent.substr(0,last).c_str());
     }
     SDL_IOStream* io=SDL_IOFromFile(path,mode);
-    return io ? reinterpret_cast<int>(new File{io,path}) : 0;
+    if(!io) return 0;
+    File* file=new File{io,path};
+    if(IsImage(name,mode)) {imageFile=file;SDL_strlcpy(g_sdlImagePath,name,sizeof(g_sdlImagePath));}
+    return reinterpret_cast<int>(file);
 }
-static int Close(KdObject*,int h) {File* f=Handle(h);bool ok=SDL_CloseIO(f->io);delete f;return ok ? 0 : -1;}
+static int Close(KdObject*,int h)
+{
+    File* f=Handle(h);bool ok=SDL_CloseIO(f->io);
+    if(f==imageFile) {imageFile=nullptr;g_sdlImagePath[0]=0;}
+    delete f;return ok ? 0 : -1;
+}
 static int Flush(KdObject*,int h) {return SDL_FlushIO(Handle(h)->io) ? 0 : -1;}
 static int Read(KdObject*,void* b,unsigned size,unsigned count,int h)
 {
