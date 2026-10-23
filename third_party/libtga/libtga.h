@@ -2,7 +2,7 @@
 #define VC1_LIBTGA_H
 
 /* libtga 1.0.1 (tga.c, tgaread.c), used by the TGA texture loader
- * (0x00465770). Built as C++ on KD files (src/host/kd_tga_stdio.h); tga.h and
+ * (0x00465770). Built as C++ on KD files (src/kdcore/kd_tga_stdio.h); tga.h and
  * tga.c carry marked VC1 patches. LTCG passes the TGA handle in EAX (TGARead
  * EDI, __TGASeek ESI, TGAClose EDI) and specialises TGAReadScanlines for one
  * scanline without colour swapping. */
