@@ -91,7 +91,6 @@ static int Stat(KdObject*,const char* path,KdFileStat* out)
     return 0;
 }
 static int Fstat(KdObject* o,int h,KdFileStat* out) {return Stat(o,Handle(h)->path.c_str(),out);}
-int StatKdPath(const char* path,KdFileStat* out) { return Stat(nullptr,path,out); }
 static int Access(KdObject* o,const char* path,int) {KdFileStat out;return Stat(o,path,&out);}
 static void* Map(KdObject*,int h,unsigned* size)
 {
@@ -110,18 +109,6 @@ static int ConstructFile(KdObject* o)
     char path[260];const char* dir=CopyExeDir("data/",path);if(dir) SDL_CreateDirectory(dir);return 0;
 }
 void InitKdFilesystem() {CreateKdObject(ConstructFile,nullptr);}
-const char* GetResourceLocale()
-{
-    if(g_resourceLocale[0]) return g_resourceLocale;
-    const char* overrideLocale=GetKdEnv("KD_LOCALE");
-    if(overrideLocale) {SDL_strlcpy(g_resourceLocale,overrideLocale,sizeof(g_resourceLocale));return g_resourceLocale;}
-    SDL_Locale** locales=SDL_GetPreferredLocales(nullptr);
-    if(locales && locales[0]) {
-        SDL_snprintf(g_resourceLocale,sizeof(g_resourceLocale),"%.2s_%.2s",locales[0]->language,
-            locales[0]->country ? locales[0]->country : "US");
-    } else SDL_strlcpy(g_resourceLocale,"en_US",sizeof(g_resourceLocale));
-    SDL_free(locales);return g_resourceLocale;
-}
 struct Directory {char* current;char** names;int count,index;};
 unsigned char* DirOpen()
 {

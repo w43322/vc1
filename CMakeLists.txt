@@ -77,11 +77,11 @@ if(VC1_USE_SDL3)
   set(VC1_HOST_SOURCES
     src/platform/sdl3/main.cpp
     src/platform/sdl3/runtime.cpp
-    src/platform/sdl3/events.cpp
-    src/platform/sdl3/kd_services.cpp
+    src/host/kd_core.cpp
+    src/host/heap.cpp
+    src/host/kd_log.cpp
     src/platform/sdl3/filesystem.cpp
     src/platform/sdl3/thread.cpp
-    src/platform/sdl3/log.cpp
     src/platform/sdl3/sqstd_system.cpp
     src/platform/sdl3/gamepad.cpp
     src/platform/sdl3/window.cpp

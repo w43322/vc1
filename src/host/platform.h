@@ -56,6 +56,7 @@ struct KdTimer
 };
 
 extern KdTimer* g_kdTimers; // 0x004ed4fc
+extern double g_nsPerTick;    // 0x004f0a20, 1e9 / QPC frequency
 
 // Inferred name. kdInstallCallback record; type 0 matches every event type.
 // The list ends at the static g_kdDefaultCallback.

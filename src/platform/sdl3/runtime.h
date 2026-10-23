@@ -13,8 +13,14 @@ namespace vc1 {
 struct TlsBlock { SDL_TLSID id; void* destructor; };
 struct MutexRef { SDL_Mutex* mutex; };
 extern double g_nsPerTick;
-extern KdEvent* g_heapHead;
-extern KdEvent* g_heapTail;
+// The original keeps the 16-event pool (0x004ed148) directly before the queue
+// head; AllocEvent ends its pool scan at &g_heapHead, so here they are one
+// object with the original names as aliases.
+struct KdEventPool { alignas(8) unsigned char arena[0x300]; KdEvent* head; KdEvent* tail; };
+extern KdEventPool g_kdEventPool;
+inline unsigned char (&g_bumpArena)[0x300]=g_kdEventPool.arena;
+inline KdEvent*& g_heapHead=g_kdEventPool.head;
+inline KdEvent*& g_heapTail=g_kdEventPool.tail;
 extern KdEvent* g_bumpCursor;
 extern KdCallback* g_kdCallbacks;
 extern KdCallback g_kdDefaultCallback;
@@ -32,6 +38,9 @@ void ScriptPrint(HSQUIRRELVM v,const SQChar* fmt,...);
 int RunApp();
 char* FindBytes(const char* haystack,unsigned haystackLen,const char* needle,unsigned needleLen);
 void SdlPollEvents();
+void PollGamepad();
+void FireTimers();
+void DropMatchingEvents(const KdEvent* event);
 void SdlUpdateAudio();
 }
 #endif

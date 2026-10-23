@@ -1,4 +1,4 @@
-#include "host/clock.h"
+#include "host/native.h"
 #include "kd/system/system.h"
 
 #include "kd/factory.h"
@@ -40,9 +40,9 @@ static void ReserveRecordTable(void* factory, unsigned newCount);
 // QPC in nanoseconds; inlined at every use (fild, fmul g_nsPerTick, _ftol2).
 static __int64 SystemNow()
 {
-    PlatformClockSample qpc;
+    LARGE_INTEGER qpc;
 
-    PlatformReadCounter(&qpc);
+    QueryPerformanceCounter(&qpc);
     return static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick);
 }
 

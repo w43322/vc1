@@ -1,4 +1,5 @@
 #include "host/runtime.h"
+#include "host/native.h"
 
 #include "kd/factory.h"
 #include "kd/iface/idisplay.h"
@@ -27,9 +28,7 @@ static void ShutdownInterface(IUnknown* object)
 // FUNCTION: VC1 0x004c38b0
 int RunApp()
 {
-#if !defined(VC1_USE_SDL3)
     OSVERSIONINFOA version;
-#endif
     IDisplay* display = 0;
     ISystem* system = 0;
     IAbstract* abstractDisplay = 0;
@@ -47,15 +46,11 @@ int RunApp()
     // STRING: VC1 0x004d0c58
     SquirrelVM::GetRootTable().SetValue("IsCheatsEnabled", false);
 
-#if defined(VC1_USE_SDL3)
-    FormatBuffer(g_windowsVersionText, 0x80, "SDL3 on %s", SDL_GetPlatform());
-#else
     memset(&version, 0, sizeof(version));
     version.dwOSVersionInfoSize = sizeof(version);
     GetVersionExA(&version);
     FormatBuffer(g_windowsVersionText, 0x80, "Windows v%ld.%ld.%ld",
         version.dwMajorVersion, version.dwMinorVersion, version.dwBuildNumber);
-#endif
     KdLog("OpenKODE Core v%s by %s on %s\n",
         "1.0.1 (Compiled Dec 21 2009 22:47:18)",
         "G5 Entertainment AB",

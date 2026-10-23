@@ -1,4 +1,4 @@
-#include "host/clock.h"
+#include "host/native.h"
 #include "pyro/pyro_random.h"
 
 #include "host/platform.h"
@@ -10,11 +10,11 @@ namespace vc1 {
 
 PyroRandom::PyroRandom()
 {
-    PlatformClockSample qpc;
+    LARGE_INTEGER qpc;
 
     first = state;
     second = state + 1;
-    PlatformReadCounter(&qpc);
+    QueryPerformanceCounter(&qpc);
     Seed(static_cast<unsigned>(static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)));
 }
 

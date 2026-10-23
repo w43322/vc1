@@ -6,7 +6,6 @@
 // "data/..." paths. Changes are marked VC1; every function keeps its name
 // comment in sqstdsystem.h.
 #include "platform/sdl3/runtime.h"
-#include "host/clock.h"
 
 
 #include <squirrel.h>
@@ -44,9 +43,7 @@ static SQInteger _system_system(HSQUIRRELVM v)
 static SQInteger _system_clock(HSQUIRRELVM v)
 {
 	// VC1: the KD UST clock (nanoseconds) in whole seconds.
-	vc1::PlatformClockSample counter;
-	vc1::PlatformReadCounter(&counter);
-	sq_pushinteger(v,(SQInteger)((unsigned __int64)((double)counter.QuadPart * vc1::g_nsPerTick)
+	sq_pushinteger(v,(SQInteger)((unsigned __int64)((double)SDL_GetPerformanceCounter() * vc1::g_nsPerTick)
 		/ 1000000000));
 	return 1;
 }

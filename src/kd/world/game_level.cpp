@@ -17,9 +17,7 @@
 #include <limits>
 #include <new>
 #include <stdlib.h>
-#if !defined(VC1_USE_SDL3)
-#include <windows.h>
-#endif
+#include "host/native.h"
 
 namespace vc1 {
 
@@ -385,22 +383,15 @@ KdGameLevel::KdGameLevel() throw()
         IDisplay* display = unknown
             ? static_cast<IDisplay*>(static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidDisplay))
             : 0;
-#if !defined(VC1_USE_SDL3)
         RECT client;
-#endif
 
         if (display) {
             display->AddRef();
         }
-#if defined(VC1_USE_SDL3)
-        clientWidth = display->GetWidth();
-        clientHeight = display->GetHeight();
-#else
         if (GetClientRect(static_cast<HWND*>(display->GetMixer())[1], &client)) {
             clientWidth = client.right - client.left;
             clientHeight = client.bottom - client.top;
         }
-#endif
         display->Release();
     }
     if (unknown) {

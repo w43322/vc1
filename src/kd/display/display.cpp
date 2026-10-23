@@ -9,7 +9,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "host/runtime.h"
-#include "host/d3d8.h"
+#include "host/native.h"
 #include "host/kd_stdio.h"
 #include "kd/display/jpeg_stream.h"
 #include "bindings/matrix4.h"

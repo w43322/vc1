@@ -1,6 +1,5 @@
 // SDL3 integration test: use a virtual controller, without game data or hardware.
 #include "host/platform.h"
-#include "host/clock.h"
 #include "platform/sdl3/gamepad.h"
 #include <SDL3/SDL.h>
 #include <cstdio>
@@ -46,11 +45,10 @@ int main()
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
     Require(vc1::InitSdlGamepad(), "SDL3 gamepad initialization failed");
     vc1::g_nsPerTick = 1.0e9 / static_cast<double>(SDL_GetPerformanceFrequency());
-    vc1::PlatformClockSample before, after;
-    vc1::PlatformReadCounter(&before);
+    const Uint64 before = SDL_GetPerformanceCounter();
     SDL_Delay(2);
-    vc1::PlatformReadCounter(&after);
-    Require(after.QuadPart > before.QuadPart && vc1::g_nsPerTick > 0, "non-monotonic SDL clock");
+    const Uint64 after = SDL_GetPerformanceCounter();
+    Require(after > before && vc1::g_nsPerTick > 0, "non-monotonic SDL clock");
 
     SDL_VirtualJoystickDesc desc;
     SDL_INIT_INTERFACE(&desc);

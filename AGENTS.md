@@ -88,18 +88,26 @@ Shared host consumers use `src/host/platform.h`, which must not include Win32 or
 renderer headers. Win32 host implementations/state live in `src/platform/win32/`;
 `cmake/platform-win32.cmake` preserves the matching translation-unit order.
 `host/runtime.h` remains a compatibility umbrella; do not add native types to the
-shared contract. `host/clock.h` selects inline QPC or SDL performance counters.
+shared contract.
 `host/window.h` exposes opaque KD window creation; native window records stay in
 `platform/win32/window.h`. `app/script.h` is the native-free binding contract.
 The `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86, C++17) selects
 only `platform/sdl3/` host implementations; both targets compile the recovered
-`kd/display/` sources. Their D3D8 and Win32 window calls see native types through
-`host/d3d8.h`: `platform/sdl3/d3d8.cpp` implements `Direct3DCreate8` and the used
-device/texture/surface/buffer slots over SDL (CPU vertex transform, unused slots
-abort) and `platform/sdl3/window.cpp` the used Win32 window calls (`win32.h`,
-HWND is the SDL window), like the BASS bridge, so recovered display sources need
-no SDL branches. Texture mods hook the first full unlock of a texture created
-while its file is open. SDL owns windows,
+`kd/display/` sources and the recovered host core in `src/host/` (`kd_core.cpp`
+driver list/files/timers, `heap.cpp` event queue, `kd_log.cpp`). Their Win32 and
+D3D8 calls see native types through `host/native.h`: `platform/sdl3/d3d8.cpp`
+implements `Direct3DCreate8` and the used device/texture/surface/buffer slots over
+SDL (CPU vertex transform, unused slots abort) and `platform/sdl3/window.cpp` the
+used Win32 calls (`win32.h`: window, `PeekMessageA` = `SdlPollEvents`, `Sleep`,
+QPC, version, locale; HWND is the SDL window), like the BASS bridge, so shared
+recovered sources need no SDL branches. Keep that layer minimal: shim the Win32
+call instead of forking a recovered function or adding `VC1_USE_SDL3` to it (the
+WinMM joystick block in `host_services.cpp` is the remaining exception). Like the
+original, `KdLogV` drops log text in both targets. The SDL runtime keeps the event pool and queue
+head as one `KdEventPool` because `AllocEvent` scans up to `&g_heapHead`. Texture
+mods hook the first full unlock of a texture created while its file is open. Move
+more recovered host code to `src/host/` the same way; thread/crash/network/window/
+input stay Win32-only. SDL owns windows,
 keyboard/text/pointer/gamepad input, rendering/targets/readback, files, clocks,
 events/timers, mutexes/TLS, locale/URL/logging; SDL3_mixer owns music and effects.
 The `BASS_*` entry points in its audio bridge are local compatibility functions;

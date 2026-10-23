@@ -71,6 +71,13 @@ void Threading()
     Require(SDL_SetTLS(&tls->id,&destroyed,nullptr) && SDL_GetTLS(&tls->id)==&destroyed,"TLS storage");
     Require(!vc1::DestroyTlsBlock(tls) && destroyed==1,"TLS destructor");
 }
+// The recovered FreeBumpHeaps frees the queue for exit without resetting it.
+void ResetEvents()
+{
+    using namespace vc1;
+    FreeBumpHeaps();g_bumpCursor=g_heapHead=g_heapTail=nullptr;
+    g_kdCallbacks=&g_kdDefaultCallback;g_kdDefaultCallback.prev=nullptr;
+}
 void FilesAndEvents()
 {
     using namespace vc1;
@@ -83,14 +90,14 @@ void FilesAndEvents()
     unsigned size=0;char* mapped=static_cast<char*>(KdMapFile(handle,&size));
     Require(mapped && size==sizeof(payload) && !memcmp(mapped,payload,size),"mapped file read");h->driver->unmap(h->driver,h->native,mapped);
     Require(KdFclose(handle)==0 && SDL_RemovePath(path),"file close/remove");
-    FreeBumpHeaps();SDL_FlushEvents(SDL_EVENT_FIRST,SDL_EVENT_LAST);
+    ResetEvents();SDL_FlushEvents(SDL_EVENT_FIRST,SDL_EVENT_LAST);
     SDL_Event key={};key.type=SDL_EVENT_KEY_DOWN;key.key.key=SDLK_UP;key.key.scancode=SDL_SCANCODE_UP;key.key.down=true;
     Require(SDL_PushEvent(&key),"inject test key");SdlPollEvents();
     unsigned seen=0;for(KdEvent* e=g_heapHead;e;e=e->next) if(e->type==0x38 && e->data[2] && (e->data[0]==0x1001 || e->data[0]==0x40000026)) ++seen;
     Require(seen==2,"SDL key to KD/game-key translation");
-    FreeBumpHeaps();
+    ResetEvents();
     KdTimer* timer=KdSetTimer(1000000,nullptr);SDL_Delay(3);FireTimers();
-    Require(g_heapHead && g_heapHead->type==KD_EVENT_TIMER,"timer delivery");UnlinkTimer(timer);free(timer);FreeBumpHeaps();
+    Require(g_heapHead && g_heapHead->type==KD_EVENT_TIMER,"timer delivery");UnlinkTimer(timer);free(timer);ResetEvents();
 }
 }
 int RunSdlBackendTests()

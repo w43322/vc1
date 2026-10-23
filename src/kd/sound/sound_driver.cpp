@@ -184,12 +184,8 @@ void** CreateKdSoundDriver(void** out)
     return out;
 }
 
-#if defined(VC1_USE_SDL3)
-static const char kBassVersion[] = "SDL3_mixer v%d.%d.%d.%d";
-#else
 // STRING: VC1 0x004d5b18
 static const char kBassVersion[] = "BASS v%d.%d.%d.%d";
-#endif
 // STRING: VC1 0x004d5b2c
 static const char kBassInit[] = "BASS_Init: %d";
 // STRING: VC1 0x004d5b3c

@@ -127,6 +127,24 @@ int MessageBoxA(HWND window,const char* text,const char* caption,unsigned)
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,caption,text,Window(window));return 1;
 }
 BOOL KillTimer(HWND,unsigned) { return 1; }
+// One pump per call drains SDL's queue into KD events; no message is returned.
+BOOL PeekMessageA(MSG*,HWND,unsigned,unsigned,unsigned) { SdlPollEvents();return 0; }
+BOOL TranslateMessage(const MSG*) { return 0; }
+long DispatchMessageA(const MSG*) { return 0; }
+void Sleep(DWORD milliseconds) { SDL_Delay(milliseconds); }
+BOOL QueryPerformanceCounter(LARGE_INTEGER* counter) { counter->QuadPart=static_cast<long long>(SDL_GetPerformanceCounter());return 1; }
+// SDL reports no OS version; the startup log reads "Windows v0.0.0".
+BOOL GetVersionExA(OSVERSIONINFOA* info) { return info->dwOSVersionInfoSize==sizeof(*info); }
+// The first preferred SDL locale's ISO 639 language / ISO 3166 country.
+LCID GetThreadLocale() { return 0; }
+int GetLocaleInfoA(LCID,unsigned type,char* out,int size)
+{
+    SDL_Locale** locales=SDL_GetPreferredLocales(nullptr);
+    const char* value=nullptr;
+    if(locales && locales[0]) value=type==LOCALE_SISO639LANGNAME ? locales[0]->language : type==LOCALE_SISO3166CTRYNAME ? locales[0]->country : nullptr;
+    const int length=value ? int(SDL_strlcpy(out,value,size))+1 : 0;
+    SDL_free(locales);return length<=size ? length : 0;
+}
 // The display frees the window record itself before this.
 BOOL DestroyWindow(HWND window)
 {

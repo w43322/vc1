@@ -1,4 +1,4 @@
-#include "host/clock.h"
+#include "host/native.h"
 #include "host/runtime.h"
 
 #include "bindings/component.h"
@@ -142,9 +142,9 @@ float WrapAngle(float angle)
 // FUNCTION: VC1 0x00429190
 int getSystemTime()
 {
-    PlatformClockSample qpc;
+    LARGE_INTEGER qpc;
 
-    PlatformReadCounter(&qpc);
+    QueryPerformanceCounter(&qpc);
     return static_cast<int>(static_cast<unsigned __int64>(
         static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)) / 1000000);
 }

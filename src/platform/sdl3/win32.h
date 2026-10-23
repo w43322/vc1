@@ -1,9 +1,10 @@
 #ifndef VC1_PLATFORM_SDL3_WIN32_H
 #define VC1_PLATFORM_SDL3_WIN32_H
 
-// The Win32 window subset the recovered display code calls, implemented over
-// SDL in window.cpp. HWND is the SDL_Window; GWL_STYLE without WS_CAPTION
-// applied with SWP_FRAMECHANGED selects desktop fullscreen.
+// The Win32 subset the shared recovered sources call (display window, event
+// pump, clock, version, locale), implemented over SDL in window.cpp. HWND is
+// the SDL_Window; GWL_STYLE without WS_CAPTION applied with SWP_FRAMECHANGED
+// selects desktop fullscreen. The message pump is SdlPollEvents.
 
 typedef struct HWND__* HWND;
 typedef long LONG;
@@ -22,6 +23,31 @@ struct POINT
 {
     LONG x;
     LONG y;
+};
+
+struct LARGE_INTEGER
+{
+    long long QuadPart;
+};
+
+// Messages never reach the game: PeekMessageA pumps SDL events instead.
+// tagMSG matches SDL_system.h's own Windows forward declaration.
+struct tagMSG
+{
+    HWND hwnd;
+};
+typedef struct tagMSG MSG;
+
+typedef unsigned long LCID;
+
+struct OSVERSIONINFOA
+{
+    DWORD dwOSVersionInfoSize;
+    DWORD dwMajorVersion;
+    DWORD dwMinorVersion;
+    DWORD dwBuildNumber;
+    DWORD dwPlatformId;
+    char szCSDVersion[128];
 };
 
 // Only the fields the display code reads.
@@ -53,6 +79,10 @@ const unsigned MB_ICONHAND = 0x10;
 const int SW_SHOWNORMAL = 1;
 const DWORD ENUM_CURRENT_SETTINGS = 0xffffffffu;
 const unsigned SPI_GETWORKAREA = 0x30;
+const unsigned PM_REMOVE = 0x0001;
+const unsigned MAX_PATH = 260;
+const unsigned LOCALE_SISO639LANGNAME = 0x59;
+const unsigned LOCALE_SISO3166CTRYNAME = 0x5a;
 
 namespace vc1 {
 
@@ -69,6 +99,14 @@ BOOL SetWindowTextA(HWND window, const char* text);
 int MessageBoxA(HWND window, const char* text, const char* caption, unsigned type);
 BOOL KillTimer(HWND window, unsigned id);
 BOOL DestroyWindow(HWND window);
+BOOL PeekMessageA(MSG* msg, HWND window, unsigned first, unsigned last, unsigned remove);
+BOOL TranslateMessage(const MSG* msg);
+long DispatchMessageA(const MSG* msg);
+void Sleep(DWORD milliseconds);
+BOOL QueryPerformanceCounter(LARGE_INTEGER* counter);
+BOOL GetVersionExA(OSVERSIONINFOA* info);
+LCID GetThreadLocale();
+int GetLocaleInfoA(LCID locale, unsigned type, char* out, int size);
 
 }
 
