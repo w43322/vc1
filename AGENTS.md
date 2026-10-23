@@ -10,7 +10,7 @@ Do not spawn sub-agents. Do not upload game assets. Do not commit Ghidra databas
 
 1. `git status --short`. Keep other people's and the user's uncommitted files. Do not reset or clean the tree.
 2. Confirm the original binary hash matches README. Every Ghidra read must name program `VirtualCity.Unwrapped.exe`.
-3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and `third_party/squirrel223`, and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/platform/win32/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
+3. Pick one addressed function or a tight cluster. Continue from `// FUNCTION: VC1 0x...` markers in `src/` and `third_party/squirrel223`, and from original addresses that are not mapped yet. Game entry is stdcall `WinMain` at `0x00486b00` (`src/kdcore/win_main.cpp`); the PE entry is stock VC9 `WinMainCRTStartup`. Do not add a fake `main`.
 
 For documentation/tool maintenance without recovery or mapping changes, inspect the tracked files and their callers; the recovery round below is not required. Leave untracked and ignored files untouched unless explicitly requested. Do not delete a standalone diagnostic merely because no build script calls it. Initial Ghidra analysis uses `tools/init-ghidra.ps1`; recovered names and types use `tools/import-ghidra.ps1`, with no hardcoded annotation replay.
 
@@ -82,57 +82,76 @@ A **0%** asmcmp hit on a newly named function usually means the wrong overload o
 // ?AddInstruction@SQFuncState@@QAEXAAUSQInstruction@@@Z
 ```
 
-## Platform separation
+## Source layout: recovered code vs. imports
 
-Shared host consumers use `src/host/platform.h`, which must not include Win32 or
-renderer headers. Win32 host implementations/state live in `src/platform/win32/`;
-`cmake/platform-win32.cmake` preserves the matching translation-unit order.
-`host/runtime.h` remains a compatibility umbrella; do not add native types to the
-shared contract.
-`host/window.h` exposes opaque KD window creation; native window records stay in
-`platform/win32/window.h`. `app/script.h` is the native-free binding contract.
-The `VC1_USE_SDL3` target (`tools/build-sdl3.cmd`, modern MSVC x86, C++17) selects
-only `platform/sdl3/` host implementations; both targets compile the recovered
-`kd/display/` sources and the recovered host core in `src/host/` (`kd_core.cpp`
-driver list/files/timers, `heap.cpp` event queue, `kd_log.cpp`). Their Win32 and
-D3D8 calls see native types through `host/native.h`: `platform/sdl3/d3d8.cpp`
-implements `Direct3DCreate8` and the used device/texture/surface/buffer slots over
-SDL (CPU vertex transform, unused slots abort) and `platform/sdl3/window.cpp` the
-used Win32 calls (`win32.h`: window, `PeekMessageA` = `SdlPollEvents`, `Sleep`,
-QPC, version, locale; HWND is the SDL window), like the BASS bridge, so shared
-recovered sources need no SDL branches. Keep that layer minimal: shim the Win32
-call instead of forking a recovered function or adding `VC1_USE_SDL3` to it (the
-WinMM joystick block in `host_services.cpp` is the remaining exception). Like the
-original, `KdLogV` drops log text in both targets. The SDL runtime keeps the event pool and queue
-head as one `KdEventPool` because `AllocEvent` scans up to `&g_heapHead`. Texture
-mods hook the first full unlock of a texture created while its file is open. Move
-more recovered host code to `src/host/` the same way; thread/crash/network/window/
-input stay Win32-only. SDL owns windows,
-keyboard/text/pointer/gamepad input, rendering/targets/readback, files, clocks,
-events/timers, mutexes/TLS, locale/URL/logging; SDL3_mixer owns music and effects.
-The `BASS_*` entry points in its audio bridge are local compatibility functions;
-the SDL executable must not import BASS or D3D8 or compile Win32 backend sources.
-The reference target preserves its original source ordering, VC9 flags and
-`/GL /LTCG`. New SDL implementations have no original mapping markers. Keep all
-modern C++ confined to the SDL backend; shared and matching code stay VC9-safe.
+One rule decides where code goes: everything that was inside the original
+`.exe` is shared recovered code; everything it imported from a DLL is provided
+per target.
+
+- `src/kd/`, `src/app/`, `src/bindings/`, `src/pyro/`, ...: engine and game.
+- `src/kdcore/`: the recovered G5 OpenKODE core (events, files and timers, log,
+  window procedure and input, threads, network, crash handler, `WinMain`,
+  globals). `kdcore/platform.h` is the engine-facing contract and must not
+  include Win32 or renderer headers; `kdcore/runtime.h` / `window.h` hold the
+  native records; `kdcore/native.h` includes the Windows SDK headers.
+  `cmake/kdcore.cmake` lists these sources in the reference translation-unit
+  order; keep it.
+- `src/imports/win32/`: the reference target's imports are the real DLLs
+  (`cmake/imports-win32.cmake`, BASS/d3d8 import-library stubs). `crt.cpp` holds
+  the two file driver slots that depend on the VC9 CRT's `FILE` layout.
+- `src/imports/sdl3/`: the SDL3 target (`tools/build-sdl3.cmd`, modern MSVC x86,
+  C++17). `include/` replaces `<windows.h>`, `<winsock2.h>`, `<mmsystem.h>`,
+  `<shellapi.h>`, `<shlobj.h>`, `<shlwapi.h>` with only what the game uses; each
+  DLL is one file implemented directly over SDL3 (`kernel32.cpp`, `user32.cpp`,
+  `gdi32.cpp`, `shell32.cpp`, `shlwapi.cpp`, `winmm.cpp`, `ws2_32.cpp`,
+  `d3d8.cpp`, `bass.cpp` over SDL3_mixer) plus `crt.cpp` and `sdl3.h/.cpp`
+  helpers. There is no SDL `main`: the CRT entry point calls the recovered
+  `WinMain`. `user32.cpp` turns SDL events into Win32 messages for the recovered
+  window procedure; a HWND is a small record with an SDL window for captioned
+  windows; mouse positions are back buffer pixels. `d3d8.cpp` transforms FVF
+  0x142 vertices on the CPU and draws with SDL geometry; unused COM slots abort
+  with their index.
+
+Recovered sources never branch on the target: there is no `VC1_USE_SDL3` define
+in code. When the SDL3 build needs something new, add the missing SDK
+declaration to `imports/sdl3/include/windows.h` and implement the call in its
+DLL's file instead of forking a recovered function. Write the imports in the
+project's normal style. Shim semantics are as simple as the game allows (the
+game never creates kernel event objects; `LoadLibraryA` only knows kernel32, so
+dbghelp crash dumps and QUSEREX stay off; `CreateMutexA` reports no other
+instance; WM_CHAR is Latin-1). Only `KdFileMap`/`KdFileUnmap` (`crt.cpp`) differ
+per target, because they need CRT internals.
+
+The event queue block at 0x004ed144 (cursor, 16-event pool, head, tail) is one
+`KdEventQueue` object because `AllocEvent` scans the pool up to the queue head;
+separate globals let the scan run into unrelated data.
+
+The SDL executable imports only SDL3.dll and the CRT's KERNEL32.dll. The
+reference target keeps its source order, VC9 flags and `/GL /LTCG`; SDL code has
+no original mapping markers and keeps modern C++ inside `src/imports/sdl3/`.
 SDL dependencies and extracted cursor/icon assets stay under `build/`, never Git.
 `tools/msvc-showincludes.py` normalizes localized cl output for Ninja dependencies;
-do not remove it without verifying header rebuilds. Run CTest in `build/sdl3`:
-`sdl3_host` uses a virtual gamepad; `sdl3_backend` uses dummy video/audio and no game
-data. Engine x86 ABI/layout assumptions still prevent a 64-bit port.
-For mechanical backend moves, preserve recovered bodies and markers, build and
-compare every mapped entity against the pre-refactor baseline. Matching scores
-alone are not a runtime test; also exercise startup after changing dependencies.
+do not remove it without verifying header rebuilds. Engine x86 ABI/layout
+assumptions still prevent a 64-bit port. For mechanical moves, preserve
+recovered bodies and markers and compare every mapped entity against the
+pre-move baseline; matching scores alone are not a runtime test.
 
-Texture mods are a new resource extension, not original function recovery.
-`src/mod/` stays renderer-independent and VC9-language-compatible but is compiled
-only into the SDL target; `platform/sdl3/mod_io.cpp` adapts file/PNG I/O and queries
-the live Squirrel `Tiles`/`TileImages` tables. Mods only replace images: patch CPU
-atlas pixels before GPU upload, with no script hooks. Never overwrite game files.
-The root `mods/` folder is local and git-ignored (do not commit it); the SDL build
-copies its folders beside the executable and seeds `mods/enabled.txt` only once.
-Exported original images and temporary verification stay local under `build/`.
-Keep new extension code free of original mapping markers.
+## Addons (not original code)
+
+Two CMake options, on by default for the SDL3 build and off for the reference
+build (a reference build with them on is not comparable):
+
+- `VC1_LOG`: `KdLogV` also passes the text to `OutputDebugStringA` (SDL3: the
+  console). Without it KdLog text is dropped, as in the original release build.
+- `VC1_MODS`: texture mods in `src/mod/` (VC9-compatible). The one hook is in
+  `LoadTextureFile`; `texture_hook.cpp` locks the new texture through the D3D8
+  table, `mods.cpp` patches atlas pixels, `mod_io.cpp` reads files with the CRT,
+  PNG with the game's libpng 1.0.2 and tile names from the live Squirrel
+  `Tiles`/`TileImages` tables. Mods only replace images, with no script hooks;
+  never overwrite game files. The root `mods/` folder is local and git-ignored;
+  the build copies its folders beside the executable and seeds
+  `mods/enabled.txt` once. Exported images and temporary verification stay
+  under `build/`. Keep addon code free of original mapping markers.
 
 ## Write source
 
@@ -233,9 +252,9 @@ The `.nut` files are **compiled** Squirrel bytecode, not text. `tools/decompile-
 
 This section records prior runtime observations, not full-game validation. Later library/template mappings alone do not establish new gameplay coverage.
 
-- SDL3 backend: modern MSVC x86 build, virtual-gamepad and full dummy-video/audio CTests pass. The SDL executable imports only SDL3.dll and CRT-required KERNEL32.dll and compiles no Win32 backend source. A manual run loads `Level_01_05`; the user confirmed controls, music and effects work. This is not full campaign validation. Default VC9 scores for all 4698 mapped entities remain unchanged.
+- SDL3 build: modern MSVC x86; it runs the recovered kdcore (including `WinMain`, the window procedure and input) over the SDL3 imports in `src/imports/sdl3/`. Before the move to imports a manual run loaded `Level_01_05` and the user confirmed controls, music and effects; the imports-based build has not been run yet. This is not full campaign validation.
 
-- Recent source/build changes: `src/platform/win32/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 now uses a generated import library (`cmake/d3d8.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
+- Recent source/build changes: `src/kdcore/sqstd_system.cpp` implements the game's system-library fork (ShellExecute, QPC clock and KD paths); SqPlus strings use `KdString`, global new/delete use malloc/free, and the build no longer needs the C++ standard-library/EH runtime. D3D8 uses a generated import library (`cmake/imports-win32.cmake`) like BASS. Additional SqPlus/template, CRT, libpng and zlib mappings are in source/header annotations and `config/verified.csv` as appropriate.
 - Works: CRT/WinMain, script VM and natives, `Main.nut` `initApp`, window class + `KdWindowProc`, D3D8 device, main loop with Begin/EndScene/Present per frame, System/UpdateGroup/RenderGroup/InputGroup, Display script methods, System `GetMember` (RegisterObject/GetObject/RenderFrame/...), CompoundObject, ScriptedObject (`src/kd/scene/scripted_object.cpp`), `KdScriptInstance` (`src/kd/script_instance.cpp`), SquirrelVM `BeginCall`/`PushParam`/`EndCall`. `Game.nut` loads as a ScriptedObject; its `Update`/`Render`/`OnKeyPressed` run every frame (SplashScene).
 - The main menu renders (background, zeppelin scene, menu buttons and font text). Recovered for that: graphics `GetMember` (`0x0045dc20`), TGA (`libtga`) and PVR (`LoadPvrTexture` `0x00465990`, 32-bit only) textures, TileManager (`src/kd/tile/tile_manager.cpp`: engine `KdTileManager` + game `VcTileManager`, factory `0x004a1aa0`, tile command interpreter in `Render`), D3D8 COM calls through `D3dRelease` / stdcall typedefs. The game starts fullscreen like the original (`run-screenshot.py` captures black in fullscreen; it works if the window is not minimized in windowed mode). Menu clicks work; PLAY GAME starts the intro comic (`scripts/comics/*`) and its JPEG backgrounds load (`LoadJpgTexture` `0x00465f10`). The comic runs to the end of the run without script errors.
 - Pyro effects: `.pyro` files load (`[Effect] Loaded ... (emitters: n)`). The statically linked Fenomen Pyro library (proprietary, do not vendor its SDK) is recovered under `src/pyro/` (archive strings, stream adapter, file/header/resource/shape/frame readers, emitter and layer deserializers). The game side is in `src/kd/display/effect.*`: `KdEffect` (CreateEffect), `KdPyroStream` and `KdEffectEmitter` (the scene object that `CreateEmitter` returns). Particles render: the intro comic's car smoke and emergency signal (about 45 s with `--click 0.84,0.53@14`) match the original apart from noise. Pipeline: `PyroLayer::Update`/`Prepare` (simulation), `Render` `0x00452140` → `BuildQuad` `0x004513d0` → `PyroVertexBuffer::Upload` → `KdDisplayDevice::DrawQuads`/`DrawQuadBuffer` → `KdGraphics::DrawQuads` `0x0045c910` → `BeginQuadBatch` `0x00464530`; textures come from `CreateImage`/`CreateImageTexture` (a `KdTexture` locked to the image size). Turbulence is `PyroNoise` `0x0044d5c0` (`src/pyro/pyro_random.cpp`). Still a stub: `PyroLibrary::LoadFromPath` `0x004566b0` (filename loader, no callers).
@@ -243,7 +262,7 @@ This section records prior runtime observations, not full-game validation. Later
 - Resources: the game loads its cursors (`setCursor` ids 100..105) and icon from its own module. CMake runs `tools/extract-rsrc.py` at configure time to dump the original's `.rsrc` (minus the manifest) into `build/vc9/original-rsrc/original.res` and links it; without it the cursor is invisible.
 - `mount: http()` fails (`error: -1, can't mount (null)()`): the http KD driver `0x0047d650` is still a stub. The blank `<empty fmt ...>` log lines label the bytes after the format string, not the log level.
 - `scripts/menus/Loading.nut` (`res/MenuLoading.nut`, `ProgressFG` control) is the loading screen; `scripts/Game.nut` is the `Game` object.
-- Levels: `Scene` (`src/kd/scene/scene.cpp`) and its subclass `GameLevel` (`src/kd/world/game_level.cpp`: dynamic tile layers, `FindObjectsByMask`, `GetObjectAt`) are recovered. Clicking through the comic (`--click 0.84,0.53@14` then `0.5,0.5` every 4 s from 22 s) reaches `Loading level: Level_01_01`; `File` (`src/kd/file/file.cpp`) opens the level files and `TileLayer` (`src/kd/tile/tile_layer.cpp`: tiles, 128 px spatial grid, parallax back tile, tile objects drawn between tiles by depth) loads the three tile layers. `PassMap` (`src/kd/road/pass_map.cpp`: cell byte grid, `IGridMap`, `OnCellChange`, `IGridRenderer` list) loads too, and the host math lib fork (`src/host/sqstd_math.cpp`) adds `round`/`fmod`/`DBPI`/`HALFPI`/`INVDBPI`. `GridRouter` (`src/kd/road/grid_router.cpp`), `Blob` (`src/kd/blob/blob.cpp`) and `Camera` (`src/kd/scene/camera.cpp`: world/screen/UI matrices, `BindView` sets the graphics transform) load as well. `ClassificatedRenderer` (`src/kd/render/classificated_renderer.cpp`) and `RoadRenderer` (`src/kd/road/road_renderer.cpp`: one malloc'd `RoadCell` per grid cell, link bits index 16-entry road tile tables, preview cells) load. `TerrainBuilder` (`src/kd/build/terrain_builder.cpp`: build-road / build-forest / destroy modes over the grid map, per-cell tint as an `IGridRenderer`, road drafts through `IGridRouter`, script `CanBuildRoad`/`OnBuild*`/`OnDestroy*` callbacks) loads. `GridRectRenderer` (`src/kd/road/grid_rect_renderer.cpp`: cell rectangles outlined with a 16-entry tile table indexed by inner sides) loads for the activity radius and grid margin. `TileObject` (`src/kd/tile/tile_object.cpp`: one tile of the TileManager drawn at an `IPositionable`, joint sub-objects, hit test, depth) and `BuildingBuilder` (`src/kd/build/building_builder.cpp`: building placement with a `TileObject` child, footprint snapped to the grid, margin rectangles, `OnBoundsChange`/`OnBuild`/`OnRefuseBuild`) load. `IGridRenderer`'s slot is `RenderGrid` because BuildingBuilder also implements `IRenderable::Render`. `TransportMover` (`src/kd/route/transport_mover.cpp`) loads with all 21 script bindings, the transport records and the `IRoute` interface (`src/kd/iface/iroute.h`); it is fully recovered: movement (`Update`/`UpdateRecord`: blocker check, corner arcs, `OnCellChange`/`OnMovingFinish`), roadside parking (`MoveToRoadsite`), the debug overlay `Render`, path finders into cell rects and stream read/write. The optimal-route planners order areas with `TSPSolver` (`src/kd/route/tsp_solver.cpp`: farthest insertion over a `KdObjArray<KdArray<int> >` distance matrix, a singleton). `GroupRenderer` (`src/kd/render/group_renderer.cpp`: a ScriptedObject with its own `RenderGroup`, script `RegisterObject`) and `RoadCellsRenderer` (`src/kd/road/road_cells_renderer.cpp`: a copy of RoadRenderer cells drawn as route marks) make `RoutingRenderer.nut` load. `GameObject` (`src/kd/world/game_object.cpp`: a ScriptedObject whose `SetPosition` moves its positionable children) loads every plant, `CameraMover6` and `Garage8`; `TileAnimation` (`src/kd/tile/tile_animation.cpp`: picks a `TileAnimationData` channel by direction and drives a slave `TileObject`'s tile) animates them. The menus' `Layer` component (`src/kd/scene/layer.cpp`: an `IGraphics` that records every call as an inline `LayerCommand` and replays them in `Render`) draws the hints. `Route` (`src/kd/route/route.cpp`: a polyline with per-point distances, filled from an `IGridRouter` path, sampled by distance) is recovered. Level_01_01 then runs with no script errors and reacts to clicks; transports have not been exercised at runtime yet.
+- Levels: `Scene` (`src/kd/scene/scene.cpp`) and its subclass `GameLevel` (`src/kd/world/game_level.cpp`: dynamic tile layers, `FindObjectsByMask`, `GetObjectAt`) are recovered. Clicking through the comic (`--click 0.84,0.53@14` then `0.5,0.5` every 4 s from 22 s) reaches `Loading level: Level_01_01`; `File` (`src/kd/file/file.cpp`) opens the level files and `TileLayer` (`src/kd/tile/tile_layer.cpp`: tiles, 128 px spatial grid, parallax back tile, tile objects drawn between tiles by depth) loads the three tile layers. `PassMap` (`src/kd/road/pass_map.cpp`: cell byte grid, `IGridMap`, `OnCellChange`, `IGridRenderer` list) loads too, and the host math lib fork (`src/kdcore/sqstd_math.cpp`) adds `round`/`fmod`/`DBPI`/`HALFPI`/`INVDBPI`. `GridRouter` (`src/kd/road/grid_router.cpp`), `Blob` (`src/kd/blob/blob.cpp`) and `Camera` (`src/kd/scene/camera.cpp`: world/screen/UI matrices, `BindView` sets the graphics transform) load as well. `ClassificatedRenderer` (`src/kd/render/classificated_renderer.cpp`) and `RoadRenderer` (`src/kd/road/road_renderer.cpp`: one malloc'd `RoadCell` per grid cell, link bits index 16-entry road tile tables, preview cells) load. `TerrainBuilder` (`src/kd/build/terrain_builder.cpp`: build-road / build-forest / destroy modes over the grid map, per-cell tint as an `IGridRenderer`, road drafts through `IGridRouter`, script `CanBuildRoad`/`OnBuild*`/`OnDestroy*` callbacks) loads. `GridRectRenderer` (`src/kd/road/grid_rect_renderer.cpp`: cell rectangles outlined with a 16-entry tile table indexed by inner sides) loads for the activity radius and grid margin. `TileObject` (`src/kd/tile/tile_object.cpp`: one tile of the TileManager drawn at an `IPositionable`, joint sub-objects, hit test, depth) and `BuildingBuilder` (`src/kd/build/building_builder.cpp`: building placement with a `TileObject` child, footprint snapped to the grid, margin rectangles, `OnBoundsChange`/`OnBuild`/`OnRefuseBuild`) load. `IGridRenderer`'s slot is `RenderGrid` because BuildingBuilder also implements `IRenderable::Render`. `TransportMover` (`src/kd/route/transport_mover.cpp`) loads with all 21 script bindings, the transport records and the `IRoute` interface (`src/kd/iface/iroute.h`); it is fully recovered: movement (`Update`/`UpdateRecord`: blocker check, corner arcs, `OnCellChange`/`OnMovingFinish`), roadside parking (`MoveToRoadsite`), the debug overlay `Render`, path finders into cell rects and stream read/write. The optimal-route planners order areas with `TSPSolver` (`src/kd/route/tsp_solver.cpp`: farthest insertion over a `KdObjArray<KdArray<int> >` distance matrix, a singleton). `GroupRenderer` (`src/kd/render/group_renderer.cpp`: a ScriptedObject with its own `RenderGroup`, script `RegisterObject`) and `RoadCellsRenderer` (`src/kd/road/road_cells_renderer.cpp`: a copy of RoadRenderer cells drawn as route marks) make `RoutingRenderer.nut` load. `GameObject` (`src/kd/world/game_object.cpp`: a ScriptedObject whose `SetPosition` moves its positionable children) loads every plant, `CameraMover6` and `Garage8`; `TileAnimation` (`src/kd/tile/tile_animation.cpp`: picks a `TileAnimationData` channel by direction and drives a slave `TileObject`'s tile) animates them. The menus' `Layer` component (`src/kd/scene/layer.cpp`: an `IGraphics` that records every call as an inline `LayerCommand` and replays them in `Render`) draws the hints. `Route` (`src/kd/route/route.cpp`: a polyline with per-point distances, filled from an `IGridRouter` path, sampled by distance) is recovered. Level_01_01 then runs with no script errors and reacts to clicks; transports have not been exercised at runtime yet.
 
 ### Pitfalls seen at runtime
 

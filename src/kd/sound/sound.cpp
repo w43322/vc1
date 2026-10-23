@@ -2,7 +2,7 @@
 #include "kd/sound/bass_api.h"
 #include "kd/stream/file_reader.h"
 #include "kd/iface/iid.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "bindings/sqplus.h"
 
 #include <new>

@@ -19,7 +19,7 @@ set(SQUIRREL223_SOURCES
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstream.cpp
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstring.cpp)
 # sqstdmath.cpp and sqstdsystem.cpp are replaced by the host forks
-# src/host/sqstd_math.cpp and src/platform/win32/sqstd_system.cpp.
-# The game's sqstdio runs on KD files; see src/host/kd_stdio.h.
+# src/kdcore/sqstd_math.cpp and src/kdcore/sqstd_system.cpp.
+# The game's sqstdio runs on KD files; see src/kdcore/kd_stdio.h.
 set_source_files_properties(${SQUIRREL223_ROOT}/sqstdlib/sqstdio.cpp PROPERTIES
-  COMPILE_FLAGS "/FIhost/kd_stdio.h")
+  COMPILE_FLAGS "/FIkdcore/kd_stdio.h")

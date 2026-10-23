@@ -2,7 +2,7 @@
 #define VC1_KD_FILE_READER_H
 
 #include "kd/factory.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 
 namespace vc1 {
 

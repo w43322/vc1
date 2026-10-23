@@ -2,7 +2,7 @@
 #include "kd/display/pyro.h"
 #include "kd/stream/file_reader.h"
 #include "pyro/pyro_emitter.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 
 #include "bindings/component.h"
 #include "bindings/sqplus.h"

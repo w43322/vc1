@@ -1,5 +1,5 @@
-#include "host/runtime.h"
-#include "host/native.h"
+#include "kdcore/runtime.h"
+#include "kdcore/native.h"
 
 #include "kd/factory.h"
 #include "kd/iface/idisplay.h"

@@ -3,7 +3,7 @@
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
 #include "kd/factory.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "bindings/component.h"
 #include "bindings/matrix3.h"
 #include "bindings/sqplus.h"

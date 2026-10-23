@@ -1,4 +1,4 @@
-#include "host/native.h"
+#include "kdcore/native.h"
 #include "kd/system/system.h"
 
 #include "kd/factory.h"
@@ -13,7 +13,7 @@
 #include "bindings/squirrel_object.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "memory/fixed_pool.h"
 
 #include <new>

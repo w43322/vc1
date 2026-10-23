@@ -4,7 +4,7 @@
 #include "bindings/component.h"
 #include "bindings/matrix3.h"
 #include "bindings/sqplus.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 
 #include <math.h>
 #include <new>

@@ -10,7 +10,7 @@ Original binary (keep it next to the repo, not in Git):
 
 SHA-256: `bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695`
 
-Game entry is stdcall `WinMain` at `0x00486b00` (`src/platform/win32/win_main.cpp`). The PE entry is stock VC9 `WinMainCRTStartup`. Subsystem is WINDOWS.
+Game entry is stdcall `WinMain` at `0x00486b00` (`src/kdcore/win_main.cpp`). The PE entry is stock VC9 `WinMainCRTStartup`. Subsystem is WINDOWS.
 
 Every recovered function needs Ghidra evidence from that original and a reccmp asm diff of the recompiled bytes. Put evidence in source comments.
 
@@ -132,36 +132,35 @@ The build includes Squirrel 2.2.3, SqPlus, klibc's scanf family, libtga, jpgd 0.
 
 Keep the build/compare, Ghidra setup/import and runtime helpers in `tools/`. `disasm-orig.py` provides supplementary raw assembly/data views; `crt-ident.py` finds candidate CRT symbols by byte patterns and still requires Ghidra evidence and reccmp verification. `extract-rsrc.py` is called by CMake, and `report-progress.py` by the compare script.
 
-## Platform boundary
+## Source layout
 
-`src/host/platform.h` declares the shared KD services and event/file types without
-including Windows headers. The matching host implementation and its native state
-live in `src/platform/win32/`, selected by `cmake/platform-win32.cmake` in the
-original translation-unit order. `host/runtime.h` is a compatibility umbrella for
-remaining consumers of the Win32 runtime; shared code should use `host/platform.h`.
+Everything that was inside the original executable is shared recovered code;
+everything it imported from a DLL is provided per target.
 
-`host/window.h` exposes opaque KD window creation. The reference window,
-message translation and resource cursors live in `src/platform/win32/`; the
-optional SDL target selects only `src/platform/sdl3/` implementations.
-`app/script.h` declares script initialization and bindings without native types.
+- `src/kdcore/`: the recovered G5 OpenKODE core: events, files and timers, log,
+  window procedure and input, threads, network, crash handler, `WinMain` and
+  globals. `kdcore/platform.h` is the engine's view of it, free of Windows
+  headers. `cmake/kdcore.cmake` keeps the reference translation-unit order.
+- `src/imports/win32/`: the reference build links the real Windows DLLs, plus
+  generated BASS/d3d8 import libraries (`cmake/imports-win32.cmake`).
+- `src/imports/sdl3/`: the SDL3 build. `include/` stands in for the Windows SDK
+  headers with just the declarations the game uses, and each imported DLL is one
+  file implemented over SDL3 (`kernel32.cpp`, `user32.cpp`, `gdi32.cpp`,
+  `shell32.cpp`, `shlwapi.cpp`, `winmm.cpp`, `ws2_32.cpp`, `d3d8.cpp`, and
+  `bass.cpp` over SDL3_mixer). The CRT entry point calls the recovered `WinMain`;
+  SDL events reach the recovered window procedure as Win32 messages, and the
+  recovered display code draws through the D3D8 implementation.
 
-The SDL backend owns windows, keyboard/text/mouse/gamepad input, performance
-counters, events and timers, texture storage/locking/readback, geometry batches,
-alpha/additive blending, the texture-plus-diffuse color operation, clipping,
-transforms and render targets. It renders with SDL3 and plays music/effects with
-SDL3_mixer, including eight sample voices, looping, seeking, pan/frequency/volume
-and attribute fades. Files and directories use SDL I/O/filesystem APIs; threads,
-mutexes, TLS, locale, URL opening and logging also use SDL. It compiles no Win32
-backend source and imports neither D3D8 nor BASS. The old sound function names are
-local compatibility entry points in `platform/sdl3/audio.cpp`, not DLL imports.
+Recovered sources do not branch on the target. `crt.cpp` in each imports folder
+holds the two file driver slots that need the VC9 CRT's `FILE` internals.
+
+## SDL3 build
 
 Build with modern Visual Studio C++ tools (2017 or newer), Ninja, Python 3 and
 CMake 3.16+:
 
 ```powershell
 .\tools\build-sdl3.cmd
-cd build\sdl3
-ctest --output-on-failure
 ```
 
 The script selects x86 and prefers Visual Studio's bundled CMake. `VC1_CMAKE`
@@ -175,37 +174,36 @@ Output: `build/sdl3/bin/VirtualCity.SDL3.exe`. Run from the same game data direc
 or use this from the repository root:
 
 ```powershell
-$env:VC1_WINDOWED = '1'   # optional; fullscreen is the default
 .\.venv\Scripts\python.exe tools/run-debug.py --exe build/sdl3/bin/VirtualCity.SDL3.exe --map build/sdl3/bin/VirtualCity.SDL3.map --timeout 60 --keep
 ```
 
-Interact manually; `--keep` leaves the window open. At configure time,
+Interact manually; `--keep` leaves the window open. The game starts full screen
+like the original; switch to windowed mode in its options. At configure time,
 `tools/extract-sdl-resources.py` converts the original's cursor/icon resources into
 `build/sdl3/bin/platform-resources/`. These generated game assets stay local.
 SDL3_mixer is built statically by default; BASS.dll is not required by this target.
+The executable imports only SDL3.dll and KERNEL32.dll.
 
-The SDL build is currently supported/tested with Windows MSVC x86. Engine pointer
+The SDL build is currently supported with Windows MSVC x86. Engine pointer
 handles, layout checks and the remaining VC9-specific code still need work for
 other compilers or 64-bit builds. The default `tools/build-vc9.cmd` disables SDL3
-and preserves `/GL /LTCG` and reccmp; SDL implementations have no original mapping
-markers. All 4698 reference comparison entries retain their pre-port scores.
+and preserves `/GL /LTCG` and reccmp.
 
-CTest covers real SDL virtual-gamepad input and an asset-free software-renderer /
-dummy-audio backend run: geometry, alpha/additive/color-operation blending, clip,
-transform, render targets/readback, eight voices, custom streams/seeking/fades,
-file I/O, keys, timers, mutex concurrency and TLS destruction. The manual SDL run
-loads `Level_01_05`; the user confirmed controls and music/effects work. This is
-not full campaign validation. Existing unrecovered archive/HTTP drivers remain
-outside this backend port.
+## Addons
 
-## Mods (SDL3)
+`VC1_LOG` and `VC1_MODS` are CMake options, on by default for the SDL3 build and
+off for the reference build (turning them on there makes it non-comparable).
+`VC1_LOG` sends KdLog text to `OutputDebugStringA` (the console in the SDL3
+build); the original release build drops it.
 
-The SDL build can replace atlas artwork with PNGs. Mods are local content in the
+## Mods (`VC1_MODS`)
+
+The game can replace atlas artwork with PNGs. Mods are local content in the
 git-ignored `mods/` folder at the repository root; the build copies every folder
 in it beside the executable and seeds `mods/enabled.txt` once (one mod folder per
 line, `#` comments; later entries win). Edit `build/sdl3/bin/mods/enabled.txt` and
 restart to switch mods; an empty or missing list restores the original artwork.
-`VC1_MODS` selects a different mods directory. VC9 matching builds do not load mods.
+The `VC1_MODS` environment variable selects a different mods directory.
 
 A mod is a folder with a `mod.json` that maps tile names to PNGs:
 
@@ -216,7 +214,7 @@ A mod is a folder with a `mod.json` that maps tile names to PNGs:
 `id` must equal the folder name. Tile names resolve through the live
 `Tiles`/`TileImages` tables and geometry comes from `res/Tiles.bin`; static and
 composite tiles (commands 0, 3, 4) are supported. Each PNG is scaled to the tile's
-logical canvas and written into the matching atlas rectangles before GPU upload,
+logical canvas and written into the matching atlas rectangles when the texture loads,
 so every tile that shares a region (flipped variants, composites) changes too.
 Use PNGs at the logical tile size for the sharpest result. Original files are
 never written. `tools/mod-tiles.py NAME [--export out.png]` prints a tile's
@@ -232,7 +230,7 @@ inside the `BUTTONS_HINT_*` hint button).
 
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.
 - `/MT /GS- /GR- /O2 /Ob2 /Z7 /GL` (no `/EH`) and linker `/LTCG /OPT:NOREF /OPT:NOICF`. Do not drop `/GL /LTCG`.
-- Matching/shared source stays VC9-compatible. The separately selected `src/platform/sdl3/` backend uses C++17.
+- Matching/shared source stays VC9-compatible. Only `src/imports/sdl3/` uses C++17.
 - Vendored library bodies stay upstream except documented, evidence-backed game/VC9 patches; mapping additions are comments only. Do not add inline asm. Do not invent mappings.
 
 ## Do not commit

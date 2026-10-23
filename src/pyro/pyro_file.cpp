@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "kd/display/pyro.h"
 #include "kd/iface/ipyro_device.h"
 #include "pyro/pyro_emitter.h"

@@ -1,5 +1,5 @@
-#include "host/native.h"
-#include "host/runtime.h"
+#include "kdcore/native.h"
+#include "kdcore/runtime.h"
 
 #include "bindings/component.h"
 #include "bindings/matrix3.h"

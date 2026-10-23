@@ -1,4 +1,4 @@
-# Pin the official SDL3_mixer source; the SDL backend never loads BASS.dll.
+# Pin the official SDL3_mixer source; the SDL3 build never loads BASS.dll.
 find_package(SDL3_mixer 3.2.4 EXACT CONFIG QUIET)
 if(NOT TARGET SDL3_mixer::SDL3_mixer)
   include(FetchContent)

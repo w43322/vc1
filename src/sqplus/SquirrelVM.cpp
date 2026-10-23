@@ -1,7 +1,7 @@
 #include <sqplus.h>
 
 #include "bindings/squirrel_object.h"
-#include "host/runtime.h"
+#include "kdcore/runtime.h"
 
 #include <sqstdaux.h>
 #include <sqstdblob.h>

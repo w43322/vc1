@@ -4,7 +4,7 @@
 #include "bindings/sqplus.h"
 #include "kd/iface/icomponent_faces.h"
 
-// <windows.h> (via host/runtime.h) maps DrawText to DrawTextA.
+// <windows.h> (via kdcore/runtime.h) maps DrawText to DrawTextA.
 #undef DrawText
 
 #include "kd/iface/iid.h"

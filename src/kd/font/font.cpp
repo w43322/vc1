@@ -5,7 +5,7 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/itexture.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "kd/iface/iresource_manager.h"
 #include "kd/stream/file_reader.h"
 
@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// <windows.h> (via host/runtime.h) maps DrawText to DrawTextA.
+// <windows.h> (via kdcore/runtime.h) maps DrawText to DrawTextA.
 #undef DrawText
 
 namespace vc1 {

@@ -8,9 +8,9 @@
 
 #include "kd/iface/iunknown.h"
 #include "kd/iface/iid.h"
-#include "host/runtime.h"
-#include "host/native.h"
-#include "host/kd_stdio.h"
+#include "kdcore/runtime.h"
+#include "kdcore/native.h"
+#include "kdcore/kd_stdio.h"
 #include "kd/display/jpeg_stream.h"
 #include "bindings/matrix4.h"
 #include "bindings/matrix3.h"
@@ -18,6 +18,9 @@
 #include "bindings/sqplus.h"
 
 #include <tga.h>
+#if VC1_MODS
+#include "mod/mod_io.h"
+#endif
 
 #include <errno.h>
 #include <new>
@@ -2146,6 +2149,10 @@ IUnknown* LoadTextureFile(const char* name)
     if (!texture) {
         return 0;
     }
+#if VC1_MODS
+    // Addon, not original: replace tiles with the enabled texture mods.
+    ModTexture(name, texture);
+#endif
     node = static_cast<TrackedTexture*>(malloc(sizeof(TrackedTexture)));
     node->texture = texture;
     node->width = width;

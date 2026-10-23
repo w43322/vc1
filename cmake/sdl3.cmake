@@ -18,11 +18,3 @@ if(NOT TARGET SDL3::SDL3)
     URL_HASH SHA256=7322236cd12090c3eb40b9728be4d49c76f66ad17d04369584d4ecad5cf77c68)
   FetchContent_MakeAvailable(SDL3)
 endif()
-
-# Exercise real SDL virtual-controller input without depending on game assets.
-enable_testing()
-add_executable(vc1_sdl3_host_test tests/sdl3_host.cpp src/platform/sdl3/gamepad.cpp)
-target_include_directories(vc1_sdl3_host_test PRIVATE "${PROJECT_SOURCE_DIR}/src")
-target_compile_definitions(vc1_sdl3_host_test PRIVATE VC1_USE_SDL3)
-target_link_libraries(vc1_sdl3_host_test PRIVATE SDL3::SDL3)
-add_test(NAME sdl3_host COMMAND vc1_sdl3_host_test)

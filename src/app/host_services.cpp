@@ -1,14 +1,12 @@
-#include "host/runtime.h"
-#include "host/native.h"
+#include "kdcore/runtime.h"
+#include "kdcore/native.h"
 #include "app/host_api.h"
 #include "bindings/matrix3.h"
 #include "bindings/matrix4.h"
 #include "bindings/rectf.h"
 #include "bindings/sqplus.h"
 
-#if !defined(VC1_USE_SDL3)
 #include <mmsystem.h>
-#endif
 
 #include <errno.h>
 #include <math.h>
@@ -244,9 +242,7 @@ const char* GetResourceLocale()
 }
 
 // Preserve this WinMM implementation in its original translation unit:
-// moving it into a header changes VC9 register allocation. The SDL3 target
-// supplies the same PollGamepad service from platform/sdl3/gamepad.cpp.
-#if !defined(VC1_USE_SDL3)
+// moving it into a header changes VC9 register allocation.
 // Inferred names. Joystick 0 as read by PollGamepad.
 // GLOBAL: VC1 0x004e9080
 JOYINFOEX g_joyInfo;
@@ -303,14 +299,14 @@ void PollGamepad()
     for (i = 0; i < 4; ++i) {
         const unsigned value = hat[i];
         if (g_joyHat[i] != value) {
-            KdEvent* event = reinterpret_cast<KdEvent*>(g_bumpArena);
+            KdEvent* event = reinterpret_cast<KdEvent*>(g_kdEventQueue.arena);
             for (;;) {
                 if (event->type == 0) {
                     event->type = -1;
                     break;
                 }
                 ++event;
-                if (event >= reinterpret_cast<KdEvent*>(&g_heapHead)) {
+                if (event >= reinterpret_cast<KdEvent*>(&g_kdEventQueue.head)) {
                     event = static_cast<KdEvent*>(malloc(sizeof(KdEvent)));
                     break;
                 }
@@ -325,11 +321,11 @@ void PollGamepad()
             QueryPerformanceCounter(&now);
             event->timestamp =
                 static_cast<__int64>(static_cast<double>(now.QuadPart) * g_nsPerTick);
-            event->prev = g_heapTail;
+            event->prev = g_kdEventQueue.tail;
             event->next = 0;
-            g_heapTail = event;
+            g_kdEventQueue.tail = event;
             if (!event->prev) {
-                g_heapHead = event;
+                g_kdEventQueue.head = event;
             }
             else {
                 event->prev->next = event;
@@ -342,8 +338,6 @@ void PollGamepad()
     g_joyHat[2] = hat[2];
     g_joyHat[3] = hat[3];
 }
-
-#endif
 
 // Host extra on the stock mathlib table as "fmod" (nparams 3). Stack slots 2/3, CRT fmod.
 // FUNCTION: VC1 0x004bb800

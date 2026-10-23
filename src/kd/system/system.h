@@ -9,7 +9,7 @@
 #include "kd/iface/idisplay.h"
 #include "kd/iface/ifont.h"
 #include "kd/component_group.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 
 namespace vc1 {
 

@@ -1,7 +1,7 @@
-#include "host/native.h"
+#include "kdcore/native.h"
 #include "pyro/pyro_random.h"
 
-#include "host/platform.h"
+#include "kdcore/platform.h"
 
 #include <math.h>
 #include <stdlib.h>

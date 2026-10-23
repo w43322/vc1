@@ -1,5 +1,5 @@
 #include "kd/display/texture.h"
-#include "host/native.h"
+#include "kdcore/native.h"
 #include "kd/display/display.h"
 
 #include "bindings/sqplus.h"

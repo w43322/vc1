@@ -1,5 +1,5 @@
 #include "app/script.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "memory/fixed_pool.h"
 
 #include "bindings/component.h"

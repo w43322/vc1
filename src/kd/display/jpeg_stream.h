@@ -7,7 +7,7 @@
 // sets errno 0x11 on a null handle, the destructor (0x0041aa60) closes
 // through KdFclose. Name comments for the library are in jpgd093b.h.
 
-#include "host/kd_tga_stdio.h"
+#include "kdcore/kd_tga_stdio.h"
 
 namespace vc1 {
 

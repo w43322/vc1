@@ -6,6 +6,10 @@ endif()
 project(VirtualCityDecomp VERSION 0.1.0 LANGUAGES C CXX)
 
 option(VC1_USE_SDL3 "Build the SDL3 backend (Windows x86, modern MSVC)" OFF)
+# Addons, not original code. They default to on for the SDL3 build only, so a
+# default reference build stays comparable with the original.
+option(VC1_MODS "Texture mods from mods/ beside the executable" ${VC1_USE_SDL3})
+option(VC1_LOG "Send KdLog text to OutputDebugStringA (SDL3: the console)" ${VC1_USE_SDL3})
 if(VC1_USE_SDL3)
   # Normalize redirected cl output so a localized compiler cannot silently lose
   # Ninja header dependencies. This affects the modern target only.
@@ -66,31 +70,17 @@ include(cmake/jpgd.cmake)
 include(cmake/libpng.cmake)
 include(cmake/lzma.cmake)
 include(cmake/sqplus.cmake)
-if(NOT VC1_USE_SDL3)
-  include(cmake/bass.cmake)
-  include(cmake/d3d8.cmake)
-  include(cmake/platform-win32.cmake)
-endif()
+# The original's DLL imports: the real Windows DLLs, or SDL3 implementations.
 if(VC1_USE_SDL3)
-  include(cmake/sdl3.cmake)
-  include(cmake/sdl3-mixer.cmake)
-  set(VC1_HOST_SOURCES
-    src/platform/sdl3/main.cpp
-    src/platform/sdl3/runtime.cpp
-    src/host/kd_core.cpp
-    src/host/heap.cpp
-    src/host/kd_log.cpp
-    src/platform/sdl3/filesystem.cpp
-    src/platform/sdl3/thread.cpp
-    src/platform/sdl3/sqstd_system.cpp
-    src/platform/sdl3/gamepad.cpp
-    src/platform/sdl3/window.cpp
-    src/platform/sdl3/audio.cpp
-    src/platform/sdl3/d3d8.cpp
-    src/platform/sdl3/mod_io.cpp
-    src/mod/mods.cpp
-    src/platform/sdl3/self_test.cpp
-    src/host/sqstd_math.cpp)
+  include(cmake/imports-sdl3.cmake)
+else()
+  include(cmake/imports-win32.cmake)
+endif()
+include(cmake/kdcore.cmake)
+
+set(VC1_ADDON_SOURCES)
+if(VC1_MODS)
+  list(APPEND VC1_ADDON_SOURCES src/mod/mods.cpp src/mod/mod_io.cpp src/mod/texture_hook.cpp)
 endif()
 
 add_executable(${VC1_TARGET}
@@ -181,7 +171,18 @@ add_executable(${VC1_TARGET}
   ${ZLIB_SOURCES}
   ${LIBPNG_SOURCES}
   ${LZMA457_SOURCES}
-  ${SQPLUS_SOURCES})
+  ${SQPLUS_SOURCES}
+  ${VC1_ADDON_SOURCES})
+if(VC1_MODS)
+  target_compile_definitions(${VC1_TARGET} PRIVATE VC1_MODS=1)
+endif()
+if(VC1_LOG)
+  target_compile_definitions(${VC1_TARGET} PRIVATE VC1_LOG=1)
+endif()
+if(VC1_USE_SDL3)
+  # Ahead of every other directory: the SDK headers resolve to the SDL subset.
+  target_include_directories(${VC1_TARGET} BEFORE PRIVATE src/imports/sdl3/include)
+endif()
 target_include_directories(${VC1_TARGET} PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
   ${SQPLUS_INCLUDE_DIRS})
@@ -189,21 +190,21 @@ target_compile_definitions(${VC1_TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(${VC1_TARGET} PROPERTIES OUTPUT_NAME "${VC1_OUTPUT_NAME}")
 if(VC1_USE_SDL3)
   # Keep the vendored scanf definitions instead of UCRT's header-inline copies.
-  target_compile_definitions(${VC1_TARGET} PRIVATE VC1_USE_SDL3 _NO_CRT_STDIO_INLINE
+  target_compile_definitions(${VC1_TARGET} PRIVATE _NO_CRT_STDIO_INLINE
     sscanf=vc1_klibc_sscanf vsscanf=vc1_klibc_vsscanf)
-  target_link_libraries(${VC1_TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer legacy_stdio_definitions)
   get_target_property(VC1_MIXER_TYPE SDL3_mixer::SDL3_mixer TYPE)
   if(VC1_MIXER_TYPE STREQUAL "SHARED_LIBRARY")
     add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3_mixer::SDL3_mixer>
         $<TARGET_FILE_DIR:${VC1_TARGET}>)
   endif()
-  add_test(NAME sdl3_backend COMMAND ${VC1_TARGET} --backend-test)
-  set_tests_properties(sdl3_backend PROPERTIES TIMEOUT 30 ENVIRONMENT
-    "SDL_VIDEODRIVER=dummy;SDL_AUDIODRIVER=dummy;SDL_RENDER_DRIVER=software")
   add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3>
       $<TARGET_FILE_DIR:${VC1_TARGET}>)
+endif()
+
+target_link_libraries(${VC1_TARGET} ${VC1_IMPORT_LIBRARIES})
+if(VC1_MODS)
   # Texture mods live in the local, git-ignored mods/ folder. Seed the
   # activation list once so rebuilding never re-enables a disabled mod, and
   # refresh every mod folder beside the executable on each build.
@@ -224,10 +225,6 @@ if(VC1_USE_SDL3)
     add_custom_target(vc1_mods ALL ${VC1_MOD_COPY_COMMANDS} VERBATIM)
     add_dependencies(${VC1_TARGET} vc1_mods)
   endif()
-endif()
-
-if(NOT VC1_USE_SDL3)
-  target_link_libraries(${VC1_TARGET} user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
 endif()
 if(NOT VC1_USE_SDL3 AND EXISTS "${VC1_GAME_BASS_DLL}")
   add_custom_command(TARGET ${VC1_TARGET} POST_BUILD

@@ -1,7 +1,7 @@
 #include "kd/tile/tile_manager.h"
 
 #include "app/host_api.h"
-#include "host/platform.h"
+#include "kdcore/platform.h"
 #include "kd/iface/icamera.h"
 #include "kd/iface/idisplay.h"
 #include "kd/iface/iid.h"
