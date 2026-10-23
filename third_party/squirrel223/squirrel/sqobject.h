@@ -365,6 +365,14 @@ typedef sqvector<SQInteger> SQIntVec;
 const SQChar *GetTypeName(const SQObjectPtr &obj1);
 const SQChar *IdType2Name(SQObjectType type);
 
+// FUNCTION: VC1 0x0040d090
+// ??1SQObjectPtr@@QAE@XZ
+// FUNCTION: VC1 0x0040e440
+// ?Null@SQObjectPtr@@QAEXXZ
+// FUNCTION: VC1 0x0040e470
+// ??4SQObjectPtr@@QAEAAU0@H@Z
+// FUNCTION: VC1 0x0040e4a0
+// ??4SQObjectPtr@@QAEAAU0@M@Z
 // SYNTHETIC: VC1 0x0040f730 FOLDED
 // SQRefCounted::`scalar deleting destructor'
 // SYNTHETIC: VC1 0x0040f730 FOLDED

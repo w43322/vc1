@@ -11,6 +11,7 @@
 // the CRT entry point calls the recovered one.
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <stdint.h>
 
 // Like the SDK's windef.h, so SqPlus takes BOOL / INT / FLOAT from here.
@@ -36,6 +37,7 @@ typedef wchar_t WCHAR;
 typedef char* LPSTR;
 typedef const char* LPCSTR;
 typedef unsigned long DWORD_PTR;
+typedef unsigned int UINT_PTR;
 typedef unsigned long LCID;
 typedef unsigned short ATOM;
 typedef UINT MMRESULT;
@@ -161,7 +163,34 @@ struct WIN32_FIND_DATAA
     CHAR cAlternateFileName[14];
 };
 
-struct EXCEPTION_POINTERS;
+// x86 layouts; only the crash handler reads them (it never runs: dbghelp
+// does not load).
+struct EXCEPTION_RECORD
+{
+    DWORD ExceptionCode;
+    DWORD ExceptionFlags;
+    EXCEPTION_RECORD* ExceptionRecord;
+    void* ExceptionAddress;
+    DWORD NumberParameters;
+    DWORD_PTR ExceptionInformation[15];
+};
+
+struct CONTEXT
+{
+    DWORD ContextFlags;
+    DWORD Dr0, Dr1, Dr2, Dr3, Dr6, Dr7;
+    BYTE FloatSave[0x70];
+    DWORD SegGs, SegFs, SegEs, SegDs;
+    DWORD Edi, Esi, Ebx, Edx, Ecx, Eax;
+    DWORD Ebp, Eip, SegCs, EFlags, Esp, SegSs;
+    BYTE ExtendedRegisters[512];
+};
+
+struct EXCEPTION_POINTERS
+{
+    EXCEPTION_RECORD* ExceptionRecord;
+    CONTEXT* ContextRecord;
+};
 typedef LONG (WINAPI* LPTOP_LEVEL_EXCEPTION_FILTER)(EXCEPTION_POINTERS* info);
 
 struct WSADATA
@@ -278,6 +307,7 @@ BOOL WINAPI SetEvent(HANDLE event);
 DWORD WINAPI WaitForSingleObject(HANDLE handle, DWORD milliseconds);
 BOOL WINAPI CloseHandle(HANDLE handle);
 HANDLE WINAPI CreateMutexA(void* attributes, BOOL owner, LPCSTR name);
+HANDLE WINAPI CreateEventA(void* attributes, BOOL manualReset, BOOL initialState, LPCSTR name);
 DWORD WINAPI GetLastError();
 void WINAPI SetLastError(DWORD error);
 HMODULE WINAPI LoadLibraryA(LPCSTR name);
@@ -289,6 +319,10 @@ void WINAPI OutputDebugStringA(LPCSTR text);
 HANDLE WINAPI GetCurrentProcess();
 DWORD WINAPI GetCurrentProcessId();
 DWORD WINAPI GetCurrentThreadId();
+HANDLE WINAPI GetCurrentThread();
+BOOL WINAPI GetThreadContext(HANDLE thread, CONTEXT* context);
+BOOL WINAPI IsBadStringPtrA(LPCSTR text, UINT_PTR max);
+void* WINAPI LocalFree(void* memory);
 BOOL WINAPI GetProcessAffinityMask(HANDLE process, DWORD_PTR* processMask, DWORD_PTR* systemMask);
 void WINAPI Sleep(DWORD milliseconds);
 BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER* counter);
@@ -329,6 +363,25 @@ HWND WINAPI FindWindowA(LPCSTR className, LPCSTR windowName);
 BOOL WINAPI SetForegroundWindow(HWND window);
 HWND WINAPI GetActiveWindow();
 int WINAPI MessageBoxA(HWND window, LPCSTR text, LPCSTR caption, UINT type);
+
+#define FORMAT_MESSAGE_ALLOCATE_BUFFER 0x00000100
+#define FORMAT_MESSAGE_FROM_SYSTEM 0x00001000
+DWORD WINAPI FormatMessageA(DWORD flags, const void* source, DWORD messageId, DWORD languageId,
+    LPSTR buffer, DWORD size, va_list* arguments);
+
+// wininet.dll: the "http" KD driver.
+typedef void* HINTERNET;
+#define HTTP_QUERY_STATUS_CODE 19
+HINTERNET WINAPI InternetOpenA(LPCSTR agent, DWORD accessType, LPCSTR proxy, LPCSTR bypass,
+    DWORD flags);
+HINTERNET WINAPI InternetOpenUrlA(HINTERNET internet, LPCSTR url, LPCSTR headers,
+    DWORD headersLength, DWORD flags, DWORD_PTR context);
+BOOL WINAPI InternetCloseHandle(HINTERNET handle);
+BOOL WINAPI InternetReadFile(HINTERNET file, void* buffer, DWORD size, DWORD* read);
+DWORD WINAPI InternetSetFilePointer(HINTERNET file, LONG distance, LONG* distanceHigh,
+    DWORD method, DWORD_PTR context);
+BOOL WINAPI HttpQueryInfoA(HINTERNET request, DWORD level, void* buffer, DWORD* length,
+    DWORD* index);
 uintptr_t WINAPI SetTimer(HWND window, uintptr_t id, UINT milliseconds, void* callback);
 BOOL WINAPI KillTimer(HWND window, uintptr_t id);
 HWND WINAPI SetCapture(HWND window);

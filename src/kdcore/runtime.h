@@ -147,10 +147,10 @@ void* KdMapFile(void* file, unsigned* size);
 int ProbeDebuggerPresent();
 // 0x00477240
 int LoadDbgHelp();
-// 0x00477650
-void LogCrashHeader();
-// 0x00477a90
-int WriteCrashDump();
+// 0x00477650; original record on the stack, context in ESI
+void LogCrashHeader(const EXCEPTION_RECORD* record, const CONTEXT* context);
+// 0x00477a90; original info in EAX
+int WriteCrashDump(EXCEPTION_POINTERS* info);
 // 0x0047a270; original: destructor=[esp+4], out=EDI
 int AllocTlsBlock(void* destructor, TlsBlock** out);
 // 0x0047a600; original this in EAX
@@ -163,6 +163,15 @@ int MutexLock(MutexRef* ref);
 int MutexDestroy(MutexRef* ref);
 // 0x0047b2f0
 void DestroyThreadLocal(void* thread);
+// pthreads-win32 pthread_t: the thread record and its reuse counter.
+struct PthreadHandle
+{
+    void* thread;   // +0x00
+    unsigned reuse; // +0x04
+};
+// 0x0047ba20 pthread_create / 0x0047bbd0 pthread_join (inferred, stubs)
+int CreatePthread(PthreadHandle* thread, void* start);
+int JoinPthread(void* thread, unsigned reuse);
 // 0x0047b380; original this in EBX
 int DestroyTlsBlock(TlsBlock* self);
 // 0x0047b6b0
@@ -181,6 +190,8 @@ void ShutdownNetwork();
 LRESULT CALLBACK KdNetworkWndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 // 0x0047c3c0
 void StartupNetwork();
+// 0x0047c480; original name in EDI, error in ESI
+void LogLastError(const char* name, DWORD error);
 // 0x00486aa0
 void InitTimingAndSeh();
 // 0x00486b90; kdStat, original path in EBX, out in EDI

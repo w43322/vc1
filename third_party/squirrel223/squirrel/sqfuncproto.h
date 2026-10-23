@@ -158,6 +158,8 @@ public:
 	SQInstruction _instructions[1];
 };
 
+// FUNCTION: VC1 0x0040f240
+// ??0SQOuterVar@@QAE@ABUSQObjectPtr@@0W4SQOuterType@@@Z
 // FUNCTION: VC1 0x0040f2d0
 // SQFunctionProto::Create
 // FUNCTION: VC1 0x0040f480
@@ -166,6 +168,16 @@ public:
 // SQFunctionProto::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040f650
 // SQFunctionProto::~SQFunctionProto
+// SYNTHETIC: VC1 0x0040f6b0
+// ??1SQOuterVar@@QAE@XZ
+// SYNTHETIC: VC1 0x0040f700
+// ??1SQLocalVarInfo@@QAE@XZ
+// SYNTHETIC: VC1 0x0040f770
+// ??4SQOuterVar@@QAEAAU0@ABU0@@Z
+// SYNTHETIC: VC1 0x0040f7f0
+// ??4SQLocalVarInfo@@QAEAAU0@ABU0@@Z
+// FUNCTION: VC1 0x004154e0
+// ??0SQOuterVar@@QAE@ABU0@@Z
 // FUNCTION: VC1 0x0048aeb0
 // SQFunctionProto::GetLine
 // FUNCTION: VC1 0x0048bba0

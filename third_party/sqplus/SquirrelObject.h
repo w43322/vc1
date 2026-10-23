@@ -139,6 +139,14 @@ private:
 // SYNTHETIC: VC1 0x00401e00
 // SquirrelObject::`scalar deleting destructor'
 
+// FUNCTION: VC1 0x00429150
+// ?Return@StackHandler@@QAEHH@Z
+// FUNCTION: VC1 0x0042f010
+// ?Return@StackHandler@@QAEHM@Z
+// FUNCTION: VC1 0x0042f030
+// ?Return@StackHandler@@QAEH_N@Z
+// FUNCTION: VC1 0x0042f080
+// ?Return@StackHandler@@QAEHPAX@Z
 // FUNCTION: VC1 0x0049a840
 // ?GetInstanceUP@SquirrelObject@@QBEPAXPAX@Z
 
@@ -172,6 +180,10 @@ private:
 // FUNCTION: VC1 0x0049ae30
 // ?RawGetUserData@SquirrelObject@@QAEHPBDPAPAX1@Z
 
+// FUNCTION: VC1 0x0049af00
+// ?GetUserData@SquirrelObject@@QAEHPBDPAPAX1@Z
+// FUNCTION: VC1 0x0049afb0
+// ?NewUserData@SquirrelObject@@QAEHPBDHPAPAX@Z
 // FUNCTION: VC1 0x0049b020
 // ?SetValue@SquirrelObject@@QAEHPBD_N@Z
 

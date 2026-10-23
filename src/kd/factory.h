@@ -26,7 +26,7 @@ struct FactoryEntry
 typedef char Vc1FactoryEntrySizeCheck[sizeof(FactoryEntry) == 0x08 ? 1 : -1];
 
 __declspec(noinline) void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw();
-void EraseCountedBytes(void* first, void* middle, void* last);
+__declspec(noinline) void EraseCountedBytes(void* first, void* middle, void* last);
 
 // Inferred name. Borrowed (begin, size) view; KdFactory adds ownership. Every
 // inlined KdFactory destructor ends by storing this vftable.
@@ -192,6 +192,13 @@ public:
     int FindLastOf(const KdString& set, unsigned pos) const;
     unsigned FormatV(const char* fmt, va_list args);
     unsigned Format(const char* fmt, ...);
+    // Out of line only where the console calls them; inlined elsewhere.
+    __declspec(noinline) void Reset();
+    __declspec(noinline) unsigned TextLength() const;
+    __declspec(noinline) KdString Substr(unsigned first, unsigned count) const;
+    __declspec(noinline) void Replace(char* first, char* last, const char* text,
+        const char* textEnd);
+    __declspec(noinline) void Erase(unsigned pos, unsigned count);
 
     const char* c_str() const { return reinterpret_cast<const char*>(begin); }
     char* data() { return reinterpret_cast<char*>(begin); }
@@ -237,6 +244,8 @@ struct KdStringList
     ~KdStringList() throw();
 
     void Reserve(unsigned count, char exact) throw();
+    // PushBack where the original keeps it out of line (the console).
+    __declspec(noinline) void Append(const KdString& value);
     void PushBack(const KdString& value)
     {
         unsigned bytes = ((items.size >> 4) + 1) << 4;
@@ -453,7 +462,7 @@ FactoryInsert* RegisterFactory(FactoryEntry* entry, FactoryInsert* out);
 FactoryEntry* FindFactoryEntry(KdFactory* factory, const char** key);
 void ReserveFactoryTable(unsigned newCount);
 void ReverseCountedBytes(void* first, void* last);
-void EraseCountedBytes(void* first, void* middle, void* last);
+__declspec(noinline) void EraseCountedBytes(void* first, void* middle, void* last);
 __declspec(noinline) void* InsertCountedBytes(void* self, void* pos, int bytes);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);
 KdFactory* GetKdFactory();

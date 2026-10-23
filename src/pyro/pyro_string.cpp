@@ -117,4 +117,37 @@ void PyroString::InitFrom(const char* text)
     data[length] = 0;
 }
 
+
+// EBX=length1, this on the stack; RET 0x10. Inferred name (MFC ConcatCopy):
+// a fresh buffer holding both parts, its capacity rounded up from 8 by
+// doubling. An empty result leaves data alone.
+// FUNCTION: VC1 0x0042f220
+void PyroString::ConcatCopy(int length1, const char* text1, int length2, const char* text2)
+{
+    const int length = length1 + length2;
+    int capacity;
+    PyroStringData* header;
+
+    if (length == 0) {
+        return;
+    }
+    capacity = 8;
+    if (length >= 7) {
+        do {
+            capacity += capacity;
+        } while (capacity - 1 <= length);
+    }
+    capacity -= 1;
+    if (capacity < 0) {
+        capacity = length;
+    }
+    header = static_cast<PyroStringData*>(malloc(capacity + 0x0d));
+    header->capacity = capacity;
+    header->refs = 1;
+    header->Data()[length] = 0;
+    header->length = length;
+    data = header->Data();
+    memcpy(data, text1, length1);
+    memcpy(data + length1, text2, length2);
+}
 }

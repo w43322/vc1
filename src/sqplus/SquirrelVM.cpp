@@ -100,6 +100,20 @@ BOOL SquirrelVM::BeginCall(const SquirrelObject& func, SquirrelObject& _this)
     return TRUE;
 }
 
+// EAX=func. The root table is this. VC1: a call already in progress returns
+// FALSE without a message.
+// FUNCTION: VC1 0x00499f60
+BOOL SquirrelVM::BeginCall(const SquirrelObject& func)
+{
+    if (_CallState != -1) {
+        return FALSE;
+    }
+    _CallState = 1;
+    sq_pushobject(_VM, func._o);
+    sq_pushroottable(_VM);
+    return TRUE;
+}
+
 // Engine GetRootTable: lazily attaches the root table to g_rootTable.
 // FUNCTION: VC1 0x00499fe0
 SquirrelObject& SquirrelVM::GetRootTable()

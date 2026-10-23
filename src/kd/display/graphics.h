@@ -35,9 +35,9 @@ public:
     void SetClipRect(const Rect& rect);
     unsigned GetColor();
     void SetColor(unsigned color);
-    unsigned GetMode();
-    void SetMode(unsigned mode);
-    IUnknown** GetFont();
+    int GetMode();
+    void SetMode(int mode);
+    IFont** GetFont();
     void SetFont(const KdPtr<IFont>& font);
     void Clear(unsigned color);
     Matrix3& GetTransform();
@@ -97,6 +97,45 @@ typedef char Vc1KdGraphicsSizeCheck[sizeof(KdGraphics) == 0x64 ? 1 : -1];
 // ?QueryInterface@KdGraphics@vc1@@WEI@AEPAXPAPBD@Z
 // SYNTHETIC: VC1 0x0041d2c0
 // ?Release@KdGraphics@vc1@@WEE@AEIXZ
+
+
+// GetMember's closures (0x0045dc20), one per member-pointer type. They QI
+// the instance to IScriptObject and step back 0x44; the out-of-line Calls are
+// shared with KdLayer's (FOLDED in layer.h / sqplus.h). The int / unsigned
+// and IFont** / IUnknown** pairs are byte-identical but separate in the
+// original, so the mode and font slots have their own types (inferred).
+// TEMPLATE: VC1 0x0045d0c0
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d160
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXMMMM@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d200
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXABUVector2@2@@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d2c0
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXABUMatrix3@2@@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d380
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXABV?$KdPtr@UIFont@vc1@@@2@@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d420
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXH@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d530
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d600
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXI@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d6a0
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEIXZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d770
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXABURect@2@@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d830
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEXPBDMM@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d8d0
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEPAPAUIFont@2@XZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045d970
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEPAPAUIUnknown@2@XZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045da10
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEAAUVector2@2@XZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045dab0
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEAAURect@2@XZ@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x0045db80
+// ?Dispatch@?$ScriptMethodCall@VKdGraphics@vc1@@P812@AEAAUMatrix3@2@XZ@vc1@@SAHPAUSQVM@@@Z
 
 }
 

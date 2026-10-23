@@ -2237,9 +2237,9 @@ void* KdDisplayBase::GetRenderTexture()
 
 // RET 4. IDisplay vtable+0x30.
 // FUNCTION: VC1 0x00466310
-void KdDisplayBase::ShowKeyboard(int unused)
+void KdDisplayBase::ShowKeyboard(bool show)
 {
-    (void)unused;
+    (void)show;
 }
 
 // IScriptObject this, IRenderTarget +4, then KdDisplayDevice QI (IDisplay this),
@@ -2442,11 +2442,12 @@ KdPtr<IRenderTarget> KdDisplayBase::CreateRenderTarget(unsigned width, unsigned 
 }
 
 // RET 4. BL=arg into ApplyWindowedMode. The script closure (0x00466830) reads
-// the argument with SqPlus Get(TypeWrapper<bool>), so scripts pass bools.
+// the argument with SqPlus Get(TypeWrapper<bool>), so scripts pass bools. No
+// result: the closure is shared with ShowKeyboard as void(bool).
 // FUNCTION: VC1 0x00466680
-int KdDisplayBase::SetWindowed(bool arg)
+void KdDisplayBase::SetWindowed(bool arg)
 {
-    return ApplyWindowedMode(arg);
+    ApplyWindowedMode(arg);
 }
 
 // this=IDisplay. HostLog Init, CreateKdWindow into mixer, ShowWindow, D3D init,
@@ -2739,12 +2740,11 @@ void* KdDisplay::BeginFrame(void* a, void* b)
 
 // this = IDisplay. Leaving windowed mode needs enabled58 (window fits). RET 4.
 // FUNCTION: VC1 0x004b2100
-int KdDisplay::SetWindowed(bool arg)
+void KdDisplay::SetWindowed(bool arg)
 {
     if (arg == 0 || enabled58 != 0) {
-        return ApplyWindowedMode(arg);
+        ApplyWindowedMode(arg);
     }
-    return 0;
 }
 
 // this = IDisplay. Calls 0x00466690 then rebuilds the Matrix3 at IDisplay+0x20.

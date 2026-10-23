@@ -98,6 +98,7 @@ add_executable(${VC1_TARGET}
   src/kd/display/graphics.cpp
   src/kd/display/pyro.cpp
   src/kd/display/effect.cpp
+  src/pyro/pyro_cfile.cpp
   src/pyro/pyro_emitter.cpp
   src/pyro/pyro_file.cpp
   src/pyro/pyro_image.cpp
@@ -185,6 +186,7 @@ if(VC1_USE_SDL3)
 endif()
 target_include_directories(${VC1_TARGET} PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
+  third_party/lzma457/C/Archive/7z
   ${SQPLUS_INCLUDE_DIRS})
 target_compile_definitions(${VC1_TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS)
 set_target_properties(${VC1_TARGET} PROPERTIES OUTPUT_NAME "${VC1_OUTPUT_NAME}")

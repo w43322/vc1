@@ -58,6 +58,9 @@ typedef char Vc1GraphicsStateSizeCheck[sizeof(GraphicsState) == 0x40 ? 1 : -1];
 // Slot names are inferred from the KdGraphics bodies (vtable 0x004d6770) and
 // the script names in KdGraphics::GetMember (0x0045dc20). The getters the
 // script table binds return references: SqPlus pushes those as copies.
+// GetMode / SetMode take int and GetFont an IFont** slot (inferred types):
+// both script tables have separate dispatchers for them and for the
+// unsigned / IUnknown** slots.
 // SIZE 0x44
 struct IGraphics : IUnknown
 {
@@ -71,9 +74,9 @@ struct IGraphics : IUnknown
     virtual void SetClipRect(const Rect& rect) = 0;       // vtable+0x20
     virtual unsigned GetColor() = 0;                      // vtable+0x24
     virtual void SetColor(unsigned color) = 0;            // vtable+0x28
-    virtual unsigned GetMode() = 0;                       // vtable+0x2c
-    virtual void SetMode(unsigned mode) = 0;              // vtable+0x30
-    virtual IUnknown** GetFont() = 0;                     // vtable+0x34
+    virtual int GetMode() = 0;                            // vtable+0x2c
+    virtual void SetMode(int mode) = 0;                   // vtable+0x30
+    virtual IFont** GetFont() = 0;                        // vtable+0x34
     virtual void SetFont(const KdPtr<IFont>& font) = 0;   // vtable+0x38
     virtual void Clear(unsigned color) = 0;               // vtable+0x3c
     virtual Matrix3& GetTransform() = 0;                  // vtable+0x40

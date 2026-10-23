@@ -52,7 +52,7 @@ int PyroImageStreamReader::Read(void* buffer, int size)
 }
 
 // XOR EAX, EAX; RET 8.
-// FUNCTION: VC1 0x0042e860
+// FUNCTION: VC1 0x0042e860 FOLDED
 int PyroImageStreamReader::Write(const void* buffer, int size)
 {
     (void)buffer;

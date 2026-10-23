@@ -982,8 +982,9 @@ unsigned char KdSystemBase::GetMember(const char* name, SquirrelObject* out)
     return methods.Find(name, out);
 }
 
-// STRING: VC1 0x004d5780
-static const char kConsoleFont[] = "res/fonts/console.fnt";
+// Shared with the console (KdConsole::Render).
+// GLOBAL: VC1 0x004d5780
+extern const char kConsoleFont[] = "res/fonts/console.fnt";
 
 // ISystem vtable+0x30. Begins a frame on the display for the active camera,
 // renders through the IRenderable face, overlays consoleText on a black

@@ -253,19 +253,19 @@ void KdGraphics::SetFont(const KdPtr<IFont>& font)
 
 // LEA EAX, [ECX+0x40]; RET.
 // FUNCTION: VC1 0x0045ca40
-IUnknown** KdGraphics::GetFont()
+IFont** KdGraphics::GetFont()
 {
-    return &state.font;
+    return reinterpret_cast<IFont**>(&state.font);
 }
 
 // FUNCTION: VC1 0x0045ca50
-void KdGraphics::SetMode(unsigned mode)
+void KdGraphics::SetMode(int mode)
 {
     state.mode = mode;
 }
 
 // FUNCTION: VC1 0x0045ca60
-unsigned KdGraphics::GetMode()
+int KdGraphics::GetMode()
 {
     return state.mode;
 }

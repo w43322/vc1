@@ -1,4 +1,5 @@
 #include "app/script.h"
+#include "kdcore/native.h"
 #include "kdcore/platform.h"
 #include "memory/fixed_pool.h"
 
@@ -138,6 +139,67 @@ KdString Get(SqPlus::TypeWrapper<const KdString&>, HSQUIRRELVM v, int idx)
     return KdString(s);
 }
 
+// Inferred names: the script profiler. Blocks are timed between Enter and
+// Leave in ns; the child time is what nested blocks took. The block list is
+// only read in this build (no block is ever registered), so the report and
+// the reset run over nothing.
+// SIZE 0x30
+struct ProfilerBlock
+{
+    const char* name;              // 0x00
+    unsigned field04;              // 0x04
+    unsigned count;                // 0x08
+    unsigned field0c;              // 0x0c
+    unsigned __int64 time;         // 0x10
+    unsigned __int64 enterTime;    // 0x18
+    unsigned __int64 childTime;    // 0x20
+    unsigned __int64 childEnter;   // 0x28
+};
+
+// GLOBAL: VC1 0x004e96f8
+KdArray<ProfilerBlock*> g_profilerBlocks;
+// GLOBAL: VC1 0x004e9708
+KdArray<ProfilerBlock*> g_profilerStack;
+// GLOBAL: VC1 0x004eb0d0
+unsigned __int64 g_profilerStart;
+
+// QPC in ns, inlined at every use as in kd_core.cpp.
+static unsigned __int64 ProfilerNow()
+{
+    LARGE_INTEGER qpc;
+
+    QueryPerformanceCounter(&qpc);
+    return static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick);
+}
+
+// EAX=block, RET 8. The block's own time (without children) as a share of total.
+// FUNCTION: VC1 0x0040e220
+static float ProfilerShare(const ProfilerBlock* block, unsigned __int64 total)
+{
+    return static_cast<float>((static_cast<double>(block->time)
+        - static_cast<double>(block->childTime)) / static_cast<double>(total));
+}
+
+// cdecl. Insertion sort by share, largest first; each block is rotated into
+// place.
+// FUNCTION: VC1 0x0040e320
+static void ProfilerSort(ProfilerBlock** first, ProfilerBlock** last, unsigned __int64 total)
+{
+    ProfilerBlock** next;
+
+    for (next = first + 1; next < last; ++next) {
+        ProfilerBlock** hole = next;
+        while (hole > first) {
+            const double previous = ProfilerShare(hole[-1], total);
+            if (ProfilerShare(*next, total) < previous) {
+                break;
+            }
+            --hole;
+        }
+        EraseCountedBytes(hole, next, next + 1);
+    }
+}
+
 // EAX=argc, EBX=argv from RunApp's g_runScratch0/1. Args array then root["ARGS"].
 // FUNCTION: VC1 0x00463b40
 void InitScriptEngine(int argc, char** argv)
@@ -157,12 +219,104 @@ void InitScriptEngine(int argc, char** argv)
     SquirrelVM::GetRootTable().SetValue("ARGS", args);
 }
 
-// Script "profilerReset". Unwinds the open profiler scopes (0x004e970c),
-// clears every node's counters (list 0x004e96fc) and restarts the frame
-// clock (0x004eb0d0). The profiler is not recovered yet.
-// STUB: VC1 0x004bd0f0
+// The report: blocks of at least 1% of the time since the last reset,
+// largest share first. The column header is formatted and then overwritten
+// with dashes without being printed, as in the original.
+// FUNCTION: VC1 0x004bce80
+static void ProfilerDump()
+{
+    char line[0x80];
+    const unsigned __int64 elapsed = ProfilerNow() - g_profilerStart;
+    unsigned i;
+    ProfilerBlock** it;
+
+    // STRING: VC1 0x004d287c
+    FormatBuffer(line, sizeof(line), "\n%-64s %8s %8s %8s %8s\n",
+        // STRING: VC1 0x004d2874
+        "BlockID",
+        // STRING: VC1 0x004d286c
+        "Count",
+        // STRING: VC1 0x004d2868
+        "ms",
+        // STRING: VC1 0x004d2860
+        "msChild",
+        // STRING: VC1 0x004d285c
+        "%");
+    for (i = 0; i < strlen(line) - 1; ++i) {
+        line[i] = '-';
+    }
+    ProfilerSort(g_profilerBlocks.Data(), g_profilerBlocks.Data() + g_profilerBlocks.Count(),
+        elapsed);
+    for (it = g_profilerBlocks.Data(); it != g_profilerBlocks.Data() + g_profilerBlocks.Count();
+         ++it) {
+        const ProfilerBlock* const block = *it;
+        const float share = static_cast<float>(ProfilerShare(block, elapsed) * 100.0);
+        if (share < 1.0f) {
+            break;
+        }
+        // STRING: VC1 0x004d2894
+        KdLog("%-64s %8lu %8lu %8lu %8.3f\n", block->name, block->count,
+            static_cast<unsigned long>(block->time / 1000000),
+            static_cast<unsigned long>(block->childTime / 1000000), static_cast<double>(share));
+    }
+}
+
+// Leave, inlined into ScriptProfilerReset (its own copy at 0x004bcff0 has no
+// caller): the block's time, and the parent's child time.
+static void ProfilerLeave(ProfilerBlock* block)
+{
+    const unsigned __int64 now = ProfilerNow();
+
+    block->time += now - block->enterTime;
+    g_profilerStack.items.size -= sizeof(ProfilerBlock*);
+    if (g_profilerStack.items.size) {
+        ProfilerBlock* const parent = g_profilerStack[g_profilerStack.Count() - 1];
+        if (parent != block) {
+            parent->childTime += now - parent->childEnter;
+        }
+    }
+}
+
+// ESI=block. Starts the parent's child clock and pushes the block.
+// FUNCTION: VC1 0x004bd060
+static void ProfilerEnter(ProfilerBlock* block)
+{
+    const unsigned __int64 now = ProfilerNow();
+
+    if (g_profilerStack.items.size) {
+        ProfilerBlock* const parent = g_profilerStack[g_profilerStack.Count() - 1];
+        if (parent != block) {
+            parent->childEnter = now;
+        }
+    }
+    g_profilerStack.PushBack(block);
+    ++block->count;
+    block->enterTime = now;
+}
+
+// Script "profilerReset". Closes the open blocks, prints the report, clears
+// every block's counters, restarts the clock and reopens the blocks that
+// were open.
+// FUNCTION: VC1 0x004bd0f0
 void ScriptProfilerReset()
 {
+    KdArray<ProfilerBlock*> open(g_profilerStack);
+    unsigned i;
+
+    while (g_profilerStack.items.size) {
+        ProfilerLeave(g_profilerStack[g_profilerStack.Count() - 1]);
+    }
+    ProfilerDump();
+    for (i = 0; i < g_profilerBlocks.Count(); ++i) {
+        ProfilerBlock* const block = g_profilerBlocks[i];
+        block->count = 0;
+        block->time = 0;
+        block->childTime = 0;
+    }
+    g_profilerStart = ProfilerNow();
+    for (i = 0; i < open.Count(); ++i) {
+        ProfilerEnter(open[i]);
+    }
 }
 
 // Script "decodeUTF8": the code points of text, up to the first NUL.

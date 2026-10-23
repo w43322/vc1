@@ -91,6 +91,8 @@ public:
 
 // FUNCTION: VC1 0x0040d100
 // SQTable::Create
+// FUNCTION: VC1 0x0040f880
+// ?HashObj@@YAIABUSQObjectPtr@@@Z
 // FUNCTION: VC1 0x00415330
 // SQTable::~SQTable
 // FUNCTION: VC1 0x00415450

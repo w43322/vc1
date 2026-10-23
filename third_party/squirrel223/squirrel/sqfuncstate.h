@@ -80,6 +80,8 @@ private:
 	void *_errtarget;
 };
 
+// FUNCTION: VC1 0x0040fe00
+// ?AddInstruction@SQFuncState@@QAEXW4SQOpcode@@HHHH@Z
 // FUNCTION: VC1 0x0047d720
 // SQFuncState::GetOuterVariable
 // FUNCTION: VC1 0x0047d750

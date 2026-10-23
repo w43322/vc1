@@ -73,6 +73,8 @@ typedef char Vc1KdScriptedObjectSizeCheck[sizeof(KdScriptedObject) == 0xd8 ? 1 :
 
 // SYNTHETIC: VC1 0x00416530
 // vc1::KdScriptedObject::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x00470ed0
+// ??1KdScriptedObject@vc1@@UAE@XZ
 
 }
 

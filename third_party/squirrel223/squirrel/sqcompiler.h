@@ -75,6 +75,8 @@ struct SQVM;
 typedef void(*CompilerErrorFunc)(void *ud, const SQChar *s);
 bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcename, SQObjectPtr &out, bool raiseerror, bool lineinfo);
 
+// FUNCTION: VC1 0x0040fe40
+// ??0SQCompiler@@QAE@PAUSQVM@@P6AHPAX@Z1PBD_N4@Z
 // FUNCTION: VC1 0x0040ff00
 // SQCompiler::ThrowError
 // FUNCTION: VC1 0x0040ff10
@@ -153,5 +155,7 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::ResolveBreaks
 // FUNCTION: VC1 0x004151e0
 // SQCompiler::ResolveContinues
+// SYNTHETIC: VC1 0x00415230
+// ??1SQCompiler@@QAE@XZ
 
 #endif //_SQCOMPILER_H_

@@ -83,6 +83,8 @@ SQUIRREL_API SQRESULT sqstd_register_iolib(HSQUIRRELVM v);
 // _file__typeof
 // FUNCTION: VC1 0x0048f620
 // _file_constructor
+// FUNCTION: VC1 0x0048f7d0
+// sqstd_writeclosuretofile
 // FUNCTION: VC1 0x0048f830
 // _g_io_writeclosuretofile
 // FUNCTION: VC1 0x0048f8b0

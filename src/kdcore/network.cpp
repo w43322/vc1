@@ -104,4 +104,24 @@ void StartupNetwork()
         0);
 }
 
+
+// EDI=name, ESI=error. Inferred name. The system message for a Win32 error
+// code, or the number when FormatMessageA has none.
+// FUNCTION: VC1 0x0047c480
+void LogLastError(const char* name, DWORD error)
+{
+    char* message;
+
+    if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0,
+            reinterpret_cast<LPSTR>(&message), 0, 0)) {
+        // STRING: VC1 0x004d4408
+        KdLog("[%s] error: %s\n", name, message);
+        LocalFree(message);
+    }
+    else {
+        // STRING: VC1 0x004d4418
+        KdLog("[%s] error: %u\n", name, error);
+    }
+}
+
 }

@@ -46,6 +46,10 @@ struct KdTransportRecord
 
 typedef char Vc1KdTransportRecordSizeCheck[sizeof(KdTransportRecord) == 0x1c ? 1 : -1];
 
+// Out-of-line copy of the inline destructor below (KdTransportMover teardown).
+// FUNCTION: VC1 0x0040b420
+// ??1KdTransportRecords@vc1@@QAE@XZ
+
 // Inferred name. The transport records in a KdFactory buffer; every slot up
 // to capacity is constructed (Reserve) and destroyed (destructor).
 // SIZE 0x10

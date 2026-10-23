@@ -520,6 +520,19 @@ int ShutdownApcAndLibraries()
 }
 
 // GetProcAddress miss for QueueUserAPCEx. Stored at DAT_004ed52c.
+// pthreads-win32 pthread_create, specialised by LTCG for the console's stdin
+// reader: thread record from 0x0047a550, _beginthreadex suspended on
+// 0x0047b600, ResumeThread; EAGAIN (0x0b) on failure. Not recovered yet (the
+// thread library should be vendored); failing leaves the console without a
+// reader thread.
+// STUB: VC1 0x0047ba20
+int CreatePthread(PthreadHandle* thread, void* start)
+{
+    (void)thread;
+    (void)start;
+    return kKdEagain;
+}
+
 // STUB: VC1 0x0047bb80
 static DWORD WINAPI ApcFallback()
 {
@@ -527,6 +540,16 @@ static DWORD WINAPI ApcFallback()
 }
 
 // Count affinity bits, LoadLibrary KERNEL32.DLL / QUSEREX.DLL, bind ICE and QueueUserAPCEx.
+// pthreads-win32 pthread_join (ESRCH 3 for an unknown thread, EDEADLK 0x24
+// for self). Not recovered yet, like CreatePthread.
+// STUB: VC1 0x0047bbd0
+int JoinPthread(void* thread, unsigned reuse)
+{
+    (void)thread;
+    (void)reuse;
+    return 3;
+}
+
 // FUNCTION: VC1 0x0047bc70
 int LoadSyncLibraries()
 {

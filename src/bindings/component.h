@@ -14,6 +14,7 @@
 
 namespace vc1 {
 
+struct IFont;
 struct IFunctionalGroup;
 struct IGridMap;
 struct IGridRenderer;
@@ -109,6 +110,12 @@ inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IAbstract>& value)
 // IGraphics GetFont / GetCamera return the slot; it goes out as a counted
 // IUnknown (0x0040c970).
 inline void Push(HSQUIRRELVM v, vc1::IUnknown** value)
+{
+    Push(v, *reinterpret_cast<vc1::KdPtr<vc1::IUnknown>*>(value));
+}
+// GetFont's slot is typed apart from GetCamera's: the original has two
+// separate (byte-identical) dispatchers per class for them.
+inline void Push(HSQUIRRELVM v, vc1::IFont** value)
 {
     Push(v, *reinterpret_cast<vc1::KdPtr<vc1::IUnknown>*>(value));
 }

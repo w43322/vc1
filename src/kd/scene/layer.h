@@ -180,9 +180,9 @@ public:
     void SetClipRect(const Rect& rect);
     unsigned GetColor();
     void SetColor(unsigned color);
-    unsigned GetMode();
-    void SetMode(unsigned mode);
-    IUnknown** GetFont();
+    int GetMode();
+    void SetMode(int mode);
+    IFont** GetFont();
     void SetFont(const KdPtr<IFont>& font);
     void Clear(unsigned color);
     Matrix3& GetTransform();
@@ -231,9 +231,11 @@ void** CreateKdLayer(void** out);
 // TEMPLATE: VC1 0x00418dd0
 // ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEXI@Z@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEXI@Z@Z
 // TEMPLATE: VC1 0x00418f20
-// ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEPAPAUIUnknown@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEPAPAUIUnknown@0@XZ@Z
+// ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEPAPAUIFont@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEPAPAUIFont@0@XZ@Z
 // TEMPLATE: VC1 0x00418f90
 // ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEXABV?$KdPtr@UIFont@vc1@@@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEXABV?$KdPtr@UIFont@vc1@@@0@@Z@Z
+// TEMPLATE: VC1 0x00419000
+// ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEPAPAUIUnknown@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEPAPAUIUnknown@0@XZ@Z
 // TEMPLATE: VC1 0x00419070
 // ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEAAUMatrix3@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEAAUMatrix3@0@XZ@Z
 // TEMPLATE: VC1 0x004190e0
@@ -248,10 +250,14 @@ void** CreateKdLayer(void** out);
 // ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEXABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@Z@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEXABV?$KdPtr@UITexture@vc1@@@0@MMMMMM@Z@Z
 // TEMPLATE: VC1 0x00419310
 // ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEXPBDMM@Z@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEXPBDMM@Z@Z
-// TEMPLATE: VC1 0x00419380
+// TEMPLATE: VC1 0x00419380 FOLDED
 // ??$Call@VKdLayer@vc1@@MMMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXMMMM@ZPAUSQVM@@H@Z
-// TEMPLATE: VC1 0x00419460
+// TEMPLATE: VC1 0x00419380 FOLDED
+// ??$Call@VKdGraphics@vc1@@MMMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEXMMMM@ZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x00419460 FOLDED
 // ??$Call@VKdLayer@vc1@@ABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXABV?$KdPtr@UITexture@vc1@@@3@MMMMMM@ZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x00419460 FOLDED
+// ??$Call@VKdGraphics@vc1@@ABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEXABV?$KdPtr@UITexture@vc1@@@3@MMMMMM@ZPAUSQVM@@H@Z
 // TEMPLATE: VC1 0x004692b0
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@Z@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469350
@@ -262,6 +268,10 @@ void** CreateKdLayer(void** out);
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXABUMatrix3@2@@Z@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469570
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXABV?$KdPtr@UIFont@vc1@@@2@@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x00469610
+// ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXH@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x00469720
+// ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x004697f0
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXI@Z@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469890
@@ -270,6 +280,8 @@ void** CreateKdLayer(void** out);
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXABURect@2@@Z@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469a20
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEXPBDMM@Z@vc1@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x00469ac0
+// ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEPAPAUIFont@2@XZ@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469b60
 // ?Dispatch@?$ScriptMethodCall@VKdLayer@vc1@@P812@AEPAPAUIUnknown@2@XZ@vc1@@SAHPAUSQVM@@@Z
 // TEMPLATE: VC1 0x00469c00

@@ -28,6 +28,7 @@ public:
     // Upstream's BeginCall / PushParam / EndCall, with SQPLUS_THROW in place
     // of SquirrelError. _CallState is the parameter count, -1 when idle.
     static BOOL BeginCall(const SquirrelObject& func, SquirrelObject& _this);
+    static BOOL BeginCall(const SquirrelObject& func);
     static void PushParam(SQInteger i);
     static void PushParam(const SquirrelObject& o);
     static void PushParam(const SQChar* s);

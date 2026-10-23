@@ -149,6 +149,9 @@ BOOL InitScriptClasses(HSQUIRRELVM v);
 // FUNCTION: VC1 0x004c2730
 // ?CreateNativeClassInstance@@YAHPAUSQVM@@PBDPAXP6AH2H@Z@Z
 BOOL CreateNativeClassInstance(HSQUIRRELVM v,const SQChar *classname,SQUserPointer ud,SQRELEASEHOOK hook);
+// VC1: v in EDI, className on the stack (Set<T> / Push callers).
+// FUNCTION: VC1 0x004c2870
+// ?CreateConstructNativeClassInstance@@YAHPAUSQVM@@PBD@Z
 BOOL CreateConstructNativeClassInstance(HSQUIRRELVM v,const SQChar * className);
 
 #endif // SQUIRREL_BINDINGS_UTILS_H

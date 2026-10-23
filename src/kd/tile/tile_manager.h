@@ -170,7 +170,7 @@ public:
 
     void ResetTextureUsage();
     void SetHighlightColor(unsigned color);
-    void SetHighlightBlendMode(unsigned mode);
+    void SetHighlightBlendMode(int mode); // int like IGraphics::SetMode (own dispatcher)
     Vector2 GetJointPosition(int tile, int joint);
 };
 

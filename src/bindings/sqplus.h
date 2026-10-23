@@ -719,6 +719,13 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // TEMPLATE: VC1 0x004169c0
 // ??$Call@VKdCamera@vc1@@ABUVector2@2@@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAVKdCamera@vc1@@P823@AE?AUVector2@3@ABU43@@ZPAUSQVM@@H@Z
 
+// TEMPLATE: VC1 0x00416a40 FOLDED
+// ??$Call@VKdCamera@vc1@@@?$ReturnSpecialization@ABUMatrix3@vc1@@@SqPlus@@SAHAAVKdCamera@vc1@@P823@AEABUMatrix3@3@XZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x00416a40 FOLDED
+// ??$Call@VKdLayer@vc1@@@?$ReturnSpecialization@AAUMatrix3@vc1@@@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEAAUMatrix3@3@XZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x00416a40 FOLDED
+// ??$Call@VKdGraphics@vc1@@@?$ReturnSpecialization@AAUMatrix3@vc1@@@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEAAUMatrix3@3@XZPAUSQVM@@H@Z
+
 // TEMPLATE: VC1 0x0041b390
 // ??$Call@VKdEffect@vc1@@@?$ReturnSpecialization@V?$KdPtr@UIEffectEmitter@vc1@@@vc1@@@SqPlus@@SAHAAVKdEffect@vc1@@P823@AE?AV?$KdPtr@UIEffectEmitter@vc1@@@3@XZPAUSQVM@@H@Z
 
@@ -737,11 +744,20 @@ typedef char Vc1ScriptMethodTableSizeCheck[sizeof(ScriptMethodTable) == 0x10 ? 1
 // TEMPLATE: VC1 0x0041c7a0
 // ??$Call@VKdMusic@vc1@@_N@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdMusic@vc1@@P823@AE_N_N@ZPAUSQVM@@H@Z
 
-// TEMPLATE: VC1 0x0041d040
+// TEMPLATE: VC1 0x0041d040 FOLDED
 // ??$Call@VKdLayer@vc1@@ABV?$KdPtr@UIFont@vc1@@@2@@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXABV?$KdPtr@UIFont@vc1@@@3@@ZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x0041d040 FOLDED
+// ??$Call@VKdGraphics@vc1@@ABV?$KdPtr@UIFont@vc1@@@2@@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEXABV?$KdPtr@UIFont@vc1@@@3@@ZPAUSQVM@@H@Z
 
-// TEMPLATE: VC1 0x0041d130
+// TEMPLATE: VC1 0x0041d0e0 FOLDED
+// ??$Call@VKdLayer@vc1@@@?$ReturnSpecialization@AAUVector2@vc1@@@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEAAUVector2@3@XZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x0041d0e0 FOLDED
+// ??$Call@VKdGraphics@vc1@@@?$ReturnSpecialization@AAUVector2@vc1@@@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEAAUVector2@3@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0041d130 FOLDED
 // ??$Call@VKdLayer@vc1@@PBDMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdLayer@vc1@@P823@AEXPBDMM@ZPAUSQVM@@H@Z
+// TEMPLATE: VC1 0x0041d130 FOLDED
+// ??$Call@VKdGraphics@vc1@@PBDMM@?$ReturnSpecialization@X@SqPlus@@SAHAAVKdGraphics@vc1@@P823@AEXPBDMM@ZPAUSQVM@@H@Z
 
 // TEMPLATE: VC1 0x004262c0
 // ??$Call@EEEE@?$ReturnSpecialization@I@SqPlus@@SAHP6AIEEEE@ZPAUSQVM@@H@Z
@@ -1199,5 +1215,297 @@ inline BOOL SquirrelObject::ArrayAppend(T item)
     sq_pop(SquirrelVM::_VM, 1);
     return res;
 }
+
+// Callees found by pairing the direct calls of mapped functions with the
+// recompiled ones (same call count and order); asmcmp confirms each body.
+
+// TEMPLATE: VC1 0x00401c60
+// ??$CreateCopyInstance@UVector2@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUVector2@vc1@@@Z
+
+// TEMPLATE: VC1 0x00401d20
+// ??$CreateCopyInstance@URect@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABURect@vc1@@@Z
+
+// TEMPLATE: VC1 0x00404eb0
+// ??$Call@VKdGridRouter@vc1@@H@?$ReturnSpecialization@AAUVector2@vc1@@@SqPlus@@SAHAAVKdGridRouter@vc1@@P823@AEAAUVector2@3@H@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00409c40
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AE_NABV?$KdPtr@UIAbstract@vc1@@@2@H@Z@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AE_NABV?$KdPtr@UIAbstract@vc1@@@0@H@Z@Z
+
+// TEMPLATE: VC1 0x00409cb0
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AEHXZ@Z
+
+// TEMPLATE: VC1 0x00409d90
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AEEABV?$KdPtr@UIAbstract@vc1@@@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AEEABV?$KdPtr@UIAbstract@vc1@@@0@@Z@Z
+
+// TEMPLATE: VC1 0x00409e00
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AEXABV?$KdPtr@UIAbstract@vc1@@@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AEXABV?$KdPtr@UIAbstract@vc1@@@0@@Z@Z
+
+// TEMPLATE: VC1 0x00409e70
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AEXXZ@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AEXXZ@Z
+
+// TEMPLATE: VC1 0x0040a5d0
+// ??$CreateScriptMethod@VVcTileManager@vc1@@P812@AEXH@Z@vc1@@YA?AVSquirrelObject@@P8VcTileManager@0@AEXH@Z@Z
+
+// TEMPLATE: VC1 0x0040a640
+// ??$CreateScriptMethod@VVcTileManager@vc1@@P812@AEXI@Z@vc1@@YA?AVSquirrelObject@@P8VcTileManager@0@AEXI@Z@Z
+
+// TEMPLATE: VC1 0x0040a6b0
+// ??$CreateScriptMethod@VVcTileManager@vc1@@P812@AE?AUVector2@2@HH@Z@vc1@@YA?AVSquirrelObject@@P8VcTileManager@0@AE?AUVector2@0@HH@Z@Z
+
+// TEMPLATE: VC1 0x0040a720
+// ??$CreateScriptMethod@VVcTileManager@vc1@@P812@AEXXZ@vc1@@YA?AVSquirrelObject@@P8VcTileManager@0@AEXXZ@Z
+
+// TEMPLATE: VC1 0x004160f0
+// ??$CreateCopyInstance@URectF@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABURectF@vc1@@@Z
+
+// TEMPLATE: VC1 0x00416b30
+// ??$CreateCopyInstance@UMatrix3@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUMatrix3@vc1@@@Z
+
+// TEMPLATE: VC1 0x00418620
+// ??$Call@VKdFile@vc1@@PBDPBD@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdFile@vc1@@P823@AE_NPBD1@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00418e40
+// ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEHXZ@Z
+
+// TEMPLATE: VC1 0x00418eb0
+// ??$CreateScriptMethod@VKdLayer@vc1@@P812@AEXH@Z@vc1@@YA?AVSquirrelObject@@P8KdLayer@0@AEXH@Z@Z
+
+// TEMPLATE: VC1 0x0041a6d0
+// ??$CreateScriptMethod@VKdDisplayBase@vc1@@P812@AE?AV?$KdPtr@UIRenderTarget@vc1@@@2@II@Z@vc1@@YA?AVSquirrelObject@@P8KdDisplayBase@0@AE?AV?$KdPtr@UIRenderTarget@vc1@@@0@II@Z@Z
+
+// TEMPLATE: VC1 0x0041a740
+// ??$CreateScriptMethod@VKdDisplayBase@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdDisplayBase@0@AEHXZ@Z
+
+// TEMPLATE: VC1 0x0041a7b0
+// ??$CreateScriptMethod@VKdDisplayBase@vc1@@P812@AE_NXZ@vc1@@YA?AVSquirrelObject@@P8KdDisplayBase@0@AE_NXZ@Z
+
+// TEMPLATE: VC1 0x0041c940
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEAAURect@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEAAURect@0@XZ@Z
+
+// TEMPLATE: VC1 0x0041c9b0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXABURect@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXABURect@0@@Z@Z
+
+// TEMPLATE: VC1 0x0041ca20
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEIXZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEIXZ@Z
+
+// TEMPLATE: VC1 0x0041ca90
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXI@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXI@Z@Z
+
+// TEMPLATE: VC1 0x0041cb00
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEHXZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEHXZ@Z
+
+// TEMPLATE: VC1 0x0041cb70
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXH@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXH@Z@Z
+
+// TEMPLATE: VC1 0x0041cbe0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEPAPAUIFont@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEPAPAUIFont@0@XZ@Z
+
+// TEMPLATE: VC1 0x0041cc50
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXABV?$KdPtr@UIFont@vc1@@@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXABV?$KdPtr@UIFont@vc1@@@0@@Z@Z
+
+// TEMPLATE: VC1 0x0041ccc0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEPAPAUIUnknown@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEPAPAUIUnknown@0@XZ@Z
+
+// TEMPLATE: VC1 0x0041cd30
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEAAUMatrix3@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEAAUMatrix3@0@XZ@Z
+
+// TEMPLATE: VC1 0x0041cda0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXABUMatrix3@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXABUMatrix3@0@@Z@Z
+
+// TEMPLATE: VC1 0x0041ce10
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEAAUVector2@2@XZ@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEAAUVector2@0@XZ@Z
+
+// TEMPLATE: VC1 0x0041ce80
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXABUVector2@2@@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXABUVector2@0@@Z@Z
+
+// TEMPLATE: VC1 0x0041cef0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXMMMM@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXMMMM@Z@Z
+
+// TEMPLATE: VC1 0x0041cf60
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXABV?$KdPtr@UITexture@vc1@@@2@MMMMMM@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXABV?$KdPtr@UITexture@vc1@@@0@MMMMMM@Z@Z
+
+// TEMPLATE: VC1 0x0041cfd0
+// ??$CreateScriptMethod@VKdGraphics@vc1@@P812@AEXPBDMM@Z@vc1@@YA?AVSquirrelObject@@P8KdGraphics@0@AEXPBDMM@Z@Z
+
+// TEMPLATE: VC1 0x00424c90
+// ??$Call@UColor@vc1@@I@SqPlus@@YAHAAUColor@vc1@@P812@AEIXZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424ce0
+// ??$Call@UColor@vc1@@E@SqPlus@@YAHAAUColor@vc1@@P812@AEEXZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424d30
+// ??$Call@UColor@vc1@@HABU12@@SqPlus@@YAHAAUColor@vc1@@P812@BEHABU12@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424d80
+// ??$Call@UMatrix3@vc1@@AAUVector2@2@@SqPlus@@YAHAAUMatrix3@vc1@@P812@AEAAUVector2@2@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424dd0
+// ??$Call@UMatrix4@vc1@@AAUVector3@2@@SqPlus@@YAHAAUMatrix4@vc1@@P812@AEAAUVector3@2@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424e20
+// ??$Call@UVector2@vc1@@_N@SqPlus@@YAHAAUVector2@vc1@@P812@BE_NXZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00424e70
+// ??$Call@UIntegralF@vc1@@XM@SqPlus@@YAHAAUIntegralF@vc1@@P812@AEXM@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004254c0
+// ??$Call@UVector3@vc1@@ABU12@@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHAAUVector3@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425540
+// ??$Call@UVector3@vc1@@M@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHAAUVector3@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004255e0
+// ??$Call@UVector3@vc1@@@?$ReturnSpecialization@UVector3@vc1@@@SqPlus@@SAHAAUVector3@vc1@@P823@BE?AU23@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425650
+// ??$Call@UVector3@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUVector3@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004256b0
+// ??$Call@UVector2@vc1@@M@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAUVector2@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425750
+// ??$Call@UVector2@vc1@@@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAUVector2@vc1@@P823@BE?AU23@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004257b0
+// ??$Call@UVector2@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUVector2@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425810
+// ??$Call@UVector2@vc1@@ABU12@@?$ReturnSpecialization@_N@SqPlus@@SAHAAUVector2@vc1@@P823@BE_NABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425870
+// ??$Call@UVector4@vc1@@ABU12@@?$ReturnSpecialization@UVector4@vc1@@@SqPlus@@SAHAAUVector4@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004258f0
+// ??$Call@UVector4@vc1@@M@?$ReturnSpecialization@UVector4@vc1@@@SqPlus@@SAHAAUVector4@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425990
+// ??$Call@UVector4@vc1@@@?$ReturnSpecialization@UVector4@vc1@@@SqPlus@@SAHAAUVector4@vc1@@P823@BE?AU23@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425a00
+// ??$Call@UVector4@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUVector4@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425a60
+// ??$Call@UMatrix3@vc1@@ABU12@@?$ReturnSpecialization@UMatrix3@vc1@@@SqPlus@@SAHAAUMatrix3@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425ae0
+// ??$Call@UMatrix3@vc1@@M@?$ReturnSpecialization@UMatrix3@vc1@@@SqPlus@@SAHAAUMatrix3@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425b80
+// ??$Call@UMatrix3@vc1@@@?$ReturnSpecialization@UMatrix3@vc1@@@SqPlus@@SAHAAUMatrix3@vc1@@P823@BE?AU23@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425bf0
+// ??$Call@UMatrix3@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUMatrix3@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425c50
+// ??$Call@UVector2@vc1@@ABU12@@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAUVector2@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425cc0
+// ??$Call@UMatrix4@vc1@@ABU12@@?$ReturnSpecialization@UMatrix4@vc1@@@SqPlus@@SAHAAUMatrix4@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425d40
+// ??$Call@UMatrix4@vc1@@M@?$ReturnSpecialization@UMatrix4@vc1@@@SqPlus@@SAHAAUMatrix4@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425de0
+// ??$Call@UMatrix4@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUMatrix4@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425e40
+// ??$Call@UQuaternion@vc1@@ABU12@@?$ReturnSpecialization@UQuaternion@vc1@@@SqPlus@@SAHAAUQuaternion@vc1@@P823@BE?AU23@ABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425ec0
+// ??$Call@UQuaternion@vc1@@M@?$ReturnSpecialization@UQuaternion@vc1@@@SqPlus@@SAHAAUQuaternion@vc1@@P823@BE?AU23@M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425f60
+// ??$Call@UQuaternion@vc1@@@?$ReturnSpecialization@UQuaternion@vc1@@@SqPlus@@SAHAAUQuaternion@vc1@@P823@BE?AU23@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00425fd0
+// ??$Call@UQuaternion@vc1@@ABU12@@?$ReturnSpecialization@H@SqPlus@@SAHAAUQuaternion@vc1@@P823@BEHABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426030
+// ??$Call@UQuaternion@vc1@@@?$ReturnSpecialization@UMatrix4@vc1@@@SqPlus@@SAHAAUQuaternion@vc1@@P823@BE?AUMatrix4@3@XZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004260a0
+// ??$Call@UQuaternion@vc1@@ABU12@ABU12@M@?$ReturnSpecialization@X@SqPlus@@SAHAAUQuaternion@vc1@@P823@AEXABU23@1M@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426100
+// ??$Call@URect@vc1@@ABU12@@?$ReturnSpecialization@_N@SqPlus@@SAHAAURect@vc1@@P823@AE_NABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426160
+// ??$Call@URect@vc1@@HH@?$ReturnSpecialization@_N@SqPlus@@SAHAAURect@vc1@@P823@BE_NHH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x004261f0
+// ??$Call@URectF@vc1@@ABU12@@?$ReturnSpecialization@_N@SqPlus@@SAHAAURectF@vc1@@P823@AE_NABU23@@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426940
+// ??$CreateCopyInstance@UQuaternion@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUQuaternion@vc1@@@Z
+
+// TEMPLATE: VC1 0x00426a00
+// ??$GetInstance@UQuaternion@vc1@@$00@SqPlus@@YAPAUQuaternion@vc1@@PAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426b00
+// ??$CreateCopyInstance@UVector4@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUVector4@vc1@@@Z
+
+// TEMPLATE: VC1 0x00426e60
+// ??$CreateCopyInstance@UVector3@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUVector3@vc1@@@Z
+
+// TEMPLATE: VC1 0x004a1b50
+// ?Dispatch@?$ScriptMethodCall@VVcTileManager@vc1@@P812@AEXXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a1c00
+// ?Dispatch@?$ScriptMethodCall@VVcTileManager@vc1@@P812@AEXI@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a1ca0
+// ?Dispatch@?$ScriptMethodCall@VVcTileManager@vc1@@P812@AEXH@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a1db0
+// ?Dispatch@?$ScriptMethodCall@VVcTileManager@vc1@@P812@AE?AUVector2@2@HH@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a3370
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AE_NABV?$KdPtr@UIAbstract@vc1@@@2@H@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a32a0
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a30f0
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AEEABV?$KdPtr@UIAbstract@vc1@@@2@@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a3050
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AEXABV?$KdPtr@UIAbstract@vc1@@@2@@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a2fa0
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AEXXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x00466a60
+// ?Dispatch@?$ScriptMethodCall@VKdDisplayBase@vc1@@P812@AE?AV?$KdPtr@UIRenderTarget@vc1@@@2@II@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x00466990
+// ?Dispatch@?$ScriptMethodCall@VKdDisplayBase@vc1@@P812@AEHXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004668f0
+// ?Dispatch@?$ScriptMethodCall@VKdDisplayBase@vc1@@P812@AE_NXZ@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x004a3190
+// ?Dispatch@?$ScriptMethodCall@VKdTileLayer@vc1@@P812@AEXH@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x00409d20
+// ??$CreateScriptMethod@VKdTileLayer@vc1@@P812@AEXH@Z@vc1@@YA?AVSquirrelObject@@P8KdTileLayer@0@AEXH@Z@Z
+
+// TEMPLATE: VC1 0x0041a820
+// ??$CreateScriptMethod@VKdDisplayBase@vc1@@P812@AEX_N@Z@vc1@@YA?AVSquirrelObject@@P8KdDisplayBase@0@AEX_N@Z@Z
+
+// TEMPLATE: VC1 0x00466830
+// ?Dispatch@?$ScriptMethodCall@VKdDisplayBase@vc1@@P812@AEX_N@Z@vc1@@SAHPAUSQVM@@@Z
+
+// TEMPLATE: VC1 0x0040a050
+// ??$Call@VKdTileLayer@vc1@@ABV?$KdPtr@UIAbstract@vc1@@@2@H@?$ReturnSpecialization@_N@SqPlus@@SAHAAVKdTileLayer@vc1@@P823@AE_NABV?$KdPtr@UIAbstract@vc1@@@3@H@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x0040a810
+// ??$Call@VVcTileManager@vc1@@HH@?$ReturnSpecialization@UVector2@vc1@@@SqPlus@@SAHAAVVcTileManager@vc1@@P823@AE?AUVector2@3@HH@ZPAUSQVM@@H@Z
+
+// TEMPLATE: VC1 0x00426d50
+// ??$CreateCopyInstance@UMatrix4@vc1@@@SqPlus@@YAHPAUSQVM@@PBDABUMatrix4@vc1@@@Z
+
+// The profiler stack copy in ScriptProfilerReset (app/script.cpp).
+// TEMPLATE: VC1 0x0040e2c0
+// ??0?$KdArray@PAUProfilerBlock@vc1@@@vc1@@QAE@ABU01@@Z
 
 #endif

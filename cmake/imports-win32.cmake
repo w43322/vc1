@@ -1,7 +1,7 @@
 # Reference target: the original's imports are the real Windows DLLs.
 set(VC1_IMPORTS_DIR src/imports/win32)
 set(VC1_IMPORT_SOURCES)
-set(VC1_IMPORT_LIBRARIES user32 ws2_32 shell32 shlwapi winmm bass_import d3d8_import)
+set(VC1_IMPORT_LIBRARIES user32 ws2_32 shell32 shlwapi winmm wininet bass_import d3d8_import)
 
 # Import library for BASS.dll (BASS 2.4, linked statically by the original:
 # the BASS_* calls go through import thunks at 0x0044467a+). VC9 cannot make a

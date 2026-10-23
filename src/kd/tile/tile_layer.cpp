@@ -169,9 +169,9 @@ void KdTileLayer::SetBackParallax(int shift)
 
 // Script "SetBackTile".
 // FUNCTION: VC1 0x004a2700
-void KdTileLayer::SetBackTile(short tile)
+void KdTileLayer::SetBackTile(int tile)
 {
-    backTile = tile;
+    backTile = static_cast<short>(tile);
 }
 
 // Script "SetRenderLayer".

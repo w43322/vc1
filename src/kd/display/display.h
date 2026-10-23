@@ -252,9 +252,9 @@ public:
     void* GetRenderTexture();
     unsigned char SetSize(unsigned width, unsigned height);
     bool IsWindowed();
-    int SetWindowed(bool arg);
+    void SetWindowed(bool arg);
     void* GetMixer();
-    void ShowKeyboard(int unused);
+    void ShowKeyboard(bool show);
     void** CreateTexture(void** out);
     KdPtr<IRenderTarget> CreateRenderTarget(unsigned width, unsigned height);
     int Shutdown() throw();
@@ -328,7 +328,7 @@ public:
     void* BeginFrame(void* a, void* b);      // IRenderTarget vtable+0x0c
     void* EndFrame();                       // IRenderTarget vtable+0x10
     unsigned char SetSize(unsigned width, unsigned height); // IDisplay vtable+0x20
-    int SetWindowed(bool arg);              // IDisplay vtable+0x28
+    void SetWindowed(bool arg);             // IDisplay vtable+0x28
     int Shutdown() throw();                 // IShutdownable vtable+0x0c
     int FitWindow();                        // IScriptObject vtable+0x18
 };

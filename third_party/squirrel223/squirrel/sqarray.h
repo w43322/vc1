@@ -110,6 +110,10 @@ public:
 // SQArray::`scalar deleting destructor'
 // FUNCTION: VC1 0x0040e870
 // ?Get@SQArray@@QAE_NHAAUSQObjectPtr@@@Z
+// FUNCTION: VC1 0x0040e8f0
+// ?Set@SQArray@@QAE_NHABUSQObjectPtr@@@Z
+// FUNCTION: VC1 0x0040e940
+// ?Next@SQArray@@QAEHABUSQObjectPtr@@AAU2@1@Z
 // FUNCTION: VC1 0x0040ea10
 // ?Clone@SQArray@@QAEPAU1@XZ
 // FUNCTION: VC1 0x0048b810

@@ -151,8 +151,16 @@ public:
 	SQObjectPtr _values[1];
 };
 
+// FUNCTION: VC1 0x0040db90
+// ?Get@SQClass@@QAE_NABUSQObjectPtr@@AAU2@@Z
+// FUNCTION: VC1 0x0040dc30
+// ?Get@SQInstance@@QAE_NABUSQObjectPtr@@AAU2@@Z
+// FUNCTION: VC1 0x0040dd10
+// ?Set@SQInstance@@QAE_NABUSQObjectPtr@@0@Z
 // FUNCTION: VC1 0x0040ea70
 // SQInstance::Clone
+// FUNCTION: VC1 0x0040f920
+// ??0SQClassMember@@QAE@ABU0@@Z
 // FUNCTION: VC1 0x0040f9c0
 // SQClass::Release
 // FUNCTION: VC1 0x0040fa00
@@ -161,6 +169,8 @@ public:
 // SQInstance::Release
 // SYNTHETIC: VC1 0x0040fae0
 // SQClass::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0040fb00
+// ??1SQClassMember@@QAE@XZ
 // SYNTHETIC: VC1 0x0040fb40
 // SQInstance::`scalar deleting destructor'
 // FUNCTION: VC1 0x00487540

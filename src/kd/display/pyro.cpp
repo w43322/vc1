@@ -1,5 +1,7 @@
 #include "kd/display/pyro.h"
 
+#include "pyro/pyro_cfile.h"
+
 #include <stdlib.h>
 
 namespace vc1 {
@@ -42,12 +44,28 @@ void PyroLibrary::Init(IPyroDevice* value)
     vertices = new PyroVertex[capacity * 4];
 }
 
-// RET 4. Body not recovered.
-// STUB: VC1 0x004566b0
-int PyroLibrary::LoadFromPath(void* a)
+// RET 4. LoadFile over a named file (PyroCFile); nothing calls it.
+// FUNCTION: VC1 0x004566b0
+PyroFile* PyroLibrary::LoadFromPath(const char* path)
 {
-    (void)a;
-    return 0;
+    PyroCFile source;
+    PyroFile* file;
+    PyroArchive ar;
+
+    if (!source.Open(path)) {
+        return 0;
+    }
+    file = new PyroFile(this);
+    ar.stream = &source;
+    ar.storing = false;
+    file->Deserialize(ar);
+    if (source.Tell() != source.GetLength()) {
+        if (file) {
+            delete file;
+        }
+        file = 0;
+    }
+    return file;
 }
 
 // RET 4. Deserializes a .pyro file; the file is dropped unless the whole

@@ -21,9 +21,9 @@ struct IDisplay : IUnknown
     virtual void* GetRenderTexture() = 0;                         // vtable+0x1c
     virtual unsigned char SetSize(unsigned width, unsigned height) = 0; // vtable+0x20
     virtual bool IsWindowed() = 0;                         // vtable+0x24
-    virtual int SetWindowed(bool arg) = 0;                 // vtable+0x28
+    virtual void SetWindowed(bool arg) = 0;                // vtable+0x28
     virtual void* GetMixer() = 0;                          // vtable+0x2c
-    virtual void ShowKeyboard(int unused) = 0;                // vtable+0x30
+    virtual void ShowKeyboard(bool show) = 0;                 // vtable+0x30
     virtual void** CreateTexture(void** out) = 0;     // vtable+0x34
     virtual KdPtr<IRenderTarget> CreateRenderTarget(unsigned width, unsigned height) = 0; // vtable+0x38
     virtual void** CreateEffect(void** out) = 0;              // vtable+0x3c

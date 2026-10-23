@@ -115,6 +115,13 @@ void KdStringList::Reserve(unsigned count, char exact) throw()
     }
 }
 
+// EDI=this, RET 4. PushBack out of line: grow by one string and copy value.
+// FUNCTION: VC1 0x00408e00
+void KdStringList::Append(const KdString& value)
+{
+    PushBack(value);
+}
+
 // EAX=exclusive end, ECX=first. Byte reverse of [first, last).
 // FUNCTION: VC1 0x0040e390
 void ReverseCountedBytes(void* first, void* last)
@@ -139,6 +146,23 @@ void ReverseCountedBytes(void* first, void* last)
         lo += 1;
         span = static_cast<int>(hi - lo);
     } while (span > 0);
+}
+
+// EAX=this. Empties the string: a borrowed one points back at g_kdLogTag, an
+// owned one keeps its buffer (reserving Count()) and stores the NUL.
+// FUNCTION: VC1 0x0040e3d0
+void KdString::Reset()
+{
+    if (capacity == 0) {
+        begin = reinterpret_cast<FactoryEntry*>(&g_kdLogTag);
+        size = 0;
+        return;
+    }
+    if (capacity < Count()) {
+        GrowCountedBuffer(this, 0, 1);
+    }
+    size = 0;
+    data()[0] = 0;
 }
 
 // ESI=this, EAX=text. Copies text (null means empty); SqPlus setVar's
@@ -236,6 +260,31 @@ void ReserveFactoryTable(unsigned newCount)
             slot += 1;
         }
     }
+}
+
+// ECX=this. Bytes before the first NUL (or the whole size).
+// FUNCTION: VC1 0x004184f0
+unsigned KdString::TextLength() const
+{
+    const char* const text = c_str();
+    const char* const last = text + size;
+    const char* p = text;
+
+    while (p != last && *p != 0) {
+        ++p;
+    }
+    return static_cast<unsigned>(p - text);
+}
+
+// EAX=this, ESI=result, EDI=first, ECX=count (-1 for the rest). Copy of
+// count bytes from first, both clamped to the size.
+// FUNCTION: VC1 0x00418510
+KdString KdString::Substr(unsigned first, unsigned count) const
+{
+    const char* const text = c_str();
+    const char* const stop = count == static_cast<unsigned>(-1)
+        ? text + size : text + (first + count < size ? first + count : size);
+    return KdString(text + (first < size ? first : size), stop);
 }
 
 // XOR EAX,EAX; RET. ICF-folded return-0; factory vtable+0x08 and SQBlob::Flush.
@@ -524,6 +573,36 @@ int KdString::Find(const KdString& needle) const
     }
 }
 
+// ECX=first, EAX=last, EDX=textEnd, stack this and text, RET 8. Replaces
+// [first, last) with [text, textEnd), moving the tail as needed.
+// FUNCTION: VC1 0x004b8e60
+void KdString::Replace(char* first, char* last, const char* text, const char* textEnd)
+{
+    const unsigned oldLength = static_cast<unsigned>(last - first);
+    unsigned length = static_cast<unsigned>(textEnd - text);
+
+    if (oldLength > length) {
+        const unsigned drop = oldLength - length;
+        char* const before = data();
+        EraseCountedBytes(first, first + drop, data() + size);
+        size -= drop;
+        first += data() - before;
+    }
+    else if (oldLength < length) {
+        first = static_cast<char*>(InsertCountedBytes(this, first,
+            static_cast<int>(length - oldLength)));
+    }
+    if (length == 1) {
+        *first = *text;
+    }
+    else {
+        for (; length != 0; --length) {
+            *first++ = *text++;
+        }
+    }
+    data()[size] = 0;
+}
+
 // EAX=this, RET 4. Resize(size + 1) inlined, then the new last byte.
 // FUNCTION: VC1 0x004b8f70
 void KdString::Append(char c)
@@ -621,6 +700,22 @@ int KdString::FindLastOf(const KdString& set, unsigned pos) const
         }
     }
     return -1;
+}
+
+// ESI=this, ECX=pos, EAX=count (-1 for the rest). Removes count bytes at pos
+// (clamped) and stores the NUL.
+// FUNCTION: VC1 0x004b91b0
+void KdString::Erase(unsigned pos, unsigned count)
+{
+    char* const text = data();
+    char* const first = text + (pos < size ? pos : size);
+
+    if (count == static_cast<unsigned>(-1)) {
+        count = static_cast<unsigned>(text - first) + size;
+    }
+    EraseCountedBytes(first, first + count, text + size);
+    size -= count;
+    data()[size] = 0;
 }
 
 // EAX=this, EBX=name, out on the stack, RET 4. Linear strcmp search of the

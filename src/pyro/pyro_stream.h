@@ -31,8 +31,14 @@ public:
     virtual int Skip(int count);                         // vtable+0x18
 };
 
-// SYNTHETIC: VC1 0x0042f120
+// SYNTHETIC: VC1 0x0042f120 FOLDED
 // vc1::PyroStreamBase::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0042f120 FOLDED
+// vc1::PyroStreamReader::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0042f120 FOLDED
+// vc1::PyroSubStream::`scalar deleting destructor'
+// SYNTHETIC: VC1 0x0042f120 FOLDED
+// vc1::PyroKdFileStream::`scalar deleting destructor'
 
 // Adapter from IPyroStream; built on the stack by PyroLibrary::LoadFile.
 // SIZE 0x08

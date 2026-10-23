@@ -206,13 +206,13 @@ Matrix3& KdLayer::GetTransform()
 }
 
 // FUNCTION: VC1 0x004688f0
-IUnknown** KdLayer::GetFont()
+IFont** KdLayer::GetFont()
 {
-    return &state.font;
+    return reinterpret_cast<IFont**>(&state.font);
 }
 
 // FUNCTION: VC1 0x00468900
-unsigned KdLayer::GetMode()
+int KdLayer::GetMode()
 {
     return state.mode;
 }
@@ -461,7 +461,7 @@ void KdLayer::SetFont(const KdPtr<IFont>& font)
 
 // RET 4.
 // FUNCTION: VC1 0x00469180
-void KdLayer::SetMode(unsigned mode)
+void KdLayer::SetMode(int mode)
 {
     state.mode = mode;
     LayerSetMode* const command = new (AppendCommand(sizeof(LayerSetMode))) LayerSetMode;

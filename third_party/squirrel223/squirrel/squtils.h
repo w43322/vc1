@@ -101,4 +101,19 @@ private:
 	SQUnsignedInteger _allocated;
 };
 
+// TEMPLATE: VC1 0x0040dde0
+// ?copy@?$sqvector@USQObjectPtr@@@@QAEXABV1@@Z
+// TEMPLATE: VC1 0x0040de60
+// ??1?$sqvector@USQObjectPtr@@@@QAE@XZ
+// TEMPLATE: VC1 0x0040e0c0
+// ?remove@?$sqvector@USQObjectPtr@@@@QAEXI@Z
+// TEMPLATE: VC1 0x0040ed20
+// ?push_back@?$sqvector@USQExceptionTrap@@@@QAEAAUSQExceptionTrap@@ABU2@@Z
+// TEMPLATE: VC1 0x0040fc20
+// ??1?$sqvector@USQClassMember@@@@QAE@XZ
+// TEMPLATE: VC1 0x0040fda0
+// ?push_back@?$sqvector@USQClassMember@@@@QAEAAUSQClassMember@@ABU2@@Z
+// TEMPLATE: VC1 0x00415730
+// ?push_back@?$sqvector@USQOuterVar@@@@QAEAAUSQOuterVar@@ABU2@@Z
+
 #endif //_SQUTILS_H_

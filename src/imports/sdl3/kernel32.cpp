@@ -103,8 +103,17 @@ LONG WINAPI InterlockedCompareExchange(volatile LONG* target, LONG exchange, LON
     }
 }
 
-// The game never creates an event object (its mutexes' lazy creation is a
-// stub), so there is nothing to signal or wait for.
+// Only the console's queue mutex creates an event (KD_ENABLE_STDIO). Waiters
+// spin on the mutex state, so the event never has to block or wake anyone.
+HANDLE WINAPI CreateEventA(void* attributes, BOOL manualReset, BOOL initialState, LPCSTR name)
+{
+    (void)attributes;
+    (void)manualReset;
+    (void)initialState;
+    (void)name;
+    return reinterpret_cast<HANDLE>(1);
+}
+
 BOOL WINAPI SetEvent(HANDLE event)
 {
     (void)event;
@@ -199,6 +208,37 @@ HANDLE WINAPI GetCurrentProcess()
 DWORD WINAPI GetCurrentProcessId()
 {
     return 1;
+}
+
+HANDLE WINAPI GetCurrentThread()
+{
+    return reinterpret_cast<HANDLE>(-2);
+}
+
+// Only the crash handler asks; there is no context to give.
+BOOL WINAPI GetThreadContext(HANDLE thread, CONTEXT* context)
+{
+    (void)thread;
+    (void)context;
+    return FALSE;
+}
+
+// No system message table: callers log the number instead.
+DWORD WINAPI FormatMessageA(DWORD, const void*, DWORD, DWORD, LPSTR, DWORD, va_list*)
+{
+    return 0;
+}
+
+BOOL WINAPI IsBadStringPtrA(LPCSTR text, UINT_PTR max)
+{
+    (void)max;
+    return text == 0;
+}
+
+void* WINAPI LocalFree(void* memory)
+{
+    (void)memory;
+    return 0;
 }
 
 DWORD WINAPI GetCurrentThreadId()

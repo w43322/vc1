@@ -110,7 +110,7 @@ public:
 
     bool ReadTiles(const KdPtr<IAbstract>& stream, int count);
     void SetRenderLayer(int layer);
-    void SetBackTile(short tile);
+    void SetBackTile(int tile); // int: shares the void(int) closure with SetRenderLayer
     void SetBackParallax(int shift);
 };
 

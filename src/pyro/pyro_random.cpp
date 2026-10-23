@@ -8,16 +8,6 @@
 
 namespace vc1 {
 
-PyroRandom::PyroRandom()
-{
-    LARGE_INTEGER qpc;
-
-    first = state;
-    second = state + 1;
-    QueryPerformanceCounter(&qpc);
-    Seed(static_cast<unsigned>(static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)));
-}
-
 // Function-local static (guard bit 0x004ed874, object 0x004ed878).
 // FUNCTION: VC1 0x0042e790
 PyroRandom* PyroGetRandom()
@@ -173,6 +163,19 @@ void PyroRandom::Seed(unsigned seed)
         state[i] = (seed - 0x5d4cf43) ^ (seed + 0x14593bf1);
         seed = _rotr(seed, 7) + 0x6768eb15;
     }
+}
+
+// Out of line for the PyroGetRandom static only: this is the constant
+// 0x004ed878 and EAX returns it.
+// FUNCTION: VC1 0x0044d9d0
+PyroRandom::PyroRandom()
+{
+    LARGE_INTEGER qpc;
+
+    first = state;
+    second = state + 1;
+    QueryPerformanceCounter(&qpc);
+    Seed(static_cast<unsigned>(static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)));
 }
 
 }

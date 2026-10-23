@@ -47,6 +47,7 @@ struct PyroString
     void CopyBeforeWrite();
     void AllocBeforeWrite(int length);
     PyroString& Assign(const char* text);
+    void ConcatCopy(int length1, const char* text1, int length2, const char* text2);
 
     void Release()
     {

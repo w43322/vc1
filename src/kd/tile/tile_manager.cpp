@@ -716,7 +716,7 @@ void VcTileManager::SetHighlightColor(unsigned color)
 
 // RET 4. Script "SetHighlightBlendMode".
 // FUNCTION: VC1 0x004a1950
-void VcTileManager::SetHighlightBlendMode(unsigned mode)
+void VcTileManager::SetHighlightBlendMode(int mode)
 {
     highlightMode = mode;
 }

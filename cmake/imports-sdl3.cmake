@@ -13,6 +13,7 @@ set(VC1_IMPORT_SOURCES
   src/imports/sdl3/shlwapi.cpp
   src/imports/sdl3/winmm.cpp
   src/imports/sdl3/ws2_32.cpp
+  src/imports/sdl3/wininet.cpp
   src/imports/sdl3/d3d8.cpp
   src/imports/sdl3/bass.cpp)
 set(VC1_IMPORT_LIBRARIES SDL3::SDL3 SDL3_mixer::SDL3_mixer legacy_stdio_definitions)

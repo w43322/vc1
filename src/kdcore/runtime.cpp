@@ -110,18 +110,31 @@ void* g_serviceUnknown;
 
 // GLOBAL: VC1 0x004e89a8
 HMODULE g_dbghelp = reinterpret_cast<HMODULE>(-1);
+// GLOBAL: VC1 0x004ef93c
 FARPROC g_MiniDumpWriteDump;
+// GLOBAL: VC1 0x004ef940
 FARPROC g_SymInitialize;
+// GLOBAL: VC1 0x004ef950
 FARPROC g_SymSetOptions;
+// GLOBAL: VC1 0x004ef958
 FARPROC g_SymGetOptions;
+// GLOBAL: VC1 0x004ef928
 FARPROC g_SymCleanup;
+// GLOBAL: VC1 0x004ef930
 FARPROC g_SymGetTypeInfo;
+// GLOBAL: VC1 0x004ef92c
 FARPROC g_SymGetLineFromAddr64;
+// GLOBAL: VC1 0x004ef94c
 FARPROC g_SymEnumSymbols;
+// GLOBAL: VC1 0x004ef954
 FARPROC g_SymSetContext;
+// GLOBAL: VC1 0x004ef938
 FARPROC g_SymFromAddr;
+// GLOBAL: VC1 0x004ef934
 FARPROC g_StackWalk64;
+// GLOBAL: VC1 0x004ef944
 FARPROC g_SymFunctionTableAccess64;
+// GLOBAL: VC1 0x004ef948
 FARPROC g_SymGetModuleBase64;
 
 }
