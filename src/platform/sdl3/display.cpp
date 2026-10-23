@@ -13,6 +13,7 @@
 #include "bindings/sqplus.h"
 #include "bindings/component.h"
 #include "platform/sdl3/render.h"
+#include "mod/mods.h"
 #include "kd/display/jpeg_stream.h"
 #include <tga.h>
 #include <vector>

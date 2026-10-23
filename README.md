@@ -198,6 +198,36 @@ loads `Level_01_05`; the user confirmed controls and music/effects work. This is
 not full campaign validation. Existing unrecovered archive/HTTP drivers remain
 outside this backend port.
 
+## Mods (SDL3)
+
+The SDL build can replace atlas artwork with PNGs. Mods are local content in the
+git-ignored `mods/` folder at the repository root; the build copies every folder
+in it beside the executable and seeds `mods/enabled.txt` once (one mod folder per
+line, `#` comments; later entries win). Edit `build/sdl3/bin/mods/enabled.txt` and
+restart to switch mods; an empty or missing list restores the original artwork.
+`VC1_MODS` selects a different mods directory. VC9 matching builds do not load mods.
+
+A mod is a folder with a `mod.json` that maps tile names to PNGs:
+
+```json
+{"id":"advisor","version":"4.0","tiles":{"SCORING_FULL_GIRL_01":"textures/advisor.png"}}
+```
+
+`id` must equal the folder name. Tile names resolve through the live
+`Tiles`/`TileImages` tables and geometry comes from `res/Tiles.bin`; static and
+composite tiles (commands 0, 3, 4) are supported. Each PNG is scaled to the tile's
+logical canvas and written into the matching atlas rectangles before GPU upload,
+so every tile that shares a region (flipped variants, composites) changes too.
+Use PNGs at the logical tile size for the sharpest result. Original files are
+never written. `tools/mod-tiles.py NAME [--export out.png]` prints a tile's
+geometry or exports the original locally; keep exported game artwork out of Git.
+
+The advisor portraits use three regions: `INTERFACE_FACE_01` (217x339 main-menu
+half portrait), `SCORING_FULL_GIRL_01` (192x484 full portrait for briefing and
+level results; its upper 159x183 fragment is also the tutorial face, including the
+mirrored `INTERFACE_FACE_02_H`) and `INTERFACE_FACE_04` (56x60 head icon, also
+inside the `BUTTONS_HINT_*` hint button).
+
 ## Toolchain
 
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.

@@ -376,6 +376,9 @@ IUnknown* LoadTextureFile(const char* name)
     else if(ext && !_stricmp(ext,".tga")) texture=LoadSdlTga(name);
     else if(ext && (!_stricmp(ext,".jpg") || !_stricmp(ext,".jpeg"))) texture=LoadSdlJpg(name);
     if(!texture) { HostLogError(&g_kdNameTexture,"Cannot load %s: %s",name,SDL_GetError());return 0; }
+    SdlTexture* native=Native(texture);
+    if(ApplyTextureMods(name,native->width,native->height,native->pixels.data()))
+        SDL_UpdateTexture(native->texture,nullptr,native->pixels.data(),native->width*4);
     TrackedTexture* node=static_cast<TrackedTexture*>(malloc(sizeof(TrackedTexture)));
     node->texture=texture;node->width=SdlTextureWidth(texture);node->height=SdlTextureHeight(texture);
     node->next=g_d3dChain2;g_d3dChain2=node;return texture;

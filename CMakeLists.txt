@@ -88,6 +88,8 @@ if(VC1_USE_SDL3)
     src/platform/sdl3/gamepad.cpp
     src/platform/sdl3/window.cpp
     src/platform/sdl3/audio.cpp
+    src/platform/sdl3/mod_io.cpp
+    src/mod/mods.cpp
     src/platform/sdl3/self_test.cpp
     src/host/sqstd_math.cpp)
   set(VC1_DISPLAY_SOURCE src/platform/sdl3/display.cpp)
@@ -205,6 +207,26 @@ if(VC1_USE_SDL3)
   add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SDL3::SDL3>
       $<TARGET_FILE_DIR:${VC1_TARGET}>)
+  # Texture mods live in the local, git-ignored mods/ folder. Seed the
+  # activation list once so rebuilding never re-enables a disabled mod, and
+  # refresh every mod folder beside the executable on each build.
+  if(EXISTS "${CMAKE_SOURCE_DIR}/mods/enabled.txt" AND
+     NOT EXISTS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mods/enabled.txt")
+    configure_file(mods/enabled.txt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mods/enabled.txt" COPYONLY)
+  endif()
+  file(GLOB VC1_MOD_ENTRIES LIST_DIRECTORIES true "${CMAKE_SOURCE_DIR}/mods/*")
+  set(VC1_MOD_COPY_COMMANDS)
+  foreach(VC1_MOD_DIR IN LISTS VC1_MOD_ENTRIES)
+    if(IS_DIRECTORY "${VC1_MOD_DIR}")
+      get_filename_component(VC1_MOD_NAME "${VC1_MOD_DIR}" NAME)
+      list(APPEND VC1_MOD_COPY_COMMANDS COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${VC1_MOD_DIR}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mods/${VC1_MOD_NAME}")
+    endif()
+  endforeach()
+  if(VC1_MOD_COPY_COMMANDS)
+    add_custom_target(vc1_mods ALL ${VC1_MOD_COPY_COMMANDS} VERBATIM)
+    add_dependencies(${VC1_TARGET} vc1_mods)
+  endif()
 endif()
 
 if(NOT VC1_USE_SDL3)

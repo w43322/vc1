@@ -109,6 +109,16 @@ For mechanical backend moves, preserve recovered bodies and markers, build and
 compare every mapped entity against the pre-refactor baseline. Matching scores
 alone are not a runtime test; also exercise startup after changing dependencies.
 
+Texture mods are a new resource extension, not original function recovery.
+`src/mod/` stays renderer-independent and VC9-language-compatible but is compiled
+only into the SDL target; `platform/sdl3/mod_io.cpp` adapts file/PNG I/O and queries
+the live Squirrel `Tiles`/`TileImages` tables. Mods only replace images: patch CPU
+atlas pixels before GPU upload, with no script hooks. Never overwrite game files.
+The root `mods/` folder is local and git-ignored (do not commit it); the SDL build
+copies its folders beside the executable and seeds `mods/enabled.txt` only once.
+Exported original images and temporary verification stay local under `build/`.
+Keep new extension code free of original mapping markers.
+
 ## Write source
 
 - Matching/shared-source toolchain: VC9 SP1 x86. No modern C++ (`auto`, `nullptr`, range-for, `override`, lambdas, etc.). `/GR-`, no `/EH` (the original game code has no C++ EH frames; only the CRT sets up `fs:[0]`). Keep `/GL /LTCG`.

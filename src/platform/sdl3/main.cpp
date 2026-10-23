@@ -4,10 +4,12 @@
 #include "platform/sdl3/gamepad.h"
 #include "platform/sdl3/render.h"
 #include "kd/sound/bass_api.h"
+#include "mod/mods.h"
 #include <SDL3/SDL_main.h>
 #include <ctime>
 
 namespace vc1 { extern const char kVirtualCity[]="Virtual City"; }
+namespace vc1 { void InitSdlMods(); }
 int RunSdlBackendTests();
 int main(int argc,char** argv)
 {
@@ -23,7 +25,9 @@ int main(int argc,char** argv)
         int result=RunSdlBackendTests();
         vc1::ShutdownSdlGamepad();vc1::FreeBumpHeaps();vc1::DestroyKdObjects();SDL_Quit();return result;
     }
+    vc1::InitSdlMods();
     int result=vc1::RunApp();
+    vc1::ShutdownMods();
     vc1::ShutdownSdlGamepad();
     vc1::FreeBumpHeaps();
     vc1::DestroyKdObjects();
