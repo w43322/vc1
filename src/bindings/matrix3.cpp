@@ -118,6 +118,7 @@ KdString& Matrix3::ToString() const
 {
     // GLOBAL: VC1 0x004ee458
     static KdString text(0x100, '\0');
+    // STRING: VC1 0x004d752c
     text.Format("Matrix3(%s, %s, %s)", Vector3(_11, _12, _13).ToString().c_str(),
         Vector3(_21, _22, _23).ToString().c_str(), Vector3(_31, _32, _33).ToString().c_str());
     return text;
@@ -371,6 +372,7 @@ SQInteger Matrix3::ConstructArgs(HSQUIRRELVM vm)
     }
     }
     Matrix3::operator delete(matrix);
+    // STRING: VC1 0x004d6a5c
     return sa.ThrowError("constructMatrix3: invalid arguments");
 }
 

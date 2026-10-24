@@ -95,6 +95,7 @@ KdString& Vector3::ToString() const
 {
     // GLOBAL: VC1 0x004ee41c
     static KdString text(0x40, '\0');
+    // STRING: VC1 0x004d74d8
     text.Format("Vector3(%f, %f, %f)", x, y, z);
     return text;
 }
@@ -188,6 +189,7 @@ SQInteger Vector3::ConstructArgs(HSQUIRRELVM vm)
         break;
     default:
         Vector3::operator delete(vector);
+        // STRING: VC1 0x004d69f0
         return sa.ThrowError("constructVector3: invalid arguments");
     }
     return SqPlus::PostConstruct<Vector3>(vm, vector, SqPlus::ConstructReleaseClass<Vector3>::release);

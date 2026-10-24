@@ -150,6 +150,7 @@ SQInteger Color::ConstructArgs(HSQUIRRELVM vm)
         break;
     default:
         Color::operator delete(color);
+        // STRING: VC1 0x004d69cc
         return sa.ThrowError("constructColor: invalid arguments");
     }
     return SqPlus::PostConstruct<Color>(vm, color, SqPlus::ConstructReleaseClass<Color>::release);

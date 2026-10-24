@@ -108,6 +108,7 @@ SQInteger Rect::ConstructArgs(HSQUIRRELVM vm)
         return SqPlus::PostConstruct<Rect>(vm, rect, SqPlus::ConstructReleaseClass<Rect>::release);
     }
     Rect::operator delete(rect);
+    // STRING: VC1 0x004d6acc
     return sa.ThrowError("constructRect: invalid arguments");
 }
 

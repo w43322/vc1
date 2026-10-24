@@ -363,26 +363,7 @@ KdString ScriptEncodeUtf8(const KdArray<unsigned>& codes)
 void ScriptRenderFrame(const KdPtr<IGraphics>& graphics, const Rect& area,
     const KdArray<int>& frames, int color)
 {
-    static KdPtr<ITileManager> manager;
-    static bool initialized;
-
-    if (!initialized) {
-        void* unknown;
-
-        initialized = true;
-        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
-        if (unknown) {
-            manager.ptr = static_cast<ITileManager*>(
-                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
-            if (manager.ptr) {
-                manager.ptr->AddRef();
-            }
-            static_cast<IUnknown*>(unknown)->Release();
-        }
-        else {
-            manager.ptr = 0;
-        }
-    }
+    static KdPtr<ITileManager> manager(QueryKdComponent(&g_kdNameTileManager));
 
     graphics.ptr->SetColor(color);
     const int left = area.x + manager.ptr->GetRect(frames[3], 0).width;
@@ -459,26 +440,7 @@ void ScriptRenderFrame(const KdPtr<IGraphics>& graphics, const Rect& area,
 void ScriptFillRectByTile(const KdPtr<IGraphics>& graphics, const Rect& area, int tile,
     int spacing, const Vector2& origin, bool relative)
 {
-    static KdPtr<ITileManager> manager;
-    static bool initialized;
-
-    if (!initialized) {
-        void* unknown;
-
-        initialized = true;
-        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
-        if (unknown) {
-            manager.ptr = static_cast<ITileManager*>(
-                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
-            if (manager.ptr) {
-                manager.ptr->AddRef();
-            }
-            static_cast<IUnknown*>(unknown)->Release();
-        }
-        else {
-            manager.ptr = 0;
-        }
-    }
+    static KdPtr<ITileManager> manager(QueryKdComponent(&g_kdNameTileManager));
 
     if (!graphics.ptr) {
         return;

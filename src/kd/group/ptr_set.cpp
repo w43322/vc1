@@ -20,10 +20,6 @@ KdString g_kdPtrSetEmptyName = KdEmptyText();
 // GLOBAL: VC1 0x004ed6d0
 KdPtr<IUnknown> g_kdNullRef;
 
-static __forceinline IUnknown* Identity(IUnknown* object)
-{
-    return static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
-}
 
 // ECX=first, EAX=dest (first), EBP=value, cdecl last. std::remove of every
 // slot equal to value (KdPtr operator==); returns the new end.
@@ -146,33 +142,14 @@ KdRefList* SliceMapAt(KdSliceMap* map, const int* key)
 // FUNCTION: VC1 0x00416dc0
 KdPtrInsert* PtrSetInsert(KdRefList* set, IUnknown* const* key, KdPtrInsert* out)
 {
-    IUnknown** const last = RefEnd(set);
-    IUnknown** const found = PtrLowerBound(RefBegin(set), last, key);
-
-    if (found != last && !PtrLess(key, found)) {
-        out->slot = found;
-        out->inserted = 0;
-        return out;
-    }
-    out->slot = PtrSetInsertAt(set, found, key);
-    out->inserted = 1;
-    return out;
+    return PtrSetInsertInline(set, key, out);
 }
 
 // EDI=set, stdcall key. Removes the key's slot if present.
 // FUNCTION: VC1 0x00416e30
 void PtrSetErase(KdRefList* set, IUnknown* const* key)
 {
-    IUnknown** const last = RefEnd(set);
-    IUnknown** found = PtrLowerBound(RefBegin(set), last, key);
-
-    if (found == last || PtrLess(key, found)) {
-        found = last;
-    }
-    if (found != RefEnd(set)) {
-        EraseCountedBytes(found, found + 1, RefEnd(set));
-        set->items.size -= 4;
-    }
+    PtrSetEraseInline(set, key);
 }
 
 // for_each over the pending adds (EAX=first, EDI=last, EBX=out functor).
@@ -202,17 +179,12 @@ void UpdateEach(IUnknown** first, IUnknown** last, int slice, int dt)
     }
 }
 
-// EAX=object. KdPtr operator== against g_kdNullRef.
+// EAX=object. KdPtr operator== against g_kdNullRef. Out of line at both
+// callers (KdUpdateGroup::RemoveMember / AddMember).
 // FUNCTION: VC1 0x00416f40
-bool PtrIsNull(IUnknown* const* object)
+__declspec(noinline) bool PtrIsNull(IUnknown* const* object)
 {
-    if (*object) {
-        if (g_kdNullRef.ptr) {
-            return Identity(*object) == Identity(g_kdNullRef.ptr);
-        }
-        return false;
-    }
-    return !g_kdNullRef.ptr;
+    return PtrIsNullInline(object);
 }
 
 // EAX=set, EBX=key, stdcall pos. Opens a slot at pos and stores the key.

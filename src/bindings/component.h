@@ -138,9 +138,10 @@ inline vc1::KdPtr<vc1::IAbstract> Get(TypeWrapper<vc1::KdPtr<vc1::IAbstract> >,
     HSQUIRRELVM v, int idx)
 {
     vc1::IUnknown* self = GetInstance<vc1::IUnknown, false>(v, idx);
-    return vc1::KdPtr<vc1::IAbstract>(self
-        ? static_cast<vc1::IAbstract*>(self->QueryInterface(&vc1::g_iidAbstract))
-        : 0);
+    // Null first: the original falls through to the null case.
+    return vc1::KdPtr<vc1::IAbstract>(!self
+        ? 0
+        : static_cast<vc1::IAbstract*>(self->QueryInterface(&vc1::g_iidAbstract)));
 }
 // The g5 natives' component arguments (host_api.cpp): the IAbstract face,
 // converted in the Call expression where the parameter is another face.

@@ -34,6 +34,7 @@ static SQInteger math_srand(HSQUIRRELVM v)
 {
 	SQInteger i;
 	if(SQ_FAILED(sq_getinteger(v,2,&i)))
+		// STRING: VC1 0x004d2dfc
 		return sq_throwerror(v,_SC("invalid param"));
 	srand((unsigned int)i);
 	return 0;
@@ -80,6 +81,7 @@ static SQRegFunction mathlib_funcs[] = {
 	_DECL_FUNC(log10,2,_SC(".n")),
 	_DECL_FUNC(tan,2,_SC(".n")),
 	_DECL_FUNC(atan,2,_SC(".n")),
+	// STRING: VC1 0x004d2db4
 	_DECL_FUNC(atan2,3,_SC(".nn")),
 	_DECL_FUNC(pow,3,_SC(".nn")),
 	_DECL_FUNC(floor,2,_SC(".n")),
@@ -110,6 +112,7 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
 		sq_createslot(v,-3);
 		i++;
 	}
+	// STRING: VC1 0x004d2e0c
 	sq_pushstring(v,_SC("RAND_MAX"),-1);
 	sq_pushinteger(v,RAND_MAX);
 	sq_createslot(v,-3);
@@ -117,12 +120,15 @@ SQRESULT sqstd_register_mathlib(HSQUIRRELVM v)
 	sq_pushfloat(v,(SQFloat)M_PI);
 	sq_createslot(v,-3);
 	// VC1: the host's extra float constants.
+	// STRING: VC1 0x004d2e1c
 	sq_pushstring(v,_SC("DBPI"),-1);
 	sq_pushfloat(v,(SQFloat)(M_PI*2));
 	sq_createslot(v,-3);
+	// STRING: VC1 0x004d2e24
 	sq_pushstring(v,_SC("HALFPI"),-1);
 	sq_pushfloat(v,(SQFloat)(M_PI/2));
 	sq_createslot(v,-3);
+	// STRING: VC1 0x004d2e2c
 	sq_pushstring(v,_SC("INVDBPI"),-1);
 	sq_pushfloat(v,(SQFloat)(1/(M_PI*2)));
 	sq_createslot(v,-3);

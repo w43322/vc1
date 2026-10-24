@@ -36,6 +36,7 @@ static SQInteger _system_system(HSQUIRRELVM v)
 		sq_pushinteger(v,(int)result > 32 ? 0 : -1);
 		return 1;
 	}
+	// STRING: VC1 0x004d2e74
 	return sq_throwerror(v,_SC("wrong param"));
 }
 
@@ -107,13 +108,20 @@ static SQInteger _system_date(HSQUIRRELVM v)
 	// VC1: no "crt api failure" check; the game copies the result directly.
 	tm date = format == 'u' ? *gmtime(&t) : *localtime(&t);
 	sq_newtable(v);
+	// STRING: VC1 0x004d2ea0
 	_set_integer_slot(v, _SC("sec"), date.tm_sec);
+    // STRING: VC1 0x004d2ea4
     _set_integer_slot(v, _SC("min"), date.tm_min);
+    // STRING: VC1 0x004d2ea8
     _set_integer_slot(v, _SC("hour"), date.tm_hour);
     _set_integer_slot(v, _SC("day"), date.tm_mday);
+    // STRING: VC1 0x004d2eb4
     _set_integer_slot(v, _SC("month"), date.tm_mon);
+    // STRING: VC1 0x004d2ebc
     _set_integer_slot(v, _SC("year"), date.tm_year+1900);
+    // STRING: VC1 0x004d2ec4
     _set_integer_slot(v, _SC("wday"), date.tm_wday);
+    // STRING: VC1 0x004d2ecc
     _set_integer_slot(v, _SC("yday"), date.tm_yday);
 	return 1;
 }
@@ -128,6 +136,7 @@ static SQRegFunction systemlib_funcs[]={
 	_DECL_FUNC(time,1,NULL),
 	_DECL_FUNC(date,-1,_SC(".nn")),
 	_DECL_FUNC(remove,2,_SC(".s")),
+	// STRING: VC1 0x004d2e34
 	_DECL_FUNC(rename,3,_SC(".ss")),
 	{0,0}
 };

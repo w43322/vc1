@@ -44,6 +44,7 @@ template<> void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IScriptObject>& value)
     }
     face = static_cast<vc1::IAbstract*>(value->QueryInterface(&vc1::g_iidAbstract));
     if (!CreateNativeClassInstance(v, GetTypeName(*face), face, vc1::ReleaseComponent)) {
+        // STRING: VC1 0x004cfac4
         SQPLUS_THROW(_SC("Push(): could not create INSTANCE (check registration name)"));
         return;
     }

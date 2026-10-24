@@ -198,7 +198,9 @@ static int TryLoadDbgHelpSoft()
 // FUNCTION: VC1 0x00476e60
 int ProbeDebuggerPresent()
 {
+    // STRING: VC1 0x004d48c4
     const HMODULE kernel32 = LoadLibraryA("kernel32.dll");
+    // STRING: VC1 0x004d48d4
     const FARPROC isDebuggerPresent = GetProcAddress(kernel32, "IsDebuggerPresent");
     if (isDebuggerPresent) {
         const int present = isDebuggerPresent();
@@ -341,18 +343,31 @@ int LoadDbgHelp()
         return 0;
     }
 
+    // STRING: VC1 0x004d4940
     g_MiniDumpWriteDump = GetProcAddress(g_dbghelp, "MiniDumpWriteDump");
+    // STRING: VC1 0x004d4954
     g_SymInitialize = GetProcAddress(g_dbghelp, "SymInitialize");
+    // STRING: VC1 0x004d4964
     g_SymSetOptions = GetProcAddress(g_dbghelp, "SymSetOptions");
+    // STRING: VC1 0x004d4974
     g_SymGetOptions = GetProcAddress(g_dbghelp, "SymGetOptions");
+    // STRING: VC1 0x004d4984
     g_SymCleanup = GetProcAddress(g_dbghelp, "SymCleanup");
+    // STRING: VC1 0x004d4990
     g_SymGetTypeInfo = GetProcAddress(g_dbghelp, "SymGetTypeInfo");
+    // STRING: VC1 0x004d49a0
     g_SymGetLineFromAddr64 = GetProcAddress(g_dbghelp, "SymGetLineFromAddr64");
+    // STRING: VC1 0x004d49b8
     g_SymEnumSymbols = GetProcAddress(g_dbghelp, "SymEnumSymbols");
+    // STRING: VC1 0x004d49c8
     g_SymSetContext = GetProcAddress(g_dbghelp, "SymSetContext");
+    // STRING: VC1 0x004d49d8
     g_SymFromAddr = GetProcAddress(g_dbghelp, "SymFromAddr");
+    // STRING: VC1 0x004d49e4
     g_StackWalk64 = GetProcAddress(g_dbghelp, "StackWalk64");
+    // STRING: VC1 0x004d49f0
     g_SymFunctionTableAccess64 = GetProcAddress(g_dbghelp, "SymFunctionTableAccess64");
+    // STRING: VC1 0x004d4a0c
     g_SymGetModuleBase64 = GetProcAddress(g_dbghelp, "SymGetModuleBase64");
 
     if (g_MiniDumpWriteDump && g_SymInitialize && g_SymSetOptions && g_SymGetOptions

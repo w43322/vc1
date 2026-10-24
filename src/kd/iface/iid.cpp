@@ -528,10 +528,10 @@ void* KdScriptedObject::QueryInterface(const char** iid)
         && (!script.GetValue(kScriptOnInputChar).IsNull()
             || !script.GetValue(kScriptOnKeyPressed).IsNull()
             || !script.GetValue(kScriptOnKeyReleased).IsNull()
-            || !pointerHandlers[0].IsNull()
-            || !pointerHandlers[1].IsNull()
-            || !pointerHandlers[2].IsNull()
-            || !pointerHandlers[3].IsNull())) {
+            || !onPointerPressed.IsNull()
+            || !onPointerReleased.IsNull()
+            || !onPointerMoved.IsNull()
+            || !onPointerWheel.IsNull())) {
         return static_cast<IInputHandler*>(this);
     }
     if (*iid == kIidStateProvider && !script.GetValue(kScriptGetStateWeight).IsNull()) {

@@ -184,13 +184,13 @@ unsigned char KdScriptedObject::OnPointer(const unsigned* data)
         switch (code) {
         case 0x4001:
         case 0x4002:
-            handler = &pointerHandlers[2];
+            handler = &onPointerMoved;
             break;
         case 0x4003:
-            handler = data[1] ? &pointerHandlers[0] : &pointerHandlers[1];
+            handler = data[1] ? &onPointerPressed : &onPointerReleased;
             break;
         case 0x4004:
-            handler = &pointerHandlers[3];
+            handler = &onPointerWheel;
             break;
         default:
             handler = 0;
@@ -372,19 +372,19 @@ bool KdScriptedObject::LoadFromScript(SquirrelObject& table)
     if (!script.Load(table, static_cast<IScriptObject*>(this))) {
         return false;
     }
-    pointerHandlers[0] = script.GetValue(kScriptOnPointerPressedEx);
-    pointerHandlers[1] = script.GetValue(kScriptOnPointerReleasedEx);
-    pointerHandlers[2] = script.GetValue(kScriptOnPointerMovedEx);
-    pointerHandlers[3] = script.GetValue(kScriptOnPointerWheelEx);
-    pointerHandlersEx = pointerHandlers[0].GetObjectHandle()._type != OT_NULL
-        || pointerHandlers[1].GetObjectHandle()._type != OT_NULL
-        || pointerHandlers[2].GetObjectHandle()._type != OT_NULL
-        || pointerHandlers[3].GetObjectHandle()._type != OT_NULL;
+    onPointerPressed = script.GetValue(kScriptOnPointerPressedEx);
+    onPointerReleased = script.GetValue(kScriptOnPointerReleasedEx);
+    onPointerMoved = script.GetValue(kScriptOnPointerMovedEx);
+    onPointerWheel = script.GetValue(kScriptOnPointerWheelEx);
+    pointerHandlersEx = onPointerPressed.GetObjectHandle()._type != OT_NULL
+        || onPointerReleased.GetObjectHandle()._type != OT_NULL
+        || onPointerMoved.GetObjectHandle()._type != OT_NULL
+        || onPointerWheel.GetObjectHandle()._type != OT_NULL;
     if (!pointerHandlersEx) {
-        pointerHandlers[0] = script.GetValue(kScriptOnPointerPressed);
-        pointerHandlers[1] = script.GetValue(kScriptOnPointerReleased);
-        pointerHandlers[2] = script.GetValue(kScriptOnPointerMoved);
-        pointerHandlers[3] = script.GetValue(kScriptOnPointerWheel);
+        onPointerPressed = script.GetValue(kScriptOnPointerPressed);
+        onPointerReleased = script.GetValue(kScriptOnPointerReleased);
+        onPointerMoved = script.GetValue(kScriptOnPointerMoved);
+        onPointerWheel = script.GetValue(kScriptOnPointerWheel);
     }
     return true;
 }

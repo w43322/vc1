@@ -53,26 +53,7 @@ static inline Vector2 TransformPoint(const Matrix3& m, float x, float y)
 // FUNCTION: VC1 0x004099c0
 static KdPtr<ITileManager> TileManager()
 {
-    static KdPtr<ITileManager> manager;
-    static bool initialized;
-
-    if (!initialized) {
-        void* unknown;
-
-        initialized = true;
-        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
-        if (unknown) {
-            manager.ptr = static_cast<ITileManager*>(
-                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
-            if (manager.ptr) {
-                manager.ptr->AddRef();
-            }
-            static_cast<IUnknown*>(unknown)->Release();
-        }
-        else {
-            manager.ptr = 0;
-        }
-    }
+    static KdPtr<ITileManager> manager(QueryKdComponent(&g_kdNameTileManager));
     return manager;
 }
 
@@ -455,26 +436,7 @@ void** CreateKdTileLayer(void** out)
 // FUNCTION: VC1 0x004a3600
 static KdPtr<ITileManager>& TileManagerRef()
 {
-    static KdPtr<ITileManager> manager;
-    static bool initialized;
-
-    if (!initialized) {
-        void* unknown;
-
-        initialized = true;
-        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
-        if (unknown) {
-            manager.ptr = static_cast<ITileManager*>(
-                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
-            if (manager.ptr) {
-                manager.ptr->AddRef();
-            }
-            static_cast<IUnknown*>(unknown)->Release();
-        }
-        else {
-            manager.ptr = 0;
-        }
-    }
+    static KdPtr<ITileManager> manager(QueryKdComponent(&g_kdNameTileManager));
     return manager;
 }
 

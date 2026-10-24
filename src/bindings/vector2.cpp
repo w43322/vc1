@@ -129,6 +129,7 @@ KdString& Vector2::ToString() const
 {
     // GLOBAL: VC1 0x004ee430
     static KdString text(0x20, '\0');
+    // STRING: VC1 0x004d74ec
     text.Format("Vector2(%f, %f)", x, y);
     return text;
 }
@@ -201,6 +202,7 @@ SQInteger Vector2::ConstructArgs(HSQUIRRELVM vm)
         break;
     default:
         Vector2::operator delete(vector);
+        // STRING: VC1 0x004d6a14
         return sa.ThrowError("constructVector2: invalid arguments");
     }
     return SqPlus::PostConstruct<Vector2>(vm, vector, SqPlus::ConstructReleaseClass<Vector2>::release);

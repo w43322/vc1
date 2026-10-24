@@ -66,6 +66,25 @@ inline void RefClear(KdRefList* list)
 
 extern KdPtr<IUnknown> g_kdNullRef;
 
+// The object identity: its IAbstract face.
+__forceinline IUnknown* Identity(IUnknown* object)
+{
+    return static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract));
+}
+
+// PtrIsNull's body. The original calls PtrIsNull (0x00416f40) from
+// KdUpdateGroup::RemoveMember / AddMember and inlines it into Remove / Add.
+__forceinline bool PtrIsNullInline(IUnknown* const* object)
+{
+    if (*object) {
+        if (g_kdNullRef.ptr) {
+            return Identity(*object) == Identity(g_kdNullRef.ptr);
+        }
+        return false;
+    }
+    return !g_kdNullRef.ptr;
+}
+
 // KdPtr operator==: same IAbstract identity, or both null.
 inline bool PtrEqual(IUnknown* a, IUnknown* b)
 {
@@ -95,7 +114,42 @@ KdSliceEntry* SliceMapLowerBound(KdSliceMap* map, const int* key);
 IUnknown** PtrLowerBound(IUnknown** first, IUnknown** last, IUnknown* const* key);
 bool PtrLess(IUnknown* const* a, IUnknown* const* b);
 
-inline bool PtrSetContains(const KdRefList* set, IUnknown* const* key)
+// PtrSetInsert's body (0x00416dc0), inlined where the original inlines it
+// (KdUpdateGroup::AddMember's member set).
+__forceinline KdPtrInsert* PtrSetInsertInline(KdRefList* set, IUnknown* const* key,
+    KdPtrInsert* out)
+{
+    IUnknown** const last = RefEnd(set);
+    IUnknown** const found = PtrLowerBound(RefBegin(set), last, key);
+
+    if (found != last && !PtrLess(key, found)) {
+        out->slot = found;
+        out->inserted = 0;
+        return out;
+    }
+    out->slot = PtrSetInsertAt(set, found, key);
+    out->inserted = 1;
+    return out;
+}
+
+// PtrSetErase's body. The original inlines it into KdUpdateGroup::RemoveMember
+// and AddMember but calls PtrSetErase (0x00416e30) from Remove and Add.
+__forceinline void PtrSetEraseInline(KdRefList* set, IUnknown* const* key)
+{
+    IUnknown** const last = RefEnd(set);
+    IUnknown** found = PtrLowerBound(RefBegin(set), last, key);
+
+    if (found == last || PtrLess(key, found)) {
+        found = last;
+    }
+    if (found != RefEnd(set)) {
+        EraseCountedBytes(found, found + 1, RefEnd(set));
+        set->items.size -= 4;
+    }
+}
+
+// Inlined at every caller in the original.
+__forceinline bool PtrSetContains(const KdRefList* set, IUnknown* const* key)
 {
     IUnknown** const last = RefEnd(set);
     IUnknown** const found = PtrLowerBound(RefBegin(set), last, key);

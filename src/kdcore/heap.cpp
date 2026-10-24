@@ -329,10 +329,12 @@ const char* GetKdEnv(const char* name)
     }
 
     {
+        // STRING: VC1 0x004d27d0
         const char* expected = "KD_UDID";
         const char* got = name;
         while (*got == *expected) {
             if (*got == 0) {
+                // STRING: VC1 0x004d27d8
                 return getenv("COMPUTERNAME");
             }
             if (got[1] != expected[1]) {

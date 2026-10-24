@@ -581,26 +581,7 @@ unsigned char KdRoadRenderer::GetMember(const char* name, SquirrelObject* out)
 // FUNCTION: VC1 0x004aba70
 static KdPtr<ITileManager>& TileManagerRef()
 {
-    static KdPtr<ITileManager> manager;
-    static bool initialized;
-
-    if (!initialized) {
-        void* unknown;
-
-        initialized = true;
-        GetKdFactory()->QueryNamed(&unknown, &g_kdNameTileManager);
-        if (unknown) {
-            manager.ptr = static_cast<ITileManager*>(
-                static_cast<IUnknown*>(unknown)->QueryInterface(&g_iidTileManager));
-            if (manager.ptr) {
-                manager.ptr->AddRef();
-            }
-            static_cast<IUnknown*>(unknown)->Release();
-        }
-        else {
-            manager.ptr = 0;
-        }
-    }
+    static KdPtr<ITileManager> manager(QueryKdComponent(&g_kdNameTileManager));
     return manager;
 }
 

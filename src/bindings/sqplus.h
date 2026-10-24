@@ -140,9 +140,10 @@ struct ScriptMethodCall
 template<typename Callee, typename Func>
 SquirrelObject CreateScriptMethod(Func func)
 {
-    SQUserPointer up = sq_newuserdata(SquirrelVM::_VM, sizeof(func));
+    HSQUIRRELVM v = SquirrelVM::_VM;
+    SQUserPointer up = sq_newuserdata(v, sizeof(func));
     memcpy(up, &func, sizeof(func));
-    sq_newclosure(SquirrelVM::_VM, ScriptMethodCall<Callee, Func>::Dispatch, 1);
+    sq_newclosure(v, ScriptMethodCall<Callee, Func>::Dispatch, 1);
     SquirrelObject so;
     so.AttachToStackObject(-1);
     sq_pop(SquirrelVM::_VM, 1);

@@ -149,6 +149,7 @@ KdString& Matrix4::ToString() const
 {
     // GLOBAL: VC1 0x004ee46c
     static KdString text(0x100, '\0');
+    // STRING: VC1 0x004d7514
     text.Format("Matrix4(%s, %s, %s, %s)",
         Vector4(_11, _12, _13, _14).ToString().c_str(),
         Vector4(_21, _22, _23, _24).ToString().c_str(),
@@ -494,6 +495,7 @@ SQInteger Matrix4::ConstructArgs(HSQUIRRELVM vm)
     }
     }
     Matrix4::operator delete(matrix);
+    // STRING: VC1 0x004d6a80
     return sa.ThrowError("constructMatrix4: invalid arguments");
 }
 

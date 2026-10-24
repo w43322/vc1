@@ -60,6 +60,7 @@ KdString& Quaternion::ToString() const
 {
     // GLOBAL: VC1 0x004ee480
     static KdString text(0x40, '\0');
+    // STRING: VC1 0x004d7540
     text.Format("Quaternion(%s, %f)", v.ToString().c_str(), w);
     return text;
 }
@@ -273,6 +274,7 @@ SQInteger Quaternion::ConstructArgs(HSQUIRRELVM vm)
         return SqPlus::PostConstruct<Quaternion>(vm, q, SqPlus::ConstructReleaseClass<Quaternion>::release);
     }
     Quaternion::operator delete(q);
+    // STRING: VC1 0x004d6aa4
     return sa.ThrowError("constructQuaternion: invalid arguments");
 }
 

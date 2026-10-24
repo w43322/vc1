@@ -475,6 +475,19 @@ __declspec(noinline) void EraseCountedBytes(void* first, void* middle, void* las
 __declspec(noinline) void* InsertCountedBytes(void* self, void* pos, int bytes);
 void RegisterFactoryPair(const char** name, KdFactoryFn fn);
 KdFactory* GetKdFactory();
+// Inferred name. The named factory component as a counted IUnknown, adopting
+// QueryNamed's reference. Always inlined: the lazily created component
+// statics (static KdPtr<T> x(QueryKdComponent(...))) construct through the
+// KdPtr<T> conversion and release this temporary.
+inline KdPtr<IUnknown> QueryKdComponent(const char** name)
+{
+    void* unknown;
+    KdPtr<IUnknown> result;
+
+    GetKdFactory()->QueryNamed(&unknown, name);
+    result.ptr = static_cast<IUnknown*>(unknown);
+    return result;
+}
 void** QueryKdFactory(void** out, const char** name);
 void DestroyKdFactory();
 IUnknown* AcquireNamed(const char** factoryName, const char** iid);

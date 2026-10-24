@@ -222,7 +222,46 @@ struct PyroLayer
     bool field14;               // 0x014  Render: blend mode 4 instead of 1
     float attach;               // 0x018  0 world position, 1 follows the emitter
     float time;                 // 0x01c  fractional emission carried over
-    PyroCurve curves[38];       // 0x020
+    // 38 separate curves, not an array: the constructor and destructor
+    // touch each one unrolled and MarkInstance sets them out of order.
+    PyroCurve curve00;           // 0x020
+    PyroCurve curve01;           // 0x02c
+    PyroCurve curve02;           // 0x038
+    PyroCurve curve03;           // 0x044
+    PyroCurve curve04;           // 0x050
+    PyroCurve curve05;           // 0x05c
+    PyroCurve curve06;           // 0x068
+    PyroCurve curve07;           // 0x074
+    PyroCurve curve08;           // 0x080
+    PyroCurve curve09;           // 0x08c
+    PyroCurve curve10;           // 0x098
+    PyroCurve curve11;           // 0x0a4
+    PyroCurve curve12;           // 0x0b0
+    PyroCurve curve13;           // 0x0bc
+    PyroCurve curve14;           // 0x0c8
+    PyroCurve curve15;           // 0x0d4
+    PyroCurve curve16;           // 0x0e0
+    PyroCurve curve17;           // 0x0ec
+    PyroCurve curve18;           // 0x0f8
+    PyroCurve curve19;           // 0x104
+    PyroCurve curve20;           // 0x110
+    PyroCurve curve21;           // 0x11c
+    PyroCurve curve22;           // 0x128
+    PyroCurve curve23;           // 0x134
+    PyroCurve curve24;           // 0x140
+    PyroCurve curve25;           // 0x14c
+    PyroCurve curve26;           // 0x158
+    PyroCurve curve27;           // 0x164
+    PyroCurve curve28;           // 0x170
+    PyroCurve curve29;           // 0x17c
+    PyroCurve curve30;           // 0x188
+    PyroCurve curve31;           // 0x194
+    PyroCurve curve32;           // 0x1a0
+    PyroCurve curve33;           // 0x1ac
+    PyroCurve curve34;           // 0x1b8
+    PyroCurve curve35;           // 0x1c4
+    PyroCurve curve36;           // 0x1d0
+    PyroCurve curve37;           // 0x1dc
     int matrixMode;             // 0x1e8  1: root rotation, 2: root orientation
     bool hasAngles;             // 0x1ec
     float rotation[3][3];       // 0x1f0  from angles
@@ -329,7 +368,26 @@ public:
 class PyroEmitter : public IPyroEmitter
 {
 public:
-    PyroCurve curves[19];       // 0x004
+    // 19 separate curves, not an array (unrolled constructor/destructor).
+    PyroCurve curve00;           // 0x004
+    PyroCurve curve01;           // 0x010
+    PyroCurve curve02;           // 0x01c
+    PyroCurve curve03;           // 0x028
+    PyroCurve curve04;           // 0x034
+    PyroCurve curve05;           // 0x040
+    PyroCurve curve06;           // 0x04c
+    PyroCurve curve07;           // 0x058
+    PyroCurve curve08;           // 0x064
+    PyroCurve curve09;           // 0x070
+    PyroCurve curve10;           // 0x07c
+    PyroCurve curve11;           // 0x088
+    PyroCurve curve12;           // 0x094
+    PyroCurve curve13;           // 0x0a0
+    PyroCurve curve14;           // 0x0ac
+    PyroCurve curve15;           // 0x0b8
+    PyroCurve curve16;           // 0x0c4
+    PyroCurve curve17;           // 0x0d0
+    PyroCurve curve18;           // 0x0dc
     float scale;                // 0x0e8
     PyroVec3 offset;            // 0x0ec
     float values[19];           // 0x0f8  curves evaluated by MoveTo

@@ -81,6 +81,12 @@ struct ITileManager : IUnknown
     virtual void SetTexture(int index, const KdPtr<ITexture>& texture) = 0;     // vtable+0x28
 };
 
+template <>
+struct KdIid<ITileManager>
+{
+    static const char** Get() { return &g_iidTileManager; }
+};
+
 typedef char Vc1ITileManagerSizeCheck[sizeof(ITileManager) == 0x04 ? 1 : -1];
 
 // Inferred name. Engine half of the "TileManager" component: the tile table

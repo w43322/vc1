@@ -112,8 +112,8 @@ void KdUpdateGroup::RemoveMember(IUnknown* const* object)
             entry->objects.items.size -= 4;
         }
     }
-    PtrSetErase(&members, object);
-    PtrSetErase(&fresh, object);
+    PtrSetEraseInline(&members, object);
+    PtrSetEraseInline(&fresh, object);
 }
 
 // cdecl this, object. (Re)files a member into the slices its GetLayers()
@@ -122,16 +122,17 @@ void KdUpdateGroup::RemoveMember(IUnknown* const* object)
 void KdUpdateGroup::AddMember(IUnknown* const* object)
 {
     KdPtrInsert inserted;
-    bool wasMember;
+    bool isNew;
     unsigned layers;
     int bit;
 
     if (PtrIsNull(object)) {
         return;
     }
-    wasMember = PtrSetContains(&members, object);
-    if (wasMember) {
+    isNew = true;
+    if (PtrSetContains(&members, object)) {
         RemoveMember(object);
+        isNew = false;
     }
     layers = static_cast<unsigned>(static_cast<IUpdateable*>(*object)->GetUpdateLayer());
     for (bit = 1; bit != 0x100; bit *= 2) {
@@ -139,8 +140,8 @@ void KdUpdateGroup::AddMember(IUnknown* const* object)
             PtrListPush(SliceMapAt(&slices, &bit), object);
         }
     }
-    PtrSetInsert(&members, object, &inserted);
-    if (!wasMember) {
+    PtrSetInsertInline(&members, object, &inserted);
+    if (isNew) {
         PtrSetInsert(&fresh, object, &inserted);
     }
 }
@@ -156,7 +157,7 @@ void KdUpdateGroup::Remove(const KdPtr<IAbstract>& object)
     {
         KdPtr<IUnknown> face(source
             ? static_cast<IUnknown*>(source->QueryInterface(&g_iidUpdateable)) : 0);
-        isNull = PtrIsNull(&face.ptr);
+        isNull = PtrIsNullInline(&face.ptr);
     }
     if (isNull) {
         return;
@@ -185,7 +186,7 @@ unsigned char KdUpdateGroup::Add(const KdPtr<IAbstract>& object)
     {
         KdPtr<IUnknown> face(source
             ? static_cast<IUnknown*>(source->QueryInterface(&g_iidUpdateable)) : 0);
-        isNull = PtrIsNull(&face.ptr);
+        isNull = PtrIsNullInline(&face.ptr);
     }
     if (isNull) {
         return 0;

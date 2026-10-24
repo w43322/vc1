@@ -113,6 +113,7 @@ SQInteger RectF::ConstructArgs(HSQUIRRELVM vm)
         return SqPlus::PostConstruct<RectF>(vm, rect, SqPlus::ConstructReleaseClass<RectF>::release);
     }
     RectF::operator delete(rect);
+    // STRING: VC1 0x004d6af0
     return sa.ThrowError("constructRectF: invalid arguments");
 }
 

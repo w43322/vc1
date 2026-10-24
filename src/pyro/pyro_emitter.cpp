@@ -329,9 +329,25 @@ float PyroCurve::Evaluate(float t)
 // FUNCTION: VC1 0x0044ef50
 void PyroEmitter::MarkInstance()
 {
-    for (int i = 0; i < 19; ++i) {
-        curves[i].shared = true;
-    }
+    curve00.shared = true;
+    curve01.shared = true;
+    curve02.shared = true;
+    curve03.shared = true;
+    curve04.shared = true;
+    curve05.shared = true;
+    curve06.shared = true;
+    curve07.shared = true;
+    curve08.shared = true;
+    curve09.shared = true;
+    curve10.shared = true;
+    curve11.shared = true;
+    curve12.shared = true;
+    curve13.shared = true;
+    curve14.shared = true;
+    curve15.shared = true;
+    curve16.shared = true;
+    curve17.shared = true;
+    curve18.shared = true;
     isInstance = true;
 }
 
@@ -427,9 +443,44 @@ void PyroLayer::MarkInstance()
 {
     graphics.shared = true;
     keyList.shared = true;
-    for (int i = 0; i < 38; ++i) {
-        curves[i].shared = true;
-    }
+    curve00.shared = true;
+    curve01.shared = true;
+    curve02.shared = true;
+    curve04.shared = true;
+    curve05.shared = true;
+    curve06.shared = true;
+    curve03.shared = true;
+    curve07.shared = true;
+    curve09.shared = true;
+    curve10.shared = true;
+    curve11.shared = true;
+    curve12.shared = true;
+    curve13.shared = true;
+    curve14.shared = true;
+    curve15.shared = true;
+    curve16.shared = true;
+    curve17.shared = true;
+    curve18.shared = true;
+    curve19.shared = true;
+    curve21.shared = true;
+    curve22.shared = true;
+    curve23.shared = true;
+    curve20.shared = true;
+    curve25.shared = true;
+    curve26.shared = true;
+    curve27.shared = true;
+    curve28.shared = true;
+    curve29.shared = true;
+    curve30.shared = true;
+    curve31.shared = true;
+    curve32.shared = true;
+    curve08.shared = true;
+    curve24.shared = true;
+    curve33.shared = true;
+    curve34.shared = true;
+    curve35.shared = true;
+    curve36.shared = true;
+    curve37.shared = true;
     active = false;
     isInstance = true;
 }
@@ -1754,16 +1805,16 @@ void PyroLayer::Update(float now, float dt)
             }
         }
         {
-            const float curve31 = curves[31].Get(life);
-            const float curve27 = curves[27].Get(life);
-            const float curve29 = curves[29].Get(life);
-            const float curve30 = curves[30].Get(life);
-            const float curve28 = curves[28].Get(life);
-            const float curve33 = curves[33].Get(life);
-            const float curve32 = curves[32].Get(life);
-            const float curve35 = curves[35].Get(life);
-            const float curve36 = curves[36].Get(life);
-            const float curve37 = curves[37].Get(life);
+            const float value31 = curve31.Get(life);
+            const float value27 = curve27.Get(life);
+            const float value29 = curve29.Get(life);
+            const float value30 = curve30.Get(life);
+            const float value28 = curve28.Get(life);
+            const float value33 = curve33.Get(life);
+            const float value32 = curve32.Get(life);
+            const float value35 = curve35.Get(life);
+            const float value36 = curve36.Get(life);
+            const float value37 = curve37.Get(life);
             float scaled;
             float gravity;
 
@@ -1773,17 +1824,17 @@ void PyroLayer::Update(float now, float dt)
                     &particle->keyColor[0], &particle->keyColor[1], &particle->keyColor[2],
                     &particle->keyColor[3]);
             }
-            particle->cur3c = particle->start6c * curve28;
-            particle->cur44 = particle->start70 * curve29;
-            particle->cur48 = particle->start74 * curve30;
-            particle->cur50 = particle->start78 * curve31;
-            particle->cur54 = particle->start84 * curve32;
-            particle->cur60 = particle->start64 * curve35;
-            particle->cur58 = particle->start88 * curve36;
-            particle->cur5c = particle->start8c * curve37;
-            scaled = particle->start7c * curve27;
+            particle->cur3c = particle->start6c * value28;
+            particle->cur44 = particle->start70 * value29;
+            particle->cur48 = particle->start74 * value30;
+            particle->cur50 = particle->start78 * value31;
+            particle->cur54 = particle->start84 * value32;
+            particle->cur60 = particle->start64 * value35;
+            particle->cur58 = particle->start88 * value36;
+            particle->cur5c = particle->start8c * value37;
+            scaled = particle->start7c * value27;
             particle->cur40 = scaled * particle->base4c;
-            gravity = particle->gravity * curve33;
+            gravity = particle->gravity * value33;
             if (!emitter->Is3D()) {
                 particle->velocity[1] = (t - particle->birth) * gravity + particle->velocity[1];
             }
@@ -1813,33 +1864,33 @@ void PyroLayer::Emit(float now, float dt, bool emit)
     }
     if (emitter->field1a9 && (!flag1 || !active)) {
         const float t = emitter->GetConstant() * now;
-        float life = curves[0].Get(t);
-        float rate = curves[1].Get(t);
-        float start64 = curves[2].Get(t);
-        float start90 = curves[3].Get(t);
-        float start70 = curves[4].Get(t);
-        float start74 = curves[5].Get(t);
-        float start6c = curves[6].Get(t);
-        float start7c = curves[7].Get(t);
-        float start78 = curves[9].Get(t);
-        float gravity = curves[8].Get(t);
-        float start88 = curves[13].Get(t);
-        float start8c = curves[14].Get(t);
-        float start84 = curves[10].Get(t);
-        const float minPitch = curves[11].Get(t);
-        const float maxPitch = curves[12].Get(t);
-        const float lifeVariation = curves[15].Get(t);
-        const float start7cVariation = curves[16].Get(t);
-        const float rateVariation = curves[17].Get(t);
-        const float start6cVariation = curves[18].Get(t);
-        const float start78Variation = curves[21].Get(t);
-        const float gravityVariation = curves[24].Get(t);
-        const float start70Variation = curves[25].Get(t);
-        const float start74Variation = curves[26].Get(t);
-        const float start90Variation = curves[19].Get(t);
-        const float start84Variation = curves[20].Get(t);
-        const float start88Variation = curves[13].Get(t);
-        const float start8cVariation = curves[14].Get(t);
+        float life = curve00.Get(t);
+        float rate = curve01.Get(t);
+        float start64 = curve02.Get(t);
+        float start90 = curve03.Get(t);
+        float start70 = curve04.Get(t);
+        float start74 = curve05.Get(t);
+        float start6c = curve06.Get(t);
+        float start7c = curve07.Get(t);
+        float start78 = curve09.Get(t);
+        float gravity = curve08.Get(t);
+        float start88 = curve13.Get(t);
+        float start8c = curve14.Get(t);
+        float start84 = curve10.Get(t);
+        const float minPitch = curve11.Get(t);
+        const float maxPitch = curve12.Get(t);
+        const float lifeVariation = curve15.Get(t);
+        const float start7cVariation = curve16.Get(t);
+        const float rateVariation = curve17.Get(t);
+        const float start6cVariation = curve18.Get(t);
+        const float start78Variation = curve21.Get(t);
+        const float gravityVariation = curve24.Get(t);
+        const float start70Variation = curve25.Get(t);
+        const float start74Variation = curve26.Get(t);
+        const float start90Variation = curve19.Get(t);
+        const float start84Variation = curve20.Get(t);
+        const float start88Variation = curve13.Get(t);
+        const float start8cVariation = curve14.Get(t);
         float emitterValue10;
         int count;
 
@@ -2000,25 +2051,25 @@ void PyroEmitter::MoveTo(float time, float dt, float x, float y, float z, bool e
     movePosition[2] = z;
     UpdateOrientation();
     t = GetConstant() * time;
-    values[0] = curves[0].Get(t);
-    values[1] = curves[1].Get(t);
-    values[2] = curves[2].Get(t);
-    values[3] = curves[3].Get(t);
-    values[4] = curves[4].Get(t);
-    values[5] = curves[5].Get(t);
-    values[6] = curves[10].Get(t);
-    values[7] = curves[11].Get(t);
-    values[13] = curves[6].Get(t);
-    values[8] = curves[12].Get(t);
-    values[9] = curves[13].Get(t);
-    values[14] = curves[14].Get(t);
-    values[12] = curves[8].Get(t);
-    values[15] = curves[15].Get(t);
-    values[10] = curves[9].Get(t);
-    values[16] = curves[16].Get(t);
-    values[17] = curves[17].Get(t);
-    values[18] = curves[18].Get(t);
-    values[11] = curves[7].Get(t);
+    values[0] = curve00.Get(t);
+    values[1] = curve01.Get(t);
+    values[2] = curve02.Get(t);
+    values[3] = curve03.Get(t);
+    values[4] = curve04.Get(t);
+    values[5] = curve05.Get(t);
+    values[6] = curve10.Get(t);
+    values[7] = curve11.Get(t);
+    values[13] = curve06.Get(t);
+    values[8] = curve12.Get(t);
+    values[9] = curve13.Get(t);
+    values[14] = curve14.Get(t);
+    values[12] = curve08.Get(t);
+    values[15] = curve15.Get(t);
+    values[10] = curve09.Get(t);
+    values[16] = curve16.Get(t);
+    values[17] = curve17.Get(t);
+    values[18] = curve18.Get(t);
+    values[11] = curve07.Get(t);
     for (int i = 0; i < layerCount; ++i) {
         layers[i].Emit(time, dt, emit);
     }
@@ -2067,35 +2118,35 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     flag4 = (value & 4) != 0;
     flag2 = (value & 2) != 0;
     keyList.Read(ar);
-    curves[0].Read(ar, version);   // 0x20
-    curves[7].Read(ar, version);   // 0x74
-    curves[4].Read(ar, version);   // 0x50
-    curves[6].Read(ar, version);   // 0x68
-    curves[1].Read(ar, version);   // 0x2c
-    curves[2].Read(ar, version);   // 0x38
-    curves[9].Read(ar, version);   // 0x8c
-    curves[15].Read(ar, version);  // 0xd4
-    curves[16].Read(ar, version);  // 0xe0
-    curves[17].Read(ar, version);  // 0xec
-    curves[21].Read(ar, version);  // 0x11c
-    curves[18].Read(ar, version);  // 0xf8
-    curves[27].Read(ar, version);  // 0x164
-    curves[31].Read(ar, version);  // 0x194
-    curves[28].Read(ar, version);  // 0x170
-    curves[29].Read(ar, version);  // 0x17c
-    curves[8].Read(ar, version);   // 0x80
-    curves[33].Read(ar, version);  // 0x1ac
-    curves[24].Read(ar, version);  // 0x140
-    curves[10].Read(ar, version);  // 0x98
-    curves[20].Read(ar, version);  // 0x110
-    curves[32].Read(ar, version);  // 0x1a0
-    curves[35].Read(ar, version);  // 0x1c4
+    curve00.Read(ar, version);   // 0x20
+    curve07.Read(ar, version);   // 0x74
+    curve04.Read(ar, version);   // 0x50
+    curve06.Read(ar, version);   // 0x68
+    curve01.Read(ar, version);   // 0x2c
+    curve02.Read(ar, version);   // 0x38
+    curve09.Read(ar, version);   // 0x8c
+    curve15.Read(ar, version);  // 0xd4
+    curve16.Read(ar, version);  // 0xe0
+    curve17.Read(ar, version);  // 0xec
+    curve21.Read(ar, version);  // 0x11c
+    curve18.Read(ar, version);  // 0xf8
+    curve27.Read(ar, version);  // 0x164
+    curve31.Read(ar, version);  // 0x194
+    curve28.Read(ar, version);  // 0x170
+    curve29.Read(ar, version);  // 0x17c
+    curve08.Read(ar, version);   // 0x80
+    curve33.Read(ar, version);  // 0x1ac
+    curve24.Read(ar, version);  // 0x140
+    curve10.Read(ar, version);  // 0x98
+    curve20.Read(ar, version);  // 0x110
+    curve32.Read(ar, version);  // 0x1a0
+    curve35.Read(ar, version);  // 0x1c4
     ar.Read(&attach, 4);
     ar.Read(&value, 4);
     field13 = value != 0;
-    curves[3].Read(ar, version);   // 0x44
-    curves[19].Read(ar, version);  // 0x104
-    curves[34].Read(ar, version);  // 0x1b8
+    curve03.Read(ar, version);   // 0x44
+    curve19.Read(ar, version);  // 0x104
+    curve34.Read(ar, version);  // 0x1b8
     ar.Read(&subEmitterCount, 4);
     if (subEmitterCount) {
         subEmitters = new PyroEmitter[subEmitterCount];
@@ -2110,22 +2161,22 @@ void PyroLayer::Read(PyroArchive& ar, int version)
     ar.Read(&angles[0], 4);
     ar.Read(&angles[1], 4);
     ar.Read(&angles[2], 4);
-    curves[11].Read(ar, version);  // 0xa4
-    curves[12].Read(ar, version);  // 0xb0
-    curves[13].Read(ar, version);  // 0xbc
-    curves[14].Read(ar, version);  // 0xc8
-    curves[22].Read(ar, version);  // 0x128
-    curves[23].Read(ar, version);  // 0x134
-    curves[36].Read(ar, version);  // 0x1d0
-    curves[37].Read(ar, version);  // 0x1dc
-    curves[25].Read(ar, version);  // 0x14c
+    curve11.Read(ar, version);  // 0xa4
+    curve12.Read(ar, version);  // 0xb0
+    curve13.Read(ar, version);  // 0xbc
+    curve14.Read(ar, version);  // 0xc8
+    curve22.Read(ar, version);  // 0x128
+    curve23.Read(ar, version);  // 0x134
+    curve36.Read(ar, version);  // 0x1d0
+    curve37.Read(ar, version);  // 0x1dc
+    curve25.Read(ar, version);  // 0x14c
     graphics.Read(ar);
     ar.Read(&value, 4);
     field14 = value != 0;
     ar.Read(&burstCount, 4);
-    curves[5].Read(ar, version);   // 0x5c
-    curves[26].Read(ar, version);  // 0x158
-    curves[30].Read(ar, version);  // 0x188
+    curve05.Read(ar, version);   // 0x5c
+    curve26.Read(ar, version);  // 0x158
+    curve30.Read(ar, version);  // 0x188
     ar.Read(&pivotSource[0], 4);
     ar.Read(&pivotSource[1], 4);
     name.Release();
@@ -2138,25 +2189,25 @@ void PyroEmitter::Deserialize(PyroArchive& ar, int version)
     PyroString text;
     int value;
 
-    curves[0].Read(ar, version);   // 0x04
-    curves[10].Read(ar, version);  // 0x7c
-    curves[1].Read(ar, version);   // 0x10
-    curves[3].Read(ar, version);   // 0x28
-    curves[5].Read(ar, version);   // 0x40
-    curves[2].Read(ar, version);   // 0x1c
-    curves[11].Read(ar, version);  // 0x88
-    curves[12].Read(ar, version);  // 0x94
-    curves[13].Read(ar, version);  // 0xa0
-    curves[6].Read(ar, version);   // 0x4c
-    curves[8].Read(ar, version);   // 0x64
-    curves[14].Read(ar, version);  // 0xac
-    curves[15].Read(ar, version);  // 0xb8
-    curves[9].Read(ar, version);   // 0x70
-    curves[16].Read(ar, version);  // 0xc4
+    curve00.Read(ar, version);   // 0x04
+    curve10.Read(ar, version);  // 0x7c
+    curve01.Read(ar, version);   // 0x10
+    curve03.Read(ar, version);   // 0x28
+    curve05.Read(ar, version);   // 0x40
+    curve02.Read(ar, version);   // 0x1c
+    curve11.Read(ar, version);  // 0x88
+    curve12.Read(ar, version);  // 0x94
+    curve13.Read(ar, version);  // 0xa0
+    curve06.Read(ar, version);   // 0x4c
+    curve08.Read(ar, version);   // 0x64
+    curve14.Read(ar, version);  // 0xac
+    curve15.Read(ar, version);  // 0xb8
+    curve09.Read(ar, version);   // 0x70
+    curve16.Read(ar, version);  // 0xc4
     ar.Read(&position[0], 4);
     ar.Read(&position[1], 4);
     position[2] = 0.0f;
-    curves[7].Read(ar, version);   // 0x58
+    curve07.Read(ar, version);   // 0x58
     ar.Read(&layerCount, 4);
     if (layerCount) {
         layers = new PyroLayer[layerCount];
@@ -2190,9 +2241,9 @@ void PyroEmitter::Deserialize(PyroArchive& ar, int version)
     ar.Read(&field19c, 4);
     ar.Read(&value, 4);
     field1ab = value != 0;
-    curves[17].Read(ar, version);  // 0xd0
-    curves[18].Read(ar, version);  // 0xdc
-    curves[4].Read(ar, version);   // 0x34
+    curve17.Read(ar, version);  // 0xd0
+    curve18.Read(ar, version);  // 0xdc
+    curve04.Read(ar, version);   // 0x34
     if (version >= 0x16000) {
         ar.Read(&field1ac, 4);
     }

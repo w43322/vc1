@@ -43,7 +43,11 @@ class KdScriptedObject : public IUpdateable,
 {
 public:
     Matrix3 position;                 // 0x80, used without a provider
-    SquirrelObject pointerHandlers[4]; // 0xa4: pressed, released, moved, wheel
+    // Four members, not an array: the destructor releases each one inline.
+    SquirrelObject onPointerPressed;  // 0xa4
+    SquirrelObject onPointerReleased; // 0xb0
+    SquirrelObject onPointerMoved;    // 0xbc
+    SquirrelObject onPointerWheel;    // 0xc8
     bool pointerHandlersEx;           // 0xd4
 
     KdScriptedObject() throw();
