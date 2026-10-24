@@ -104,27 +104,24 @@ KdRecordList::~KdRecordList() throw()
     }
 }
 
-// EAX=begin, EDI=end. Each 0x14-byte record Releases +0x10 then nested factory dtor.
+// Inferred name. One 0x14-byte named record: the name, then the object,
+// destroyed in reverse member order.
+struct KdNamedSlot
+{
+    KdFactory name;          // 0x00
+    KdRef<IUnknown> object;  // 0x10
+};
+
+typedef char Vc1KdNamedSlotSizeCheck[sizeof(KdNamedSlot) == 0x14 ? 1 : -1];
+
+// EAX=begin, EDI=end. Destroys each record in place.
 // FUNCTION: VC1 0x00415f10
 static void FactoryClearSlots(void* begin, void* end)
 {
-    unsigned char* slot;
-    KdFactory* nested;
-    IUnknown* object;
+    KdNamedSlot* slot;
 
-    for (slot = static_cast<unsigned char*>(begin);
-        slot < static_cast<unsigned char*>(end);
-        slot += 0x14) {
-        object = *reinterpret_cast<IUnknown**>(slot + 0x10);
-        if (object) {
-            object->Release();
-        }
-        *reinterpret_cast<IUnknown**>(slot + 0x10) = 0;
-        nested = reinterpret_cast<KdFactory*>(slot);
-        if (nested->capacity) {
-            free(nested->begin);
-        }
-        nested->Clear();
+    for (slot = static_cast<KdNamedSlot*>(begin); slot < static_cast<KdNamedSlot*>(end); ++slot) {
+        slot->~KdNamedSlot();
     }
 }
 

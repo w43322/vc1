@@ -319,41 +319,32 @@ unsigned KdFactory::Count()
     return 0;
 }
 
-// EAX=last, ECX=first, EBX=middle. Byte rotate used to open/close a hole.
+// EAX=last, ECX=first, EBX=middle. Byte rotate used to open/close a hole:
+// VC9's bidirectional std::rotate (reverse both halves, swap inward, reverse
+// the rest) over ReverseCountedBytes.
 // FUNCTION: VC1 0x004b8830
 void EraseCountedBytes(void* first, void* middle, void* last)
 {
-    unsigned char* esi;
-    unsigned char* edi;
-    unsigned char* ebx;
-    unsigned char left;
-    unsigned char right;
+    unsigned char* f = static_cast<unsigned char*>(first);
+    unsigned char* const m = static_cast<unsigned char*>(middle);
+    unsigned char* l = static_cast<unsigned char*>(last);
 
-    if (first == middle || middle == last) {
+    if (f == m || m == l) {
         return;
     }
-    ReverseCountedBytes(first, middle);
-    ReverseCountedBytes(middle, last);
-    esi = static_cast<unsigned char*>(first);
-    edi = static_cast<unsigned char*>(last);
-    ebx = static_cast<unsigned char*>(middle);
-    while (ebx != edi) {
-        left = *esi;
-        right = *(edi - 1);
-        edi -= 1;
-        *esi = right;
-        esi += 1;
-        *edi = left;
-        if (esi == ebx) {
-            ReverseCountedBytes(esi, edi);
-            return;
-        }
+    ReverseCountedBytes(f, m);
+    ReverseCountedBytes(m, l);
+    while (f != m && m != l) {
+        const unsigned char t = *f;
+        *f++ = *--l;
+        *l = t;
     }
-    if (esi == ebx) {
-        ReverseCountedBytes(esi, edi);
-        return;
+    if (f == m) {
+        ReverseCountedBytes(m, l);
     }
-    ReverseCountedBytes(esi, ebx);
+    else {
+        ReverseCountedBytes(f, m);
+    }
 }
 
 // EDI=counted buffer (vptr + begin/size/capacity). Aligns new size up to 0x40, CRT realloc.

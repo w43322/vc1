@@ -104,24 +104,29 @@ static __declspec(noinline) int InterpolateInt(const int& t0, const int& from, c
     return value;
 }
 
+// InterpolateInt's body, which InterpolateColor inlines once per channel.
+static __forceinline int LerpChannel(int from, int to, int t0, int t)
+{
+    const int span = 1000 - t0;
+    int value = from;
+
+    if (span != 0) {
+        value += (to - from) * (t - t0) / span;
+    }
+    return value;
+}
+
 // ECX=&from, cdecl out, &to, &t0, &t. Inferred name. InterpolateInt per byte
 // of an ARGB color.
 // FUNCTION: VC1 0x00418180
 static __declspec(noinline) void InterpolateColor(const unsigned& from, unsigned* out,
     const unsigned& to, const int& t0, const int& t)
 {
-    unsigned b = from & 0xff;
-    unsigned g = (from >> 8) & 0xff;
-    unsigned r = (from >> 16) & 0xff;
-    unsigned a = from >> 24;
-    const int span = 1000 - t0;
+    const int b = LerpChannel(from & 0xff, to & 0xff, t0, t);
+    const int g = LerpChannel((from >> 8) & 0xff, (to >> 8) & 0xff, t0, t);
+    const int r = LerpChannel((from >> 16) & 0xff, (to >> 16) & 0xff, t0, t);
+    const int a = LerpChannel(from >> 24, to >> 24, t0, t);
 
-    if (span != 0) {
-        b = static_cast<int>(((to & 0xff) - b) * (t - t0)) / span + b;
-        g = static_cast<int>((t - t0) * (((to >> 8) & 0xff) - g)) / span + g;
-        r = static_cast<int>((t - t0) * (((to >> 16) & 0xff) - r)) / span + r;
-        a = static_cast<int>((t - t0) * ((to >> 24) - a)) / span + a;
-    }
     *out = (((a & 0xff) << 8 | (r & 0xff)) << 8 | (g & 0xff)) << 8 | (b & 0xff);
 }
 
