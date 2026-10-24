@@ -55,6 +55,8 @@ set_source_files_properties(${LIBPNG_SOURCES} PROPERTIES
 # The game's libpng compares memory through MemCompare (src/kdcore/kd_string_c.h).
 set_property(SOURCE ${LIBPNG_SOURCES} APPEND PROPERTY COMPILE_OPTIONS
   "/FI${PROJECT_SOURCE_DIR}/src/kdcore/kd_string_c.h")
+set_property(SOURCE ${LIBPNG_SOURCES} APPEND PROPERTY OBJECT_DEPENDS
+  "${PROJECT_SOURCE_DIR}/src/kdcore/kd_string_c.h")
 # The game's libpng reads files through the KD layer (src/kdcore/kd_stdio_c.h).
 set_property(SOURCE ${LIBPNG_ROOT}/pngrio.c APPEND PROPERTY COMPILE_OPTIONS
   "/FI${PROJECT_SOURCE_DIR}/src/kdcore/kd_stdio_c.h")

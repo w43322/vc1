@@ -733,29 +733,6 @@ static unsigned PyroSwap32(unsigned value)
     return (((value & 0xff0000) | (value >> 16)) >> 8) | (((value << 16) | (value & 0xff00)) << 8);
 }
 
-// One plane: byte offset within each pixel of the next sample's first byte
-// (the high byte of a 16-bit sample).
-static void PyroPsdReadPlane(unsigned char* pixels, unsigned count, int offset)
-{
-    unsigned short sample = 0;
-    unsigned i;
-
-    for (i = 0; i < count; ++i) {
-        PyroPsdReadSample(&sample);
-        pixels[i * 4 + offset] = static_cast<unsigned char>(sample);
-    }
-}
-
-static void PyroPsdSkipPlane(unsigned count)
-{
-    unsigned short sample = 0;
-    unsigned i;
-
-    for (i = 0; i < count; ++i) {
-        PyroPsdReadSample(&sample);
-    }
-}
-
 // EAX=stream, stack image, RET 4. PSD decoder: grayscale, indexed, RGB (a
 // fourth channel is alpha, more are skipped) and CMYK (multiplied by K, a
 // fifth channel is alpha), 8 or 16 bits per sample with optional PackBits.
@@ -765,13 +742,16 @@ static bool PyroDecodePsd(PyroImageStream* stream, PyroImage* image)
 {
     PyroPsdHeader header;
     unsigned length;
+    unsigned resourceLength;
+    unsigned layerLength;
     unsigned short compression;
     unsigned* palette = 0;
     unsigned char byte;
-    unsigned short sample;
+    // PyroPsdReadSample fills the low half.
+    unsigned sample;
     unsigned char* pixels;
-    unsigned count;
-    unsigned i;
+    int count;
+    int i;
     int c;
 
     if (stream->Read(&header, sizeof(header)) != sizeof(header)) {
@@ -814,12 +794,12 @@ static bool PyroDecodePsd(PyroImageStream* stream, PyroImage* image)
             palette[c] |= byte << 16;
         }
     }
-    stream->Read(&length, 4);
-    length = PyroSwap32(length);
-    stream->Seek(length, 1);
-    stream->Read(&length, 4);
-    length = PyroSwap32(length);
-    stream->Seek(length, 1);
+    stream->Read(&resourceLength, 4);
+    resourceLength = PyroSwap32(resourceLength);
+    stream->Seek(resourceLength, 1);
+    stream->Read(&layerLength, 4);
+    layerLength = PyroSwap32(layerLength);
+    stream->Seek(layerLength, 1);
     stream->Read(&compression, 2);
     compression = PyroSwap16(compression);
     g_pyroPsdRle = compression != 0;
@@ -840,18 +820,33 @@ static bool PyroDecodePsd(PyroImageStream* stream, PyroImage* image)
     pixels = static_cast<unsigned char*>(malloc(image->width * image->height * 4));
     image->pixels = pixels;
 
+    // Every plane loop exists once per sample size: 16-bit samples keep the
+    // first (high) byte through sample &= 0xff.
     switch (header.mode) {
     case 1:
         if (header.channels != 1 && header.depth != 8) {
             break;
         }
         sample = 0;
-        for (i = 0; i < count; ++i) {
-            PyroPsdReadSample(&sample);
-            pixels[i * 4 + 0] = static_cast<unsigned char>(sample);
-            pixels[i * 4 + 1] = static_cast<unsigned char>(sample);
-            pixels[i * 4 + 2] = static_cast<unsigned char>(sample);
-            pixels[i * 4 + 3] = 0xff;
+        if (g_pyroPsdSampleSize == 1) {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                const unsigned char value = static_cast<unsigned char>(sample);
+                pixels[i * 4 + 0] = value;
+                pixels[i * 4 + 1] = value;
+                pixels[i * 4 + 2] = value;
+                pixels[i * 4 + 3] = 0xff;
+            }
+        }
+        else {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                const unsigned char value = static_cast<unsigned char>(sample &= 0xff);
+                pixels[i * 4 + 0] = value;
+                pixels[i * 4 + 1] = value;
+                pixels[i * 4 + 2] = value;
+                pixels[i * 4 + 3] = 0xff;
+            }
         }
         return true;
     case 2:
@@ -859,40 +854,130 @@ static bool PyroDecodePsd(PyroImageStream* stream, PyroImage* image)
             break;
         }
         sample = 0;
-        for (i = 0; i < count; ++i) {
-            PyroPsdReadSample(&sample);
-            if (g_pyroPsdSampleSize != 1) {
-                sample = PyroSwap16(sample);
+        if (g_pyroPsdSampleSize == 1) {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                static_cast<unsigned*>(image->pixels)[i] = palette[static_cast<unsigned short>(sample)];
             }
-            static_cast<unsigned*>(image->pixels)[i] = palette[sample];
+        }
+        else {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                sample = PyroSwap16(static_cast<unsigned short>(sample));
+                static_cast<unsigned*>(image->pixels)[i] = palette[static_cast<unsigned short>(sample)];
+            }
         }
         return true;
     case 3:
-        PyroPsdReadPlane(pixels, count, 0);
-        PyroPsdReadPlane(pixels, count, 1);
-        if (header.channels == 3) {
-            sample = 0;
+        sample = 0;
+        if (g_pyroPsdSampleSize == 1) {
             for (i = 0; i < count; ++i) {
-                PyroPsdReadSample(&sample);
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 0] = static_cast<unsigned char>(sample);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 1] = static_cast<unsigned char>(sample);
+            }
+            if (header.channels == 3) {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                    pixels[i * 4 + 2] = static_cast<unsigned char>(sample);
+                    pixels[i * 4 + 3] = 0xff;
+                }
+                return true;
+            }
+            if (header.channels < 4) {
+                break;
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
                 pixels[i * 4 + 2] = static_cast<unsigned char>(sample);
-                pixels[i * 4 + 3] = 0xff;
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 3] = static_cast<unsigned char>(sample);
+            }
+            for (c = 0; c < header.channels - 4; ++c) {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                }
             }
             return true;
         }
-        if (header.channels < 4) {
-            break;
+        else {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 0] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 1] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            if (header.channels == 3) {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                    pixels[i * 4 + 2] = static_cast<unsigned char>(sample &= 0xff);
+                    pixels[i * 4 + 3] = 0xff;
+                }
+                return true;
+            }
+            if (header.channels < 4) {
+                break;
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 2] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 3] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (c = 0; c < header.channels - 4; ++c) {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                }
+            }
+            return true;
         }
-        PyroPsdReadPlane(pixels, count, 2);
-        PyroPsdReadPlane(pixels, count, 3);
-        for (c = 0; c < header.channels - 4; ++c) {
-            PyroPsdSkipPlane(count);
-        }
-        return true;
     case 4:
-        PyroPsdReadPlane(pixels, count, 0);
-        PyroPsdReadPlane(pixels, count, 1);
-        PyroPsdReadPlane(pixels, count, 2);
-        PyroPsdReadPlane(pixels, count, 3);
+        sample = 0;
+        if (g_pyroPsdSampleSize == 1) {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 0] = static_cast<unsigned char>(sample);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 1] = static_cast<unsigned char>(sample);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 2] = static_cast<unsigned char>(sample);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 3] = static_cast<unsigned char>(sample);
+            }
+        }
+        else {
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 0] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 1] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 2] = static_cast<unsigned char>(sample &= 0xff);
+            }
+            for (i = 0; i < count; ++i) {
+                PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                pixels[i * 4 + 3] = static_cast<unsigned char>(sample &= 0xff);
+            }
+        }
         for (i = 0; i < count; ++i) {
             unsigned char* const p = pixels + i * 4;
             const int k = p[3];
@@ -902,7 +987,18 @@ static bool PyroDecodePsd(PyroImageStream* stream, PyroImage* image)
             p[3] = 0xff;
         }
         if (header.channels > 4) {
-            PyroPsdReadPlane(pixels, count, 3);
+            if (g_pyroPsdSampleSize == 1) {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                    pixels[i * 4 + 3] = static_cast<unsigned char>(sample);
+                }
+            }
+            else {
+                for (i = 0; i < count; ++i) {
+                    PyroPsdReadSample(reinterpret_cast<unsigned short*>(&sample));
+                    pixels[i * 4 + 3] = static_cast<unsigned char>(sample &= 0xff);
+                }
+            }
         }
         return true;
     }

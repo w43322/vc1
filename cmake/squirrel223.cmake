@@ -22,4 +22,5 @@ set(SQUIRREL223_SOURCES
 # the size-class heap in src/memory/fixed_pool.cpp.
 # The game's sqstdio runs on KD files; see src/kdcore/kd_stdio.h.
 set_source_files_properties(${SQUIRREL223_ROOT}/sqstdlib/sqstdio.cpp PROPERTIES
-  COMPILE_FLAGS "/FIkdcore/kd_stdio.h")
+  COMPILE_FLAGS "/FIkdcore/kd_stdio.h"
+  OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/src/kdcore/kd_stdio.h")

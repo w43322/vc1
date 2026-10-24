@@ -36,7 +36,8 @@ static SQInteger math_srand(HSQUIRRELVM v)
 	if(SQ_FAILED(sq_getinteger(v,2,&i)))
 		// STRING: VC1 0x004d2dfc
 		return sq_throwerror(v,_SC("invalid param"));
-	srand((unsigned int)i);
+	// VC1: the game's math_srand (0x004bbfa0) only validates the argument;
+	// its seed call compiles to nothing.
 	return 0;
 }
 
@@ -61,7 +62,16 @@ SINGLE_ARG_FUNC(cos)
 SINGLE_ARG_FUNC(asin)
 SINGLE_ARG_FUNC(acos)
 SINGLE_ARG_FUNC(log)
-SINGLE_ARG_FUNC(log10)
+// VC1: the game's log10 is logf(x) / logf(10) in double precision
+// (math_log10 0x004bbbf0 calls log twice).
+static SQInteger math_log10(HSQUIRRELVM v)
+{
+	SQFloat f;
+	sq_getfloat(v,2,&f);
+	const double value = logf(f);
+	sq_pushfloat(v,(SQFloat)(value / logf(10.0f)));
+	return 1;
+}
 SINGLE_ARG_FUNC(tan)
 SINGLE_ARG_FUNC(atan)
 TWO_ARGS_FUNC(atan2)

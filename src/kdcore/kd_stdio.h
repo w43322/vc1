@@ -22,15 +22,25 @@ inline void* KdStdioOpen(const char* path, const char* mode)
     return OpenKdFile(path, mode);
 }
 
+// SQFile::Read (0x0041d680) / Write (0x0040eda0) / file_write (0x0048f3f0):
+// errno 0x11 and nothing transferred without a handle.
 inline int KdStdioRead(void* buffer, int size, int count, void* file)
 {
     KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    if (!handle) {
+        errno = 0x11;
+        return 0;
+    }
     return handle->driver->read(handle->driver, buffer, size, count, handle->native);
 }
 
 inline int KdStdioWrite(const void* buffer, int size, int count, void* file)
 {
     KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    if (!handle) {
+        errno = 0x11;
+        return 0;
+    }
     return handle->driver->write(handle->driver, buffer, size, count, handle->native);
 }
 
@@ -44,19 +54,30 @@ inline int KdStdioSeek(void* file, long offset, int origin)
     return handle->driver->seek(handle->driver, handle->native, offset, origin);
 }
 
+// sqstd_ftell (0x0048f2d0): the driver's 64-bit position, truncated.
 inline long KdStdioTell(void* file)
+{
+    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
+    long long position;
+
+    if (!handle) {
+        errno = 0x11;
+        position = -1;
+    }
+    else {
+        position = handle->driver->tell(handle->driver, handle->native);
+    }
+    return static_cast<long>(position);
+}
+
+// SQFile::Flush (0x0040ede0).
+inline int KdStdioFlush(void* file)
 {
     KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
     if (!handle) {
         errno = 0x11;
         return -1;
     }
-    return static_cast<long>(handle->driver->tell(handle->driver, handle->native));
-}
-
-inline int KdStdioFlush(void* file)
-{
-    KdFileHandle* const handle = static_cast<KdFileHandle*>(file);
     return handle->driver->flush(handle->driver, handle->native);
 }
 

@@ -7,4 +7,5 @@ set(LIBTGA_SOURCES
   ${LIBTGA_ROOT}/tgaread.c)
 set_source_files_properties(${LIBTGA_SOURCES} PROPERTIES
   INCLUDE_DIRECTORIES "${LIBTGA_ROOT}"
-  COMPILE_FLAGS "/TP /FIkdcore/kd_tga_stdio.h")
+  COMPILE_FLAGS "/TP /FIkdcore/kd_tga_stdio.h"
+  OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/src/kdcore/kd_tga_stdio.h;${PROJECT_SOURCE_DIR}/src/kdcore/kd_stdio.h")

@@ -2,6 +2,7 @@
 # (http://subquantumtech.com/jpeg/jpgd093b.zip; inc/ and jpgdlib/ flattened).
 # jpegdecoder.h carries one marked VC1 patch: the game was built without
 # SUPPORT_X86ASM / SUPPORT_MMX, so jidctfst.cpp (MMX IDCT only) is not built.
+# jpgd_vc1.h (force-included) makes memcpy a CRT call as in the game.
 set(JPGD_ROOT "${PROJECT_SOURCE_DIR}/third_party/jpgd093b")
 set(JPGD_SOURCES
   ${JPGD_ROOT}/jpegdecoder.cpp
@@ -10,4 +11,5 @@ set(JPGD_SOURCES
 # The library relies on the VC6 for-loop scope rule.
 set_source_files_properties(${JPGD_SOURCES} PROPERTIES
   INCLUDE_DIRECTORIES "${JPGD_ROOT}"
-  COMPILE_FLAGS "/Zc:forScope-")
+  COMPILE_FLAGS "/Zc:forScope- /FI${JPGD_ROOT}/jpgd_vc1.h"
+  OBJECT_DEPENDS "${JPGD_ROOT}/jpgd_vc1.h")

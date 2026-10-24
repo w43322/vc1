@@ -449,10 +449,19 @@ int jpeg_decoder::process_markers(void)
       case M_SOF14:
       case M_SOF15:
       case M_SOI:
-      case M_EOI:
       case M_SOS:
       {
         return c;
+      }
+      // VC1: the game's process_markers (0x00458d60) skips to the next SOI
+      // once when the flag at +0xe61c (use_mmx here) is set.
+      case M_EOI:
+      {
+        if (!use_mmx)
+          return c;
+        locate_soi_marker();
+        use_mmx = false;
+        break;
       }
       case M_DHT:
       {
@@ -607,7 +616,9 @@ void jpeg_decoder::init(Pjpeg_decoder_stream Pstream, bool use_mmx)
   this->use_mmx = use_mmx;
   use_mmx_idct = (use_mmx) && (jpeg_idct_ifast_avail());
 #else
-  this->use_mmx = false;
+  // VC1: the game keeps the argument (init 0x00458060 stores it at +0xe61c);
+  // process_markers reads it at EOI.
+  this->use_mmx = use_mmx;
   use_mmx_idct = false;
 #endif
 
