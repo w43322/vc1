@@ -61,6 +61,15 @@ char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
     return 0;
 }
 
+// ECX=haystack, EAX=needle. Inferred name. The host's strstr: FindBytes over
+// both string lengths. Squirrel's scstrstr (string_find 0x00484f94) is this.
+// FUNCTION: VC1 0x00482220
+char* KdStrstr(const char* haystack, const char* needle)
+{
+    return FindBytes(haystack, static_cast<unsigned>(strlen(haystack)), needle,
+        static_cast<unsigned>(strlen(needle)));
+}
+
 // GLOBAL: VC1 0x004ed4fc
 KdTimer* g_kdTimers;
 
@@ -334,6 +343,14 @@ void DestroyKdObjects()
         }
         free(node);
     }
+}
+
+// EAX=a, ECX=b. Inferred name. The host's strcmp, the intrinsic byte loop
+// kept out of line: Squirrel's scstrcmp (ObjCmp, call at 0x00492706).
+// FUNCTION: VC1 0x00499c90
+__declspec(noinline) int KdStrcmp(const char* a, const char* b)
+{
+    return strcmp(a, b);
 }
 
 // Inferred name. EAX=dest[MAX_PATH], EDX=src; bounded strcat, errno 0x23 on overflow.

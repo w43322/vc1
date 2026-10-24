@@ -25,6 +25,14 @@ struct Quaternion
     Quaternion(SQFloat angle, const Vector3& axis);
     explicit Quaternion(const Matrix4& matrix) { FromMatrix(matrix); }
     Quaternion(const Quaternion& a, const Quaternion& b, SQFloat t) { Slerp(a, b, t); }
+    // Inferred from ClassTypeCopyImpl<Quaternion>::copy (0x00428e00), which
+    // copies w as a float first and then v as three dwords.
+    Quaternion& operator=(const Quaternion& other)
+    {
+        w = other.w;
+        v = other.v;
+        return *this;
+    }
 
     VC1_SIZE_CLASS_NEW(Quaternion)
 

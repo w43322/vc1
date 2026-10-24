@@ -40,6 +40,19 @@ struct ComponentRef
     IUnknown* ptr;
 
     ComponentRef() : ptr(0) {}
+    // SqPlus ClassTypeCopyImpl<ComponentRef>::copy (0x00420170): AddRef the
+    // new handle, Release the old one.
+    ComponentRef& operator=(const ComponentRef& other)
+    {
+        if (other.ptr) {
+            other.ptr->AddRef();
+        }
+        if (ptr) {
+            ptr->Release();
+        }
+        ptr = other.ptr;
+        return *this;
+    }
     ~ComponentRef()
     {
         if (ptr) {

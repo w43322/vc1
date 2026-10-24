@@ -117,10 +117,12 @@
 
 // VC1: the engine's std::string is its counted KdString (setVar assigns
 // through KdString::operator= 0x0040e410); the exe has no MSVC <string>,
-// libcpmt or C++ exception runtime.
+// libcpmt or C++ exception runtime. SqPlus names it SqPlusStdString rather
+// than redefining std::string, so the CRT headers Boost.Pool includes
+// (<functional> -> <xstring>) still compile next to it.
 #if defined(SQPLUS_SUPPORT_STD_STRING) || defined(SQPLUS_SUPPORT_SQ_STD_STRING)
 # include "kd/factory.h"
-namespace std { typedef vc1::KdString string; }
+typedef vc1::KdString SqPlusStdString;
 #endif
 
 

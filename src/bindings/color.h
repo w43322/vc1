@@ -117,6 +117,8 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Color, Color)
 
 // TEMPLATE: VC1 0x00424eb0
 // ?Dispatch@?$DirectCallFunction@P6AIEEEE@Z@SqPlus@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x00426250 FOLDED
+// ??$Call@UColor@vc1@@I@?$ReturnSpecialization@X@SqPlus@@SAHAAUColor@vc1@@P823@AEXI@ZPAUSQVM@@H@Z
 // TEMPLATE: VC1 0x00426cc0
 // ??$GetInstance@UColor@vc1@@$00@SqPlus@@YAPAUColor@vc1@@PAUSQVM@@H@Z
 

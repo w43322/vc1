@@ -161,6 +161,8 @@ public:
 // SQInstance::Clone
 // FUNCTION: VC1 0x0040f920
 // ??0SQClassMember@@QAE@ABU0@@Z
+// FUNCTION: VC1 0x0040f9a0
+// ?Lock@SQClass@@QAEXXZ
 // FUNCTION: VC1 0x0040f9c0
 // SQClass::Release
 // FUNCTION: VC1 0x0040fa00

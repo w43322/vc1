@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include <boost/pool/pool.hpp>
+
 namespace vc1 {
 
 // Original size-class heap at 0x004ed454:
@@ -14,40 +16,13 @@ namespace vc1 {
 // Matrix3 (36) pools[9] / 0x004ed47c; Matrix4 (64) pools[16] / 0x004ed498.
 // Other 4-byte clients also use slot 1 (e.g. 0x0041fdd0). Names are inferred.
 enum { kSizeClassCount = 0x21 };
-enum { kInitialGrowthCount = 32 };
 
-struct FixedPool
-{
-    void* freeList;                 // +0x00
-    unsigned char* latestBlock;     // +0x04
-    unsigned latestBlockBytes;      // +0x08
-    unsigned itemSize;              // +0x0c
-    unsigned growthCount;           // +0x10, doubled by Grow
-    unsigned initialGrowthCount;    // +0x14, restored by Destroy; both set to 32 in Init
-
-    // 0x0040f1a0; this in EBX. stride = lcm(itemSize, 4); block = growth*stride+8.
-    void* Grow();
-
-    void* Allocate()
-    {
-        void* item = freeList;
-        if (item) {
-            freeList = *static_cast<void**>(item);
-        }
-        else {
-            item = Grow();
-        }
-        return item;
-    }
-
-    void Release(void* item)
-    {
-        if (item) {
-            *static_cast<void**>(item) = freeList;
-            freeList = item;
-        }
-    }
-};
+// One size class: boost::pool (Boost 1.41.0, third_party/boost_1_41_0), 0x18
+// bytes: first (free list), list.ptr / list.sz (newest block and its size;
+// each block's trailer links the previous one), requested_size = index*4,
+// next_size (doubled per block) and start_size = 32. malloc() is inlined
+// everywhere; malloc_need_resize is 0x0040f1a0 (this in EBX).
+typedef boost::pool<boost::default_user_allocator_malloc_free> FixedPool;
 
 typedef char Vc1FixedPoolSizeCheck[sizeof(FixedPool) == 0x18 ? 1 : -1];
 
@@ -60,9 +35,9 @@ struct SizeClassHeap
 
 extern SizeClassHeap g_sizeClassHeap;
 
-// 0x004b7bd0; malloc(0x18) per slot. Called from 0x00463b40.
+// 0x004b7bd0; new FixedPool(i * 4) per slot. Called from 0x00463b40.
 void InitSizeClassPools();
-// 0x004b7c60; frees block chain then the header; does not null the table. Called from 0x004c38b0.
+// 0x004b7c60; deletes every pool (purge_memory); does not null the table. Called from 0x004c38b0.
 void DestroySizeClassPools();
 
 inline unsigned SizeClassIndex(unsigned bytes)
@@ -77,12 +52,12 @@ inline unsigned SizeClassIndex(unsigned bytes)
     static void* operator new(size_t) \
     { \
         g_sizeClassHeap.allocatedBytes += sizeof(T); \
-        return g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->Allocate(); \
+        return g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->malloc(); \
     } \
     static void operator delete(void* p) \
     { \
         if (p) { \
-            g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->Release(p); \
+            g_sizeClassHeap.pools[SizeClassIndex(sizeof(T))]->free(p); \
             g_sizeClassHeap.releasedBytes += sizeof(T); \
         } \
     }

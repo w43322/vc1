@@ -9,6 +9,18 @@ IAbstract::IAbstract()
     refs = 1;
 }
 
+// ECX=face, ESI=result. Kept out of line: the original calls it from
+// TerrainBuilder SetMode/OnPointer, BuildingBuilder SetEnabled/UpdateCursor
+// and PassMap SetCellValue.
+// FUNCTION: VC1 0x00401e90
+__declspec(noinline) KdPtr<IUnknown> SelfObject(IAbstract* face)
+{
+    IUnknown* object = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
+    return KdPtr<IUnknown>(object
+        ? static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract))
+        : 0);
+}
+
 // RET 4. Returns this only for the canonical IAbstract IID pointer.
 // FUNCTION: VC1 0x00401ec0
 void* IAbstract::QueryInterface(const char** iid)

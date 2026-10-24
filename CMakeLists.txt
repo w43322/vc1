@@ -70,6 +70,7 @@ include(cmake/jpgd.cmake)
 include(cmake/libpng.cmake)
 include(cmake/lzma.cmake)
 include(cmake/pthreads.cmake)
+include(cmake/boost.cmake)
 include(cmake/sqplus.cmake)
 # The original's DLL imports: the real Windows DLLs, or SDL3 implementations.
 if(VC1_USE_SDL3)
@@ -188,9 +189,10 @@ if(VC1_USE_SDL3)
 endif()
 target_include_directories(${VC1_TARGET} PRIVATE src third_party/squirrel223/include
   third_party/squirrel223/squirrel third_party/libtga third_party/jpgd093b third_party/libpng102 third_party/zlib113
-  third_party/lzma457/C/Archive/7z third_party/pthreads-w32-2-8-0
+  third_party/lzma457/C/Archive/7z third_party/pthreads-w32-2-8-0 ${BOOST_INCLUDE_DIR}
   ${SQPLUS_INCLUDE_DIRS})
-target_compile_definitions(${VC1_TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS ${PTW32_DEFINITIONS})
+target_compile_definitions(${VC1_TARGET} PRIVATE _CRT_SECURE_NO_WARNINGS ${PTW32_DEFINITIONS}
+  ${BOOST_DEFINITIONS})
 set_target_properties(${VC1_TARGET} PROPERTIES OUTPUT_NAME "${VC1_OUTPUT_NAME}")
 if(VC1_USE_SDL3)
   # Keep the vendored scanf definitions instead of UCRT's header-inline copies.

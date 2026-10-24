@@ -138,7 +138,9 @@ typedef wchar_t SQChar;
 #else
 typedef char SQChar;
 #define _SC(a) a
-#define	scstrcmp	strcmp
+// VC1: ObjCmp calls the host strcmp (0x00499c90).
+namespace vc1 { int KdStrcmp(const char* a, const char* b); }
+#define	scstrcmp	vc1::KdStrcmp
 #define scsprintf	sprintf
 #define scstrlen	strlen
 #define scstrtod	strtod
@@ -146,7 +148,9 @@ typedef char SQChar;
 #define scatoi		atoi
 #define scstrtoul	strtoul
 #define scvsprintf	vsprintf
-#define scstrstr	strstr
+// VC1: the game's string_find calls the host strstr (0x00482220).
+namespace vc1 { char* KdStrstr(const char* haystack, const char* needle); }
+#define scstrstr	vc1::KdStrstr
 #define scisspace	isspace
 #define scisdigit	isdigit
 #define scisxdigit	isxdigit
@@ -577,6 +581,9 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // sq_poptop
 // FUNCTION: VC1 0x0048ff90
 // sq_remove
+// SquirrelVM::_VM folded in (only GetInstanceUP calls it).
+// FUNCTION: VC1 0x00496c40
+// sq_reseterror
 // FUNCTION: VC1 0x00496c90
 // sq_pushobject
 // FUNCTION: VC1 0x00496d70

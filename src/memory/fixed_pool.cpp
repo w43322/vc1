@@ -1,99 +1,107 @@
 #include "fixed_pool.h"
 
 #include <stdlib.h>
+#include <string.h>
+
+#include <squirrel.h>
 
 namespace vc1 {
 
 // GLOBAL: VC1 0x004ed454
 SizeClassHeap g_sizeClassHeap;
 
-static unsigned GreatestCommonDivisor(unsigned left, unsigned right)
-{
-    while (right) {
-        const unsigned remainder = left % right;
-        left = right;
-        right = remainder;
-    }
-    return left;
 }
 
-// Inferred name. malloc is original 0x0042f6bb.
-// FUNCTION: VC1 0x0040f1a0
-void* FixedPool::Grow()
+// The game's sqmem.cpp (a host fork; the stock file is not built): Squirrel
+// allocates from the size-class heap. Up to 0x80 bytes come from the pool of
+// that size class, larger blocks from malloc; both are counted.
+// ECX=size.
+// FUNCTION: VC1 0x00497490
+void* sq_vm_malloc(SQUnsignedInteger size)
 {
-    const unsigned divisor = GreatestCommonDivisor(itemSize, sizeof(void*));
-    const unsigned stride = itemSize / divisor * sizeof(void*);
-    const unsigned bytes = growthCount * stride + 2 * sizeof(void*);
-    unsigned char* const block = static_cast<unsigned char*>(malloc(bytes));
-    if (!block) {
-        return 0;
+    const unsigned index = vc1::SizeClassIndex(size);
+
+    vc1::g_sizeClassHeap.allocatedBytes += size;
+    if (index < vc1::kSizeClassCount) {
+        return vc1::g_sizeClassHeap.pools[index]->malloc();
     }
-
-    unsigned char* item = block + bytes - stride - 2 * sizeof(void*);
-    *reinterpret_cast<void**>(item) = freeList;
-    while (item != block) {
-        unsigned char* const previous = item - stride;
-        *reinterpret_cast<void**>(previous) = item;
-        item = previous;
-    }
-
-    freeList = block;
-    *reinterpret_cast<unsigned char**>(block + bytes - 2 * sizeof(void*)) = latestBlock;
-    *reinterpret_cast<unsigned*>(block + bytes - sizeof(void*)) = latestBlockBytes;
-    growthCount *= 2;
-    latestBlock = block;
-    latestBlockBytes = bytes;
-
-    void* const result = freeList;
-    freeList = *static_cast<void**>(result);
-    return result;
+    return malloc(size);
 }
 
-// itemSize = index*4, growth 32 for every class including the unused 0-byte slot.
+namespace vc1 {
+
+// requested_size = index*4 and the default 32-chunk growth for every class,
+// including the unused 0-byte slot. The global operator new is malloc, so a
+// failed allocation leaves a null slot.
 // FUNCTION: VC1 0x004b7bd0
 void InitSizeClassPools()
 {
     for (unsigned i = 0; i < kSizeClassCount; ++i) {
-        FixedPool* pool = static_cast<FixedPool*>(malloc(sizeof(FixedPool)));
-        if (pool) {
-            pool->freeList = 0;
-            pool->latestBlock = 0;
-            pool->latestBlockBytes = 0;
-            pool->itemSize = i * 4;
-            pool->growthCount = kInitialGrowthCount;
-            pool->initialGrowthCount = kInitialGrowthCount;
-        }
-        g_sizeClassHeap.pools[i] = pool;
+        g_sizeClassHeap.pools[i] = new FixedPool(i * 4);
     }
 }
 
-// Walk [block+size-8]/[block+size-4]; restore growthCount from +0x14; free header.
+// ~pool is purge_memory: the block chain through the trailers, then
+// next_size = start_size; operator delete frees the header.
 // FUNCTION: VC1 0x004b7c60
 void DestroySizeClassPools()
 {
     for (unsigned i = 0; i < kSizeClassCount; ++i) {
-        FixedPool* const pool = g_sizeClassHeap.pools[i];
-        if (!pool) {
-            continue;
-        }
-
-        unsigned char* block = pool->latestBlock;
-        unsigned bytes = pool->latestBlockBytes;
-        if (block) {
-            unsigned char* previous;
-            do {
-                unsigned char* const trailer = block + bytes;
-                previous = *reinterpret_cast<unsigned char**>(trailer - 2 * sizeof(void*));
-                bytes = *reinterpret_cast<unsigned*>(trailer - sizeof(void*));
-                free(block);
-                block = previous;
-            } while (previous);
-            pool->freeList = 0;
-            pool->latestBlock = 0;
-            pool->growthCount = pool->initialGrowthCount;
-        }
-        free(pool);
+        delete g_sizeClassHeap.pools[i];
     }
 }
 
+}
+
+// Same size class: the block is kept. Two large blocks use realloc;
+// otherwise a new block is taken, the old contents copied and the old block
+// returned to its pool (or freed).
+// EAX=size, stack p and oldsize.
+// FUNCTION: VC1 0x004b7cc0
+void* sq_vm_realloc(void* p, SQUnsignedInteger oldsize, SQUnsignedInteger size)
+{
+    const unsigned index = vc1::SizeClassIndex(size);
+    const unsigned oldIndex = vc1::SizeClassIndex(oldsize);
+    void* block;
+
+    if (index >= vc1::kSizeClassCount && oldIndex >= vc1::kSizeClassCount) {
+        vc1::g_sizeClassHeap.releasedBytes += oldsize;
+        vc1::g_sizeClassHeap.allocatedBytes += size;
+        return realloc(p, size);
+    }
+    if (index == oldIndex) {
+        return p;
+    }
+    vc1::g_sizeClassHeap.allocatedBytes += size;
+    if (index < vc1::kSizeClassCount) {
+        block = vc1::g_sizeClassHeap.pools[index]->malloc();
+    }
+    else {
+        block = malloc(size);
+    }
+    if (p) {
+        memcpy(block, p, size < oldsize ? size : oldsize);
+        vc1::g_sizeClassHeap.releasedBytes += oldsize;
+        if (oldIndex < vc1::kSizeClassCount) {
+            vc1::g_sizeClassHeap.pools[oldIndex]->free(p);
+        }
+        else {
+            free(p);
+        }
+    }
+    return block;
+}
+
+// Inlined at every caller (no address of its own).
+void sq_vm_free(void* p, SQUnsignedInteger size)
+{
+    const unsigned index = vc1::SizeClassIndex(size);
+
+    vc1::g_sizeClassHeap.releasedBytes += size;
+    if (index < vc1::kSizeClassCount) {
+        vc1::g_sizeClassHeap.pools[index]->free(p);
+    }
+    else {
+        free(p);
+    }
 }

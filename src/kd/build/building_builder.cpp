@@ -59,16 +59,6 @@ static const unsigned kCellBlocked = 0x55ff0000;
 static const unsigned kCellOccupied = 0x55000000;
 static const unsigned kDraftColor = 0xaaffffff;
 
-// The object as a counted IUnknown: the IAbstract face QI'd twice (out of line
-// at 0x00401e90 in the original, shared by every class).
-static __forceinline KdPtr<IUnknown> SelfObject(IAbstract* face)
-{
-    IUnknown* object = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
-    return KdPtr<IUnknown>(object
-        ? static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract))
-        : 0);
-}
-
 // The same as a script value, through SquirrelObject::Set<KdPtr<IUnknown> >
 // (0x004014a0).
 static __forceinline SquirrelObject ScriptSelf(IAbstract* face)
@@ -517,7 +507,7 @@ void KdBuildingBuilder::UpdateCursor(int x, int y)
             }
             instance->GetMember(kScriptOnBoundsChange, member);
             if (member.GetObjectHandle()._type != OT_NULL) {
-                SquirrelObject self = ScriptSelf(this);
+                SquirrelObject self((SelfObject(this)));
                 SquirrelVM::BeginCall(member, self);
                 SquirrelVM::PushParam(SquirrelObject(bounds));
                 SquirrelVM::EndCall();
@@ -553,7 +543,6 @@ unsigned char KdBuildingBuilder::OnPointer(const unsigned* data)
 // FUNCTION: VC1 0x004b3c40
 unsigned char KdBuildingBuilder::GetMember(const char* name, SquirrelObject* out)
 {
-    static ScriptMethodTable methods;
     IScriptInstance* instance = &script;
 
     if (instance->GetMember(name, *out)) {
@@ -562,6 +551,7 @@ unsigned char KdBuildingBuilder::GetMember(const char* name, SquirrelObject* out
     if (KdCompoundObject::GetMember(name, out)) {
         return 1;
     }
+    static ScriptMethodTable methods;
     if (methods.Empty()) {
         methods[kScriptSetGridMap] = CreateScriptMethod<KdBuildingBuilder>(
             &KdBuildingBuilder::SetGridMap);

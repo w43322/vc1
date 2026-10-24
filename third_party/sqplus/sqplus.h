@@ -354,10 +354,10 @@ struct TypeInfo<T&> : public TypeInfoPtrBase<T,TypeInfo<T>::IsInstance> { };
 
 #ifdef SQPLUS_SUPPORT_STD_STRING
 template<>
-struct TypeInfo<std::string> {
+struct TypeInfo<SqPlusStdString> {
     const SQChar *typeName;
     TypeInfo() : typeName(_SC("std::string")) {}
-    enum {TypeID=SqPlus::VAR_TYPE_STD_STRING,Size=sizeof(std::string),TypeMask='s'};
+    enum {TypeID=SqPlus::VAR_TYPE_STD_STRING,Size=sizeof(SqPlusStdString),TypeMask='s'};
     operator ScriptVarType() {return ScriptVarType(TypeID);}
 };
 #endif 
@@ -856,7 +856,7 @@ SquirrelObject Get(TypeWrapper<SquirrelObject>, HSQUIRRELVM v, int idx);
 
 #ifdef SQPLUS_SUPPORT_STD_STRING
 // VC1: Push/Get for std::string (vc1::KdString) are the engine's.
-bool Match(TypeWrapper<const std::string&>, HSQUIRRELVM v, int idx);
+bool Match(TypeWrapper<const SqPlusStdString&>, HSQUIRRELVM v, int idx);
 #endif
 
 // Added jflanglois suggestion, 8/20/06. jcs
@@ -2330,17 +2330,57 @@ inline SquirrelObject &SquirrelObject::Set(_ty & val) {
 // VC1: SqPlus.cpp (and the one Get LTCG kept out of line) in the original.
 // The static helpers have no public symbol, so they go by plain name.
 // CreateClass is only called with baseName == 0; LTCG drops the parameter.
+// ClassType<T> copy functions and vgetCopyFunc (vtable slot 0; slot 1,
+// GetTypeName, is folded at 0x0041fdc0) come from the ClassType vftables
+// 0x004cfa8c..0x004d75d0. Types with identical bodies are ICF-folded, and
+// so are their vftables.
+// TEMPLATE: VC1 0x00401880
+// ?vgetCopyFunc@?$ClassType@UIUnknown@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
 // FUNCTION: VC1 0x00401af0
 // ?Get@SqPlus@@YAHU?$TypeWrapper@H@1@PAUSQVM@@H@Z
 
 // FUNCTION: VC1 0x00401b50
 // ?Get@SqPlus@@YA_NU?$TypeWrapper@_N@1@PAUSQVM@@H@Z
 
+// TEMPLATE: VC1 0x00401c30
+// ?copy@?$ClassTypeCopyImpl@UVector2@vc1@@$00@SqPlus@@SAXPAUVector2@vc1@@0@Z
+// TEMPLATE: VC1 0x00401c50
+// ?vgetCopyFunc@?$ClassType@UVector2@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00407310
+// ?copy@?$ClassTypeCopyImpl@UMatrix3@vc1@@$00@SqPlus@@SAXPAUMatrix3@vc1@@0@Z
+// TEMPLATE: VC1 0x00407330
+// ?vgetCopyFunc@?$ClassType@UMatrix3@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
 // FUNCTION: VC1 0x0040d050
 // ?getVarNameTag@SqPlus@@YAXPADHPBD@Z
+// TEMPLATE: VC1 0x004160c0 FOLDED
+// ?copy@?$ClassTypeCopyImpl@UVector4@vc1@@$00@SqPlus@@SAXPAUVector4@vc1@@0@Z
+// TEMPLATE: VC1 0x004160c0 FOLDED
+// ?copy@?$ClassTypeCopyImpl@URectF@vc1@@$00@SqPlus@@SAXPAURectF@vc1@@0@Z
+// TEMPLATE: VC1 0x004160c0 FOLDED
+// ?copy@?$ClassTypeCopyImpl@URect@vc1@@$00@SqPlus@@SAXPAURect@vc1@@0@Z
+// TEMPLATE: VC1 0x004160e0 FOLDED
+// ?vgetCopyFunc@?$ClassType@UVector4@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x004160e0 FOLDED
+// ?vgetCopyFunc@?$ClassType@URectF@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x004160e0 FOLDED
+// ?vgetCopyFunc@?$ClassType@URect@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x0041aa30 FOLDED
+// ?copy@?$ClassTypeCopyImpl@UIUnknown@vc1@@$00@SqPlus@@SAXPAUIUnknown@vc1@@0@Z
+// TEMPLATE: VC1 0x0041fdb0
+// ?vgetCopyFunc@?$ClassType@UComponentRef@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00420170
+// ?copy@?$ClassTypeCopyImpl@UComponentRef@vc1@@$00@SqPlus@@SAXPAUComponentRef@vc1@@0@Z
 // TEMPLATE: VC1 0x00420660
 // ??$RegisterInstanceVariable@M@SqPlus@@YAXAAVSquirrelObject@@PAUClassTypeBase@0@PAMPBDW4VarAccessType@0@@Z
 
+// TEMPLATE: VC1 0x004238a0
+// ?vgetCopyFunc@?$ClassType@M@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x004238b0
+// ?copy@?$ClassTypeCopyImpl@M$00@SqPlus@@SAXPAM0@Z
+// TEMPLATE: VC1 0x004238c0 FOLDED
+// ?copy@?$ClassTypeCopyImpl@UColor@vc1@@$00@SqPlus@@SAXPAUColor@vc1@@0@Z
+// TEMPLATE: VC1 0x004238c0 FOLDED
+// ?copy@?$ClassTypeCopyImpl@H$00@SqPlus@@SAXPAH0@Z
 // FUNCTION: VC1 0x00426f20
 // ?createInstanceSetGetHandlers@SqPlus@@YAXAAVSquirrelObject@@@Z
 
@@ -2351,6 +2391,28 @@ inline SquirrelObject &SquirrelObject::Set(_ty & val) {
 // FUNCTION: VC1 0x00427280
 // ?createVarRef@SqPlus@@YAPAUVarRef@1@AAVSquirrelObject@@PBD@Z
 
+// TEMPLATE: VC1 0x00427350
+// ?copy@?$ClassTypeCopyImpl@UIntegralF@vc1@@$00@SqPlus@@SAXPAUIntegralF@vc1@@0@Z
+// TEMPLATE: VC1 0x00427370
+// ?vgetCopyFunc@?$ClassType@UIntegralF@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00427380 FOLDED
+// ?vgetCopyFunc@?$ClassType@UColor@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00427380 FOLDED
+// ?vgetCopyFunc@?$ClassType@H@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00428e00
+// ?copy@?$ClassTypeCopyImpl@UQuaternion@vc1@@$00@SqPlus@@SAXPAUQuaternion@vc1@@0@Z
+// TEMPLATE: VC1 0x00428e20
+// ?vgetCopyFunc@?$ClassType@UQuaternion@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00428f20
+// ?copy@?$ClassTypeCopyImpl@UMatrix4@vc1@@$00@SqPlus@@SAXPAUMatrix4@vc1@@0@Z
+// TEMPLATE: VC1 0x00428f40
+// ?vgetCopyFunc@?$ClassType@UMatrix4@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// TEMPLATE: VC1 0x00428ff0
+// ?copy@?$ClassTypeCopyImpl@UVector3@vc1@@$00@SqPlus@@SAXPAUVector3@vc1@@0@Z
+// TEMPLATE: VC1 0x00429010
+// ?vgetCopyFunc@?$ClassType@UVector3@vc1@@@SqPlus@@UAEP6AXPAX0@ZXZ
+// FUNCTION: VC1 0x0042f0c0
+// ??4ScriptStringVarBase@SqPlus@@QAEPBDPBD@Z
 // FUNCTION: VC1 0x004c2920
 // SqPlus::getVar
 

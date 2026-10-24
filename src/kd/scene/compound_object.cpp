@@ -385,12 +385,12 @@ static const char kScriptGetBoundingRect[] = "GetBoundingRect";
 // FUNCTION: VC1 0x00473a90
 unsigned char KdCompoundObject::GetMember(const char* name, SquirrelObject* out)
 {
-    static ScriptMethodTable methods;
     IScriptInstance* instance = &script;
 
     if (instance->GetMember(name, *out)) {
         return 1;
     }
+    static ScriptMethodTable methods;
     if (methods.Empty()) {
         methods[kScriptRegisterObject] = CreateScriptMethod<KdCompoundObject>(&KdCompoundObject::RegisterObject);
         methods[kScriptUnregisterObject] = CreateScriptMethod<KdCompoundObject>(&KdCompoundObject::UnregisterObject);

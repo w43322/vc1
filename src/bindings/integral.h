@@ -6,6 +6,8 @@
 
 namespace vc1 {
 
+void AssignSamples(KdFactory& values, const SQFloat* first, const SQFloat* last);
+
 // Inferred member names. Script class "IntegralF" (0x004d75ac); SqPlus
 // ClassType at 0x004ee228. Sliding window of the last
 // integralSize floats pushed with PushValue. The script constructor is the
@@ -17,6 +19,14 @@ struct IntegralF
     KdFactory values;      // 0x04 float samples, size in bytes
 
     IntegralF() : integralSize(1) {}
+    // SqPlus ClassTypeCopyImpl<IntegralF>::copy (0x00427350) is this
+    // assignment: the size, then the samples through AssignSamples.
+    IntegralF& operator=(const IntegralF& other)
+    {
+        integralSize = other.integralSize;
+        AssignSamples(values, other.First(), other.Last());
+        return *this;
+    }
 
     VC1_SIZE_CLASS_NEW(IntegralF)
 
@@ -85,5 +95,7 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::IntegralF, IntegralF)
 
 // TEMPLATE: VC1 0x00424b90 FOLDED
 // ?Dispatch@?$DirectCallInstanceMemberFunction@UIntegralF@vc1@@P812@BEMXZ@SqPlus@@SAHPAUSQVM@@@Z
+// TEMPLATE: VC1 0x00426250 FOLDED
+// ??$Call@UIntegralF@vc1@@I@?$ReturnSpecialization@X@SqPlus@@SAHAAUIntegralF@vc1@@P823@AEXI@ZPAUSQVM@@H@Z
 
 #endif

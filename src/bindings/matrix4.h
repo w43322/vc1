@@ -186,6 +186,8 @@ DECLARE_INSTANCE_TYPE_NAME(vc1::Matrix4, Matrix4)
 // TEMPLATE: VC1 0x004253e0
 // ?Dispatch@?$DirectCallFunction@P6A?AUMatrix4@vc1@@ABU12@@Z@SqPlus@@SAHPAUSQVM@@@Z
 
+// TEMPLATE: VC1 0x00426e10
+// ??$Push@UMatrix4@vc1@@@SqPlus@@YAXPAUSQVM@@AAUMatrix4@vc1@@@Z
 // TEMPLATE: VC1 0x00429020
 // ??$GetInstance@UVector3@vc1@@$0A@@SqPlus@@YAPAUVector3@vc1@@PAUSQVM@@H@Z
 

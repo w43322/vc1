@@ -367,6 +367,12 @@ const SQChar *IdType2Name(SQObjectType type);
 
 // FUNCTION: VC1 0x0040d090
 // ??1SQObjectPtr@@QAE@XZ
+// ESI=this, EAX=other. Both copy assignments compile to the same body; ICF
+// folded them.
+// FUNCTION: VC1 0x0040d0c0 FOLDED
+// ??4SQObjectPtr@@QAEAAU0@ABU0@@Z
+// FUNCTION: VC1 0x0040d0c0 FOLDED
+// ??4SQObjectPtr@@QAEAAU0@ABUtagSQObject@@@Z
 // FUNCTION: VC1 0x0040e440
 // ?Null@SQObjectPtr@@QAEXXZ
 // FUNCTION: VC1 0x0040e470

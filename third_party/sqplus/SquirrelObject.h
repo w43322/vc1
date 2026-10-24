@@ -136,9 +136,19 @@ private:
 // VC1: SquirrelObject.cpp in the original, out of source order. LTCG
 // passes `this` in EAX/EBX/ESI and the stdcall-style key on the stack;
 // see the asmcmp report for each.
+// TEMPLATE: VC1 0x004013e0
+// ??$?0V?$KdPtr@UIUnknown@vc1@@@vc1@@@SquirrelObject@@QAE@ABV?$KdPtr@UIUnknown@vc1@@@vc1@@@Z
+// TEMPLATE: VC1 0x00401400
+// ??$?0UVector2@vc1@@@SquirrelObject@@QAE@ABUVector2@vc1@@@Z
+// FUNCTION: VC1 0x00401de0
+// ?GetInstanceUp@StackHandler@@QAEPAXHPAX@Z
 // SYNTHETIC: VC1 0x00401e00
 // SquirrelObject::`scalar deleting destructor'
 
+// FUNCTION: VC1 0x004290e0
+// ?Return@StackHandler@@QAEHPBD@Z
+// FUNCTION: VC1 0x00429100
+// ?GetString@StackHandler@@QAEPBDH@Z
 // FUNCTION: VC1 0x00429150
 // ?Return@StackHandler@@QAEHH@Z
 // FUNCTION: VC1 0x0042f010
@@ -162,6 +172,8 @@ private:
 // FUNCTION: VC1 0x0049ab30
 // ??4SquirrelObject@@QAEAAV0@ABV0@@Z
 
+// FUNCTION: VC1 0x0049abe0
+// ??0SquirrelObject@@QAE@UtagSQObject@@@Z
 // FUNCTION: VC1 0x0049ac30
 // ??0SquirrelObject@@QAE@ABV0@@Z
 

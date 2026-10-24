@@ -142,7 +142,7 @@ static void ReleaseNullRenderTexture();
 static unsigned char DisplayQueryReady(KdRenderTargetNode* node);
 static int UpdateWindowFrame();
 static int FormatPresentInterval(unsigned format);
-static const char* DxGetErrorString(int hr);
+static const char* __stdcall DxGetErrorString(long hr);
 static void DisplayD3dPow2Caps(unsigned* w, unsigned* h);
 static void FlushBatch(char final);
 static void DisplayD3DTeardown();
@@ -420,12 +420,1067 @@ void* KdPyroBuffer::GetData()
     return data;
 }
 
-// EAX=HRESULT. DXGetErrorString-style lookup; huge table, recovered as a stub.
-// STUB: VC1 0x00442e14
-static const char* DxGetErrorString(int hr)
+// stdcall RET 4. DirectX 8 SDK dxerr8.lib DXGetErrorString8A (no source in
+// this tree): a switch over 350 HRESULTs returning each name, "Unknown"
+// otherwise. The cases were read off the original's compare tree and jump
+// tables (0x00442e14..0x0044432a, tables up to 0x00444680).
+// FUNCTION: VC1 0x00442e14
+static const char* __stdcall DxGetErrorString(long hr)
 {
-    (void)hr;
-    return "";
+    switch (hr) {
+    case static_cast<long>(0x00000000UL):
+        // STRING: VC1 0x004cdb44
+        return "S_OK";
+    case static_cast<long>(0x00000001UL):
+        // STRING: VC1 0x004cdb3c
+        return "S_FALSE";
+    case static_cast<long>(0x00000002UL):
+        // STRING: VC1 0x004cdb24
+        return "ERROR_FILE_NOT_FOUND";
+    case static_cast<long>(0x00000003UL):
+        // STRING: VC1 0x004cdb0c
+        return "ERROR_PATH_NOT_FOUND";
+    case static_cast<long>(0x00000004UL):
+        // STRING: VC1 0x004cdaf0
+        return "ERROR_TOO_MANY_OPEN_FILES";
+    case static_cast<long>(0x00000005UL):
+        // STRING: VC1 0x004cdadc
+        return "ERROR_ACCESS_DENIED";
+    case static_cast<long>(0x00000006UL):
+        // STRING: VC1 0x004cdac4
+        return "ERROR_INVALID_HANDLE";
+    case static_cast<long>(0x00000008UL):
+        // STRING: VC1 0x004cdaac
+        return "ERROR_NOT_ENOUGH_MEMORY";
+    case static_cast<long>(0x00000009UL):
+        // STRING: VC1 0x004cda98
+        return "ERROR_INVALID_BLOCK";
+    case static_cast<long>(0x0000000aUL):
+        // STRING: VC1 0x004cda80
+        return "ERROR_BAD_ENVIRONMENT";
+    case static_cast<long>(0x0000000bUL):
+        // STRING: VC1 0x004cda6c
+        return "ERROR_BAD_FORMAT";
+    case static_cast<long>(0x0000000eUL):
+        // STRING: VC1 0x004cda58
+        return "ERROR_OUTOFMEMORY";
+    case static_cast<long>(0x00150005UL):
+        // STRING: VC1 0x004cda48
+        return "DV_FULLDUPLEX";
+    case static_cast<long>(0x0015000aUL):
+        // STRING: VC1 0x004cda04
+        return "DV_HALFDUPLEX";
+    case static_cast<long>(0x00150010UL):
+        // STRING: VC1 0x004cda14
+        return "DV_PENDING";
+    case static_cast<long>(0x0878000aUL):
+        // STRING: VC1 0x004cda20
+        return "DS_NO_VIRTUALIZATION";
+    case static_cast<long>(0x08780014UL):
+        // STRING: VC1 0x004cda38
+        return "DS_INCOMPLETE";
+    case static_cast<long>(0x08781091UL):
+        // STRING: VC1 0x004cd9f0
+        return "DMUS_S_PARTIALLOAD";
+    case static_cast<long>(0x08781092UL):
+        // STRING: VC1 0x004cd9bc
+        return "DMUS_S_PARTIALDOWNLOAD";
+    case static_cast<long>(0x08781200UL):
+        // STRING: VC1 0x004cd9d4
+        return "DMUS_S_REQUEUE";
+    case static_cast<long>(0x08781201UL):
+        // STRING: VC1 0x004cd9e4
+        return "DMUS_S_FREE";
+    case static_cast<long>(0x08781202UL):
+        // STRING: VC1 0x004cd9b0
+        return "DMUS_S_END";
+    case static_cast<long>(0x08781210UL):
+        // STRING: VC1 0x004cd90c
+        return "DMUS_S_STRING_TRUNCATED";
+    case static_cast<long>(0x08781211UL):
+        // STRING: VC1 0x004cd924
+        return "DMUS_S_LAST_TOOL";
+    case static_cast<long>(0x08781212UL):
+        // STRING: VC1 0x004cd938
+        return "DMUS_S_OVER_CHORD";
+    case static_cast<long>(0x08781213UL):
+        // STRING: VC1 0x004cd94c
+        return "DMUS_S_UP_OCTAVE";
+    case static_cast<long>(0x08781214UL):
+        // STRING: VC1 0x004cd960
+        return "DMUS_S_DOWN_OCTAVE";
+    case static_cast<long>(0x08781215UL):
+        // STRING: VC1 0x004cd974
+        return "DMUS_S_NOBUFFERCONTROL";
+    case static_cast<long>(0x08781216UL):
+        // STRING: VC1 0x004cd98c
+        return "DMUS_S_GARBAGE_COLLECTED";
+    case static_cast<long>(0x8000000aUL):
+        // STRING: VC1 0x004cf880
+        return "E_PENDING";
+    case static_cast<long>(0x80004001UL):
+        // STRING: VC1 0x004cf88c
+        return "E_NOTIMPL";
+    case static_cast<long>(0x80004002UL):
+        // STRING: VC1 0x004cf898
+        return "E_NOINTERFACE";
+    case static_cast<long>(0x80004003UL):
+        // STRING: VC1 0x004cf8a8
+        return "E_POINTER";
+    case static_cast<long>(0x80004004UL):
+        // STRING: VC1 0x004cf8b4
+        return "E_ABORT";
+    case static_cast<long>(0x80004005UL):
+        // STRING: VC1 0x004cf878
+        return "E_FAIL";
+    case static_cast<long>(0x8000ffffUL):
+        // STRING: VC1 0x004cf828
+        return "E_UNEXPECTED";
+    case static_cast<long>(0x80040110UL):
+        // STRING: VC1 0x004cf838
+        return "CLASS_E_NOAGGREGATION";
+    case static_cast<long>(0x80040154UL):
+        // STRING: VC1 0x004cf850
+        return "REGDB_E_CLASSNOTREG";
+    case static_cast<long>(0x800401f0UL):
+        // STRING: VC1 0x004cf864
+        return "CO_E_NOTINITIALIZED";
+    case static_cast<long>(0x800401f1UL):
+        // STRING: VC1 0x004cf810
+        return "CO_E_ALREADYINITIALIZED";
+    case static_cast<long>(0x80040200UL):
+        // STRING: VC1 0x004cf7f8
+        return "DIERR_INSUFFICIENTPRIVS";
+    case static_cast<long>(0x80040201UL):
+        // STRING: VC1 0x004cf7e4
+        return "DIERR_DEVICEFULL";
+    case static_cast<long>(0x80040202UL):
+        // STRING: VC1 0x004cf7d4
+        return "DIERR_MOREDATA";
+    case static_cast<long>(0x80040203UL):
+        // STRING: VC1 0x004cf7c0
+        return "DIERR_NOTDOWNLOADED";
+    case static_cast<long>(0x80040204UL):
+        // STRING: VC1 0x004cf7ac
+        return "DIERR_HASEFFECTS";
+    case static_cast<long>(0x80040205UL):
+        // STRING: VC1 0x004cf790
+        return "DIERR_NOTEXCLUSIVEACQUIRED";
+    case static_cast<long>(0x80040206UL):
+        // STRING: VC1 0x004cf778
+        return "DIERR_INCOMPLETEEFFECT";
+    case static_cast<long>(0x80040207UL):
+        // STRING: VC1 0x004cf764
+        return "DIERR_NOTBUFFERED";
+    case static_cast<long>(0x80040208UL):
+        // STRING: VC1 0x004cf750
+        return "DIERR_EFFECTPLAYING";
+    case static_cast<long>(0x80040209UL):
+        // STRING: VC1 0x004cf740
+        return "DIERR_UNPLUGGED";
+    case static_cast<long>(0x8004020aUL):
+        // STRING: VC1 0x004cf72c
+        return "DIERR_REPORTFULL";
+    case static_cast<long>(0x8004020bUL):
+        // STRING: VC1 0x004cf6c8
+        return "DIERR_MAPFILEFAIL";
+    case static_cast<long>(0x80040300UL):
+        // STRING: VC1 0x004cf6dc
+        return "DIERR_DRIVERFIRST";
+    case static_cast<long>(0x80040301UL):
+        // STRING: VC1 0x004cf6f0
+        return "DIERR_DRIVERFIRST+1";
+    case static_cast<long>(0x80040302UL):
+        // STRING: VC1 0x004cf704
+        return "DIERR_DRIVERFIRST+2";
+    case static_cast<long>(0x80040303UL):
+        // STRING: VC1 0x004cf718
+        return "DIERR_DRIVERFIRST+3";
+    case static_cast<long>(0x80040304UL):
+        // STRING: VC1 0x004cf6b4
+        return "DIERR_DRIVERFIRST+4";
+    case static_cast<long>(0x80040305UL):
+        // STRING: VC1 0x004cf660
+        return "DIERR_DRIVERFIRST+5";
+    case static_cast<long>(0x800403ffUL):
+        // STRING: VC1 0x004cf674
+        return "DIERR_DRIVERLAST";
+    case static_cast<long>(0x80040400UL):
+        // STRING: VC1 0x004cf688
+        return "DIERR_INVALIDCLASSINSTALLER";
+    case static_cast<long>(0x80040401UL):
+        // STRING: VC1 0x004cf6a4
+        return "DIERR_CANCELLED";
+    case static_cast<long>(0x80040402UL):
+        // STRING: VC1 0x004cf650
+        return "DIERR_BADINF";
+    case static_cast<long>(0x80070002UL):
+        // STRING: VC1 0x004cf600
+        return "DIERR_NOTFOUND";
+    case static_cast<long>(0x80070005UL):
+        // STRING: VC1 0x004cf610
+        return "E_ACCESSDENIED";
+    case static_cast<long>(0x80070006UL):
+        // STRING: VC1 0x004cf620
+        return "E_HANDLE";
+    case static_cast<long>(0x8007000cUL):
+        // STRING: VC1 0x004cf62c
+        return "DIERR_NOTACQUIRED";
+    case static_cast<long>(0x8007000eUL):
+        // STRING: VC1 0x004cf640
+        return "E_OUTOFMEMORY";
+    case static_cast<long>(0x80070015UL):
+        // STRING: VC1 0x004cf5e8
+        return "DIERR_NOTINITIALIZED";
+    case static_cast<long>(0x8007001eUL):
+        // STRING: VC1 0x004cf5a4
+        return "DIERR_INPUTLOST";
+    case static_cast<long>(0x80070057UL):
+        // STRING: VC1 0x004cf5b4
+        return "E_INVALIDARG";
+    case static_cast<long>(0x80070077UL):
+        // STRING: VC1 0x004cf5c4
+        return "DIERR_BADDRIVERVER";
+    case static_cast<long>(0x800700aaUL):
+        // STRING: VC1 0x004cf5d8
+        return "DIERR_ACQUIRED";
+    case static_cast<long>(0x80070103UL):
+        // STRING: VC1 0x004cf590
+        return "DIERR_NOMOREITEMS";
+    case static_cast<long>(0x8007047eUL):
+        // STRING: VC1 0x004cf510
+        return "DIERR_OLDDIRECTINPUTVERSION";
+    case static_cast<long>(0x80070481UL):
+        // STRING: VC1 0x004cf52c
+        return "DIERR_BETADIRECTINPUTVERSION";
+    case static_cast<long>(0x800704dfUL):
+        // STRING: VC1 0x004cf54c
+        return "DIERR_ALREADYINITIALIZED";
+    case static_cast<long>(0x8015001eUL):
+        // STRING: VC1 0x004cf568
+        return "DVERR_BUFFERTOOSMALL";
+    case static_cast<long>(0x8015004aUL):
+        // STRING: VC1 0x004cf580
+        return "DVERR_EXCEPTION";
+    case static_cast<long>(0x80150078UL):
+        // STRING: VC1 0x004cf4fc
+        return "DVERR_INVALIDFLAGS";
+    case static_cast<long>(0x80150082UL):
+        // STRING: VC1 0x004cf4ac
+        return "DVERR_INVALIDOBJECT";
+    case static_cast<long>(0x80150087UL):
+        // STRING: VC1 0x004cf4c0
+        return "DVERR_INVALIDPLAYER";
+    case static_cast<long>(0x80150091UL):
+        // STRING: VC1 0x004cf4d4
+        return "DVERR_INVALIDGROUP";
+    case static_cast<long>(0x80150096UL):
+        // STRING: VC1 0x004cf4e8
+        return "DVERR_INVALIDHANDLE";
+    case static_cast<long>(0x8015012cUL):
+        // STRING: VC1 0x004cf498
+        return "DVERR_SESSIONLOST";
+    case static_cast<long>(0x8015012eUL):
+        // STRING: VC1 0x004cf42c
+        return "DVERR_NOVOICESESSION";
+    case static_cast<long>(0x80150168UL):
+        // STRING: VC1 0x004cf444
+        return "DVERR_CONNECTIONLOST";
+    case static_cast<long>(0x80150169UL):
+        // STRING: VC1 0x004cf45c
+        return "DVERR_NOTINITIALIZED";
+    case static_cast<long>(0x8015016aUL):
+        // STRING: VC1 0x004cf474
+        return "DVERR_CONNECTED";
+    case static_cast<long>(0x8015016bUL):
+        // STRING: VC1 0x004cf484
+        return "DVERR_NOTCONNECTED";
+    case static_cast<long>(0x8015016eUL):
+        // STRING: VC1 0x004cf414
+        return "DVERR_CONNECTABORTING";
+    case static_cast<long>(0x8015016fUL):
+        // STRING: VC1 0x004cf3b4
+        return "DVERR_NOTALLOWED";
+    case static_cast<long>(0x80150170UL):
+        // STRING: VC1 0x004cf3c8
+        return "DVERR_INVALIDTARGET";
+    case static_cast<long>(0x80150171UL):
+        // STRING: VC1 0x004cf3dc
+        return "DVERR_TRANSPORTNOTHOST";
+    case static_cast<long>(0x80150172UL):
+        // STRING: VC1 0x004cf3f4
+        return "DVERR_COMPRESSIONNOTSUPPORTED";
+    case static_cast<long>(0x80150173UL):
+        // STRING: VC1 0x004cf39c
+        return "DVERR_ALREADYPENDING";
+    case static_cast<long>(0x80150174UL):
+        // STRING: VC1 0x004cf384
+        return "DVERR_SOUNDINITFAILURE";
+    case static_cast<long>(0x80150175UL):
+        // STRING: VC1 0x004cf374
+        return "DVERR_TIMEOUT";
+    case static_cast<long>(0x80150176UL):
+        // STRING: VC1 0x004cf35c
+        return "DVERR_CONNECTABORTED";
+    case static_cast<long>(0x80150177UL):
+        // STRING: VC1 0x004cf34c
+        return "DVERR_NO3DSOUND";
+    case static_cast<long>(0x80150178UL):
+        // STRING: VC1 0x004cf334
+        return "DVERR_ALREADYBUFFERED";
+    case static_cast<long>(0x80150179UL):
+        // STRING: VC1 0x004cf320
+        return "DVERR_NOTBUFFERED";
+    case static_cast<long>(0x8015017aUL):
+        // STRING: VC1 0x004cf310
+        return "DVERR_HOSTING";
+    case static_cast<long>(0x8015017bUL):
+        // STRING: VC1 0x004cf2fc
+        return "DVERR_NOTHOSTING";
+    case static_cast<long>(0x8015017cUL):
+        // STRING: VC1 0x004cf2e8
+        return "DVERR_INVALIDDEVICE";
+    case static_cast<long>(0x8015017dUL):
+        // STRING: VC1 0x004cf2d0
+        return "DVERR_RECORDSYSTEMERROR";
+    case static_cast<long>(0x8015017eUL):
+        // STRING: VC1 0x004cf2b4
+        return "DVERR_PLAYBACKSYSTEMERROR";
+    case static_cast<long>(0x8015017fUL):
+        // STRING: VC1 0x004cf2a4
+        return "DVERR_SENDERROR";
+    case static_cast<long>(0x80150180UL):
+        // STRING: VC1 0x004cf290
+        return "DVERR_USERCANCEL";
+    case static_cast<long>(0x80150183UL):
+        // STRING: VC1 0x004cf280
+        return "DVERR_RUNSETUP";
+    case static_cast<long>(0x80150184UL):
+        // STRING: VC1 0x004cf264
+        return "DVERR_INCOMPATIBLEVERSION";
+    case static_cast<long>(0x80150187UL):
+        // STRING: VC1 0x004cf250
+        return "DVERR_INITIALIZED";
+    case static_cast<long>(0x80150188UL):
+        // STRING: VC1 0x004cf23c
+        return "DVERR_NOTRANSPORT";
+    case static_cast<long>(0x80150189UL):
+        // STRING: VC1 0x004cf228
+        return "DVERR_NOCALLBACK";
+    case static_cast<long>(0x8015018aUL):
+        // STRING: VC1 0x004cf210
+        return "DVERR_TRANSPORTNOTINIT";
+    case static_cast<long>(0x8015018bUL):
+        // STRING: VC1 0x004cf1f4
+        return "DVERR_TRANSPORTNOSESSION";
+    case static_cast<long>(0x8015018cUL):
+        // STRING: VC1 0x004cf1dc
+        return "DVERR_TRANSPORTNOPLAYER";
+    case static_cast<long>(0x8015018dUL):
+        // STRING: VC1 0x004cf1cc
+        return "DVERR_USERBACK";
+    case static_cast<long>(0x8015018eUL):
+        // STRING: VC1 0x004cf168
+        return "DVERR_NORECVOLAVAILABLE";
+    case static_cast<long>(0x8015018fUL):
+        // STRING: VC1 0x004cf180
+        return "DVERR_INVALIDBUFFER";
+    case static_cast<long>(0x80150190UL):
+        // STRING: VC1 0x004cf194
+        return "DVERR_LOCKEDBUFFER";
+    case static_cast<long>(0x80158030UL):
+        // STRING: VC1 0x004cf1a8
+        return "DPNERR_ABORTED";
+    case static_cast<long>(0x80158040UL):
+        // STRING: VC1 0x004cf1b8
+        return "DPNERR_ADDRESSING";
+    case static_cast<long>(0x80158050UL):
+        // STRING: VC1 0x004cf150
+        return "DPNERR_ALREADYCLOSING";
+    case static_cast<long>(0x80158060UL):
+        // STRING: VC1 0x004cf0e4
+        return "DPNERR_ALREADYCONNECTED";
+    case static_cast<long>(0x80158070UL):
+        // STRING: VC1 0x004cf0fc
+        return "DPNERR_ALREADYDISCONNECTING";
+    case static_cast<long>(0x80158080UL):
+        // STRING: VC1 0x004cf118
+        return "DPNERR_ALREADYINITIALIZED";
+    case static_cast<long>(0x80158090UL):
+        // STRING: VC1 0x004cf134
+        return "DPNERR_ALREADYREGISTERED";
+    case static_cast<long>(0x80158100UL):
+        // STRING: VC1 0x004cf0cc
+        return "DPNERR_BUFFERTOOSMALL";
+    case static_cast<long>(0x80158110UL):
+        // STRING: VC1 0x004cf054
+        return "DPNERR_CANNOTCANCEL";
+    case static_cast<long>(0x80158120UL):
+        // STRING: VC1 0x004cf068
+        return "DPNERR_CANTCREATEGROUP";
+    case static_cast<long>(0x80158130UL):
+        // STRING: VC1 0x004cf080
+        return "DPNERR_CANTCREATEPLAYER";
+    case static_cast<long>(0x80158140UL):
+        // STRING: VC1 0x004cf098
+        return "DPNERR_CANTLAUNCHAPPLICATION";
+    case static_cast<long>(0x80158150UL):
+        // STRING: VC1 0x004cf0b8
+        return "DPNERR_CONNECTING";
+    case static_cast<long>(0x80158160UL):
+        // STRING: VC1 0x004cf03c
+        return "DPNERR_CONNECTIONLOST";
+    case static_cast<long>(0x80158170UL):
+        // STRING: VC1 0x004cefe8
+        return "DPNERR_CONVERSION";
+    case static_cast<long>(0x80158175UL):
+        // STRING: VC1 0x004ceffc
+        return "DPNERR_DATATOOLARGE";
+    case static_cast<long>(0x80158180UL):
+        // STRING: VC1 0x004cf010
+        return "DPNERR_DOESNOTEXIST";
+    case static_cast<long>(0x80158190UL):
+        // STRING: VC1 0x004cf024
+        return "DPNERR_DUPLICATECOMMAND";
+    case static_cast<long>(0x80158200UL):
+        // STRING: VC1 0x004cefcc
+        return "DPNERR_ENDPOINTNOTRECEIVING";
+    case static_cast<long>(0x80158210UL):
+        // STRING: VC1 0x004cef58
+        return "DPNERR_ENUMQUERYTOOLARGE";
+    case static_cast<long>(0x80158220UL):
+        // STRING: VC1 0x004cef74
+        return "DPNERR_ENUMRESPONSETOOLARGE";
+    case static_cast<long>(0x80158230UL):
+        // STRING: VC1 0x004cef90
+        return "DPNERR_EXCEPTION";
+    case static_cast<long>(0x80158240UL):
+        // STRING: VC1 0x004cefa4
+        return "DPNERR_GROUPNOTEMPTY";
+    case static_cast<long>(0x80158250UL):
+        // STRING: VC1 0x004cefbc
+        return "DPNERR_HOSTING";
+    case static_cast<long>(0x80158260UL):
+        // STRING: VC1 0x004cef38
+        return "DPNERR_HOSTREJECTEDCONNECTION";
+    case static_cast<long>(0x80158270UL):
+        // STRING: VC1 0x004ceec4
+        return "DPNERR_HOSTTERMINATEDSESSION";
+    case static_cast<long>(0x80158280UL):
+        // STRING: VC1 0x004ceee4
+        return "DPNERR_INCOMPLETEADDRESS";
+    case static_cast<long>(0x80158290UL):
+        // STRING: VC1 0x004cef00
+        return "DPNERR_INVALIDADDRESSFORMAT";
+    case static_cast<long>(0x80158300UL):
+        // STRING: VC1 0x004cef1c
+        return "DPNERR_INVALIDAPPLICATION";
+    case static_cast<long>(0x80158310UL):
+        // STRING: VC1 0x004ceeac
+        return "DPNERR_INVALIDCOMMAND";
+    case static_cast<long>(0x80158320UL):
+        // STRING: VC1 0x004cee38
+        return "DPNERR_INVALIDDEVICEADDRESS";
+    case static_cast<long>(0x80158330UL):
+        // STRING: VC1 0x004cee54
+        return "DPNERR_INVALIDENDPOINT";
+    case static_cast<long>(0x80158340UL):
+        // STRING: VC1 0x004cee6c
+        return "DPNERR_INVALIDFLAGS";
+    case static_cast<long>(0x80158350UL):
+        // STRING: VC1 0x004cee80
+        return "DPNERR_INVALIDGROUP";
+    case static_cast<long>(0x80158360UL):
+        // STRING: VC1 0x004cee94
+        return "DPNERR_INVALIDHANDLE";
+    case static_cast<long>(0x80158370UL):
+        // STRING: VC1 0x004cee1c
+        return "DPNERR_INVALIDHOSTADDRESS";
+    case static_cast<long>(0x80158380UL):
+        // STRING: VC1 0x004cedbc
+        return "DPNERR_INVALIDINSTANCE";
+    case static_cast<long>(0x80158390UL):
+        // STRING: VC1 0x004cedd4
+        return "DPNERR_INVALIDINTERFACE";
+    case static_cast<long>(0x80158400UL):
+        // STRING: VC1 0x004cedec
+        return "DPNERR_INVALIDOBJECT";
+    case static_cast<long>(0x80158410UL):
+        // STRING: VC1 0x004cee04
+        return "DPNERR_INVALIDPASSWORD";
+    case static_cast<long>(0x80158420UL):
+        // STRING: VC1 0x004ceda4
+        return "DPNERR_INVALIDPLAYER";
+    case static_cast<long>(0x80158430UL):
+        // STRING: VC1 0x004ced38
+        return "DPNERR_INVALIDPRIORITY";
+    case static_cast<long>(0x80158440UL):
+        // STRING: VC1 0x004ced50
+        return "DPNERR_INVALIDSTRING";
+    case static_cast<long>(0x80158450UL):
+        // STRING: VC1 0x004ced68
+        return "DPNERR_INVALIDURL";
+    case static_cast<long>(0x80158460UL):
+        // STRING: VC1 0x004ced7c
+        return "DPNERR_INVALIDVERSION";
+    case static_cast<long>(0x80158470UL):
+        // STRING: VC1 0x004ced94
+        return "DPNERR_NOCAPS";
+    case static_cast<long>(0x80158480UL):
+        // STRING: VC1 0x004ced24
+        return "DPNERR_NOCONNECTION";
+    case static_cast<long>(0x80158490UL):
+        // STRING: VC1 0x004cecc8
+        return "DPNERR_NOHOSTPLAYER";
+    case static_cast<long>(0x80158500UL):
+        // STRING: VC1 0x004cecdc
+        return "DPNERR_NOMOREADDRESSCOMPONENTS";
+    case static_cast<long>(0x80158510UL):
+        // STRING: VC1 0x004cecfc
+        return "DPNERR_NORESPONSE";
+    case static_cast<long>(0x80158520UL):
+        // STRING: VC1 0x004ced10
+        return "DPNERR_NOTALLOWED";
+    case static_cast<long>(0x80158530UL):
+        // STRING: VC1 0x004cecb8
+        return "DPNERR_NOTHOST";
+    case static_cast<long>(0x80158540UL):
+        // STRING: VC1 0x004cec4c
+        return "DPNERR_NOTREADY";
+    case static_cast<long>(0x80158550UL):
+        // STRING: VC1 0x004cec5c
+        return "DPNERR_NOTREGISTERED";
+    case static_cast<long>(0x80158570UL):
+        // STRING: VC1 0x004cec74
+        return "DPNERR_PLAYERLOST";
+    case static_cast<long>(0x80158590UL):
+        // STRING: VC1 0x004cec88
+        return "DPNERR_PLAYERNOTREACHABLE";
+    case static_cast<long>(0x80158600UL):
+        // STRING: VC1 0x004ceca4
+        return "DPNERR_SENDTOOLARGE";
+    case static_cast<long>(0x80158610UL):
+        // STRING: VC1 0x004cec38
+        return "DPNERR_SESSIONFULL";
+    case static_cast<long>(0x80158620UL):
+        // STRING: VC1 0x004cebe8
+        return "DPNERR_TABLEFULL";
+    case static_cast<long>(0x80158630UL):
+        // STRING: VC1 0x004cebfc
+        return "DPNERR_TIMEDOUT";
+    case static_cast<long>(0x80158640UL):
+        // STRING: VC1 0x004cec0c
+        return "DPNERR_UNINITIALIZED";
+    case static_cast<long>(0x80158650UL):
+        // STRING: VC1 0x004cec24
+        return "DPNERR_USERCANCEL";
+    case static_cast<long>(0x8876017cUL):
+        // STRING: VC1 0x004cebd0
+        return "D3DERR_OUTOFVIDEOMEMORY";
+    case static_cast<long>(0x88760352UL):
+        // STRING: VC1 0x004cebbc
+        return "DXFILEERR_BADOBJECT";
+    case static_cast<long>(0x88760353UL):
+        // STRING: VC1 0x004ceba8
+        return "DXFILEERR_BADVALUE";
+    case static_cast<long>(0x88760354UL):
+        // STRING: VC1 0x004ceb94
+        return "DXFILEERR_BADTYPE";
+    case static_cast<long>(0x88760355UL):
+        // STRING: VC1 0x004ceb78
+        return "DXFILEERR_BADSTREAMHANDLE";
+    case static_cast<long>(0x88760356UL):
+        // STRING: VC1 0x004ceb64
+        return "DXFILEERR_BADALLOC";
+    case static_cast<long>(0x88760357UL):
+        // STRING: VC1 0x004ceb50
+        return "DXFILEERR_NOTFOUND";
+    case static_cast<long>(0x88760358UL):
+        // STRING: VC1 0x004ceb38
+        return "DXFILEERR_NOTDONEYET";
+    case static_cast<long>(0x88760359UL):
+        // STRING: VC1 0x004ceb20
+        return "DXFILEERR_FILENOTFOUND";
+    case static_cast<long>(0x8876035aUL):
+        // STRING: VC1 0x004ceb04
+        return "DXFILEERR_RESOURCENOTFOUND";
+    case static_cast<long>(0x8876035bUL):
+        // STRING: VC1 0x004ceaec
+        return "DXFILEERR_URLNOTFOUND";
+    case static_cast<long>(0x8876035cUL):
+        // STRING: VC1 0x004cead4
+        return "DXFILEERR_BADRESOURCE";
+    case static_cast<long>(0x8876035dUL):
+        // STRING: VC1 0x004ceabc
+        return "DXFILEERR_BADFILETYPE";
+    case static_cast<long>(0x8876035eUL):
+        // STRING: VC1 0x004ceaa0
+        return "DXFILEERR_BADFILEVERSION";
+    case static_cast<long>(0x8876035fUL):
+        // STRING: VC1 0x004cea84
+        return "DXFILEERR_BADFILEFLOATSIZE";
+    case static_cast<long>(0x88760360UL):
+        // STRING: VC1 0x004cea60
+        return "DXFILEERR_BADFILECOMPRESSIONTYPE";
+    case static_cast<long>(0x88760361UL):
+        // STRING: VC1 0x004cea4c
+        return "DXFILEERR_BADFILE";
+    case static_cast<long>(0x88760362UL):
+        // STRING: VC1 0x004cea34
+        return "DXFILEERR_PARSEERROR";
+    case static_cast<long>(0x88760363UL):
+        // STRING: VC1 0x004cea1c
+        return "DXFILEERR_NOTEMPLATE";
+    case static_cast<long>(0x88760364UL):
+        // STRING: VC1 0x004cea04
+        return "DXFILEERR_BADARRAYSIZE";
+    case static_cast<long>(0x88760365UL):
+        // STRING: VC1 0x004ce9e8
+        return "DXFILEERR_BADDATAREFERENCE";
+    case static_cast<long>(0x88760366UL):
+        // STRING: VC1 0x004ce9d0
+        return "DXFILEERR_INTERNALERROR";
+    case static_cast<long>(0x88760367UL):
+        // STRING: VC1 0x004ce9b8
+        return "DXFILEERR_NOMOREOBJECTS";
+    case static_cast<long>(0x88760368UL):
+        // STRING: VC1 0x004ce938
+        return "DXFILEERR_BADINTRINSICS";
+    case static_cast<long>(0x88760369UL):
+        // STRING: VC1 0x004ce950
+        return "DXFILEERR_NOMORESTREAMHANDLES";
+    case static_cast<long>(0x8876036aUL):
+        // STRING: VC1 0x004ce970
+        return "DXFILEERR_NOMOREDATA";
+    case static_cast<long>(0x8876036bUL):
+        // STRING: VC1 0x004ce988
+        return "DXFILEERR_BADCACHEFILE";
+    case static_cast<long>(0x8876036cUL):
+        // STRING: VC1 0x004ce9a0
+        return "DXFILEERR_NOINTERNET";
+    case static_cast<long>(0x88760818UL):
+        // STRING: VC1 0x004ce91c
+        return "D3DERR_WRONGTEXTUREFORMAT";
+    case static_cast<long>(0x88760819UL):
+        // STRING: VC1 0x004ce89c
+        return "D3DERR_UNSUPPORTEDCOLOROPERATION";
+    case static_cast<long>(0x8876081aUL):
+        // STRING: VC1 0x004ce8c0
+        return "D3DERR_UNSUPPORTEDCOLORARG";
+    case static_cast<long>(0x8876081bUL):
+        // STRING: VC1 0x004ce8dc
+        return "D3DERR_UNSUPPORTEDALPHAOPERATION";
+    case static_cast<long>(0x8876081cUL):
+        // STRING: VC1 0x004ce900
+        return "D3DERR_UNSUPPORTEDALPHAARG";
+    case static_cast<long>(0x8876081dUL):
+        // STRING: VC1 0x004ce880
+        return "D3DERR_TOOMANYOPERATIONS";
+    case static_cast<long>(0x8876081eUL):
+        // STRING: VC1 0x004ce7dc
+        return "D3DERR_CONFLICTINGTEXTUREFILTER";
+    case static_cast<long>(0x8876081fUL):
+        // STRING: VC1 0x004ce7fc
+        return "D3DERR_UNSUPPORTEDFACTORVALUE";
+    case static_cast<long>(0x88760821UL):
+        // STRING: VC1 0x004ce81c
+        return "D3DERR_CONFLICTINGRENDERSTATE";
+    case static_cast<long>(0x88760822UL):
+        // STRING: VC1 0x004ce83c
+        return "D3DERR_UNSUPPORTEDTEXTUREFILTER";
+    case static_cast<long>(0x88760826UL):
+        // STRING: VC1 0x004ce85c
+        return "D3DERR_CONFLICTINGTEXTUREPALETTE";
+    case static_cast<long>(0x88760827UL):
+        // STRING: VC1 0x004ce7c0
+        return "D3DERR_DRIVERINTERNALERROR";
+    case static_cast<long>(0x88760866UL):
+        // STRING: VC1 0x004ce774
+        return "D3DERR_NOTFOUND";
+    case static_cast<long>(0x88760867UL):
+        // STRING: VC1 0x004ce784
+        return "D3DERR_MOREDATA";
+    case static_cast<long>(0x88760868UL):
+        // STRING: VC1 0x004ce794
+        return "D3DERR_DEVICELOST";
+    case static_cast<long>(0x88760869UL):
+        // STRING: VC1 0x004ce7a8
+        return "D3DERR_DEVICENOTRESET";
+    case static_cast<long>(0x8876086aUL):
+        // STRING: VC1 0x004ce760
+        return "D3DERR_NOTAVAILABLE";
+    case static_cast<long>(0x8876086bUL):
+        // STRING: VC1 0x004ce6f0
+        return "D3DERR_INVALIDDEVICE";
+    case static_cast<long>(0x8876086cUL):
+        // STRING: VC1 0x004ce708
+        return "D3DERR_INVALIDCALL";
+    case static_cast<long>(0x8876086dUL):
+        // STRING: VC1 0x004ce71c
+        return "D3DERR_DRIVERINVALIDCALL";
+    case static_cast<long>(0x8878000aUL):
+        // STRING: VC1 0x004ce738
+        return "DSERR_ALLOCATED";
+    case static_cast<long>(0x8878001eUL):
+        // STRING: VC1 0x004ce748
+        return "DSERR_CONTROLUNAVAIL";
+    case static_cast<long>(0x88780032UL):
+        // STRING: VC1 0x004ce6dc
+        return "DSERR_INVALIDCALL";
+    case static_cast<long>(0x88780046UL):
+        // STRING: VC1 0x004ce688
+        return "DSERR_PRIOLEVELNEEDED";
+    case static_cast<long>(0x88780064UL):
+        // STRING: VC1 0x004ce6a0
+        return "DSERR_BADFORMAT";
+    case static_cast<long>(0x88780078UL):
+        // STRING: VC1 0x004ce6b0
+        return "DSERR_NODRIVER";
+    case static_cast<long>(0x88780082UL):
+        // STRING: VC1 0x004ce6c0
+        return "DSERR_ALREADYINITIALIZED";
+    case static_cast<long>(0x88780096UL):
+        // STRING: VC1 0x004ce674
+        return "DSERR_BUFFERLOST";
+    case static_cast<long>(0x887800a0UL):
+        // STRING: VC1 0x004ce60c
+        return "DSERR_OTHERAPPHASPRIO";
+    case static_cast<long>(0x887800aaUL):
+        // STRING: VC1 0x004ce624
+        return "DSERR_UNINITIALIZED";
+    case static_cast<long>(0x887800b4UL):
+        // STRING: VC1 0x004ce638
+        return "DSERR_BUFFERTOOSMALL";
+    case static_cast<long>(0x887800beUL):
+        // STRING: VC1 0x004ce650
+        return "DSERR_DS8_REQUIRED";
+    case static_cast<long>(0x887800c8UL):
+        // STRING: VC1 0x004ce664
+        return "DSERR_SENDLOOP";
+    case static_cast<long>(0x887800d2UL):
+        // STRING: VC1 0x004ce5f4
+        return "DSERR_BADSENDBUFFERGUID";
+    case static_cast<long>(0x88781101UL):
+        // STRING: VC1 0x004ce594
+        return "DMUS_E_DRIVER_FAILED";
+    case static_cast<long>(0x88781102UL):
+        // STRING: VC1 0x004ce5ac
+        return "DMUS_E_PORTS_OPEN";
+    case static_cast<long>(0x88781103UL):
+        // STRING: VC1 0x004ce5c0
+        return "DMUS_E_DEVICE_IN_USE";
+    case static_cast<long>(0x88781104UL):
+        // STRING: VC1 0x004ce5d8
+        return "DMUS_E_INSUFFICIENTBUFFER";
+    case static_cast<long>(0x88781105UL):
+        // STRING: VC1 0x004ce580
+        return "DMUS_E_BUFFERNOTSET";
+    case static_cast<long>(0x88781106UL):
+        // STRING: VC1 0x004ce564
+        return "DMUS_E_BUFFERNOTAVAILABLE";
+    case static_cast<long>(0x88781108UL):
+        // STRING: VC1 0x004ce550
+        return "DMUS_E_NOTADLSCOL";
+    case static_cast<long>(0x88781109UL):
+        // STRING: VC1 0x004ce538
+        return "DMUS_E_INVALIDOFFSET";
+    case static_cast<long>(0x88781111UL):
+        // STRING: VC1 0x004ce520
+        return "DMUS_E_ALREADY_LOADED";
+    case static_cast<long>(0x88781113UL):
+        // STRING: VC1 0x004ce50c
+        return "DMUS_E_INVALIDPOS";
+    case static_cast<long>(0x88781114UL):
+        // STRING: VC1 0x004ce4f8
+        return "DMUS_E_INVALIDPATCH";
+    case static_cast<long>(0x88781115UL):
+        // STRING: VC1 0x004ce4e4
+        return "DMUS_E_CANNOTSEEK";
+    case static_cast<long>(0x88781116UL):
+        // STRING: VC1 0x004ce4d0
+        return "DMUS_E_CANNOTWRITE";
+    case static_cast<long>(0x88781117UL):
+        // STRING: VC1 0x004ce4b8
+        return "DMUS_E_CHUNKNOTFOUND";
+    case static_cast<long>(0x88781119UL):
+        // STRING: VC1 0x004ce49c
+        return "DMUS_E_INVALID_DOWNLOADID";
+    case static_cast<long>(0x88781120UL):
+        // STRING: VC1 0x004ce47c
+        return "DMUS_E_NOT_DOWNLOADED_TO_PORT";
+    case static_cast<long>(0x88781121UL):
+        // STRING: VC1 0x004ce460
+        return "DMUS_E_ALREADY_DOWNLOADED";
+    case static_cast<long>(0x88781122UL):
+        // STRING: VC1 0x004ce448
+        return "DMUS_E_UNKNOWN_PROPERTY";
+    case static_cast<long>(0x88781123UL):
+        // STRING: VC1 0x004ce430
+        return "DMUS_E_SET_UNSUPPORTED";
+    case static_cast<long>(0x88781124UL):
+        // STRING: VC1 0x004ce418
+        return "DMUS_E_GET_UNSUPPORTED";
+    case static_cast<long>(0x88781125UL):
+        // STRING: VC1 0x004ce408
+        return "DMUS_E_NOTMONO";
+    case static_cast<long>(0x88781126UL):
+        // STRING: VC1 0x004ce3f0
+        return "DMUS_E_BADARTICULATION";
+    case static_cast<long>(0x88781127UL):
+        // STRING: VC1 0x004ce3d8
+        return "DMUS_E_BADINSTRUMENT";
+    case static_cast<long>(0x88781128UL):
+        // STRING: VC1 0x004ce3c4
+        return "DMUS_E_BADWAVELINK";
+    case static_cast<long>(0x88781129UL):
+        // STRING: VC1 0x004ce3ac
+        return "DMUS_E_NOARTICULATION";
+    case static_cast<long>(0x8878112aUL):
+        // STRING: VC1 0x004ce39c
+        return "DMUS_E_NOTPCM";
+    case static_cast<long>(0x8878112bUL):
+        // STRING: VC1 0x004ce38c
+        return "DMUS_E_BADWAVE";
+    case static_cast<long>(0x8878112cUL):
+        // STRING: VC1 0x004ce374
+        return "DMUS_E_BADOFFSETTABLE";
+    case static_cast<long>(0x8878112dUL):
+        // STRING: VC1 0x004ce35c
+        return "DMUS_E_UNKNOWNDOWNLOAD";
+    case static_cast<long>(0x8878112eUL):
+        // STRING: VC1 0x004ce348
+        return "DMUS_E_NOSYNTHSINK";
+    case static_cast<long>(0x8878112fUL):
+        // STRING: VC1 0x004ce334
+        return "DMUS_E_ALREADYOPEN";
+    case static_cast<long>(0x88781130UL):
+        // STRING: VC1 0x004ce31c
+        return "DMUS_E_ALREADYCLOSED";
+    case static_cast<long>(0x88781131UL):
+        // STRING: VC1 0x004ce300
+        return "DMUS_E_SYNTHNOTCONFIGURED";
+    case static_cast<long>(0x88781132UL):
+        // STRING: VC1 0x004ce2ec
+        return "DMUS_E_SYNTHACTIVE";
+    case static_cast<long>(0x88781133UL):
+        // STRING: VC1 0x004ce2d8
+        return "DMUS_E_CANNOTREAD";
+    case static_cast<long>(0x88781134UL):
+        // STRING: VC1 0x004ce2c0
+        return "DMUS_E_DMUSIC_RELEASED";
+    case static_cast<long>(0x88781135UL):
+        // STRING: VC1 0x004ce2ac
+        return "DMUS_E_BUFFER_EMPTY";
+    case static_cast<long>(0x88781136UL):
+        // STRING: VC1 0x004ce298
+        return "DMUS_E_BUFFER_FULL";
+    case static_cast<long>(0x88781137UL):
+        // STRING: VC1 0x004ce280
+        return "DMUS_E_PORT_NOT_CAPTURE";
+    case static_cast<long>(0x88781138UL):
+        // STRING: VC1 0x004ce268
+        return "DMUS_E_PORT_NOT_RENDER";
+    case static_cast<long>(0x88781139UL):
+        // STRING: VC1 0x004ce250
+        return "DMUS_E_DSOUND_NOT_SET";
+    case static_cast<long>(0x8878113aUL):
+        // STRING: VC1 0x004ce234
+        return "DMUS_E_ALREADY_ACTIVATED";
+    case static_cast<long>(0x8878113bUL):
+        // STRING: VC1 0x004ce21c
+        return "DMUS_E_INVALIDBUFFER";
+    case static_cast<long>(0x8878113cUL):
+        // STRING: VC1 0x004ce1fc
+        return "DMUS_E_WAVEFORMATNOTSUPPORTED";
+    case static_cast<long>(0x8878113dUL):
+        // STRING: VC1 0x004ce1e4
+        return "DMUS_E_SYNTHINACTIVE";
+    case static_cast<long>(0x8878113eUL):
+        // STRING: VC1 0x004ce1c8
+        return "DMUS_E_DSOUND_ALREADY_SET";
+    case static_cast<long>(0x8878113fUL):
+        // STRING: VC1 0x004ce1b0
+        return "DMUS_E_INVALID_EVENT";
+    case static_cast<long>(0x88781150UL):
+        // STRING: VC1 0x004ce194
+        return "DMUS_E_UNSUPPORTED_STREAM";
+    case static_cast<long>(0x88781151UL):
+        // STRING: VC1 0x004ce17c
+        return "DMUS_E_ALREADY_INITED";
+    case static_cast<long>(0x88781152UL):
+        // STRING: VC1 0x004ce150
+        return "DMUS_E_INVALID_BAND";
+    case static_cast<long>(0x88781155UL):
+        // STRING: VC1 0x004ce130
+        return "DMUS_E_TRACK_HDR_NOT_FIRST_CK";
+    case static_cast<long>(0x88781156UL):
+        // STRING: VC1 0x004ce110
+        return "DMUS_E_TOOL_HDR_NOT_FIRST_CK";
+    case static_cast<long>(0x88781157UL):
+        // STRING: VC1 0x004ce0f4
+        return "DMUS_E_INVALID_TRACK_HDR";
+    case static_cast<long>(0x88781158UL):
+        // STRING: VC1 0x004ce0dc
+        return "DMUS_E_INVALID_TOOL_HDR";
+    case static_cast<long>(0x88781159UL):
+        // STRING: VC1 0x004ce0c4
+        return "DMUS_E_ALL_TOOLS_FAILED";
+    case static_cast<long>(0x88781160UL):
+        // STRING: VC1 0x004ce0a8
+        return "DMUS_E_ALL_TRACKS_FAILED";
+    case static_cast<long>(0x88781161UL):
+        // STRING: VC1 0x004ce164
+        return "DSERR_OBJECTNOTFOUND";
+    case static_cast<long>(0x88781162UL):
+        // STRING: VC1 0x004ce098
+        return "DMUS_E_NOT_INIT";
+    case static_cast<long>(0x88781163UL):
+        // STRING: VC1 0x004ce080
+        return "DMUS_E_TYPE_DISABLED";
+    case static_cast<long>(0x88781164UL):
+        // STRING: VC1 0x004ce068
+        return "DMUS_E_TYPE_UNSUPPORTED";
+    case static_cast<long>(0x88781165UL):
+        // STRING: VC1 0x004ce054
+        return "DMUS_E_TIME_PAST";
+    case static_cast<long>(0x88781166UL):
+        // STRING: VC1 0x004ce03c
+        return "DMUS_E_TRACK_NOT_FOUND";
+    case static_cast<long>(0x88781167UL):
+        // STRING: VC1 0x004ce018
+        return "DMUS_E_TRACK_NO_CLOCKTIME_SUPPORT";
+    case static_cast<long>(0x88781170UL):
+        // STRING: VC1 0x004ce000
+        return "DMUS_E_NO_MASTER_CLOCK";
+    case static_cast<long>(0x88781180UL):
+        // STRING: VC1 0x004cdfe8
+        return "DMUS_E_LOADER_NOCLASSID";
+    case static_cast<long>(0x88781181UL):
+        // STRING: VC1 0x004cdfd0
+        return "DMUS_E_LOADER_BADPATH";
+    case static_cast<long>(0x88781182UL):
+        // STRING: VC1 0x004cdfb4
+        return "DMUS_E_LOADER_FAILEDOPEN";
+    case static_cast<long>(0x88781183UL):
+        // STRING: VC1 0x004cdf90
+        return "DMUS_E_LOADER_FORMATNOTSUPPORTED";
+    case static_cast<long>(0x88781184UL):
+        // STRING: VC1 0x004cdf74
+        return "DMUS_E_LOADER_FAILEDCREATE";
+    case static_cast<long>(0x88781185UL):
+        // STRING: VC1 0x004cdf54
+        return "DMUS_E_LOADER_OBJECTNOTFOUND";
+    case static_cast<long>(0x88781186UL):
+        // STRING: VC1 0x004cdf38
+        return "DMUS_E_LOADER_NOFILENAME";
+    case static_cast<long>(0x88781200UL):
+        // STRING: VC1 0x004cdf24
+        return "DMUS_E_INVALIDFILE";
+    case static_cast<long>(0x88781201UL):
+        // STRING: VC1 0x004cdf0c
+        return "DMUS_E_ALREADY_EXISTS";
+    case static_cast<long>(0x88781202UL):
+        // STRING: VC1 0x004cdef8
+        return "DMUS_E_OUT_OF_RANGE";
+    case static_cast<long>(0x88781203UL):
+        // STRING: VC1 0x004cdedc
+        return "DMUS_E_SEGMENT_INIT_FAILED";
+    case static_cast<long>(0x88781204UL):
+        // STRING: VC1 0x004cdec8
+        return "DMUS_E_ALREADY_SENT";
+    case static_cast<long>(0x88781205UL):
+        // STRING: VC1 0x004cdeb4
+        return "DMUS_E_CANNOT_FREE";
+    case static_cast<long>(0x88781206UL):
+        // STRING: VC1 0x004cde9c
+        return "DMUS_E_CANNOT_OPEN_PORT";
+    case static_cast<long>(0x88781207UL):
+        // STRING: VC1 0x004cde84
+        return "DMUS_E_CANNOT_CONVERT";
+    case static_cast<long>(0x88781210UL):
+        // STRING: VC1 0x004cde68
+        return "DMUS_E_DESCEND_CHUNK_FAIL";
+    case static_cast<long>(0x88781211UL):
+        // STRING: VC1 0x004cde54
+        return "DMUS_E_NOT_LOADED";
+    case static_cast<long>(0x88781213UL):
+        // STRING: VC1 0x004cde30
+        return "DMUS_E_SCRIPT_LANGUAGE_INCOMPATIBLE";
+    case static_cast<long>(0x88781214UL):
+        // STRING: VC1 0x004cde0c
+        return "DMUS_E_SCRIPT_UNSUPPORTED_VARTYPE";
+    case static_cast<long>(0x88781215UL):
+        // STRING: VC1 0x004cddec
+        return "DMUS_E_SCRIPT_ERROR_IN_SCRIPT";
+    case static_cast<long>(0x88781216UL):
+        // STRING: VC1 0x004cddcc
+        return "DMUS_E_SCRIPT_CANTLOAD_OLEAUT32";
+    case static_cast<long>(0x88781217UL):
+        // STRING: VC1 0x004cddac
+        return "DMUS_E_SCRIPT_LOADSCRIPT_ERROR";
+    case static_cast<long>(0x88781218UL):
+        // STRING: VC1 0x004cdd90
+        return "DMUS_E_SCRIPT_INVALID_FILE";
+    case static_cast<long>(0x88781219UL):
+        // STRING: VC1 0x004cdd74
+        return "DMUS_E_INVALID_SCRIPTTRACK";
+    case static_cast<long>(0x8878121aUL):
+        // STRING: VC1 0x004cdd50
+        return "DMUS_E_SCRIPT_VARIABLE_NOT_FOUND";
+    case static_cast<long>(0x8878121bUL):
+        // STRING: VC1 0x004cdd30
+        return "DMUS_E_SCRIPT_ROUTINE_NOT_FOUND";
+    case static_cast<long>(0x88781220UL):
+        // STRING: VC1 0x004cdd0c
+        return "DMUS_E_INVALID_SEGMENTTRIGGERTRACK";
+    case static_cast<long>(0x88781221UL):
+        // STRING: VC1 0x004cdcf0
+        return "DMUS_E_INVALID_LYRICSTRACK";
+    case static_cast<long>(0x88781222UL):
+        // STRING: VC1 0x004cdccc
+        return "DMUS_E_INVALID_PARAMCONTROLTRACK";
+    case static_cast<long>(0x88781223UL):
+        // STRING: VC1 0x004cdca8
+        return "DMUS_E_AUDIOVBSCRIPT_SYNTAXERROR";
+    case static_cast<long>(0x88781224UL):
+        // STRING: VC1 0x004cdc84
+        return "DMUS_E_AUDIOVBSCRIPT_RUNTIMEERROR";
+    case static_cast<long>(0x88781225UL):
+        // STRING: VC1 0x004cdc5c
+        return "DMUS_E_AUDIOVBSCRIPT_OPERATIONFAILURE";
+    case static_cast<long>(0x88781226UL):
+        // STRING: VC1 0x004cdc40
+        return "DMUS_E_AUDIOPATHS_NOT_VALID";
+    case static_cast<long>(0x88781227UL):
+        // STRING: VC1 0x004cdc24
+        return "DMUS_E_AUDIOPATHS_IN_USE";
+    case static_cast<long>(0x88781228UL):
+        // STRING: VC1 0x004cdc08
+        return "DMUS_E_NO_AUDIOPATH_CONFIG";
+    case static_cast<long>(0x88781229UL):
+        // STRING: VC1 0x004cdbec
+        return "DMUS_E_AUDIOPATH_INACTIVE";
+    case static_cast<long>(0x8878122aUL):
+        // STRING: VC1 0x004cdbd0
+        return "DMUS_E_AUDIOPATH_NOBUFFER";
+    case static_cast<long>(0x8878122bUL):
+        // STRING: VC1 0x004cdbb8
+        return "DMUS_E_AUDIOPATH_NOPORT";
+    case static_cast<long>(0x8878122cUL):
+        // STRING: VC1 0x004cdba4
+        return "DMUS_E_NO_AUDIOPATH";
+    case static_cast<long>(0x8878122dUL):
+        // STRING: VC1 0x004cdb90
+        return "DMUS_E_INVALIDCHUNK";
+    case static_cast<long>(0x8878122eUL):
+        // STRING: VC1 0x004cdb6c
+        return "DMUS_E_AUDIOPATH_NOGLOBALFXBUFFER";
+    case static_cast<long>(0x8878122fUL):
+        // STRING: VC1 0x004cdb4c
+        return "DMUS_E_INVALID_CONTAINER_OBJECT";
+    }
+    // STRING: VC1 0x004cd9a8
+    return "Unknown";
 }
 
 // XOR EAX, EAX; RET.
@@ -1048,6 +2103,36 @@ void ReleaseTrackedTexture(IUnknown* texture)
     if (texture) {
         D3dRelease(texture);
     }
+}
+
+// ECX=node. Inferred name. ~KdRenderTarget: unlinks the node from g_d3dChain,
+// releases its texture and frees it; a node not on the chain is left alone.
+// FUNCTION: VC1 0x00464860
+void ReleaseRenderTargetNode(void* node)
+{
+    KdRenderTargetNode* current = static_cast<KdRenderTargetNode*>(g_d3dChain);
+    KdRenderTargetNode* prev = 0;
+
+    if (!current) {
+        return;
+    }
+    while (current != node) {
+        prev = current;
+        current = current->next;
+        if (!current) {
+            return;
+        }
+    }
+    if (prev) {
+        prev->next = current->next;
+    }
+    else {
+        g_d3dChain = current->next;
+    }
+    if (current->texture) {
+        D3dRelease(current->texture);
+    }
+    free(current);
 }
 
 // EDI=quad. Inferred name. Callers: KdGraphics::FillRect (0x0045ccb0) and

@@ -533,7 +533,6 @@ KdPtr<IUnknown> KdGameLevel::GetObjectAt(const Vector2& point, unsigned include,
 // FUNCTION: VC1 0x004b1ad0
 unsigned char KdGameLevel::GetMember(const char* name, SquirrelObject* out)
 {
-    static ScriptMethodTable methods;
     IScriptInstance* instance = &script;
 
     if (instance->GetMember(name, *out)) {
@@ -542,6 +541,7 @@ unsigned char KdGameLevel::GetMember(const char* name, SquirrelObject* out)
     if (KdScene::GetMember(name, out)) {
         return 1;
     }
+    static ScriptMethodTable methods;
     if (methods.Empty()) {
         methods[kScriptSetDynamicLayer] =
             CreateScriptMethod<KdGameLevel>(&KdGameLevel::SetDynamicLayer);

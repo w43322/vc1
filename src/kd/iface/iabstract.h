@@ -21,6 +21,10 @@ struct IAbstract : IUnknown
 
 typedef char Vc1IAbstractSizeCheck[sizeof(IAbstract) == 0x08 ? 1 : -1];
 
+// Inferred name. The object behind an IAbstract face as a counted IUnknown
+// (the face QI'd for IAbstract twice).
+KdPtr<IUnknown> SelfObject(IAbstract* face);
+
 // SYNTHETIC: VC1 0x00404bf0
 // vc1::IAbstract::`scalar deleting destructor'
 

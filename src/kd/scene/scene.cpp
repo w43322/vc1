@@ -499,12 +499,12 @@ void** CreateKdScene(void** out)
 // FUNCTION: VC1 0x0046f370
 unsigned char KdScene::GetMember(const char* name, SquirrelObject* out)
 {
-    static ScriptMethodTable methods;
     IScriptInstance* instance = &script;
 
     if (instance->GetMember(name, *out)) {
         return 1;
     }
+    static ScriptMethodTable methods;
     if (methods.Empty()) {
         methods[kScriptRegisterObject] = CreateScriptMethod<KdScene>(&KdScene::RegisterObject);
         methods[kScriptUnregisterObject] = CreateScriptMethod<KdScene>(&KdScene::UnregisterObject);

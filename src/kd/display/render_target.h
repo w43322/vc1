@@ -7,6 +7,8 @@
 
 namespace vc1 {
 
+void ReleaseRenderTargetNode(void* node);
+
 // Inferred name. Factory string "RenderTarget" (0x004d4c28), created by
 // IDisplay::CreateRenderTarget. IAbstract is a base at +0x0c (QI ADD 0xc).
 // SIZE 0x20
@@ -21,6 +23,16 @@ public:
     ITexture* cachedTexture; // 0x1c
 
     KdRenderTarget(void* node);
+    // Inlined into the scalar deleting destructor: the node goes back to
+    // the display, then the cached texture is released.
+    __forceinline ~KdRenderTarget()
+    {
+        ReleaseRenderTargetNode(extra);
+        if (cachedTexture) {
+            cachedTexture->Release();
+        }
+        cachedTexture = 0;
+    }
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08

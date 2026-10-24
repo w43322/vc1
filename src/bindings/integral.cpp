@@ -76,4 +76,21 @@ SQFloat SumFloats(const SQFloat* first, const SQFloat* last, SQFloat sum)
     return sum;
 }
 
+// Inferred name. EAX = values, EBX = last, first on the stack (RET 4).
+// Sizes the buffer to the range in whole floats (reserving exactly through
+// GrowCountedBuffer 0x004b8930) and copies the samples.
+// FUNCTION: VC1 0x00427300
+void AssignSamples(KdFactory& values, const SQFloat* first, const SQFloat* last)
+{
+    const unsigned bytes = static_cast<unsigned>(last - first) * sizeof(SQFloat);
+    if (values.capacity < bytes) {
+        GrowCountedBuffer(&values, static_cast<int>(bytes), 1);
+    }
+    SQFloat* out = reinterpret_cast<SQFloat*>(values.begin);
+    values.size = bytes;
+    for (; first != last; ++first, ++out) {
+        *out = *first;
+    }
+}
+
 }

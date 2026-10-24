@@ -95,7 +95,7 @@ SQINLINE SQOthCharBuf Get(TypeWrapper<const SQOtherChar *>,HSQUIRRELVM v,int idx
 
 #if defined(SQPLUS_SUPPORT_STD_STRING) && !defined(SQUNICODE)
 // VC1: std::string is vc1::KdString, whose Push/Get live in src/bindings/sqplus.h.
-SQINLINE bool Match(TypeWrapper<const std::string&>, HSQUIRRELVM v, int idx) { return sq_gettype(v,idx) == OT_STRING; }
+SQINLINE bool Match(TypeWrapper<const SqPlusStdString&>, HSQUIRRELVM v, int idx) { return sq_gettype(v,idx) == OT_STRING; }
 #endif // defined(SQPLUS_SUPPORT_STD_STRING) && !defined(SQUNICODE)
 
 // Added jflanglois suggestion, 8/20/06. jcs

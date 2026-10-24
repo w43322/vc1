@@ -7,7 +7,7 @@
 // bodies elsewhere. Inlined in the original, so not mapped: ~jpeg_decoder
 // (into free_all_blocks callers), read_sof_marker, read_dri_marker,
 // skip_variable_marker, next_marker, locate_sos_marker, init_sequential,
-// decode_init, coeff_buf_open, coeff_buf_getp, stuff_char, get_octet, rol.
+// decode_init, coeff_buf_open, coeff_buf_getp, stuff_char, rol.
 
 // FUNCTION: VC1 0x0041aa30 FOLDED
 // jpeg_decoder_stream::attach
@@ -24,11 +24,16 @@
 // SYNTHETIC: VC1 0x0041ab40
 // jpeg_decoder_file_stream::`scalar deleting destructor'
 
-// FUNCTION: VC1 0x0042e420
+// FUNCTION: VC1 0x0042e3c0
 // ?get_char@jpeg_decoder@@AAEIXZ
 
-// FUNCTION: VC1 0x0042e480
+// EDI = Ppadding_flag.
+// FUNCTION: VC1 0x0042e420
 // ?get_char@jpeg_decoder@@AAEIPA_N@Z
+
+// Out of line for its huff_decode/get_bits callers; stuff_char inlined.
+// FUNCTION: VC1 0x0042e480
+// ?get_octet@jpeg_decoder@@AAEEXZ
 
 // FUNCTION: VC1 0x0042e500
 // jpeg_decoder::get_bits_1

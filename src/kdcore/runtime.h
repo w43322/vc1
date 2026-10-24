@@ -107,6 +107,10 @@ void BindHostClasses();
 // 0x00482160; EDI=haystack, EBX=needle, ECX=haystackLen, cdecl needleLen
 char* FindBytes(const char* haystack, unsigned haystackLen, const char* needle,
     unsigned needleLen);
+// 0x00482220; ECX=haystack, EAX=needle
+char* KdStrstr(const char* haystack, const char* needle);
+// 0x00499c90; EAX=a, ECX=b
+int KdStrcmp(const char* a, const char* b);
 // 0x00486eb0; cdecl path, mode in EBX
 void* OpenKdPath(const char* path, const char* mode);
 // 0x00487140; cdecl path + mode

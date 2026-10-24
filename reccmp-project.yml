@@ -11,6 +11,7 @@ targets:
       - third_party/zlib113
       - third_party/lzma457
       - third_party/pthreads-w32-2-8-0
+      - third_party/boost_1_41_0
       - third_party/sqplus
     hash:
       sha256: bdc3bc9f075a813d12078fd2eaaaa1131ba74616b11aa1444cdd5a5b83e08695

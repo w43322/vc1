@@ -58,15 +58,6 @@ static const char kCellRoadInvisible[] = "CELL_VALUE_RoadInvisible";
 // GLOBAL: VC1 0x004d1460
 extern const char kScriptOnCellChange[] = "OnCellChange";
 
-// The object as a script value: the IAbstract face QI'd twice (0x00401e90),
-// pushed through SquirrelObject::Set<KdPtr<IUnknown> > (0x004014a0).
-static __forceinline SquirrelObject ScriptSelf(IAbstract* face)
-{
-    IUnknown* object = static_cast<IUnknown*>(face->QueryInterface(&g_iidAbstract));
-    return SquirrelObject((KdPtr<IUnknown>(object
-        ? static_cast<IUnknown*>(object->QueryInterface(&g_iidAbstract))
-        : 0)));
-}
 
 static inline Vector2 ScaleAxis(const Vector2& axis, int value)
 {
@@ -393,7 +384,7 @@ void KdPassMap::SetCellValue(int x, int y, int value)
     SquirrelObject member;
     instance->GetMember(kScriptOnCellChange, member);
     if (member.GetObjectHandle()._type != OT_NULL) {
-        SquirrelObject self = ScriptSelf(this);
+        SquirrelObject self((SelfObject(this)));
         SquirrelVM::BeginCall(member, self);
         SquirrelVM::PushParam(x);
         SquirrelVM::PushParam(y);

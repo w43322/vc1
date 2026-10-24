@@ -103,10 +103,14 @@ struct PyroImage
             free(pixels);
             pixels = 0;
         }
-        width = 0;
         height = 0;
+        width = 0;
     }
 };
+
+// ESI=this. Out of line only for PyroDecodePsd's two failure paths.
+// FUNCTION: VC1 0x0042f2a0
+// ?Clear@PyroImage@vc1@@QAEXXZ
 
 bool PyroDecodeImage(PyroImageStream* stream, PyroImage* image);
 

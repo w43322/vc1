@@ -113,6 +113,15 @@ private:
     KdPtr& operator=(const KdPtr&);
 };
 
+// Out-of-line instantiations (ESI=this; the conversions take the source in
+// EAX):
+// TEMPLATE: VC1 0x00401050
+// ??$?0UIUnknown@vc1@@@?$KdPtr@UIGridRenderer@vc1@@@vc1@@QAE@ABV?$KdPtr@UIUnknown@vc1@@@1@@Z
+// TEMPLATE: VC1 0x00401f10
+// ??1?$KdPtr@UIUnknown@vc1@@@vc1@@QAE@XZ
+// TEMPLATE: VC1 0x0040b370
+// ??$?0UIRoute@vc1@@@?$KdPtr@UIReadable@vc1@@@vc1@@QAE@ABV?$KdPtr@UIRoute@vc1@@@1@@Z
+
 }
 
 #endif

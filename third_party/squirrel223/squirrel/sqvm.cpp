@@ -77,7 +77,9 @@ bool SQVM::ARITH_OP(SQUnsignedInteger op,SQObjectPtr &trg,const SQObjectPtr &o1,
 				case '-': res = f1 - f2; break;
 				case '/': res = f1 / f2; break;
 				case '*': res = f1 * f2; break;
-				case '%': res = SQFloat(fmod((double)f1,(double)f2)); break;
+				// VC1: the game's ARITH_OP (call at 0x00492aa2) passes the floats to
+				// fmodf (0x004999c0) instead of the stock double fmod.
+				case '%': res = fmodf(f1,f2); break;
 				default: res = 0x0f;
 				}
 				trg = res;

@@ -105,6 +105,20 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::BIN_EXP
 // FUNCTION: VC1 0x00411110
 // SQCompiler::LogicalOrExp
+// FUNCTION: VC1 0x004113c0
+// SQCompiler::BitwiseOrExp
+// FUNCTION: VC1 0x004113f0
+// SQCompiler::BitwiseXorExp
+// FUNCTION: VC1 0x00411440
+// SQCompiler::BitwiseAndExp
+// FUNCTION: VC1 0x00411470
+// SQCompiler::CompExp
+// FUNCTION: VC1 0x004115e0
+// SQCompiler::ShiftExp
+// FUNCTION: VC1 0x00411640
+// SQCompiler::PlusExp
+// FUNCTION: VC1 0x00411670
+// SQCompiler::MultExp
 // FUNCTION: VC1 0x004116a0
 // SQCompiler::PrefixedExpr
 // FUNCTION: VC1 0x00411ae0

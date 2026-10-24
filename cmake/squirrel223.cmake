@@ -7,7 +7,6 @@ set(SQUIRREL223_SOURCES
   ${SQUIRREL223_ROOT}/squirrel/sqdebug.cpp
   ${SQUIRREL223_ROOT}/squirrel/sqfuncstate.cpp
   ${SQUIRREL223_ROOT}/squirrel/sqlexer.cpp
-  ${SQUIRREL223_ROOT}/squirrel/sqmem.cpp
   ${SQUIRREL223_ROOT}/squirrel/sqobject.cpp
   ${SQUIRREL223_ROOT}/squirrel/sqstate.cpp
   ${SQUIRREL223_ROOT}/squirrel/sqtable.cpp
@@ -19,7 +18,8 @@ set(SQUIRREL223_SOURCES
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstream.cpp
   ${SQUIRREL223_ROOT}/sqstdlib/sqstdstring.cpp)
 # sqstdmath.cpp and sqstdsystem.cpp are replaced by the host forks
-# src/kdcore/sqstd_math.cpp and src/kdcore/sqstd_system.cpp.
+# src/kdcore/sqstd_math.cpp and src/kdcore/sqstd_system.cpp, and sqmem.cpp by
+# the size-class heap in src/memory/fixed_pool.cpp.
 # The game's sqstdio runs on KD files; see src/kdcore/kd_stdio.h.
 set_source_files_properties(${SQUIRREL223_ROOT}/sqstdlib/sqstdio.cpp PROPERTIES
   COMPILE_FLAGS "/FIkdcore/kd_stdio.h")

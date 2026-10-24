@@ -107,6 +107,8 @@ private:
 // ??1?$sqvector@USQObjectPtr@@@@QAE@XZ
 // TEMPLATE: VC1 0x0040e0c0
 // ?remove@?$sqvector@USQObjectPtr@@@@QAEXI@Z
+// TEMPLATE: VC1 0x0040e170
+// ??1?$sqvector@H@@QAE@XZ
 // TEMPLATE: VC1 0x0040eb90
 // ??1?$sqvector@UCallInfo@SQVM@@@@QAE@XZ
 // TEMPLATE: VC1 0x0040ed20
@@ -115,6 +117,12 @@ private:
 // ??1?$sqvector@USQClassMember@@@@QAE@XZ
 // TEMPLATE: VC1 0x0040fda0
 // ?push_back@?$sqvector@USQClassMember@@@@QAEAAUSQClassMember@@ABU2@@Z
+// TEMPLATE: VC1 0x00415490
+// ?push_back@?$sqvector@D@@QAEAADABD@Z
+// TEMPLATE: VC1 0x00415570
+// ??1?$sqvector@USQLocalVarInfo@@@@QAE@XZ
+// TEMPLATE: VC1 0x00415680
+// ??1?$sqvector@USQOuterVar@@@@QAE@XZ
 // TEMPLATE: VC1 0x00415730
 // ?push_back@?$sqvector@USQOuterVar@@@@QAEAAUSQOuterVar@@ABU2@@Z
 
