@@ -19,7 +19,7 @@ class KdDisplay;
 
 extern IAbstract* g_kdDisplay;
 extern IUnknown* g_d3dDevice;
-extern IUnknown* g_displayScene;
+extern KdRef<IUnknown> g_displayScene;
 extern int* g_displayMode;
 extern const char* g_kdNameRenderTarget;
 

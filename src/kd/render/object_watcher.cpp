@@ -14,6 +14,15 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed688
+KdRef<IUnknown> g_kdObjectWatcherNullObject;
+// Shared: the IIdentifiable constructor copies its begin/size (+4/+8).
+// GLOBAL: VC1 0x004e9660
+KdString g_kdEmptyIdentifiableName = KdEmptyText();
+
 float RoundToNearest(float value); // host_services.cpp
 extern const char kScriptGetTexture[]; // resource_manager.cpp
 extern const char kScriptSetCamera[];  // system.cpp
@@ -130,8 +139,8 @@ unsigned char KdObjectWatcher::SetMember(void* a, void* b)
 KdPtr<ITexture> KdObjectWatcher::GetTexture()
 {
     if (!target) {
-        return KdPtr<ITexture>(g_kdNullObject.ptr
-            ? static_cast<ITexture*>(g_kdNullObject.ptr->QueryInterface(&g_iidTexture)) : 0);
+        return KdPtr<ITexture>(g_kdObjectWatcherNullObject.ptr
+            ? static_cast<ITexture*>(g_kdObjectWatcherNullObject.ptr->QueryInterface(&g_iidTexture)) : 0);
     }
     return *static_cast<KdPtr<ITexture>*>(target->GetRenderTexture());
 }
@@ -159,10 +168,10 @@ void KdObjectWatcher::SetRenderMask(int lo, int hi)
 // FUNCTION: VC1 0x004ada10
 int KdObjectWatcher::Shutdown()
 {
-    AssignFace(positionable, g_kdNullObject.ptr, &g_iidPositionable);
-    AssignFace(renderable, g_kdNullObject.ptr, &g_iidRenderable);
-    AssignFace(target, g_kdNullObject.ptr, &g_iidRenderTarget);
-    AssignFace(camera, g_kdNullObject.ptr, &g_iidCamera);
+    AssignFace(positionable, g_kdObjectWatcherNullObject.ptr, &g_iidPositionable);
+    AssignFace(renderable, g_kdObjectWatcherNullObject.ptr, &g_iidRenderable);
+    AssignFace(target, g_kdObjectWatcherNullObject.ptr, &g_iidRenderTarget);
+    AssignFace(camera, g_kdObjectWatcherNullObject.ptr, &g_iidCamera);
     return 0;
 }
 

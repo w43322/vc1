@@ -147,6 +147,9 @@ struct KdRefList
 };
 
 extern unsigned g_kdLogTag;
+// The shared empty text (the zero dword at g_kdLogTag) as a C string; the
+// file-level empty KdString globals borrow it.
+inline const char* KdEmptyText() { return reinterpret_cast<const char*>(&g_kdLogTag); }
 void AssignCountedString(void* self, const char* text, unsigned len) throw();
 
 // Inferred name. Counted char string on KdFactory storage. With capacity 0 it
@@ -387,7 +390,7 @@ typedef char Vc1FactoryInsertSizeCheck[sizeof(FactoryInsert) == 0x08 ? 1 : -1];
 
 extern KdFactory g_kdFactory;
 extern unsigned g_kdFactoryGuard;
-extern IUnknown* g_kdDefaultUnknown;
+extern KdRef<IUnknown> g_kdDefaultUnknown;
 
 extern const char* g_kdNameDisplay;
 extern const char* g_kdNameTexture;

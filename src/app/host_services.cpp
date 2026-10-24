@@ -26,11 +26,12 @@ static float FloatFromBits(unsigned bits)
     return value;
 }
 
-// floor(x+0.5) unless |x| is +Inf at 0x004e95cc. Host extra used by math_round.
+// floor(x+0.5) unless x is NaN or |x| is +Inf (g_kdInfinity). Host extra used by math_round,
+// which calls it out of line.
 // FUNCTION: VC1 0x00499bc0
-float RoundToNearest(float value)
+__declspec(noinline) float RoundToNearest(float value)
 {
-    if (fabsf(value) != FloatFromBits(0x7f800000)) {
+    if (value == value && fabsf(value) != g_kdInfinity.value) {
         value = (float)floor((double)(value + 0.5f));
     }
     return value;

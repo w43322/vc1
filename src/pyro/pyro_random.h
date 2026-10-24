@@ -17,6 +17,7 @@ struct PyroRandom
 
     unsigned Next();
     void Seed(unsigned seed);
+    void Randomize();
 };
 
 PyroRandom* PyroGetRandom();

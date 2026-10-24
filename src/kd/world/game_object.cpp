@@ -1,5 +1,6 @@
 #include "kd/world/game_object.h"
 
+#include "kdcore/platform.h"
 #include "kd/iface/iid.h"
 #include "bindings/matrix3.h"
 
@@ -11,6 +12,18 @@
 #pragma function(memcpy)
 
 namespace vc1 {
+
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed668
+KdRef<IUnknown> g_kdGameObjectNullObject;
+// GLOBAL: VC1 0x004e9640
+KdString g_kdGameObjectEmptyName = KdEmptyText();
+// GLOBAL: VC1 0x004ed66c
+float g_kdGameObjectDefaultStateWeight = g_kdInfinity.value;
+// GLOBAL: VC1 0x004ed670
+float g_kdGameObjectDefaultStatePhase = g_kdInfinity.value;
 
 // STRING: VC1 0x004cfdb0
 static const char kGameObject[] = "GameObject";

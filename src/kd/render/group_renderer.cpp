@@ -1,5 +1,6 @@
 #include "kd/render/group_renderer.h"
 
+#include "kdcore/platform.h"
 #include "kd/iface/iid.h"
 #include "kd/factory.h"
 #include "bindings/component.h"
@@ -9,6 +10,16 @@
 #include <stdlib.h>
 
 namespace vc1 {
+
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e9650
+KdString g_kdGroupRendererEmptyName = KdEmptyText();
+// GLOBAL: VC1 0x004ed680
+float g_kdGroupRendererDefaultStateWeight = g_kdInfinity.value;
+// GLOBAL: VC1 0x004ed684
+float g_kdGroupRendererDefaultStatePhase = g_kdInfinity.value;
 
 // STRING: VC1 0x004cfcc0
 static const char kGroupRenderer[] = "GroupRenderer";

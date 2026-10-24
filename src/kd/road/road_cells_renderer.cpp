@@ -10,6 +10,14 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed690
+KdRef<IUnknown> g_kdRoadCellsNullObject;
+// GLOBAL: VC1 0x004e9680
+KdString g_kdRoadCellsEmptyName = KdEmptyText();
+
 // STRING: VC1 0x004cfcac
 static const char kRoadCellsRenderer[] = "RoadCellsRenderer";
 // GLOBAL: VC1 0x004d0b34

@@ -205,6 +205,31 @@ struct WSADATA
     char* lpVendorInfo;
 };
 
+#define AF_INET 2
+#define SOCK_STREAM 1
+#define IPPROTO_TCP 6
+#define INVALID_SOCKET (~static_cast<SOCKET>(0))
+#define SOCKET_ERROR (-1)
+#define WSAEWOULDBLOCK 10035L
+#define WSAENETDOWN 10050L
+
+struct in_addr
+{
+    unsigned long s_addr;
+};
+struct sockaddr
+{
+    unsigned short sa_family;
+    char sa_data[14];
+};
+struct sockaddr_in
+{
+    short sin_family;
+    unsigned short sin_port;
+    in_addr sin_addr;
+    char sin_zero[8];
+};
+
 struct JOYINFOEX
 {
     DWORD dwSize;
@@ -461,6 +486,13 @@ int WINAPI WSACleanup();
 int WINAPI closesocket(SOCKET socket);
 int WINAPI WSAGetLastError();
 void WINAPI WSASetLastError(int error);
+SOCKET WINAPI socket(int af, int type, int protocol);
+int WINAPI connect(SOCKET socket, const sockaddr* name, int length);
+int WINAPI WSAAsyncSelect(SOCKET socket, HWND window, UINT message, LONG events);
+int WINAPI recvfrom(SOCKET socket, char* buffer, int length, int flags, sockaddr* from, int* fromLength);
+int WINAPI sendto(SOCKET socket, const char* buffer, int length, int flags, const sockaddr* to, int toLength);
+unsigned short WINAPI htons(unsigned short value);
+char* WINAPI inet_ntoa(in_addr address);
 
 // crt.cpp: the VC9 CRT's stdio array, which the modern CRT no longer exports.
 struct _iobuf;

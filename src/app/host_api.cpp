@@ -34,7 +34,7 @@ extern const char kWriteSimple[] = "g5::writeSimple";
 
 // The empty name getIdentificator returns for a non-IIdentifiable.
 // GLOBAL: VC1 0x004e9994
-KdString g_kdEmptyName;
+KdString g_kdEmptyName = KdEmptyText();
 
 // The null component the KdPtr<IUnknown> natives return on a failed cast.
 // GLOBAL: VC1 0x004ed70c

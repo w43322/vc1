@@ -9,7 +9,7 @@
 namespace vc1 {
 
 // GLOBAL: VC1 0x004ed6c0
-void* g_groupNotify;
+KdRef<IUnknown> g_groupNotify;
 
 // Inlined into ~KdSystemBase (0x00462900): extra then records.
 KdComponentGroup::~KdComponentGroup()
@@ -47,7 +47,7 @@ int KdComponentGroup::Shutdown()
             if (member) {
                 member->AddRef();
                 reinterpret_cast<FnSetGroup>((*reinterpret_cast<void***>(member))[4])(
-                    member, &g_groupNotify);
+                    member, &g_groupNotify.ptr);
             }
         }
         if (object) {
@@ -216,7 +216,7 @@ KdPtr<IUnknown> KdComponentGroup::FindObject(const KdString& name)
             }
             else {
                 absFound = found->QueryInterface(&g_iidAbstract);
-                absNotify = static_cast<IUnknown*>(g_groupNotify)->QueryInterface(
+                absNotify = static_cast<IUnknown*>(g_groupNotify.ptr)->QueryInterface(
                     &g_iidAbstract);
                 if (absFound != absNotify) {
                     take = 1;
@@ -235,7 +235,7 @@ KdPtr<IUnknown> KdComponentGroup::FindObject(const KdString& name)
         }
         group->Release();
     }
-    return KdPtr<IUnknown>(static_cast<IUnknown*>(g_groupNotify));
+    return KdPtr<IUnknown>(static_cast<IUnknown*>(g_groupNotify.ptr));
 }
 
 // RET 8. Removes key from the table; the object (IGroupMember notified with
@@ -264,7 +264,7 @@ KdPtr<IUnknown> KdComponentGroup::UnregisterObject(const KdString& name)
             if (member) {
                 member->AddRef();
                 reinterpret_cast<FnSetGroup>((*reinterpret_cast<void***>(member))[4])(
-                    member, &g_groupNotify);
+                    member, &g_groupNotify.ptr);
             }
             object->AddRef();
         }

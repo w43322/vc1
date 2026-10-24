@@ -22,10 +22,16 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e9974
+KdString g_kdSystemEmptyName = KdEmptyText();
+
 // GLOBAL: VC1 0x004ed620
 IAbstract* g_kdSystem;
 // GLOBAL: VC1 0x004ed6f8
-IUnknown* g_kdServices;
+KdRef<IUnknown> g_kdServices;
 extern Matrix3 g_displayMatrixInv; // display.cpp
 
 // STRING: VC1 0x004d4be4

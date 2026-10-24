@@ -82,6 +82,14 @@ static __int64 KdNow()
     return static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick);
 }
 
+// Inferred name (kdGetTimeUST): KdNow out of line. No callers in the game;
+// every user inlines KdNow.
+// FUNCTION: VC1 0x00486710
+__int64 KdGetTimeUST()
+{
+    return KdNow();
+}
+
 // kdCancelTimer's unlink. EDX=timer; the caller frees it.
 // FUNCTION: VC1 0x00486830
 void UnlinkTimer(KdTimer* timer)
@@ -161,6 +169,18 @@ int StatKdPath(const char* path, KdFileStat* out)
         }
     }
     return -1;
+}
+
+// ECX=file. Inferred name (kdFseek): the driver's seek, or -1 with errno
+// 0x11 without a file. No callers in the game; the users inline it.
+// FUNCTION: VC1 0x00486d80
+int KdFseek(KdFileHandle* file, long long offset, int origin)
+{
+    if (!file) {
+        errno = 0x11;
+        return -1;
+    }
+    return file->driver->seek(file->driver, file->native, offset, origin);
 }
 
 // Inferred name. ECX=file; fread over an OpenKdFile handle (driver+0x120).

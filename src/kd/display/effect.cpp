@@ -26,8 +26,16 @@ inline void Push(HSQUIRRELVM v, vc1::KdPtr<vc1::IEffectEmitter>& value)
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e9984
+KdString g_kdEffectEmptyName = KdEmptyText();
+// GLOBAL: VC1 0x004e99a4
+KdString g_kdEffectTargetEmptyName = KdEmptyText();
+
 extern PyroLibrary* g_displayPyro;      // display.cpp
-extern IUnknown* g_graphics;            // display.cpp
+extern KdRef<IUnknown> g_graphics;          // display.cpp
 extern const char kReadBinary[];        // display.cpp
 extern const char kScriptSetEnabled[];  // object_watcher.cpp
 bool IsRectVisible(const KdPtr<IGraphics>& graphics, const Rect& rect); // tile_manager.cpp
@@ -162,7 +170,7 @@ __declspec(noinline) IUnknown** SetGraphics(const KdPtr<IGraphics>& graphics)
         g_graphics->Release();
     }
     g_graphics = graphics.ptr;
-    return &g_graphics;
+    return &g_graphics.ptr;
 }
 
 // RET 4. Nine dwords into localMatrix.
@@ -391,7 +399,7 @@ int KdEffectEmitter::Render(void* graphics)
         if (IsRectVisible(target, rect)) {
             SetGraphics(target);
             emitter->Render();
-            AssignGraphics(&g_graphics, g_effectNoTarget);
+            AssignGraphics(&g_graphics.ptr, g_effectNoTarget);
         }
     }
     return 0;

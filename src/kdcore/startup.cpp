@@ -177,6 +177,14 @@ static int BarClose(KdObject* self, int handle)
     return 0;
 }
 
+// ECX=a, EAX=b. Inferred name. The name order of the archive index; inlined
+// into BarLowerBound, with an uncalled out-of-line copy (external linkage).
+// FUNCTION: VC1 0x0047c680
+bool BarNameLess(const char* a, const char* b)
+{
+    return _stricmp(a, b) < 0;
+}
+
 // ISzInStream::Seek. The position goes to KdFseek as a long.
 // FUNCTION: VC1 0x0047c6a0
 static SZ_RESULT BarStreamSeek(void* object, CFileSize position)
@@ -286,7 +294,7 @@ static CFileItem* BarLowerBound(CFileItem* first, CFileItem* last, const char* n
 {
     while (first != last) {
         CFileItem* const middle = first + (last - first) / 2;
-        if (_stricmp(middle->Name, name) < 0) {
+        if (BarNameLess(middle->Name, name)) {
             first = middle + 1;
         }
         else {
@@ -294,17 +302,6 @@ static CFileItem* BarLowerBound(CFileItem* first, CFileItem* last, const char* n
         }
     }
     return first;
-}
-
-// Inlined into BarStat and BarOpen: the sorted lookup, then a linear scan.
-static CFileItem* BarFind(CFileItem* first, CFileItem* last, const char* name)
-{
-    CFileItem* const item = BarLowerBound(first, last, name);
-
-    if (item != last && _stricmp(name, item->Name) >= 0) {
-        return item;
-    }
-    return BarFindLinear(first, last, name);
 }
 
 // SzArDbExFree inlined; the archive file is closed through its driver.
@@ -324,6 +321,20 @@ static void BarDestroy(KdObject* self)
     handle->driver->close(handle->driver, handle->native);
     free(handle);
     free(archive);
+}
+
+// The sorted lookup, then a linear scan. Inlined into BarStat and BarOpen;
+// the out-of-line copy (EAX=name, ECX=last, first on the stack) has no
+// callers, which external linkage reproduces under /OPT:NOREF.
+// FUNCTION: VC1 0x0047c950
+CFileItem* BarFind(CFileItem* first, CFileItem* last, const char* name)
+{
+    CFileItem* const item = BarLowerBound(first, last, name);
+
+    if (item != last && _stricmp(name, item->Name) >= 0) {
+        return item;
+    }
+    return BarFindLinear(first, last, name);
 }
 
 // FUNCTION: VC1 0x0047c9a0
@@ -876,16 +887,24 @@ static int KdConstructHttp(KdObject* object)
     return 0;
 }
 
-// QueryPerformanceFrequency -> ns/tick, srand(time64(0)), KD filesystem, SEH filter, WSA.
-// FUNCTION: VC1 0x00486aa0
-void InitTimingAndSeh()
+// Inferred name. QueryPerformanceFrequency -> ns/tick, srand(time64(0)).
+// Inlined into InitTimingAndSeh; the out-of-line copy has no callers.
+// FUNCTION: VC1 0x00486800
+void InitTiming()
 {
     LARGE_INTEGER freq;
 
-    AllocPrimaryTls();
     QueryPerformanceFrequency(&freq);
     g_nsPerTick = 1000000000.0 / static_cast<double>(freq.QuadPart);
     srand(static_cast<unsigned>(_time64(0)));
+}
+
+// Timing, KD filesystem, SEH filter, WSA.
+// FUNCTION: VC1 0x00486aa0
+void InitTimingAndSeh()
+{
+    AllocPrimaryTls();
+    InitTiming();
     InitKdFilesystem();
     SetUnhandledExceptionFilter(UnhandledExceptionFilter);
     StartupNetwork();

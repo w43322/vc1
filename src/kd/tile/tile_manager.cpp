@@ -20,6 +20,12 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed6fc
+KdRef<IUnknown> g_kdTileManagerNullObject;
+
 extern const char kScriptGetTexture[]; // resource_manager.cpp
 extern const char kReadBinary[];       // display.cpp
 
@@ -222,8 +228,8 @@ bool KdTileManager::HitTest(int tile, int x, int y, unsigned flags)
     if (target) {
         KdPtr<IGraphics> graphics;
         {
-            KdPtr<ICamera> camera(g_kdNullObject.ptr
-                ? static_cast<ICamera*>(g_kdNullObject.ptr->QueryInterface(&g_iidCamera)) : 0);
+            KdPtr<ICamera> camera(g_kdTileManagerNullObject.ptr
+                ? static_cast<ICamera*>(g_kdTileManagerNullObject.ptr->QueryInterface(&g_iidCamera)) : 0);
             target->BeginFrame(&graphics.ptr, &camera);
         }
         if (graphics.ptr) {
@@ -265,9 +271,9 @@ int KdTileManager::Shutdown()
 {
     IScriptInstanceReset* reset;
 
-    AssignFace(target, g_kdNullObject.ptr, &g_iidRenderTarget);
+    AssignFace(target, g_kdTileManagerNullObject.ptr, &g_iidRenderTarget);
     for (int i = 0; i < 0x400; ++i) {
-        AssignFace(textures[i], g_kdNullObject.ptr, &g_iidTexture);
+        AssignFace(textures[i], g_kdTileManagerNullObject.ptr, &g_iidTexture);
     }
     reset = &script;
     reset->Reset();

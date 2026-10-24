@@ -6,8 +6,8 @@
 
 namespace vc1 {
 
-extern const char* g_emptyCountedBegin;
-extern unsigned g_emptyCountedSize;
+// The shared empty name every IIdentifiable starts from (object_watcher.cpp).
+extern KdString g_kdEmptyIdentifiableName;
 
 // The +4 payload is the object's name, assigned from the shared empty string.
 // Default vftable: GetName (0x00401000, shared with other "return this+4"
@@ -19,7 +19,8 @@ struct IIdentifiable : IUnknown
 {
     KdString name;
 
-    IIdentifiable() : name(g_emptyCountedBegin, g_emptyCountedSize) {}
+    IIdentifiable()
+        : name(g_kdEmptyIdentifiableName.c_str(), g_kdEmptyIdentifiableName.size) {}
     virtual const KdString& GetName() { return name; }                // vtable+0x0c
     virtual void SetName(const KdString& value) { name.Assign(value); } // vtable+0x10
     virtual ~IIdentifiable() {}                                       // vtable+0x14

@@ -105,6 +105,8 @@ bool Compile(SQVM *vm, SQLEXREADFUNC rg, SQUserPointer up, const SQChar *sourcen
 // SQCompiler::BIN_EXP
 // FUNCTION: VC1 0x00411110
 // SQCompiler::LogicalOrExp
+// FUNCTION: VC1 0x00411220
+// SQCompiler::LogicalAndExp
 // FUNCTION: VC1 0x004113c0
 // SQCompiler::BitwiseOrExp
 // FUNCTION: VC1 0x004113f0

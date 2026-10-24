@@ -12,6 +12,12 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e988c
+KdString g_kdSceneEmptyName = KdEmptyText();
+
 int MemCompare(const void* left, const void* right, unsigned size);
 
 // STRING: VC1 0x004d4b80
@@ -27,7 +33,7 @@ KdRef<IUnknown> g_kdNullSceneIdentifier;
 
 // Inferred name. The identifier of a group without an IIdentifiable face.
 // GLOBAL: VC1 0x004e9630
-KdString g_kdEmptyIdentifier;
+KdString g_kdEmptyIdentifier = KdEmptyText();
 
 // STRING: VC1 0x004d5410
 static const char kObjectLoaded[] = "Object %s loaded";

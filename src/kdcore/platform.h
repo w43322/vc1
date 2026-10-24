@@ -164,8 +164,14 @@ void HostLogError(const char** prefix, const char* fmt, ...);
 void HostLogInfo(const char** prefix, const char* fmt, ...);
 extern unsigned g_kdLogTag;
 extern const char* g_kdLogPrefix;
-extern const char* g_emptyCountedBegin;
-extern unsigned g_emptyCountedSize;
+// Inferred name. +Inf as static data (0x7f800000), read where the original
+// loads +Inf from memory and copied by the per-file +Inf float initializers.
+union KdFloatBits
+{
+    unsigned bits;
+    float value;
+};
+extern KdFloatBits g_kdInfinity;
 
 
 // Opaque KD window service (kdcore/window.cpp); the native record is KdWindow.

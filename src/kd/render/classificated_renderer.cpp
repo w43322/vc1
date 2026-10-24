@@ -1,5 +1,6 @@
 #include "kd/render/classificated_renderer.h"
 
+#include "kdcore/platform.h"
 #include "kd/factory.h"
 #include "kd/iface/iid.h"
 
@@ -7,6 +8,18 @@
 #include <stdlib.h>
 
 namespace vc1 {
+
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed650
+KdRef<IUnknown> g_kdClassificatedNullObject;
+// GLOBAL: VC1 0x004e95fc
+KdString g_kdClassificatedEmptyName = KdEmptyText();
+// GLOBAL: VC1 0x004ed654
+float g_kdClassificatedDefaultStateWeight = g_kdInfinity.value;
+// GLOBAL: VC1 0x004ed658
+float g_kdClassificatedDefaultStatePhase = g_kdInfinity.value;
 
 // STRING: VC1 0x004cfcdc
 static const char kClassificatedRenderer[] = "ClassificatedRenderer";

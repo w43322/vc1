@@ -43,6 +43,7 @@ struct KdFileSource
     void Attach(const char* path, KdFileHandle* handle);
     void Close();
     unsigned Read(void* buffer, unsigned length);
+    unsigned Write(const void* data, unsigned length);
 };
 
 typedef char Vc1KdFileSourceSizeCheck[sizeof(KdFileSource) == 0x18 ? 1 : -1];
@@ -101,6 +102,47 @@ typedef char Vc1KdFileReaderSizeCheck[sizeof(KdFileReader) == 0x50 ? 1 : -1];
 
 // SYNTHETIC: VC1 0x0042e3a0
 // vc1::KdFileReader::`scalar deleting destructor'
+
+// Inferred names. The output side: (begin, size) is the writable window of
+// buffer, pos the bytes written so far. Never constructed in the game (no
+// constructor and no vftable store outside the destructor), so the base
+// vftable is gone and the layout of +0x24..+0x2b is unknown.
+// SIZE 0x2c
+class KdBufferOutStream : public KdRange
+{
+public:
+    unsigned short state;  // 0x0c  kStream* bits
+    unsigned short state2; // 0x0e
+    unsigned pos;          // 0x10
+    KdString buffer;       // 0x14
+    unsigned unknown24;    // 0x24
+    unsigned unknown28;    // 0x28
+
+    void Clear();                            // vtable+0x04
+    virtual unsigned Reserve(unsigned want); // vtable+0x08
+};
+
+typedef char Vc1KdBufferOutStreamSizeCheck[sizeof(KdBufferOutStream) == 0x2c ? 1 : -1];
+
+// Inferred name. Text file output stream: buffered bytes go to a
+// KdFileSource when the window is full and on Flush/destruction.
+// SIZE 0x44
+// VTABLE: VC1 0x004d7b7c
+class KdFileWriter : public KdBufferOutStream
+{
+public:
+    KdFileSource source; // 0x2c
+
+    ~KdFileWriter() throw();
+
+    unsigned Reserve(unsigned want); // vtable+0x08
+    KdFileWriter& Flush();
+};
+
+typedef char Vc1KdFileWriterSizeCheck[sizeof(KdFileWriter) == 0x44 ? 1 : -1];
+
+// SYNTHETIC: VC1 0x0042e380
+// vc1::KdFileWriter::`scalar deleting destructor'
 
 }
 

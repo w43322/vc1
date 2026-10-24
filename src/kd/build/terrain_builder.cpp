@@ -20,6 +20,14 @@ template<> void Push(HSQUIRRELVM v, vc1::KdObjArray<vc1::Vector2>& value);
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed698
+KdRef<IUnknown> g_kdTerrainBuilderNullObject;
+// GLOBAL: VC1 0x004e96a0
+KdString g_kdTerrainBuilderEmptyName = KdEmptyText();
+
 // STRING: VC1 0x004cfd60
 static const char kTerrainBuilder[] = "TerrainBuilder";
 // GLOBAL: VC1 0x004d0b08
@@ -124,11 +132,11 @@ static inline void ResetToNullObject(KdRef<T>& slot)
     if (slot.ptr) {
         slot.ptr->Release();
     }
-    if (!g_kdNullObject.ptr) {
+    if (!g_kdTerrainBuilderNullObject.ptr) {
         slot.ptr = 0;
         return;
     }
-    slot.ptr = static_cast<T*>(g_kdNullObject.ptr->QueryInterface(KdIid<T>::Get()));
+    slot.ptr = static_cast<T*>(g_kdTerrainBuilderNullObject.ptr->QueryInterface(KdIid<T>::Get()));
     if (slot.ptr) {
         slot.ptr->AddRef();
     }

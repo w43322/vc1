@@ -58,7 +58,7 @@ public:
 
 typedef char Vc1KdComponentGroupSizeCheck[sizeof(KdComponentGroup) == 0x24 ? 1 : -1];
 
-extern void* g_groupNotify;
+extern KdRef<IUnknown> g_groupNotify;
 
 __declspec(noinline) unsigned char RecordEq(void* key, void* record);
 IUnknown** InsertCountedSlot(void* key, void* factory) throw();

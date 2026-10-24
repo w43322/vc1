@@ -11,6 +11,12 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e98ac
+KdString g_kdInputGroupEmptyName = KdEmptyText();
+
 // Inferred name. Factory "InputGroup": offers key and pointer events to its
 // IInputHandler members in insertion order until one consumes it.
 // SIZE 0x34

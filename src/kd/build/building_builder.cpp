@@ -16,6 +16,12 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e95d8
+KdString g_kdBuildingBuilderEmptyName = KdEmptyText();
+
 // STRING: VC1 0x004cfd30
 static const char kBuildingBuilder[] = "BuildingBuilder";
 // GLOBAL: VC1 0x004d0b14

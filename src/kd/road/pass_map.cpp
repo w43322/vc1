@@ -13,6 +13,14 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed68c
+KdRef<IUnknown> g_kdPassMapNullObject;
+// GLOBAL: VC1 0x004e9670
+KdString g_kdPassMapEmptyName = KdEmptyText();
+
 // STRING: VC1 0x004cfd7c
 static const char kPassMap[] = "PassMap";
 // GLOBAL: VC1 0x004d0b00

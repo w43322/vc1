@@ -14,6 +14,14 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed6b8
+KdRef<IUnknown> g_kdCompoundFaceNullObject;
+// GLOBAL: VC1 0x004e985c
+KdString g_kdCompoundEmptyName = KdEmptyText();
+
 
 // STRING: VC1 0x004d4b90
 static const char kCompoundObject[] = "CompoundObject";

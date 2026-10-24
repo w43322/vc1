@@ -41,12 +41,17 @@ set(LIBPNG_DEFINITIONS
   PNG_NO_READ_tEXt PNG_NO_READ_tIME
   PNG_NO_WRITE_TRANSFORMS PNG_NO_WRITE_ANCILLARY_CHUNKS PNG_NO_WRITE_FLUSH
   PNG_NO_WRITE_WEIGHTED_FILTER)
+# MY_ZCALLOC: the game's zcalloc/zcfree are in src/memory/global_new.cpp.
 set_source_files_properties(${ZLIB_SOURCES} PROPERTIES
   INCLUDE_DIRECTORIES "${ZLIB_ROOT}"
+  COMPILE_DEFINITIONS "MY_ZCALLOC"
   COMPILE_FLAGS "/wd4131 /wd4244 /wd4996")
 set_source_files_properties(${LIBPNG_SOURCES} PROPERTIES
   INCLUDE_DIRECTORIES "${LIBPNG_ROOT};${ZLIB_ROOT}"
   COMPILE_DEFINITIONS "${LIBPNG_DEFINITIONS}"
   COMPILE_FLAGS "/wd4131 /wd4244 /wd4996")
+# The game's libpng reads files through the KD layer (src/kdcore/kd_stdio_c.h).
+set_property(SOURCE ${LIBPNG_ROOT}/pngrio.c APPEND PROPERTY COMPILE_OPTIONS
+  "/FI${PROJECT_SOURCE_DIR}/src/kdcore/kd_stdio_c.h")
 set_source_files_properties(${PROJECT_SOURCE_DIR}/src/pyro/pyro_image.cpp PROPERTIES
   COMPILE_DEFINITIONS "${LIBPNG_DEFINITIONS}")

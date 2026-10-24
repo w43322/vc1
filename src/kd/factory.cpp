@@ -16,7 +16,7 @@ KdFactory g_kdFactory;
 // GLOBAL: VC1 0x004ee72c
 unsigned g_kdFactoryGuard;
 // GLOBAL: VC1 0x004ed6d4
-IUnknown* g_kdDefaultUnknown;
+KdRef<IUnknown> g_kdDefaultUnknown;
 
 // FUNCTION: VC1 0x00401f70
 void KdFactory::Clear()

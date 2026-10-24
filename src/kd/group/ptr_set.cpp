@@ -9,6 +9,12 @@
 
 namespace vc1 {
 
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004e987c
+KdString g_kdPtrSetEmptyName = KdEmptyText();
+
 // The null KdPtr the groups compare new members against (destroyed at exit
 // by 0x004ca850). Inferred name.
 // GLOBAL: VC1 0x004ed6d0

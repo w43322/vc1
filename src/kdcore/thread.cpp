@@ -31,6 +31,18 @@ void* KdThreadStart(void* thread)
     return result;
 }
 
+// ESI=thread. Inferred name (kdThreadJoin). Joins and frees the record;
+// -1 if the join fails. No callers in the game.
+// FUNCTION: VC1 0x0047bdc0
+int KdThreadJoin(KdThread* thread, void** result)
+{
+    if (pthread_join(thread->handle, result)) {
+        return -1;
+    }
+    free(thread);
+    return 0;
+}
+
 // Called first by InitTimingAndSeh: the static pthreads-win32 needs its
 // process attach, then the two KD keys.
 // FUNCTION: VC1 0x0047bdf0

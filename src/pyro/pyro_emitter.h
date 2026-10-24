@@ -174,18 +174,23 @@ struct PyroParticle
 
 // Fixed-size block allocator for particles (0xec bytes, 64 per block).
 // SIZE 0x10
+void PyroParticleFreeAll();
+
+// Still an aggregate (statically initialized); its atexit destructor
+// (0x004cb4d0) tail-jumps to PyroParticleFreeAll.
 struct PyroParticlePool
 {
     int elementSize; // 0x00
     int blockCount;  // 0x04
     void* blocks;    // 0x08
     void* freeList;  // 0x0c
+
+    ~PyroParticlePool() { PyroParticleFreeAll(); }
 };
 
 extern PyroParticlePool g_pyroParticlePool;
 
 void* PyroParticleAlloc();
-void PyroParticleFreeAll();
 
 // SIZE 0x0c
 struct PyroVec3

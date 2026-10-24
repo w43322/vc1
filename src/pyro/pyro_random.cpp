@@ -165,17 +165,25 @@ void PyroRandom::Seed(unsigned seed)
     }
 }
 
+// Inferred name. Seeds from the clock (QPC in nanoseconds). Inlined into the
+// constructor; the out-of-line copy has no callers.
+// FUNCTION: VC1 0x0044d9a0
+void PyroRandom::Randomize()
+{
+    LARGE_INTEGER qpc;
+
+    QueryPerformanceCounter(&qpc);
+    Seed(static_cast<unsigned>(static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)));
+}
+
 // Out of line for the PyroGetRandom static only: this is the constant
 // 0x004ed878 and EAX returns it.
 // FUNCTION: VC1 0x0044d9d0
 PyroRandom::PyroRandom()
 {
-    LARGE_INTEGER qpc;
-
     first = state;
     second = state + 1;
-    QueryPerformanceCounter(&qpc);
-    Seed(static_cast<unsigned>(static_cast<__int64>(static_cast<double>(qpc.QuadPart) * g_nsPerTick)));
+    Randomize();
 }
 
 }

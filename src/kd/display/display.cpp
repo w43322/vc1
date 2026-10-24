@@ -93,17 +93,17 @@ float g_d3dView[16];
 // GLOBAL: VC1 0x004e9900
 float g_d3dProj[16];
 // GLOBAL: VC1 0x004ed700
-IUnknown* g_displayScene;
+KdRef<IUnknown> g_displayScene;
 // GLOBAL: VC1 0x004ed6ec
-IUnknown* g_graphicsQuery;
+KdRef<IUnknown> g_graphicsQuery;
 // GLOBAL: VC1 0x004ed628
 PyroLibrary* g_displayPyro;
 // GLOBAL: VC1 0x004ed65c
-IUnknown* g_kdQueryUnknown;
+KdRef<IUnknown> g_kdQueryUnknown;
 // GLOBAL: VC1 0x004ed6f0
-IUnknown* g_graphics;
+KdRef<IUnknown> g_graphics;
 // GLOBAL: VC1 0x004ed6f4
-IUnknown* g_graphicsHost;
+KdRef<IUnknown> g_graphicsHost;
 // GLOBAL: VC1 0x004e74b6
 bool g_displaySkipDevice;
 // GLOBAL: VC1 0x004e8744
@@ -1567,11 +1567,11 @@ int KdDisplayDevice::DrawQuadBuffer(PyroDeviceBuffer* buffer, int first, int cou
         }
         texture.ptr = static_cast<KdPyroTexture*>(pyroTexture)->texture.ptr;
     }
-    const unsigned mode = static_cast<IGraphics*>(g_graphics)->GetMode();
-    static_cast<IGraphics*>(g_graphics)->SetMode(mode18);
-    static_cast<IGraphics*>(g_graphics)->DrawQuads(texture,
+    const unsigned mode = static_cast<IGraphics*>(g_graphics.ptr)->GetMode();
+    static_cast<IGraphics*>(g_graphics.ptr)->SetMode(mode18);
+    static_cast<IGraphics*>(g_graphics.ptr)->DrawQuads(texture,
         static_cast<unsigned char*>(buffer->GetData()) + first * 0x60, count);
-    static_cast<IGraphics*>(g_graphics)->SetMode(mode);
+    static_cast<IGraphics*>(g_graphics.ptr)->SetMode(mode);
     return 0;
 }
 

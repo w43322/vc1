@@ -41,12 +41,6 @@ const char* KdResourceManager::GetTypeName()
     return kResourceManager;
 }
 
-// Inlined into the scalar deleting destructor (0x00417920).
-KdResourceManager::~KdResourceManager() throw()
-{
-    g_kdResourceManager = 0;
-}
-
 // EDI=out. Factory "ResourceManager" as IResourceManager (AddRef'd), or null.
 // FUNCTION: VC1 0x00418010
 IResourceManager** GetKdResourceManager(IResourceManager** out)
@@ -137,6 +131,14 @@ static KdPtr<IUnknown> LoadResource(KdResourceManager* manager, KdPtr<IUnknown>&
     KdPtr<IUnknown> loaded(object.ptr);
     loadable->Release();
     return loaded;
+}
+
+// Inlined into the scalar deleting destructor (0x00417920); the out-of-line
+// copy has no callers.
+// FUNCTION: VC1 0x0046d700
+KdResourceManager::~KdResourceManager() throw()
+{
+    g_kdResourceManager = 0;
 }
 
 // EAX=this. The group starts empty, refs at 1.

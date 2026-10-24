@@ -63,8 +63,6 @@ char g_resourceLocale[8];
 // GLOBAL: VC1 0x004ed9d0
 char g_scriptPrintBuf[0x400];
 
-// GLOBAL: VC1 0x004e9740
-HSQOBJECT g_sqNull = { OT_NULL, { 0 } };
 
 // Its atexit destructor is 0x004ca490.
 // GLOBAL: VC1 0x004e96e0
@@ -76,7 +74,7 @@ unsigned g_runScratch0;
 // GLOBAL: VC1 0x004e9d98
 unsigned g_runScratch1;
 // GLOBAL: VC1 0x004ed660
-void* g_serviceUnknown;
+KdRef<IUnknown> g_serviceUnknown;
 
 // GLOBAL: VC1 0x004e89a8
 HMODULE g_dbghelp = reinterpret_cast<HMODULE>(-1);

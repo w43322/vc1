@@ -30,6 +30,15 @@ KdFileReader::~KdFileReader() throw()
 {
 }
 
+// ECX=this. Slot 1 of KdFileWriter's vftable.
+// FUNCTION: VC1 0x004b8780
+void KdBufferOutStream::Clear()
+{
+    begin = 0;
+    size = 0;
+    pos = 0;
+}
+
 // Slot 1 of both stream vftables.
 // FUNCTION: VC1 0x004b8790
 void KdBufferStream::Clear()
@@ -148,6 +157,37 @@ KdBufferStream& KdBufferStream::ReadLine(KdString& out)
     return *this;
 }
 
+// this on the stack, EBX=data, EDI=length, RET 4. driver->write(driver, rest,
+// left, 1, native) until everything is written. Returns the bytes written;
+// a short write sets kStreamFail, zero bytes kStreamEof as well; no file sets
+// errno 0x11 too.
+// FUNCTION: VC1 0x004bc2d0
+unsigned KdFileSource::Write(const void* data, unsigned length)
+{
+    unsigned left = length;
+    int count;
+
+    while (left) {
+        if (!file) {
+            errno = 0x11;
+            state |= kStreamEof | kStreamFail;
+            return length - left;
+        }
+        count = file->driver->write(file->driver,
+            static_cast<const char*>(data) + (length - left), left, 1, file->native);
+        if (count < 1) {
+            if (count == 0) {
+                state |= kStreamEof | kStreamFail;
+                return length - left;
+            }
+            state |= kStreamFail;
+            break;
+        }
+        left -= count;
+    }
+    return length - left;
+}
+
 // EBX=this, EDI=buffer, ESI=length. driver->read(driver, buffer, 1, length,
 // native), retried while negative. Zero bytes sets kStreamEof | kStreamFail;
 // no file sets errno 0x11 as well.
@@ -211,6 +251,27 @@ void KdFileSource::Attach(const char* path, KdFileHandle* handle)
     file = handle;
 }
 
+// ESI=this, returns this. Writes out the buffer while the stream is clean,
+// then flushes the file; the source state becomes the stream state.
+// FUNCTION: VC1 0x004bc8f0
+KdFileWriter& KdFileWriter::Flush()
+{
+    state = 0;
+    source.state = 0;
+    while (state == 0 && pos != 0 && Reserve(size - pos) != 0) {
+    }
+    if (!source.file) {
+        errno = 0x11;
+        source.state |= kStreamFail;
+    }
+    else if (source.file->driver->flush(source.file->driver, source.file->native)) {
+        source.state |= kStreamFail;
+    }
+    state = source.state;
+    source.state = state;
+    return *this;
+}
+
 // RET 4. Unless at end of file: drops consumed bytes in block-size steps,
 // grows the buffer when fewer than want bytes fit, then reads until want more
 // bytes are buffered or the source stops. Returns the bytes now available.
@@ -270,6 +331,37 @@ unsigned KdFileReader::Fill(unsigned want)
     return end - kept;
 }
 
+// RET 4. Room for want more bytes: unless at end of file, when they would
+// not fit the window or the buffer could not hold them anyway, writes the
+// pending bytes to the file first and drops what was written; then grows
+// the buffer if still short. Returns the room left.
+// FUNCTION: VC1 0x004bcac0
+unsigned KdFileWriter::Reserve(unsigned want)
+{
+    if (!(state & kStreamEof) && (want <= size - pos ||
+            want >= buffer.capacity - (buffer.capacity != 0) - pos)) {
+        const unsigned written = source.Write(begin, pos);
+        pos -= written;
+        state = source.state;
+        source.state = state;
+        EraseCountedBytes(begin, reinterpret_cast<char*>(begin) + written,
+            reinterpret_cast<char*>(begin) + size);
+        if (size - pos < want) {
+            KdBufferOutStream::Reserve(want);
+        }
+        return size - pos;
+    }
+    return KdBufferOutStream::Reserve(want);
+}
+
+// ECX=this. Flushes, then the members: source (Close, then its name) and
+// buffer.
+// FUNCTION: VC1 0x004bcb50
+KdFileWriter::~KdFileWriter() throw()
+{
+    Flush();
+}
+
 // RET 8 (this and path on the stack). Opens path "rt" through OpenKdFile into
 // a zero-filled 0xff-byte buffer.
 // FUNCTION: VC1 0x004bcbe0
@@ -283,6 +375,29 @@ KdFileReader::KdFileReader(const char* path) throw()
     Clear();
     begin = buffer.begin;
     size = 0;
+}
+
+// ECX=this, RET 4. Grows the buffer to pos + want bytes and makes all of it
+// the window, keeping pos; still short sets kStreamFail (and kStreamEof when
+// nothing fits). Returns the room left.
+// FUNCTION: VC1 0x004bdcc0
+unsigned KdBufferOutStream::Reserve(unsigned want)
+{
+    const unsigned written = pos;
+
+    if (size - written < want) {
+        const unsigned target = want + written;
+        GrowCountedBuffer(&buffer, static_cast<int>(target), 0);
+        buffer.Resize(target);
+        Clear();
+        begin = buffer.begin;
+        size = buffer.size;
+        pos = written;
+    }
+    if (size - pos < want) {
+        state |= (size - pos == 0 ? kStreamEof : 0) | kStreamFail;
+    }
+    return size - pos;
 }
 
 }

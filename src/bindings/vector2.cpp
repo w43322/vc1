@@ -1,6 +1,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "value_types.h"
+#include "kdcore/platform.h"
 #include "kd/factory.h"
 
 #include <math.h>
@@ -107,12 +108,8 @@ Vector2 Vector2::Lerp(const Vector2& a, const Vector2& b, SQFloat t)
 // FUNCTION: VC1 0x004286e0
 bool Vector2::IsValid() const
 {
-    union {
-        unsigned bits;
-        SQFloat value;
-    } inf;
-    inf.bits = 0x7f800000;
-    return x > -inf.value && x < inf.value && y > -inf.value && y < inf.value;
+    return x > -g_kdInfinity.value && x < g_kdInfinity.value && y > -g_kdInfinity.value &&
+        y < g_kdInfinity.value;
 }
 
 // Bound as "Equal" (0x004d72c4) via 0x00420e80 from 0x004c082d; the

@@ -1,5 +1,6 @@
 #include "kd/scene/camera.h"
 
+#include "kdcore/platform.h"
 #include "bindings/component.h"
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
@@ -10,6 +11,18 @@
 #include <stdlib.h>
 
 namespace vc1 {
+
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed644
+KdRef<IUnknown> g_kdCameraNullObject;
+// GLOBAL: VC1 0x004e95e8
+KdString g_kdCameraEmptyName = KdEmptyText();
+// GLOBAL: VC1 0x004ed648
+float g_kdCameraDefaultStateWeight = g_kdInfinity.value;
+// GLOBAL: VC1 0x004ed64c
+float g_kdCameraDefaultStatePhase = g_kdInfinity.value;
 
 float RoundToNearest(float value);
 

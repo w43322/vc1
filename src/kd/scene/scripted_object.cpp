@@ -1,6 +1,7 @@
 #include "kd/scene/scripted_object.h"
 
 #include "kd/iface/iid.h"
+#include "kdcore/platform.h"
 #include "kd/factory.h"
 #include "bindings/component.h"
 #include "sqplus/SquirrelVM.h"
@@ -10,6 +11,14 @@
 #include <stdlib.h>
 
 namespace vc1 {
+
+// Per-file statics from the original's dynamic initializer table (inferred
+// names and file; order follows the table): a null object, an empty name
+// and, in the ScriptedObject files, two +Inf state defaults.
+// GLOBAL: VC1 0x004ed6c4
+KdRef<IUnknown> g_kdScriptedNullObject;
+// GLOBAL: VC1 0x004e986c
+KdString g_kdScriptedEmptyName = KdEmptyText();
 
 // STRING: VC1 0x004d4b68
 static const char kScriptedObject[] = "ScriptedObject";
@@ -33,11 +42,11 @@ extern const char kScriptGetStateWeight[] = "GetStateWeight";
 extern const char kScriptGetRenderLayer[] = "GetRenderLayer";
 
 // Inferred names. Dynamic initializers 0x004c9430 / 0x004c9440 copy +Inf
-// (the CRT's _FInf at 0x004e95cc): what a script without the member reports.
+// (g_kdInfinity at 0x004e95cc): what a script without the member reports.
 // GLOBAL: VC1 0x004ed6c8
-float g_kdDefaultStateWeight = std::numeric_limits<float>::infinity();
+float g_kdDefaultStateWeight = g_kdInfinity.value;
 // GLOBAL: VC1 0x004ed6cc
-float g_kdDefaultStatePhase = std::numeric_limits<float>::infinity();
+float g_kdDefaultStatePhase = g_kdInfinity.value;
 
 // The Component object a script member runs with as `this`: the counted
 // IAbstract face (QI'd twice, as every caller inlines it), pushed through

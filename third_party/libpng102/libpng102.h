@@ -71,6 +71,8 @@
 // FUNCTION: VC1 0x004483f0
 // png_error
 
+// FUNCTION: VC1 0x00448410
+// png_chunk_warning
 // FUNCTION: VC1 0x00448450
 // png_chunk_error
 
@@ -134,6 +136,8 @@
 // FUNCTION: VC1 0x004b40f0
 // png_malloc
 
+// FUNCTION: VC1 0x004b4130
+// png_default_read_data
 // FUNCTION: VC1 0x004b4180
 // png_set_read_fn
 

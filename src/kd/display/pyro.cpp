@@ -6,19 +6,6 @@
 
 namespace vc1 {
 
-// Inlined into the scalar deleting destructor (0x0042ed40).
-PyroLibrary::~PyroLibrary()
-{
-    if (vertices) {
-        delete[] vertices;
-        vertices = 0;
-    }
-    if (vertexBuffer) {
-        delete vertexBuffer;
-        vertexBuffer = 0;
-    }
-}
-
 // FUNCTION: VC1 0x00450080
 void PyroLibrary::Done()
 {
@@ -42,6 +29,21 @@ void PyroLibrary::Init(IPyroDevice* value)
     vertexCursor = 0;
     value->CreateVertexBuffer(&vertexBuffer, 0x800, 0x18, 0x10009, 0);
     vertices = new PyroVertex[capacity * 4];
+}
+
+// Inlined into the scalar deleting destructor (0x0042ed40); the out-of-line
+// copy has no callers.
+// FUNCTION: VC1 0x00453670
+PyroLibrary::~PyroLibrary()
+{
+    if (vertices) {
+        delete[] vertices;
+        vertices = 0;
+    }
+    if (vertexBuffer) {
+        delete vertexBuffer;
+        vertexBuffer = 0;
+    }
 }
 
 // RET 4. LoadFile over a named file (PyroCFile); nothing calls it.

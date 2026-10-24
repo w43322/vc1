@@ -19,7 +19,7 @@ namespace vc1 {
 struct SocketNode
 {
     SOCKET socket;      // +0x00
-    unsigned unused04;  // +0x04
+    void* handler;      // +0x04 event callback, passed as the event userptr
     SocketNode* prev;   // +0x08
     SocketNode* next;   // +0x0c
 };
@@ -71,11 +71,10 @@ extern void* g_kdPath1;           // 0x004ed4ec
 extern void* g_kdPath2;           // 0x004ed4f4
 extern char g_resourceLocale[8];  // 0x004ed504
 extern char g_scriptPrintBuf[0x400];  // 0x004ed9d0
-extern HSQOBJECT g_sqNull;        // 0x004e9740
 extern char g_windowsVersionText[0x80]; // 0x004eb050
 extern unsigned g_runScratch0;    // 0x004e9d94
 extern unsigned g_runScratch1;    // 0x004e9d98
-extern void* g_serviceUnknown;    // 0x004ed660
+extern KdRef<IUnknown> g_serviceUnknown;    // 0x004ed660
 
 extern HMODULE g_dbghelp;         // 0x004e89a8, starts as -1
 extern FARPROC g_MiniDumpWriteDump;
@@ -188,8 +187,6 @@ int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 // 0x004969f0; EDX=buf, stack fmt then varargs; cap is 0xffffffff
 void FormatBufferOpen(char* buf, const char* fmt, ...);
 extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
-extern const char* g_emptyCountedBegin;
-extern unsigned g_emptyCountedSize;
 // 0x00496a10; EBX=fmt, EDI=args
 void KdLogV(const char* fmt, va_list args);
 // 0x00496a40

@@ -72,6 +72,8 @@ static void DefaultEventCallback(const KdEvent* event)
 KdCallback g_kdDefaultCallback = { DefaultEventCallback, 0, 0, 0, 0 };
 // GLOBAL: VC1 0x004e95c8
 KdCallback* g_kdCallbacks = &g_kdDefaultCallback;
+// GLOBAL: VC1 0x004e95cc
+KdFloatBits g_kdInfinity = { 0x7f800000 };
 
 // Unlink heap nodes whose +0x28 owner matches EBX. Used by socket shutdown.
 // FUNCTION: VC1 0x004963b0
