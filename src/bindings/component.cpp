@@ -137,11 +137,11 @@ bool ComponentCursorIs(const char* key)
     unsigned length;
 
     if (!key) {
-        key = "";
+        key = KdEmptyText();
     }
     length = static_cast<unsigned>(strlen(key));
     if (*reinterpret_cast<unsigned*>(g_componentCursor + 8) == length
-        && MemCompare(key, *reinterpret_cast<const char**>(g_componentCursor + 4), length) == 0) {
+        && MemCompare(*reinterpret_cast<const char**>(g_componentCursor + 4), key, length) == 0) {
         return true;
     }
     return false;

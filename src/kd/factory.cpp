@@ -840,21 +840,4 @@ void DestroyKdFactory()
     g_kdFactory.Clear();
 }
 
-IUnknown* AcquireNamed(const char** factoryName, const char** iid)
-{
-    void* unknown = 0;
-    IUnknown* typed;
-    GetKdFactory()->QueryNamed(&unknown, factoryName);
-    if (!unknown) {
-        return 0;
-    }
-    typed = static_cast<IUnknown*>(
-        static_cast<IUnknown*>(unknown)->QueryInterface(iid));
-    if (typed) {
-        typed->AddRef();
-    }
-    static_cast<IUnknown*>(unknown)->Release();
-    return typed;
-}
-
 }

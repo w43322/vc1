@@ -509,8 +509,9 @@ void ScriptEnableCursor(int cursor, bool enable)
     }
 }
 
+// The original keeps this out of line in its only caller, RunApp.
 // FUNCTION: VC1 0x004bdc50
-void RegisterStdBindings()
+__declspec(noinline) void RegisterStdBindings()
 {
     // STRING: VC1 0x004d0d20
     SqPlus::RegisterGlobal(SquirrelVM::_VM, &ScriptProfilerReset, "profilerReset");

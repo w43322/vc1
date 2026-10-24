@@ -75,10 +75,7 @@ unsigned char RecordEq(void* key, void* record)
     recLen = *reinterpret_cast<unsigned*>(static_cast<unsigned char*>(record) + 8);
     lenCmp = static_cast<int>(keyLen) - static_cast<int>(recLen);
     lenCmp = (lenCmp > 0) - (lenCmp < 0);
-    n = keyLen;
-    if (recLen < n) {
-        n = recLen;
-    }
+    n = keyLen < recLen ? keyLen : recLen;
     cmp = MemCompare(
         *reinterpret_cast<void**>(static_cast<unsigned char*>(key) + 4),
         *reinterpret_cast<void**>(static_cast<unsigned char*>(record) + 4),

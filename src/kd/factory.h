@@ -490,7 +490,24 @@ inline KdPtr<IUnknown> QueryKdComponent(const char** name)
 }
 void** QueryKdFactory(void** out, const char** name);
 void DestroyKdFactory();
-IUnknown* AcquireNamed(const char** factoryName, const char** iid);
+// Inferred name. The named component's iid face with its own reference, 0
+// when the factory has none. No original address: always inlined.
+inline IUnknown* AcquireNamed(const char** factoryName, const char** iid)
+{
+    void* unknown;
+    IUnknown* typed;
+
+    GetKdFactory()->QueryNamed(&unknown, factoryName);
+    if (!unknown) {
+        return 0;
+    }
+    typed = static_cast<IUnknown*>(static_cast<IUnknown*>(unknown)->QueryInterface(iid));
+    if (typed) {
+        typed->AddRef();
+    }
+    static_cast<IUnknown*>(unknown)->Release();
+    return typed;
+}
 
 }
 

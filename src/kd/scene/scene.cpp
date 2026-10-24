@@ -18,7 +18,7 @@ namespace vc1 {
 // GLOBAL: VC1 0x004e988c
 KdString g_kdSceneEmptyName = KdEmptyText();
 
-int MemCompare(const void* left, const void* right, unsigned size);
+extern "C" int MemCompare(const void* left, const void* right, unsigned size);
 
 // STRING: VC1 0x004d4b80
 static const char kScene[] = "Scene";

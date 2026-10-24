@@ -119,7 +119,9 @@ void SquirrelObject::ArrayAppend(const SquirrelObject &o)
 	}
 }
 
-void SquirrelObject::AttachToStackObject(int idx)
+// VC1: out of line at every call site in the original (0x0049aaa0); LTCG
+// would inline it into InitScriptEngine.
+__declspec(noinline) void SquirrelObject::AttachToStackObject(int idx)
 {
 	HSQOBJECT t;
 	sq_getstackobj(SquirrelVM::_VM,idx,&t);

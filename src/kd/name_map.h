@@ -8,7 +8,7 @@
 
 namespace vc1 {
 
-int MemCompare(const void* left, const void* right, unsigned size);
+extern "C" int MemCompare(const void* left, const void* right, unsigned size);
 
 // Inferred name. Array of 0x10-byte KdFactory-based elements (KdArray<int>)
 // in a KdFactory buffer. Unlike KdArray, every slot up to capacity is

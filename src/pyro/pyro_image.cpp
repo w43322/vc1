@@ -299,6 +299,9 @@ struct PyroDdsHeader
 
 typedef char Vc1PyroDdsHeaderSizeCheck[sizeof(PyroDdsHeader) == 0x80 ? 1 : -1];
 
+// DevIL IL_MAX.
+#define PYRO_DDS_MAX(a, b) ((a) > (b) ? (a) : (b))
+
 // DevIL's compressed formats.
 enum {
     kDdsArgb = 0,
@@ -311,23 +314,32 @@ enum {
     kDdsUnknown = 7
 };
 
-// A 5:6:5 colour as r, g, b, a bytes (DXTReadColor, low bits dropped).
-static void PyroDdsReadColor(unsigned short data, unsigned char* out)
+// DevIL Color8888.
+struct PyroDdsColor
 {
-    out[0] = static_cast<unsigned char>((data >> 8) & 0xf8);
-    out[1] = static_cast<unsigned char>((data >> 5) << 2);
-    out[2] = static_cast<unsigned char>(data << 3);
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+};
+
+// DevIL DxtcReadColor: a 5:6:5 colour, low bits dropped.
+static void PyroDdsReadColor(unsigned short data, PyroDdsColor* out)
+{
+    out->r = static_cast<unsigned char>((data >> 8) & 0xf8);
+    out->g = static_cast<unsigned char>((data >> 5) << 2);
+    out->b = static_cast<unsigned char>(data << 3);
 }
 
-// colours[2] and [3] of a four-colour block.
-static void PyroDdsMixColors(unsigned char* colours)
+// colours[2] and [3] of a four-colour block, in DevIL's b, g, r order.
+static void PyroDdsMixColors(PyroDdsColor* colours)
 {
-    int c;
-
-    for (c = 0; c < 3; ++c) {
-        colours[8 + c] = static_cast<unsigned char>((2 * colours[c] + colours[4 + c] + 1) / 3);
-        colours[12 + c] = static_cast<unsigned char>((colours[c] + 2 * colours[4 + c] + 1) / 3);
-    }
+    colours[2].b = static_cast<unsigned char>((2 * colours[0].b + colours[1].b + 1) / 3);
+    colours[2].g = static_cast<unsigned char>((2 * colours[0].g + colours[1].g + 1) / 3);
+    colours[2].r = static_cast<unsigned char>((2 * colours[0].r + colours[1].r + 1) / 3);
+    colours[3].b = static_cast<unsigned char>((colours[0].b + 2 * colours[1].b + 1) / 3);
+    colours[3].g = static_cast<unsigned char>((colours[0].g + 2 * colours[1].g + 1) / 3);
+    colours[3].r = static_cast<unsigned char>((colours[0].r + 2 * colours[1].r + 1) / 3);
 }
 
 // DevIL CorrectPreMult over the decoded pixels.
@@ -353,7 +365,8 @@ static void PyroDdsCorrectPreMult(PyroImage* image)
 static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
 {
     PyroDdsHeader header;
-    unsigned char colours[16];
+    PyroDdsColor colours[4];
+    const PyroDdsColor* col;
     unsigned char alphas[8];
     int format;
     unsigned size;
@@ -430,19 +443,17 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
         switch (format) {
         case kDdsArgb:
         case kDdsRgb:
-            header.linearSize = (header.rgbBitCount >> 3) * (header.height ? header.height : 1)
-                * (header.width ? header.width : 1);
+            header.linearSize = PYRO_DDS_MAX(1, header.width) * PYRO_DDS_MAX(1, header.height)
+                * (header.rgbBitCount >> 3);
             break;
         case kDdsDxt1:
-            header.linearSize = ((header.height >> 2) ? header.height >> 2 : 1)
-                * ((header.width >> 2) ? header.width >> 2 : 1) * 8;
+            header.linearSize = PYRO_DDS_MAX(1, header.width >> 2) * PYRO_DDS_MAX(1, header.height >> 2) * 8;
             break;
         case kDdsDxt2:
         case kDdsDxt3:
         case kDdsDxt4:
         case kDdsDxt5:
-            header.linearSize = ((header.height >> 2) ? header.height >> 2 : 1)
-                * ((header.width >> 2) ? header.width >> 2 : 1) * 16;
+            header.linearSize = PYRO_DDS_MAX(1, header.width >> 2) * PYRO_DDS_MAX(1, header.height >> 2) * 16;
             break;
         }
         header.flags1 |= 0x80000;
@@ -533,32 +544,33 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
 
                     src += 8;
                     PyroDdsReadColor(color0, colours);
-                    PyroDdsReadColor(color1, colours + 4);
-                    colours[3] = 0xff;
-                    colours[7] = 0xff;
-                    colours[11] = 0xff;
+                    PyroDdsReadColor(color1, colours + 1);
+                    colours[0].a = 0xff;
+                    colours[1].a = 0xff;
+                    colours[2].a = 0xff;
                     if (color0 > color1) {
                         PyroDdsMixColors(colours);
-                        colours[15] = 0xff;
+                        colours[3].a = 0xff;
                     }
                     else {
-                        int c;
-                        for (c = 0; c < 3; ++c) {
-                            colours[8 + c] = static_cast<unsigned char>((colours[c] + colours[4 + c]) / 2);
-                            colours[12 + c] = static_cast<unsigned char>(
-                                (colours[c] + 2 * colours[4 + c] + 1) / 3);
-                        }
-                        colours[15] = 0;
+                        colours[2].b = static_cast<unsigned char>((colours[0].b + colours[1].b) / 2);
+                        colours[2].g = static_cast<unsigned char>((colours[0].g + colours[1].g) / 2);
+                        colours[2].r = static_cast<unsigned char>((colours[0].r + colours[1].r) / 2);
+                        colours[3].b = static_cast<unsigned char>((colours[0].b + 2 * colours[1].b + 1) / 3);
+                        colours[3].g = static_cast<unsigned char>((colours[0].g + 2 * colours[1].g + 1) / 3);
+                        colours[3].r = static_cast<unsigned char>((colours[0].r + 2 * colours[1].r + 1) / 3);
+                        colours[3].a = 0;
                     }
                     for (j = 0; j < 4; ++j) {
                         for (i = 0; i < 4; ++i, ++k) {
                             const unsigned select = (bitmask & (3 << k * 2)) >> k * 2;
+                            col = &colours[select];
                             if (x + i < image->width && y + j < image->height) {
-                                unsigned char* const pixel = out + (y + j) * stride + (x + i) * channels;
-                                pixel[0] = colours[select * 4 + 0];
-                                pixel[1] = colours[select * 4 + 1];
-                                pixel[2] = colours[select * 4 + 2];
-                                pixel[3] = colours[select * 4 + 3];
+                                const unsigned offset = (y + j) * stride + (x + i) * channels;
+                                static_cast<unsigned char*>(image->pixels)[offset + 0] = col->r;
+                                static_cast<unsigned char*>(image->pixels)[offset + 1] = col->g;
+                                static_cast<unsigned char*>(image->pixels)[offset + 2] = col->b;
+                                static_cast<unsigned char*>(image->pixels)[offset + 3] = col->a;
                             }
                         }
                     }
@@ -579,20 +591,21 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
 
                     src += 16;
                     PyroDdsReadColor(color0, colours);
-                    PyroDdsReadColor(color1, colours + 4);
-                    colours[3] = 0xff;
-                    colours[7] = 0xff;
-                    colours[11] = 0xff;
-                    colours[15] = 0xff;
+                    PyroDdsReadColor(color1, colours + 1);
+                    colours[0].a = 0xff;
+                    colours[1].a = 0xff;
+                    colours[2].a = 0xff;
+                    colours[3].a = 0xff;
                     PyroDdsMixColors(colours);
                     for (j = 0; j < 4; ++j) {
                         for (i = 0; i < 4; ++i, ++k) {
                             const unsigned select = (bitmask & (3 << k * 2)) >> k * 2;
+                            col = &colours[select];
                             if (x + i < image->width && y + j < image->height) {
-                                unsigned char* const pixel = out + (y + j) * stride + (x + i) * channels;
-                                pixel[0] = colours[select * 4 + 0];
-                                pixel[1] = colours[select * 4 + 1];
-                                pixel[2] = colours[select * 4 + 2];
+                                const unsigned offset = (y + j) * stride + (x + i) * channels;
+                                static_cast<unsigned char*>(image->pixels)[offset + 0] = col->r;
+                                static_cast<unsigned char*>(image->pixels)[offset + 1] = col->g;
+                                static_cast<unsigned char*>(image->pixels)[offset + 2] = col->b;
                             }
                         }
                     }
@@ -600,9 +613,9 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
                         unsigned word = alpha[j];
                         for (i = 0; i < 4; ++i) {
                             if (x + i < image->width && y + j < image->height) {
-                                unsigned char* const pixel = out + (y + j) * stride + (x + i) * channels;
+                                const unsigned offset = (y + j) * stride + (x + i) * channels;
                                 const unsigned char low = static_cast<unsigned char>(word & 0x0f);
-                                pixel[3] = static_cast<unsigned char>(low | (word << 4));
+                                static_cast<unsigned char*>(image->pixels)[offset + 3] = static_cast<unsigned char>(low | (word << 4));
                             }
                             word >>= 4;
                         }
@@ -629,20 +642,21 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
                     alphas[0] = src[0];
                     alphas[1] = src[1];
                     PyroDdsReadColor(color0, colours);
-                    PyroDdsReadColor(color1, colours + 4);
-                    colours[3] = 0xff;
-                    colours[7] = 0xff;
-                    colours[11] = 0xff;
-                    colours[15] = 0xff;
+                    PyroDdsReadColor(color1, colours + 1);
+                    colours[0].a = 0xff;
+                    colours[1].a = 0xff;
+                    colours[2].a = 0xff;
+                    colours[3].a = 0xff;
                     PyroDdsMixColors(colours);
                     for (j = 0; j < 4; ++j) {
                         for (i = 0; i < 4; ++i, ++k) {
                             const unsigned select = (bitmask & (3 << k * 2)) >> k * 2;
+                            col = &colours[select];
                             if (x + i < image->width && y + j < image->height) {
-                                unsigned char* const pixel = out + (y + j) * stride + (x + i) * channels;
-                                pixel[0] = colours[select * 4 + 0];
-                                pixel[1] = colours[select * 4 + 1];
-                                pixel[2] = colours[select * 4 + 2];
+                                const unsigned offset = (y + j) * stride + (x + i) * channels;
+                                static_cast<unsigned char*>(image->pixels)[offset + 0] = col->r;
+                                static_cast<unsigned char*>(image->pixels)[offset + 1] = col->g;
+                                static_cast<unsigned char*>(image->pixels)[offset + 2] = col->b;
                             }
                         }
                     }
@@ -666,7 +680,7 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
                     for (j = 0; j < 2; ++j) {
                         for (i = 0; i < 4; ++i) {
                             if (x + i < image->width && y + j < image->height) {
-                                out[(y + j) * stride + (x + i) * channels + 3] = alphas[bits & 7];
+                                static_cast<unsigned char*>(image->pixels)[(y + j) * stride + (x + i) * channels + 3] = alphas[bits & 7];
                             }
                             bits >>= 3;
                         }
@@ -675,7 +689,7 @@ static bool PyroDecodeDds(PyroImage* image, PyroImageStream* stream)
                     for (j = 2; j < 4; ++j) {
                         for (i = 0; i < 4; ++i) {
                             if (x + i < image->width && y + j < image->height) {
-                                out[(y + j) * stride + (x + i) * channels + 3] = alphas[bits & 7];
+                                static_cast<unsigned char*>(image->pixels)[(y + j) * stride + (x + i) * channels + 3] = alphas[bits & 7];
                             }
                             bits >>= 3;
                         }

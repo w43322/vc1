@@ -13,40 +13,54 @@
 
 namespace vc1 {
 
-static void ShutdownInterface(IUnknown* object)
+// Inferred names; both always inlined into RunApp (no original address).
+// The object's IShutdownable face is shut down and released, then the object.
+static void ShutdownAndRelease(IUnknown* object)
 {
     IShutdownable* const shutdown = static_cast<IShutdownable*>(
-        KdQueryInterface(object, &g_iidShutdownable));
-    KdAddRef(shutdown);
+        object->QueryInterface(&g_iidShutdownable));
     if (shutdown) {
-        shutdown->Shutdown();
+        shutdown->AddRef();
     }
-    KdRelease(shutdown);
-    KdRelease(object);
+    shutdown->Shutdown();
+    shutdown->Release();
+    object->Release();
+}
+
+// The service object's face for iid with its own reference, or 0.
+static IUnknown* QueryService(const char** iid)
+{
+    IUnknown* object = 0;
+    if (g_serviceUnknown.ptr) {
+        object = static_cast<IUnknown*>(g_serviceUnknown.ptr->QueryInterface(iid));
+        if (object) {
+            object->AddRef();
+        }
+    }
+    return object;
 }
 
 // FUNCTION: VC1 0x004c38b0
 int RunApp()
 {
     OSVERSIONINFOA version;
-    IDisplay* display = 0;
-    ISystem* system = 0;
-    IAbstract* abstractDisplay = 0;
-    ISoundDriver* sound = 0;
-    unsigned scratch0 = g_runScratch0;
-    unsigned scratch1 = g_runScratch1;
-    int argc;
+    IDisplay* display;
+    ISystem* system;
+    ISoundDriver* sound;
+    IUnknown* liveSystem;
+    IUnknown* liveSound;
+    IUnknown* liveDisplay;
+    const int argc = static_cast<int>(g_runScratch0);
+    char** const argv = reinterpret_cast<char**>(g_runScratch1);
     int i;
     int token;
-    char** argv;
 
-    InitScriptEngine(static_cast<int>(scratch0), reinterpret_cast<char**>(scratch1));
+    InitScriptEngine(argc, argv);
     RegisterStdBindings();
 
     // STRING: VC1 0x004d0c58
     SquirrelVM::GetRootTable().SetValue("IsCheatsEnabled", false);
 
-    memset(&version, 0, sizeof(version));
     version.dwOSVersionInfoSize = sizeof(version);
     GetVersionExA(&version);
     FormatBuffer(g_windowsVersionText, 0x80, "Windows v%ld.%ld.%ld",
@@ -65,58 +79,45 @@ int RunApp()
 
         SquirrelObject config = SquirrelVM::RunScript(mainNut, 0);
         display = static_cast<IDisplay*>(AcquireNamed(&g_kdNameDisplay, &g_iidDisplay));
-        if (!display) {
-            return static_cast<int>(0xfffffffe);
-        }
-
-        {
-            // STRING: VC1 0x004d0c9c
-            const unsigned height = static_cast<unsigned>(config.GetInt("DisplayHeight"));
-            // STRING: VC1 0x004d0cac
-            const unsigned width = static_cast<unsigned>(config.GetInt("DisplayWidth"));
-            if (!display->SetSize(width, height)) {
-                display->Release();
-                return static_cast<int>(0xfffffffe);
-            }
+        if (!display->SetSize(
+                // STRING: VC1 0x004d0cac
+                config.GetInt("DisplayWidth"),
+                // STRING: VC1 0x004d0c9c
+                config.GetInt("DisplayHeight"))) {
+            display->Release();
+            return -2;
         }
 
         system = static_cast<ISystem*>(AcquireNamed(&g_kdNameSystem, &g_iidSystem));
-        abstractDisplay = static_cast<IAbstract*>(
-            display->QueryInterface(&g_iidAbstract));
-        if (abstractDisplay) {
-            abstractDisplay->AddRef();
-        }
-        if (!system || !system->Start(reinterpret_cast<IUnknown**>(&abstractDisplay))) {
-            if (system) {
-                system->Release();
+        {
+            bool failed;
+            {
+                KdPtr<IAbstract> abstractDisplay(static_cast<IAbstract*>(
+                    display->QueryInterface(&g_iidAbstract)));
+                failed = !system->Start(reinterpret_cast<IUnknown**>(&abstractDisplay.ptr));
             }
-            display->Release();
-            return static_cast<int>(0xfffffffd);
-        }
-        if (abstractDisplay) {
-            abstractDisplay->Release();
+            if (failed) {
+                system->Release();
+                display->Release();
+                return -3;
+            }
         }
 
         // STRING: VC1 0x004d0cbc
         SquirrelVM::RunScript(SquirrelVM::GetRootTable().GetValue("initApp"), 0);
         sound = static_cast<ISoundDriver*>(
             AcquireNamed(&g_kdNameSoundDriver, &g_iidSoundDriver));
-        {
-            if (!sound->SetEnabled(display->GetMixer())) {
-                // STRING: VC1 0x004d0cc4
-                config.SetValue("SoundEnabled", false);
-            }
+        if (!sound->SetEnabled(display->GetMixer())) {
+            // STRING: VC1 0x004d0cc4
+            config.SetValue("SoundEnabled", false);
         }
 
         // STRING: VC1 0x004d0cd4
         SquirrelVM::RunScript(SquirrelVM::GetRootTable().GetValue("startApp"), 0);
 
-        argv = reinterpret_cast<char**>(scratch1);
-        argc = static_cast<int>(scratch0);
         for (i = 0; i < argc; ++i) {
-            char* const arg = argv[i];
-            if (arg && arg[0] == '+') {
-                SquirrelVM::RunScript(SquirrelVM::CompileBuffer(arg + 1), 0);
+            if (argv[i][0] == '+') {
+                SquirrelVM::RunScript(SquirrelVM::CompileBuffer(argv[i] + 1), 0);
             }
         }
     }
@@ -147,31 +148,21 @@ int RunApp()
 
     system->Shutdown();
     system->Release();
-    if (sound) {
-        sound->Release();
+    liveSystem = QueryService(&g_iidSystem);
+    SquirrelVM::Shutdown();
+    DestroySizeClassPools();
+    ShutdownAndRelease(sound);
+    liveSound = QueryService(&g_iidSoundDriver);
+    ShutdownAndRelease(display);
+    liveDisplay = QueryService(&g_iidDisplay);
+    if (liveSound) {
+        liveSound->Release();
     }
-
-    {
-        IUnknown* const liveSystem = AcquireNamed(&g_kdNameSystem, &g_iidSystem);
-        KdAddRef(liveSystem);
-        SquirrelVM::Shutdown();
-        DestroySizeClassPools();
-        ShutdownInterface(liveSystem);
-        KdRelease(liveSystem);
+    if (liveSystem) {
+        liveSystem->Release();
     }
-
-    {
-        IUnknown* const liveSound = AcquireNamed(&g_kdNameSoundDriver, &g_iidSoundDriver);
-        KdAddRef(liveSound);
-        ShutdownInterface(liveSound);
-        KdRelease(liveSound);
-    }
-
-    {
-        IUnknown* const liveDisplay = AcquireNamed(&g_kdNameDisplay, &g_iidDisplay);
-        KdAddRef(liveDisplay);
-        display->Release();
-        KdRelease(liveDisplay);
+    if (liveDisplay) {
+        liveDisplay->Release();
     }
     return 0;
 }

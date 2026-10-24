@@ -60,7 +60,7 @@
 // jpeg_decoder::make_huff_table
 
 // FUNCTION: VC1 0x00456ce0
-// jpeg_decoder::H2V2Convert
+// jpeg_decoder::H1V2Convert
 
 // FUNCTION: VC1 0x00457130
 // jpeg_decoder::H2V1Convert
@@ -162,6 +162,6 @@
 // jpeg_decoder::begin
 
 // FUNCTION: VC1 0x004b41e0
-// jpeg_decoder::H1V2Convert
+// jpeg_decoder::H2V2Convert
 
 #endif

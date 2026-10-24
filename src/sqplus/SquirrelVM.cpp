@@ -118,7 +118,7 @@ BOOL SquirrelVM::BeginCall(const SquirrelObject& func)
 // FUNCTION: VC1 0x00499fe0
 SquirrelObject& SquirrelVM::GetRootTable()
 {
-    if (vc1::g_rootTable._o._type == OT_NULL && _VM) {
+    if (vc1::g_rootTable._o._type == OT_NULL) {
         sq_pushroottable(_VM);
         vc1::g_rootTable.AttachToStackObject(-1);
         sq_pop(_VM, 1);

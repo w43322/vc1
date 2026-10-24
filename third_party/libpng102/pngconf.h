@@ -319,7 +319,12 @@ __dont__ include it again
 #define PNG_PROGRESSIVE_READ_SUPPORTED       /* reading.  This is not talking */
 #endif                               /* about interlacing capability!  You'll */
               /* still have interlacing unless you change the following line: */
+/* VC1: the game turns this line off (PNG_NO_READ_INTERLACING in
+ * cmake/libpng.cmake): png_read_row (0x004b98b0) has no interlace branches and
+ * inlines png_combine_row as a plain copy; there is no png_do_read_interlace. */
+#ifndef PNG_NO_READ_INTERLACING
 #define PNG_READ_INTERLACING_SUPPORTED /* required for PNG-compliant decoders */
+#endif
 
 #ifndef PNG_NO_READ_COMPOSITED_NODIV
 #define PNG_READ_COMPOSITE_NODIV_SUPPORTED    /* well tested on Intel and SGI */
