@@ -4,6 +4,8 @@ A playable decompilation and reimplementation of `VirtualCity.Unwrapped.exe`, bu
 
 **Both campaign and sandbox modes are playable.** Function mapping and assembly matching are still in progress; the project has not yet reached 100% function coverage or a 100% binary match.
 
+Snapshot (October 2026, `tools/compare-reccmp.ps1`): 5282 functions compared with no stubs, 2964 at 100%, mean similarity 88.9%, 93.6% of `.text` mapped, 75.2% match-weighted and 27.6% exact bytes. These are per-function asm scores, not a runtime test.
+
 Original binary (keep it next to the repo, not in Git):
 
 `Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe`
@@ -96,6 +98,8 @@ Single-function asm diff (from the repository root):
 
 `reccmp-verexp` is for DLL exports; this target is an EXE, so it is unused. CRT and libraries without source use `config/verified.csv`; vendored libraries use source annotations. Do not hide mismatches with `report: ignore-functions:`.
 
+The original EXE has no relocation table, so reccmp cannot auto-detect its strings. Literals referenced from its code or data tables are mapped either by `STRING` markers in source or by `address|string||` rows in `config/verified.csv`, which reccmp pairs with the recompiled literal by text. Unmapped strings show up as raw addresses in asm diffs.
+
 ### Markers
 
 Place these immediately above the definition (or, for `STRING`, above the line that contains the literal):
@@ -128,7 +132,13 @@ The recorded runtime reaches the main menu, intro comic and Level_01_01, with gr
 
 ## Included libraries and tools
 
-The build includes Squirrel 2.2.3, SqPlus, klibc's scanf family, libtga, jpgd 0.93b, libpng 1.0.2, zlib 1.1.3 inflate and the LZMA SDK 4.57 C decoder subset (7z/LZMA/BCJ/BCJ2). Integration and compile options live in `cmake/`. The LZMA library is built for comparison; the host `bar` driver is still a stub. BASS and D3D8 use generated import libraries; the original resources and BASS DLL are copied locally into the build, not committed.
+The build includes Squirrel 2.2.3, SqPlus, klibc's scanf family, libtga, jpgd 0.93b, libpng 1.0.2, zlib 1.1.3 inflate, the LZMA SDK 4.57 C decoder subset (7z/LZMA/BCJ/BCJ2), the Boost 1.41.0 pool headers and pthreads-win32 2.8.0. Integration and compile options live in `cmake/`; the host `bar` archive driver over LZMA is recovered (`src/kdcore/startup.cpp`). BASS and D3D8 use generated import libraries; the original resources and BASS DLL are copied locally into the build, not committed.
+
+Library bodies stay upstream. The game's own changes are reproduced as `// VC1:` patches or force-included headers backed by the original's code, for example:
+- libpng: `PNG_NO_READ_INTERLACING`, and `memcmp` through the game's `MemCompare` (`src/kdcore/kd_string_c.h`).
+- jpgd: `memcpy` as a CRT call (`jpgd_vc1.h`) and the end-of-image skip in `process_markers`.
+- sqstdio and libtga: KD file I/O with null-handle checks (`src/kdcore/kd_stdio.h`).
+- Squirrel and SqPlus: the patches listed in `third_party/squirrel223/PROVENANCE.md` and marked in `third_party/sqplus/`.
 
 Keep the build/compare, Ghidra setup/import and runtime helpers in `tools/`. `disasm-orig.py` provides supplementary raw assembly/data views; `crt-ident.py` finds candidate CRT symbols by byte patterns and still requires Ghidra evidence and reccmp verification. `extract-rsrc.py` is called by CMake, and `report-progress.py` by the compare script.
 
@@ -231,6 +241,7 @@ inside the `BUTTONS_HINT_*` hint button).
 - MSVC 1500 (VC9 SP1), 32-bit, RelWithDebInfo.
 - `/MT /GS- /GR- /O2 /Ob2 /Z7 /GL` (no `/EH`) and linker `/LTCG /OPT:NOREF /OPT:NOICF`. Do not drop `/GL /LTCG`.
 - Matching/shared source stays VC9-compatible. Only `src/imports/sdl3/` uses C++17.
+- Headers force-included with `/FI` (`cmake/*.cmake`) must also be listed as `OBJECT_DEPENDS`; the VC9 NMake build does not see them otherwise, and editing one would not rebuild its users.
 - Vendored library bodies stay upstream except documented, evidence-backed game/VC9 patches; mapping additions are comments only. Do not add inline asm. Do not invent mappings.
 
 ## Do not commit
