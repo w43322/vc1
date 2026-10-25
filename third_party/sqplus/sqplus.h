@@ -57,7 +57,9 @@
 #if defined(_MSC_VER) || defined(__BORLANDC__)
   #include <tchar.h>
   #ifndef SQUNICODE
-    #define SCSNPRINTF _snprintf
+    // VC1: the game's snprintf is the host FormatBuffer (0x004969c0).
+    namespace vc1 { int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...); }
+    #define SCSNPRINTF vc1::FormatBuffer
     #define SCPUTS puts
   #else
     #define SCSNPRINTF _snwprintf
