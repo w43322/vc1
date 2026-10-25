@@ -154,7 +154,7 @@ void PtrSetErase(KdRefList* set, IUnknown* const* key)
 
 // for_each over the pending adds (EAX=first, EDI=last, EBX=out functor).
 // FUNCTION: VC1 0x00416e80
-void AddEach(IUnknown** first, IUnknown** last, KdUpdateGroup* group)
+__declspec(noinline) void AddEach(IUnknown** first, IUnknown** last, KdUpdateGroup* group)
 {
     for (; first != last; ++first) {
         group->AddMember(first);
@@ -163,7 +163,7 @@ void AddEach(IUnknown** first, IUnknown** last, KdUpdateGroup* group)
 
 // for_each over the pending removes (EAX=first, EBX=last).
 // FUNCTION: VC1 0x00416ec0
-void RemoveEach(IUnknown** first, IUnknown** last, KdUpdateGroup* group)
+__declspec(noinline) void RemoveEach(IUnknown** first, IUnknown** last, KdUpdateGroup* group)
 {
     for (; first != last; ++first) {
         group->RemoveMember(first);

@@ -67,7 +67,7 @@ const char* KdCompoundObject::GetTypeName()
 // EAX=&object. Whether object is g_kdNullObject: both null, or the same
 // IAbstract face.
 // FUNCTION: VC1 0x00415e00
-bool IsNullObject(IUnknown* const& object)
+__declspec(noinline) bool IsNullObject(IUnknown* const& object)
 {
     IUnknown* const nullObject = g_kdNullObject.ptr;
 

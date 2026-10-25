@@ -181,7 +181,7 @@ void PyroEmitter::SetEmitCallback(PyroEmitCallback callback, void* data)
 
 // Pops a particle off the free list, carving a new block of 64 when empty.
 // FUNCTION: VC1 0x0042ee10
-void* PyroParticleAlloc()
+__declspec(noinline) void* PyroParticleAlloc()
 {
     void** element = static_cast<void**>(g_pyroParticlePool.freeList);
 

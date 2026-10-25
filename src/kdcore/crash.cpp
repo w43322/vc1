@@ -196,7 +196,7 @@ static int TryLoadDbgHelpSoft()
 
 // LoadLibraryA("kernel32.dll") + IsDebuggerPresent. Returns 1 if a debugger is attached.
 // FUNCTION: VC1 0x00476e60
-int ProbeDebuggerPresent()
+__declspec(noinline) int ProbeDebuggerPresent()
 {
     // STRING: VC1 0x004d48c4
     const HMODULE kernel32 = LoadLibraryA("kernel32.dll");

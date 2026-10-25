@@ -49,7 +49,7 @@ static void UnlinkEvent(KdEvent* event)
 // (0 = any) match; the static default record at the end never matches.
 // Inferred name.
 // FUNCTION: VC1 0x004962b0
-static KdCallbackFunc FindCallback(const KdEvent* event)
+__declspec(noinline) static KdCallbackFunc FindCallback(const KdEvent* event)
 {
     KdCallback* node;
 

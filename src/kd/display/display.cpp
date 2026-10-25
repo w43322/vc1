@@ -203,7 +203,7 @@ static IUnknown** DisplayAssignTarget(void** out, IUnknown** slot)
 
 // cdecl two floats; returns min on the FPU stack.
 // FUNCTION: VC1 0x00402410
-float MinFloat(float a, float b)
+__declspec(noinline) float MinFloat(float a, float b)
 {
     if (a < b) {
         return a;

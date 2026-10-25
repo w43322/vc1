@@ -169,7 +169,7 @@ static LRESULT CALLBACK KdWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM 
 
 // RegisterClassA for the display window; hInstance at +0x10, class name at +0x24.
 // FUNCTION: VC1 0x00496020
-WNDCLASSA* GetKdWindowClass()
+__declspec(noinline) WNDCLASSA* GetKdWindowClass()
 {
     if (!g_kdDisplayClass.hInstance) {
         g_kdDisplayClass.hInstance = GetModuleHandleA(0);

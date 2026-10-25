@@ -116,7 +116,7 @@ float angleDelta(float from, float to)
 }
 
 // FUNCTION: VC1 0x0040cb60
-float fltsign(float value)
+__declspec(noinline) float fltsign(float value)
 {
     if (value > 0.0f) {
         return 1.0f;

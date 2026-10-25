@@ -201,7 +201,7 @@ unsigned KdFileSource::Write(const void* data, unsigned length)
 // native), retried while negative. Zero bytes sets kStreamEof | kStreamFail;
 // no file sets errno 0x11 as well.
 // FUNCTION: VC1 0x004bc350
-unsigned KdFileSource::Read(void* buffer, unsigned length)
+__declspec(noinline) unsigned KdFileSource::Read(void* buffer, unsigned length)
 {
     int count;
 
@@ -246,7 +246,7 @@ void KdFileSource::Close()
 // error, closes the previous file (which also empties the name) and takes
 // the new handle.
 // FUNCTION: VC1 0x004bc460
-void KdFileSource::Attach(const char* path, KdFileHandle* handle)
+__declspec(noinline) void KdFileSource::Attach(const char* path, KdFileHandle* handle)
 {
     if (!path) {
         path = reinterpret_cast<const char*>(&g_kdLogTag);

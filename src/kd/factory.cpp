@@ -98,7 +98,7 @@ KdStringList::~KdStringList() throw()
 // EAX=count, EDX=this, CL=exact. Grows to count strings and default-constructs
 // the new slots.
 // FUNCTION: VC1 0x00408da0
-void KdStringList::Reserve(unsigned count, char exact) throw()
+__declspec(noinline) void KdStringList::Reserve(unsigned count, char exact) throw()
 {
     unsigned old;
     KdString* slot;
@@ -454,7 +454,7 @@ void KdString::Resize(unsigned length) throw()
 // EAX=this, stdcall source RET 4. A borrowed source (capacity 0) is shared;
 // an owned one is copied with its NUL.
 // FUNCTION: VC1 0x004b8bf0
-KdString::KdString(const KdString& source)
+__declspec(noinline) KdString::KdString(const KdString& source)
     : KdFactory(source.capacity != 0 ? source.size + 1 : 0)
 {
     unsigned left;
