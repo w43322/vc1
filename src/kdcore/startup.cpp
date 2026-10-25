@@ -717,6 +717,22 @@ static int HttpFlush(KdObject*, int)
     return 0;
 }
 
+// LogLastError's body (0x0047c480), inlined into HttpGets; HttpRead and
+// HttpOpen call it.
+static __forceinline void LogLastErrorInline(const char* name, DWORD error)
+{
+    char* message;
+
+    if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, 0, error, 0,
+            reinterpret_cast<LPSTR>(&message), 0, 0)) {
+        KdLog("[%s] error: %s\n", name, message);
+        LocalFree(message);
+    }
+    else {
+        KdLog("[%s] error: %u\n", name, error);
+    }
+}
+
 // FUNCTION: VC1 0x0047d250
 static int HttpRead(KdObject* self, void* buffer, unsigned size, unsigned count, int handle)
 {
@@ -766,7 +782,7 @@ static char* HttpGets(KdObject* self, char* buffer, int size, int handle)
             break;
         }
         if (!InternetReadFile(file->request, &c, 1, &read)) {
-            LogLastError(self->scheme, GetLastError());
+            LogLastErrorInline(self->scheme, GetLastError());
             break;
         }
         file->position += read;
