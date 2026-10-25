@@ -102,4 +102,4 @@ The SDL3 build can replace game artwork with PNGs. A mod is a folder in the git-
 
 ## Legal
 
-This project contains no game assets. The screenshots illustrate the recompiled build running on the author's copy of the game. *Virtual City* is © G5 Entertainment.
+This project contains no game data. The only game artwork in the repository is the screenshots, which show the recompiled build running on the author's copy, and the game's icon in the status badge. *Virtual City* is © G5 Entertainment.
