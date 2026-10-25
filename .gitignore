@@ -10,3 +10,5 @@ __pycache__/
 /reccmp-build.yml
 # Local texture mods (src/mod/ is the tracked loader)
 /mods/
+# Generated from config/mcp.json.template by tools/setup-mcp.ps1
+/.mcp.json

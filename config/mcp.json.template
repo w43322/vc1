@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ghidra": {
+      "command": "uv",
+      "args": ["run", "--directory", "@GHIDRA_MCP_DIR@", "bridge-mcp-ghidra"]
+    }
+  }
+}

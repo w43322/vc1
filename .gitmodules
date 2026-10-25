@@ -1,3 +1,7 @@
 [submodule "vendor/reccmp"]
 	path = vendor/reccmp
 	url = https://github.com/w43322/reccmp.git
+[submodule "vendor/NutCracker"]
+	path = vendor/NutCracker
+	url = https://github.com/w43322/NutCracker.git
+	branch = sq2-vc1

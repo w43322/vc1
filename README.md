@@ -18,22 +18,42 @@ Every recovered function needs Ghidra evidence from that original and a reccmp a
 
 ## First-time setup
 
-1. Place the original install so the EXE path above exists.
-2. Install Visual Studio 2008 SP1 (VC9) x86. Optional: set `VC9_ROOT` if it is not under `%ProgramFiles(x86)%\Microsoft Visual Studio 9.0`.
-3. Install Python compatible with `tools/requirements-reccmp.txt`, CMake 3.13+ and Ghidra 12.x. `tools/open-ghidra.ps1` / `init-ghidra.ps1` / `import-ghidra.ps1` default to `D:\ghidra_12.1.2_PUBLIC`.
-4. Create the venv and reccmp configs:
+1. Clone with submodules (`vendor/reccmp`, `vendor/NutCracker`):
+
+```powershell
+git clone --recursive https://github.com/w43322/vc1.git
+```
+
+   In an existing checkout, run `git submodule update --init`.
+2. Place the original install so the EXE path above exists. The game itself is the only thing the repo does not provide.
+3. Install Visual Studio 2008 SP1 (VC9) x86. Optional: set `VC9_ROOT` if it is not under `%ProgramFiles(x86)%\Microsoft Visual Studio 9.0`.
+4. Install Python compatible with `tools/requirements-reccmp.txt`, CMake 3.13+ and Ghidra 12.x. Point the Ghidra scripts at the install once per user (or pass `-GhidraHome`; the default is `D:\ghidra_12.1.2_PUBLIC`, and `GHIDRA_INSTALL_DIR` is honoured too):
+
+```powershell
+setx VC1_GHIDRA_HOME "C:\tools\ghidra_12.1.2_PUBLIC"
+```
+
+5. Create the venv and reccmp configs:
 
 ```powershell
 .\tools\setup-reccmp.ps1
 ```
 
-5. If `ghidra/VirtualCity.gpr` does not exist yet:
+6. For Ghidra MCP access, install a ghidra-mcp checkout (the `bridge-mcp-ghidra` uv project, run through `uv`) and write the local `.mcp.json` from `config/mcp.json.template`:
+
+```powershell
+setx VC1_GHIDRA_MCP_DIR "C:\tools\ghidra-mcp"   # or pass -GhidraMcpDir; default D:\ghidra-mcp
+.\tools\setup-mcp.ps1
+```
+
+   `.mcp.json` is generated and git-ignored; an existing different file is kept unless `-Force` is given. Restart the agent after writing it.
+7. If `ghidra/VirtualCity.gpr` does not exist yet:
 
 ```powershell
 .\tools\init-ghidra.ps1
 ```
 
-6. Build with VC9 and compare:
+8. Build with VC9 and compare:
 
 ```powershell
 .\tools\build-vc9.cmd
@@ -42,7 +62,7 @@ Every recovered function needs Ghidra evidence from that original and a reccmp a
 
 `setup-reccmp.ps1` writes local `reccmp-user.yml` (original EXE path). CMake writes `build/vc9/reccmp-build.yml` (recompiled EXE + PDB). Do not commit either file.
 
-The pinned `vendor/reccmp` submodule uses the [w43322 fork](https://github.com/w43322/reccmp). Setup installs that checkout in editable mode. `init-ghidra.ps1` checks the original hash and performs initial analysis only; recovered names are imported after building through `import-ghidra.ps1`.
+The pinned `vendor/reccmp` submodule uses the [w43322 fork](https://github.com/w43322/reccmp). Setup installs that checkout in editable mode. Machine-specific paths (Ghidra, ghidra-mcp) are resolved by `tools/workspace.ps1`: the script parameter, else the environment variable, else the default. `init-ghidra.ps1` checks the original hash and performs initial analysis only; recovered names are imported after building through `import-ghidra.ps1`.
 
 ## Agent round
 
@@ -126,7 +146,7 @@ The working directory must be `Virtual-City_Win_EN_Full/VirtualCity`. Helpers (P
 .\tools\decompile-nut.ps1   # compiled .nut scripts -> Virtual-City_Win_EN_Full/nut-src/
 ```
 
-`decompile-nut.ps1` uses [w43322/NutCracker](https://github.com/w43322/NutCracker) (branch `sq2-vc1`), cloned and built into `build/NutCracker`. Current runtime status and the next blockers are in `AGENTS.md` ("Run the game").
+`decompile-nut.ps1` uses the `vendor/NutCracker` submodule ([w43322/NutCracker](https://github.com/w43322/NutCracker), branch `sq2-vc1`, pinned commit) and builds it with Visual Studio 2022 MSBuild into `build/NutCracker` on first use (`-Rebuild` forces it). To move the pin, update the submodule and commit its new commit. Current runtime status and the next blockers are in `AGENTS.md` ("Run the game").
 
 The recorded runtime reaches the main menu, intro comic and Level_01_01, with graphics, particles and BASS music/sound. This is not a full-game validation; transport gameplay still needs runtime exercise. `run-debug.py` stops the process on timeout unless `--keep` is supplied; close a kept instance before another run or the game mutex will reject it. Screenshots can be black in fullscreen.
 
@@ -246,4 +266,4 @@ inside the `BUTTONS_HINT_*` hint button).
 
 ## Do not commit
 
-`ghidra/`, `build/`, `.venv/`, `reccmp-user.yml`, `reccmp-build.yml`, and the original game tree / zip. `Virtual-City_Win_EN_Full/` is intentionally not git-ignored (so editor search sees the decompiled scripts); stage files by name and never add anything under it.
+`ghidra/`, `build/`, `.venv/`, `.mcp.json`, `reccmp-user.yml`, `reccmp-build.yml`, and the original game tree / zip. `Virtual-City_Win_EN_Full/` is intentionally not git-ignored (so editor search sees the decompiled scripts); stage files by name and never add anything under it.

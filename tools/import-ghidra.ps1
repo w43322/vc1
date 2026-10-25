@@ -1,5 +1,8 @@
-param([string]$GhidraHome = 'D:\ghidra_12.1.2_PUBLIC')
+# -GhidraHome, else VC1_GHIDRA_HOME / GHIDRA_INSTALL_DIR (tools/workspace.ps1).
+param([string]$GhidraHome)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'workspace.ps1')
+$GhidraHome = Get-Vc1GhidraHome $GhidraHome
 $root = Split-Path $PSScriptRoot -Parent
 $build = Join-Path $root 'build/vc9'
 $importer = Join-Path $root '.venv/Scripts/reccmp-ghidra-import.exe'
@@ -7,7 +10,6 @@ $projectFile = Join-Path $root 'ghidra/VirtualCity.gpr'
 if (!(Test-Path -LiteralPath $importer)) { throw 'Run tools/setup-reccmp.ps1 first' }
 if (!(Test-Path -LiteralPath "$build/reccmp-build.yml")) { throw 'Run tools/build-vc9.cmd first' }
 if (!(Test-Path -LiteralPath $projectFile)) { throw 'Run tools/init-ghidra.ps1 first' }
-if (!(Test-Path -LiteralPath $GhidraHome)) { throw "Missing Ghidra install: $GhidraHome" }
 
 # GUI importer looks next to reccmp-project.yml; headless only needs the copy in build/vc9.
 Copy-Item -LiteralPath "$build/reccmp-build.yml" -Destination "$root/reccmp-build.yml" -Force

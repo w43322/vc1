@@ -1,5 +1,8 @@
-param([string]$GhidraHome = 'D:\ghidra_12.1.2_PUBLIC')
+# -GhidraHome, else VC1_GHIDRA_HOME / GHIDRA_INSTALL_DIR (tools/workspace.ps1).
+param([string]$GhidraHome)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'workspace.ps1')
+$GhidraHome = Get-Vc1GhidraHome $GhidraHome
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $projectDir = Join-Path $repoRoot 'ghidra'
 $exePath = Join-Path $repoRoot 'Virtual-City_Win_EN_Full\VirtualCity.Unwrapped.exe'
