@@ -39,21 +39,12 @@ void* KdRenderTarget::QueryInterface(const char** iid)
     return 0;
 }
 
-// ADD ECX, 0x0c; decrement refs at IAbstract+4. If 0, vtbl+0x0c(this, 1).
+// ADD ECX, 0x0c, then IAbstract::Release (0x00401ee0) inlined by LTCG: the deleting
+// destructor (vtable+0x0c) on zero refs.
 // FUNCTION: VC1 0x0045bcc0
 unsigned KdRenderTarget::Release()
 {
-    IUnknown* face;
-    unsigned result;
-    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
-
-    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
-    result = --refs;
-    if (result == 0) {
-        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
-        return 0;
-    }
-    return result;
+    return IAbstract::Release();
 }
 
 // MOV EAX, [ECX+0x10]; TEST; INC; store. RET.

@@ -13,6 +13,10 @@ bool Init(SDL_InitFlags flags);
 // The SDL window behind a HWND; 0 for a message-only window (user32.cpp).
 SDL_Window* WindowOf(HWND window);
 
+// The desktop in pixels: the full-screen back buffer size the display code
+// picks (EnumDisplaySettingsA) and the D3D adapter mode (user32.cpp).
+bool DesktopPixels(int* w, int* h);
+
 // Advances BASS volume slides; the message pump calls it (bass.cpp).
 void UpdateAudio();
 

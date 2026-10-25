@@ -16,4 +16,12 @@ set(VC1_IMPORT_SOURCES
   src/imports/sdl3/wininet.cpp
   src/imports/sdl3/d3d8.cpp
   src/imports/sdl3/bass.cpp)
-set(VC1_IMPORT_LIBRARIES SDL3::SDL3 SDL3_mixer::SDL3_mixer legacy_stdio_definitions)
+set(VC1_IMPORT_LIBRARIES SDL3::SDL3 SDL3_mixer::SDL3_mixer)
+if(VC1_WEB)
+  # The browser: the CRT slots, the entry point and the page's file system
+  # come from src/imports/web/ (cmake/web.cmake).
+  set(VC1_IMPORTS_DIR src/imports/web)
+  list(APPEND VC1_IMPORT_SOURCES src/imports/web/web.cpp)
+else()
+  list(APPEND VC1_IMPORT_LIBRARIES legacy_stdio_definitions)
+endif()

@@ -34,7 +34,7 @@
 ## Status
 
 - **Playable:** campaign and sandbox run from the recompiled executable, with graphics, particles, music and sound.
-- **Matching:** 5342 of the original's 5348 functions are recovered in source, and 3149 of them compile to identical bytes. The average function is 90% similar (the badge's "accuracy"); weighted by size it is 77%, and 31% of the code bytes already match exactly. These are per-function assembly comparisons, not a measure of how much of the game works.
+- **Matching:** 5342 of the original's 5348 functions are recovered in source, and 3158 of them compile to identical bytes. The average function is 90% similar (the badge's "accuracy"); weighted by size it is 77%, and 31% of the code bytes already match exactly. These are per-function assembly comparisons, not a measure of how much of the game works.
 - **Two builds from one source tree:**
   - The reference build uses the original toolchain and the real Windows DLLs, and is the one compared with reccmp.
   - The SDL3 build reimplements those DLLs over SDL3 and SDL3_mixer, for modern compilers.
@@ -62,6 +62,29 @@ For the SDL3 build (Visual Studio 2017 or newer, Ninja; SDL is downloaded into `
 ```powershell
 .\tools\build-sdl3.cmd          # build\sdl3\bin\VirtualCity.SDL3.exe
 ```
+
+## Web build
+
+The SDL3 build also compiles to WebAssembly with [Emscripten](https://emscripten.org/) and runs in Chrome and Firefox. It needs an emsdk (`build\emsdk` by default, or set `VC1_EMSDK`):
+
+```powershell
+git clone https://github.com/emscripten-core/emsdk.git build\emsdk
+build\emsdk\emsdk install latest; build\emsdk\emsdk activate latest
+.	oolsuild-web.cmd           # build\webin\index.html, VirtualCity.js, VirtualCity.wasm
+python -m http.server -d build\webin 8000
+```
+
+When the local game copy is present, the build packages its `VirtualCity.bar` (the game's 7z archive, which the game mounts from its working directory) beside the page as `build\webin\game.data`, git-ignored like everything in `build\`, so <http://localhost:8000/> starts the game straight away. A build without it shows one button that asks for the player's game folder (the one with `VirtualCity.bar`) and keeps it in the browser's IndexedDB. Saves are kept in IndexedDB too. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
+
+## Build and run
+
+Three scripts at the root build a target and start it from the local game copy:
+
+| Script | Runs |
+| --- | --- |
+| `build-run-original.cmd` | The reference build (VC9, `buildc9in\VirtualCity.Unwrapped.exe`) |
+| `build-run-sdl3.cmd` | The SDL3 build (`build\sdl3in\VirtualCity.SDL3.exe`) |
+| `build-run-web.cmd` | The web build, served at <http://localhost:8000/> until its window is closed |
 
 ## Requirements
 

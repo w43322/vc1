@@ -1,4 +1,5 @@
-// LZMA SDK 4.57 decoder mappings. Upstream bodies are unchanged.
+// LZMA SDK 4.57 decoder mappings. Upstream bodies are unchanged except the
+// marked VC1 patch in C/7zCrc.c / C/7zCrc.h (the precomputed CRC table).
 // Source: local lzma457.tar.bz2 archive, SHA-256
 // e1d07b372d9748eba715354bfd540ae2cb0e2c7e83ce630439420ab7df13f2e0.
 // All vendored SDK files were hash-checked against that extracted archive.
@@ -18,9 +19,9 @@
 // asmcmp's short comparison window scores it 0 despite the same call target.
 // These identities were checked with pseudocode and original raw bytes.
 // Original configuration: _LZMA_IN_CB and _LZMA_PROB32, 64-bit CFileSize.
-// CrcGenerateTable has no original standalone mapping: the original CRC
-// table is precomputed in read-only data at 0x004d06a8. Ghidra xrefs are
-// reads in CrcUpdate/SafeReadDirectUInt32/SafeReadDirectUInt64, no generator.
+// CrcGenerateTable has no original body: the original CRC table is
+// precomputed in read-only data at 0x004d06a8 (GLOBAL in C/7zCrc.c). Ghidra
+// xrefs are reads in CrcUpdate/SafeReadDirectUInt32/SafeReadDirectUInt64.
 // SzArDbGetFolderFullPackSize has no original standalone body identified:
 // its sole SDK consumer is SzExtract's #ifndef _LZMA_IN_CB path, absent
 // from original SzExtract 0x004bc6e0. No address is fabricated for it.

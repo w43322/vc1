@@ -873,7 +873,6 @@ static __forceinline float SignInline(float value)
 static __declspec(noinline) void InsertArc(KdObjArray<Vector2>& points, Vector2*& at, float cx,
     float cy, float radius, float from, float to)
 {
-    typedef unsigned (__thiscall *FnCount)(void* object);
     float step = WrapAngle(to - from);
     float rest;
 
@@ -909,8 +908,7 @@ static __declspec(noinline) void InsertArc(KdObjArray<Vector2>& points, Vector2*
         }
         {
             const unsigned newSize = points.items.size + sizeof(Vector2);
-            const unsigned used = reinterpret_cast<FnCount>(
-                (*reinterpret_cast<void***>(&points.items))[2])(&points.items);
+            const unsigned used = static_cast<KdFactory*>(&points.items)->Count();
             unsigned char* begin;
 
             if (points.items.capacity < used + newSize) {

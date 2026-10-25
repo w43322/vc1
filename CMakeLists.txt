@@ -6,11 +6,20 @@ endif()
 project(VirtualCityDecomp VERSION 0.1.0 LANGUAGES C CXX)
 
 option(VC1_USE_SDL3 "Build the SDL3 backend (Windows x86, modern MSVC)" OFF)
+# Emscripten builds the SDL3 backend for the browser (cmake/web.cmake).
+if(EMSCRIPTEN)
+  set(VC1_WEB ON)
+  set(VC1_USE_SDL3 ON CACHE BOOL "" FORCE)
+  # The page has no mods/ folder beside the module.
+  set(VC1_MODS OFF CACHE BOOL "Texture mods from mods/ beside the executable" FORCE)
+else()
+  set(VC1_WEB OFF)
+endif()
 # Addons, not original code. They default to on for the SDL3 build only, so a
 # default reference build stays comparable with the original.
 option(VC1_MODS "Texture mods from mods/ beside the executable" ${VC1_USE_SDL3})
 option(VC1_LOG "Send KdLog text to OutputDebugStringA (SDL3: the console)" ${VC1_USE_SDL3})
-if(VC1_USE_SDL3)
+if(VC1_USE_SDL3 AND NOT VC1_WEB)
   # Normalize redirected cl output so a localized compiler cannot silently lose
   # Ninja header dependencies. This affects the modern target only.
   if(EXISTS "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
@@ -27,8 +36,13 @@ if(VC1_USE_SDL3)
   if(NOT WIN32 OR NOT MSVC OR MSVC_VERSION LESS 1910)
     message(FATAL_ERROR "The SDL3 build currently requires modern MSVC on Windows x86.")
   endif()
+endif()
+if(VC1_USE_SDL3)
   set(VC1_TARGET vc1_sdl3)
   set(VC1_OUTPUT_NAME "VirtualCity.SDL3")
+  if(VC1_WEB)
+    set(VC1_OUTPUT_NAME "VirtualCity")
+  endif()
   set(CMAKE_CXX_STANDARD 17)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()
@@ -46,6 +60,9 @@ if(NOT CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
   message(FATAL_ERROR "Use RelWithDebInfo; this project pins reference optimization/debug flags.")
 endif()
 
+if(VC1_WEB)
+  include(cmake/web.cmake)
+else()
 # Do not inherit /MD, /Ob1, /RTC or Debug defaults from a CMake release.
 # /GS-: the original calls __security_check_cookie (0x0043980a) only from the
 # prebuilt CRT; game and library code have no cookies (LoadTgaTexture
@@ -61,6 +78,7 @@ if(VC1_USE_SDL3)
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/O2 /Ob2 /Z7 /DNDEBUG")
   set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "/DEBUG /INCREMENTAL:NO /OPT:REF /OPT:ICF")
+endif()
 endif()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include(cmake/squirrel223.cmake)
@@ -198,6 +216,8 @@ if(VC1_USE_SDL3)
   # Keep the vendored scanf definitions instead of UCRT's header-inline copies.
   target_compile_definitions(${VC1_TARGET} PRIVATE _NO_CRT_STDIO_INLINE
     sscanf=vc1_klibc_sscanf vsscanf=vc1_klibc_vsscanf)
+endif()
+if(VC1_USE_SDL3 AND NOT VC1_WEB)
   get_target_property(VC1_MIXER_TYPE SDL3_mixer::SDL3_mixer TYPE)
   if(VC1_MIXER_TYPE STREQUAL "SHARED_LIBRARY")
     add_custom_command(TARGET ${VC1_TARGET} POST_BUILD
@@ -242,7 +262,7 @@ endif()
 # configure time and linked in (local copy only, like BASS.dll).
 set(VC1_ORIGINAL_EXE "${CMAKE_SOURCE_DIR}/Virtual-City_Win_EN_Full/VirtualCity.Unwrapped.exe")
 set(VC1_PYTHON "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
-if(VC1_USE_SDL3 AND EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
+if(VC1_USE_SDL3 AND NOT VC1_WEB AND EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
   execute_process(COMMAND "${VC1_PYTHON}" "${CMAKE_SOURCE_DIR}/tools/extract-sdl-resources.py"
     "${VC1_ORIGINAL_EXE}" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/platform-resources"
     RESULT_VARIABLE VC1_SDL_RSRC_RESULT)
@@ -258,9 +278,13 @@ if(NOT VC1_USE_SDL3 AND EXISTS "${VC1_ORIGINAL_EXE}" AND EXISTS "${VC1_PYTHON}")
     target_link_options(${VC1_TARGET} PRIVATE "${VC1_RSRC_RES}")
   endif()
 endif()
+if(VC1_WEB)
+  vc1_web_target(${VC1_TARGET})
+else()
 target_link_options(${VC1_TARGET} PRIVATE
   "/SUBSYSTEM:WINDOWS"
   "/MAP:${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${VC1_OUTPUT_NAME}.map")
+endif()
 if(NOT VC1_USE_SDL3)
   configure_file(cmake/reccmp-build.yml.in "${CMAKE_BINARY_DIR}/reccmp-build.yml" @ONLY)
   # Full reccmp pass: decomplint, asmcmp (json/html/svg), round-to-round aggregate,

@@ -85,7 +85,10 @@ void *jpeg_decoder::alloc(int n)
 {
   // Find a free slot. The number of allocated slots will
   // always be very low, so a linear search is good enough.
-  for (int i = 0; i < JPGD_MAXBLOCKS; i++)
+  // VC1: i here and k in decode_next_row are declared outside their loops,
+  // as VC9's /Zc:forScope- does; standard compilers (the web build) need it.
+  int i;
+  for (i = 0; i < JPGD_MAXBLOCKS; i++)
   {
     if (blocks[i] == NULL)
       break;
@@ -1090,7 +1093,8 @@ void jpeg_decoder::decode_next_row(void)
 
       Phuff_tables_t Ph = h[comp_ac_tab[component_id]];
 
-      for (int k = 1; k < 64; k++)
+      int k;
+      for (k = 1; k < 64; k++)
       {
         s = huff_decode(Ph);
 

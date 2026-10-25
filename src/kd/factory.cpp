@@ -353,8 +353,6 @@ void EraseCountedBytes(void* first, void* middle, void* last)
 void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw()
 {
     KdFactory* factory = static_cast<KdFactory*>(self);
-    typedef unsigned (__thiscall *FnCount)(void* object);
-    typedef void (__thiscall *FnClear)(void* object);
     unsigned used;
     unsigned needed;
     unsigned aligned;
@@ -363,7 +361,7 @@ void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw()
     unsigned copy;
     unsigned saved;
 
-    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+    used = static_cast<KdFactory*>(self)->Count();
     needed = static_cast<unsigned>(bytes) + used;
     if (needed <= factory->capacity) {
         return;
@@ -386,7 +384,7 @@ void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw()
         memcpy(grown, factory->begin, copy);
     }
     saved = factory->size;
-    reinterpret_cast<FnClear>((*reinterpret_cast<void***>(self))[1])(self);
+    static_cast<KdFactory*>(self)->Clear();
     factory->size = saved;
     factory->begin = static_cast<FactoryEntry*>(grown);
     factory->capacity = needed;
@@ -397,7 +395,6 @@ void __stdcall GrowCountedBuffer(void* self, int bytes, char exact) throw()
 void* InsertCountedBytes(void* self, void* pos, int bytes)
 {
     KdFactory* factory = static_cast<KdFactory*>(self);
-    typedef unsigned (__thiscall *FnCount)(void* object);
     unsigned offset;
     unsigned newSize;
     unsigned used;
@@ -410,7 +407,7 @@ void* InsertCountedBytes(void* self, void* pos, int bytes)
         static_cast<unsigned char*>(pos)
         - reinterpret_cast<unsigned char*>(factory->begin));
     newSize = factory->size + static_cast<unsigned>(bytes);
-    used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+    used = static_cast<KdFactory*>(self)->Count();
     if (factory->capacity < used + newSize) {
         GrowCountedBuffer(self, static_cast<int>(newSize), 0);
     }
@@ -625,7 +622,6 @@ void KdString::Append(const char* text, unsigned length)
 void AssignCountedString(void* self, const char* text, unsigned len) throw()
 {
     KdFactory* dst = static_cast<KdFactory*>(self);
-    typedef unsigned (__thiscall *FnCount)(void* object);
     unsigned n;
     unsigned used;
     unsigned char* out;
@@ -646,7 +642,7 @@ void AssignCountedString(void* self, const char* text, unsigned len) throw()
         dst->size = n;
     }
     else {
-        used = reinterpret_cast<FnCount>((*reinterpret_cast<void***>(self))[2])(self);
+        used = static_cast<KdFactory*>(self)->Count();
         if (dst->capacity < used + n) {
             GrowCountedBuffer(self, static_cast<int>(n), 1);
         }

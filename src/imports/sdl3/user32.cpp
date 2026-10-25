@@ -8,6 +8,11 @@
 // presentation), which is what a fixed-size Win32 client area gives.
 #include "sdl3.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/html5.h>
+#endif
+
 #include <deque>
 #include <map>
 #include <string>
@@ -22,6 +27,8 @@ struct Window
     LONG exStyle;
     LONG userData;
     SDL_Window* sdl;
+    int width;  // the size the game last gave it
+    int height;
 };
 
 struct Timer
@@ -60,6 +67,89 @@ SDL_DisplayID Display()
     SDL_DisplayID display = focus ? SDL_GetDisplayForWindow(focus) : 0;
     return display ? display : SDL_GetPrimaryDisplay();
 }
+
+#ifdef __EMSCRIPTEN__
+// In the browser the canvas fills the page (SDL_WINDOW_FILL_DOCUMENT) and the
+// renderer letterboxes the back buffer into it. The screen is the game's
+// display size (DisplayWidth / DisplayHeight in scripts/Settings.nut), so
+// full screen and windowed render the same 1024x768 frame, scaled to the page
+// like a resized desktop window, and the browser never goes full screen.
+const SDL_WindowFlags kScreenWindowFlags = SDL_WINDOW_FILL_DOCUMENT;
+const SDL_Point screen = {1024, 768};
+
+bool DesktopBounds(SDL_Rect* bounds)
+{
+    bounds->x = 0;
+    bounds->y = 0;
+    bounds->w = screen.x;
+    bounds->h = screen.y;
+    return true;
+}
+
+bool WorkArea(SDL_Rect* area)
+{
+    return DesktopBounds(area);
+}
+
+bool DesktopSize(int* w, int* h)
+{
+    *w = screen.x;
+    *h = screen.y;
+    return true;
+}
+
+bool WindowOrigin(SDL_Window* sdl, int* x, int* y)
+{
+    *x = 0;
+    *y = 0;
+    return sdl != 0;
+}
+
+bool WindowSize(HWND hwnd, int* w, int* h)
+{
+    Window* window = Get(hwnd);
+    if (!window || !window->sdl) {
+        return false;
+    }
+    *w = window->width;
+    *h = window->height;
+    return true;
+}
+#else
+const SDL_WindowFlags kScreenWindowFlags = 0;
+
+bool DesktopBounds(SDL_Rect* bounds)
+{
+    return SDL_GetDisplayBounds(Display(), bounds);
+}
+
+bool WorkArea(SDL_Rect* area)
+{
+    return SDL_GetDisplayUsableBounds(Display(), area);
+}
+
+bool DesktopSize(int* w, int* h)
+{
+    const SDL_DisplayMode* desktop = SDL_GetDesktopDisplayMode(Display());
+    if (!desktop) {
+        return false;
+    }
+    *w = static_cast<int>(desktop->w * desktop->pixel_density + 0.5f);
+    *h = static_cast<int>(desktop->h * desktop->pixel_density + 0.5f);
+    return true;
+}
+
+bool WindowOrigin(SDL_Window* sdl, int* x, int* y)
+{
+    return SDL_GetWindowPosition(sdl, x, y);
+}
+
+bool WindowSize(HWND hwnd, int* w, int* h)
+{
+    SDL_Window* sdl = sdl3::WindowOf(hwnd);
+    return sdl && SDL_GetWindowSize(sdl, w, h);
+}
+#endif
 
 // The game's icon and cursors, extracted from the original's resources at
 // configure time (tools/extract-sdl-resources.py).
@@ -336,6 +426,11 @@ SDL_Window* WindowOf(HWND window)
     return window ? Get(window)->sdl : 0;
 }
 
+bool DesktopPixels(int* w, int* h)
+{
+    return DesktopSize(w, h);
+}
+
 }
 
 ATOM WINAPI RegisterClassA(const WNDCLASSA* windowClass)
@@ -360,6 +455,8 @@ HWND WINAPI CreateWindowExA(DWORD exStyle, LPCSTR className, LPCSTR windowName, 
     window->proc = found->second.lpfnWndProc;
     window->style = static_cast<LONG>(style);
     window->exStyle = static_cast<LONG>(exStyle);
+    window->width = width == CW_USEDEFAULT ? 640 : width;
+    window->height = height == CW_USEDEFAULT ? 480 : height;
     if (style & WS_CAPTION) {
         if (!sdl3::Init(SDL_INIT_VIDEO)) {
             delete window;
@@ -368,7 +465,8 @@ HWND WINAPI CreateWindowExA(DWORD exStyle, LPCSTR className, LPCSTR windowName, 
         // Hidden until ShowWindow, like a Win32 window.
         window->sdl = SDL_CreateWindow(windowName, width == CW_USEDEFAULT ? 640 : width,
             height == CW_USEDEFAULT ? 480 : height,
-            SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+            SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY |
+                kScreenWindowFlags);
         if (!window->sdl) {
             SDL_Log("SDL window: %s", SDL_GetError());
             delete window;
@@ -515,6 +613,16 @@ BOOL WINAPI SetWindowPos(HWND hwnd, HWND after, int x, int y, int width, int hei
     if (!sdl) {
         return FALSE;
     }
+    if (!(flags & SWP_NOSIZE)) {
+        Get(hwnd)->width = width;
+        Get(hwnd)->height = height;
+    }
+#ifdef __EMSCRIPTEN__
+    // The page shows every size and style the same way (see screen).
+    (void)x;
+    (void)y;
+    return TRUE;
+#endif
     if (flags & SWP_FRAMECHANGED) {
         const bool fullscreen = !(Get(hwnd)->style & WS_CAPTION);
         SDL_SetWindowFullscreen(sdl, fullscreen);
@@ -540,7 +648,7 @@ BOOL WINAPI GetWindowRect(HWND hwnd, RECT* rect)
     int y = 0;
     int w = 0;
     int h = 0;
-    if (!sdl || !SDL_GetWindowPosition(sdl, &x, &y) || !SDL_GetWindowSize(sdl, &w, &h)) {
+    if (!sdl || !WindowOrigin(sdl, &x, &y) || !WindowSize(hwnd, &w, &h)) {
         return FALSE;
     }
     rect->left = x;
@@ -552,10 +660,9 @@ BOOL WINAPI GetWindowRect(HWND hwnd, RECT* rect)
 
 BOOL WINAPI GetClientRect(HWND hwnd, RECT* rect)
 {
-    SDL_Window* sdl = sdl3::WindowOf(hwnd);
     int w = 0;
     int h = 0;
-    if (!sdl || !SDL_GetWindowSize(sdl, &w, &h)) {
+    if (!WindowSize(hwnd, &w, &h)) {
         return FALSE;
     }
     rect->left = 0;
@@ -661,7 +768,7 @@ BOOL WINAPI ScreenToClient(HWND hwnd, POINT* point)
     SDL_Window* sdl = sdl3::WindowOf(hwnd);
     int x = 0;
     int y = 0;
-    if (!sdl || !SDL_GetWindowPosition(sdl, &x, &y)) {
+    if (!sdl || !WindowOrigin(sdl, &x, &y)) {
         return FALSE;
     }
     const LPARAM position = Position(hwnd, static_cast<float>(point->x - x),
@@ -685,6 +792,11 @@ HICON WINAPI LoadIconA(HINSTANCE instance, LPCSTR name)
 // An HCURSOR is an SDL cursor; LoadCursorA(0, IDC_ARROW) is the system arrow.
 HCURSOR WINAPI LoadCursorA(HINSTANCE instance, LPCSTR name)
 {
+    // The scripts set the first cursor before the window exists; SDL makes
+    // cursors only once video is up.
+    if (!sdl3::Init(SDL_INIT_VIDEO)) {
+        return 0;
+    }
     const uintptr_t id = reinterpret_cast<uintptr_t>(name);
     const uintptr_t key = instance ? id : id | 0x10000;
     if (!cursors.count(key)) {
@@ -699,6 +811,11 @@ HCURSOR WINAPI LoadCursorA(HINSTANCE instance, LPCSTR name)
             if (image) {
                 cursor = SDL_CreateColorCursor(image, hotX, hotY);
                 SDL_DestroySurface(image);
+            }
+            // Without the extracted resources the arrow stands in: a null
+            // cursor would hide the pointer.
+            if (!cursor) {
+                cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_DEFAULT);
             }
         }
         cursors[key] = cursor;
@@ -723,7 +840,7 @@ HCURSOR WINAPI SetCursor(HCURSOR cursor)
 int WINAPI GetSystemMetrics(int index)
 {
     SDL_Rect bounds;
-    if ((index != SM_CXSCREEN && index != SM_CYSCREEN) || !SDL_GetDisplayBounds(Display(), &bounds)) {
+    if ((index != SM_CXSCREEN && index != SM_CYSCREEN) || !DesktopBounds(&bounds)) {
         return 0;
     }
     return index == SM_CXSCREEN ? bounds.w : bounds.h;
@@ -734,12 +851,13 @@ BOOL WINAPI EnumDisplaySettingsA(LPCSTR device, DWORD mode, DEVMODEA* out)
 {
     (void)device;
     (void)mode;
-    const SDL_DisplayMode* desktop = SDL_GetDesktopDisplayMode(Display());
-    if (!desktop) {
+    int w = 0;
+    int h = 0;
+    if (!sdl3::DesktopPixels(&w, &h)) {
         return FALSE;
     }
-    out->dmPelsWidth = static_cast<DWORD>(desktop->w * desktop->pixel_density + 0.5f);
-    out->dmPelsHeight = static_cast<DWORD>(desktop->h * desktop->pixel_density + 0.5f);
+    out->dmPelsWidth = static_cast<DWORD>(w);
+    out->dmPelsHeight = static_cast<DWORD>(h);
     return TRUE;
 }
 
@@ -748,7 +866,7 @@ BOOL WINAPI SystemParametersInfoA(UINT action, UINT param, void* out, UINT flags
     (void)param;
     (void)flags;
     SDL_Rect area;
-    if (action != SPI_GETWORKAREA || !SDL_GetDisplayUsableBounds(Display(), &area)) {
+    if (action != SPI_GETWORKAREA || !WorkArea(&area)) {
         return FALSE;
     }
     RECT* rect = static_cast<RECT*>(out);

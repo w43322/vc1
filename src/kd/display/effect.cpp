@@ -299,21 +299,12 @@ void KdEffectEmitter::SetPositionable(const KdPtr<IPositionable>& source)
     positionable = source.ptr;
 }
 
-// ADD ECX, 0x30; deleting destructor (IAbstract vtable+0x0c) on zero refs.
+// ADD ECX, 0x30, then IAbstract::Release (0x00401ee0) inlined by LTCG: the deleting
+// destructor (vtable+0x0c) on zero refs.
 // FUNCTION: VC1 0x0045aa80
 unsigned KdEffectEmitter::Release()
 {
-    IUnknown* face;
-    unsigned result;
-    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
-
-    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
-    result = --refs;
-    if (result == 0) {
-        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
-        return 0;
-    }
-    return result;
+    return IAbstract::Release();
 }
 
 // refs at +0x34; only counts up from nonzero.
@@ -514,21 +505,12 @@ KdEffect::~KdEffect()
     FreeFile();
 }
 
-// ADD ECX, 0x10; deleting destructor (IAbstract vtable+0x0c) on zero refs.
+// ADD ECX, 0x10, then IAbstract::Release (0x00401ee0) inlined by LTCG: the deleting
+// destructor (vtable+0x0c) on zero refs.
 // FUNCTION: VC1 0x0045b6b0
 unsigned KdEffect::Release()
 {
-    IUnknown* face;
-    unsigned result;
-    typedef void (__thiscall *FnDeletingDestructor)(void* object, int arg);
-
-    face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
-    result = --refs;
-    if (result == 0) {
-        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
-        return 0;
-    }
-    return result;
+    return IAbstract::Release();
 }
 
 // refs at +0x14; only counts up from nonzero.

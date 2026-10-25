@@ -7,9 +7,8 @@
 
 #include "Types.h"
 
-extern UInt32 g_CrcTable[];
-
-void MY_FAST_CALL CrcGenerateTable(void);
+/* VC1: a precomputed const table, as in the game (7zCrc.c); no generator. */
+extern const UInt32 g_CrcTable[];
 
 #define CRC_INIT_VAL 0xFFFFFFFF
 #define CRC_GET_DIGEST(crc) ((crc) ^ 0xFFFFFFFF)

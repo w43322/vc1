@@ -10,6 +10,10 @@
 #include <cstring>
 #include <utility>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 namespace vc1 {
 
 
@@ -141,8 +145,11 @@ SDL_FColor Color(unsigned c)
 void DesktopMode(DisplayMode* out)
 {
     const SDL_DisplayMode* mode = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay());
-    out->width = mode ? unsigned(mode->w * mode->pixel_density + 0.5f) : 1024;
-    out->height = mode ? unsigned(mode->h * mode->pixel_density + 0.5f) : 768;
+    int width = 1024;
+    int height = 768;
+    sdl3::DesktopPixels(&width, &height);
+    out->width = unsigned(width);
+    out->height = unsigned(height);
     out->refresh = mode ? unsigned(mode->refresh_rate + 0.5f) : 60;
     out->format = kX8R8G8B8;
 }
@@ -497,6 +504,15 @@ int __stdcall DeviceReset(void* self, const unsigned* present)
     return CreateBackBuffer(Device(self), present) ? kOk : kInvalidCall;
 }
 
+#ifdef __EMSCRIPTEN__
+// The browser shows one frame per animation frame. Waiting for the next one
+// paces the game like the original's vsync (SDL only yields with a zero
+// timeout) and leaves the page's thread time for input and the devtools.
+EM_ASYNC_JS(void, WaitForAnimationFrame, (), {
+    await new Promise(function (resolve) { requestAnimationFrame(function () { resolve(); }); });
+});
+#endif
+
 // Slot 0x0f. Scales the finished back buffer into the window; the game
 // rasterizes at its own resolution, so tiles never meet at fractional pixels.
 int __stdcall DevicePresent(void* self, const void*, const void*, void*, const void*)
@@ -515,6 +531,9 @@ int __stdcall DevicePresent(void* self, const void*, const void*, void*, const v
     SDL_SetTextureBlendMode(backBuffer->texture, SDL_BLENDMODE_NONE);
     SDL_RenderTexture(g_sdlRenderer, backBuffer->texture, 0, 0);
     SDL_RenderPresent(g_sdlRenderer);
+#ifdef __EMSCRIPTEN__
+    WaitForAnimationFrame();
+#endif
     SDL_SetRenderTarget(g_sdlRenderer, device->target ? device->target->texture : 0);
     return kOk;
 }

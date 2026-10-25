@@ -19,3 +19,9 @@ if(VC1_USE_SDL3)
   set_property(SOURCE ${PTW32_SOURCES} APPEND PROPERTY COMPILE_OPTIONS /TP /FIeh.h)
   set_property(SOURCE ${PTW32_SOURCES} APPEND PROPERTY COMPILE_DEFINITIONS _CRT_NO_TIME_T)
 endif()
+if(VC1_WEB)
+  # The browser build links Emscripten's own pthreads instead; the
+  # pthreads-win32 extensions the KD runtime calls are in src/imports/web/.
+  set(PTW32_SOURCES)
+  set(PTW32_DEFINITIONS)
+endif()

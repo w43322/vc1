@@ -275,19 +275,12 @@ void* KdConsole::QueryInterface(const char** iid)
     return 0;
 }
 
-// ADD ECX, 0x14; deleting destructor (vtable+0x0c) on zero refs.
+// ADD ECX, 0x14, then IAbstract::Release (0x00401ee0) inlined by LTCG: the deleting
+// destructor (vtable+0x0c) on zero refs.
 // FUNCTION: VC1 0x0046ae10
 unsigned KdConsole::Release()
 {
-    typedef void (__thiscall *FnDeletingDestructor)(void* object, int flags);
-    IUnknown* const face = static_cast<IUnknown*>(static_cast<IAbstract*>(this));
-    const unsigned result = --refs;
-
-    if (result == 0) {
-        reinterpret_cast<FnDeletingDestructor>((*reinterpret_cast<void***>(face))[3])(face, 1);
-        return 0;
-    }
-    return result;
+    return IAbstract::Release();
 }
 
 // refs at +0x18.
