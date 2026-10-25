@@ -149,7 +149,8 @@ namespace vc1 { extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...)
 #define scstrtod	strtod
 #define scstrtol	strtol
 #define scatoi		atoi
-#define scstrtoul	strtoul
+// VC1: the game's lexer reads hex escapes with strtol (SQLexer::ReadString).
+#define scstrtoul	strtol
 // VC1: the game's vsprintf is an inlined _vsnprintf with no cap
 // (SQCompiler::Error 0x0040ff10, SQVM::Raise_Error 0x004b8030).
 #include <stdarg.h>

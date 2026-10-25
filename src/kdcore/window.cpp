@@ -203,7 +203,7 @@ void* CreateKdWindow()
     env = GetKdEnv(kKdParentWindow);
     parent = 0;
     if (env) {
-        parent = reinterpret_cast<HWND>(strtoul(env, 0, 16));
+        parent = reinterpret_cast<HWND>(strtol(env, 0, 16));
     }
 
     x = static_cast<int>(CW_USEDEFAULT);
