@@ -352,9 +352,9 @@ static __forceinline void PyroDdsCorrectPreMult(PyroImage* image)
     while (count--) {
         if (data[3] != 0) {
             const unsigned alpha = data[3];
-            data[0] = static_cast<unsigned char>((static_cast<unsigned __int64>(data[0]) << 8) / alpha);
-            data[1] = static_cast<unsigned char>((static_cast<unsigned __int64>(data[1]) << 8) / alpha);
-            data[2] = static_cast<unsigned char>((static_cast<unsigned __int64>(data[2]) << 8) / alpha);
+            data[0] = static_cast<unsigned char>((static_cast<unsigned>(data[0]) << 8) / alpha);
+            data[1] = static_cast<unsigned char>((static_cast<unsigned>(data[1]) << 8) / alpha);
+            data[2] = static_cast<unsigned char>((static_cast<unsigned>(data[2]) << 8) / alpha);
         }
         data += 4;
     }
