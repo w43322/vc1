@@ -234,7 +234,7 @@ IUnknown** PtrLowerBound(IUnknown** first, IUnknown** last, IUnknown* const* key
 {
     while (first != last) {
         IUnknown** const mid = first + (last - first) / 2;
-        if (PtrLess(mid, key)) {
+        if (PtrLessInline(mid, key)) {
             first = mid + 1;
         }
         else {
@@ -246,7 +246,7 @@ IUnknown** PtrLowerBound(IUnknown** first, IUnknown** last, IUnknown* const* key
 
 // ECX=a, EAX=b. KdPtr operator<: identities compared, null first.
 // FUNCTION: VC1 0x004170c0
-bool PtrLess(IUnknown* const* a, IUnknown* const* b)
+__declspec(noinline) bool PtrLess(IUnknown* const* a, IUnknown* const* b)
 {
     if (*a) {
         if (*b) {

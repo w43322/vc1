@@ -64,7 +64,7 @@ void SquirrelVM::PushParam(SQInteger i)
 
 // EAX=o.
 // FUNCTION: VC1 0x00499ea0
-void SquirrelVM::PushParam(const SquirrelObject& o)
+__declspec(noinline) void SquirrelVM::PushParam(const SquirrelObject& o)
 {
     if (_CallState == -1) {
         SQPLUS_THROW(vc1::kSqCallNotInitialized);
@@ -103,7 +103,7 @@ BOOL SquirrelVM::BeginCall(const SquirrelObject& func, SquirrelObject& _this)
 // EAX=func. The root table is this. VC1: a call already in progress returns
 // FALSE without a message.
 // FUNCTION: VC1 0x00499f60
-BOOL SquirrelVM::BeginCall(const SquirrelObject& func)
+__declspec(noinline) BOOL SquirrelVM::BeginCall(const SquirrelObject& func)
 {
     if (_CallState != -1) {
         return FALSE;

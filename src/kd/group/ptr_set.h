@@ -114,6 +114,19 @@ KdSliceEntry* SliceMapLowerBound(KdSliceMap* map, const int* key);
 IUnknown** PtrLowerBound(IUnknown** first, IUnknown** last, IUnknown* const* key);
 bool PtrLess(IUnknown* const* a, IUnknown* const* b);
 
+// PtrLess's body. The original calls PtrLess (0x004170c0) on the erase paths
+// but inlines it into the lower bound and the insert paths.
+__forceinline bool PtrLessInline(IUnknown* const* a, IUnknown* const* b)
+{
+    if (*a) {
+        if (*b) {
+            return Identity(*a) < Identity(*b);
+        }
+        return false;
+    }
+    return *b != 0;
+}
+
 // PtrSetInsert's body (0x00416dc0), inlined where the original inlines it
 // (KdUpdateGroup::AddMember's member set).
 __forceinline KdPtrInsert* PtrSetInsertInline(KdRefList* set, IUnknown* const* key,
@@ -122,7 +135,7 @@ __forceinline KdPtrInsert* PtrSetInsertInline(KdRefList* set, IUnknown* const* k
     IUnknown** const last = RefEnd(set);
     IUnknown** const found = PtrLowerBound(RefBegin(set), last, key);
 
-    if (found != last && !PtrLess(key, found)) {
+    if (found != last && !PtrLessInline(key, found)) {
         out->slot = found;
         out->inserted = 0;
         return out;

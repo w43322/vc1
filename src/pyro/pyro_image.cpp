@@ -325,7 +325,7 @@ struct PyroDdsColor
 };
 
 // DevIL DxtcReadColor: a 5:6:5 colour, low bits dropped.
-static void PyroDdsReadColor(unsigned short data, PyroDdsColor* out)
+static __forceinline void PyroDdsReadColor(unsigned short data, PyroDdsColor* out)
 {
     out->r = static_cast<unsigned char>((data >> 8) & 0xf8);
     out->g = static_cast<unsigned char>((data >> 5) << 2);
@@ -333,7 +333,7 @@ static void PyroDdsReadColor(unsigned short data, PyroDdsColor* out)
 }
 
 // colours[2] and [3] of a four-colour block, in DevIL's b, g, r order.
-static void PyroDdsMixColors(PyroDdsColor* colours)
+static __forceinline void PyroDdsMixColors(PyroDdsColor* colours)
 {
     colours[2].b = static_cast<unsigned char>((2 * colours[0].b + colours[1].b + 1) / 3);
     colours[2].g = static_cast<unsigned char>((2 * colours[0].g + colours[1].g + 1) / 3);
@@ -344,7 +344,7 @@ static void PyroDdsMixColors(PyroDdsColor* colours)
 }
 
 // DevIL CorrectPreMult over the decoded pixels.
-static void PyroDdsCorrectPreMult(PyroImage* image)
+static __forceinline void PyroDdsCorrectPreMult(PyroImage* image)
 {
     unsigned char* data = static_cast<unsigned char*>(image->pixels);
     unsigned count = image->width * image->height;

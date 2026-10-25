@@ -2029,7 +2029,7 @@ void DisplayD3dSetView(const Matrix3* matrix)
 
 // ECX=D3DCOLOR. Clear target, Z=1. Called from DisplayD3DInit with 0.
 // FUNCTION: VC1 0x00464780
-static void DisplayD3dClear(unsigned color)
+__declspec(noinline) static void DisplayD3dClear(unsigned color)
 {
     typedef int (__stdcall *FnClear)(IUnknown* device, unsigned count, void* rects,
         unsigned flags, unsigned col, float z, unsigned stencil);

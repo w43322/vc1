@@ -27,7 +27,7 @@ unsigned KdBufferStream::Fill(unsigned want)
 // EDI=this. Called by the deleting destructor (0x0042e3a0) and inline in
 // KdFont::Load: source (Close, then its name), then buffer.
 // FUNCTION: VC1 0x00419b30
-KdFileReader::~KdFileReader() throw()
+__declspec(noinline) KdFileReader::~KdFileReader() throw()
 {
 }
 
@@ -146,7 +146,7 @@ void KdBufferStream::ReadToken(KdString& out)
 // EBX=this, RET 4. ReadToken with '\n' as the only delimiter; the delimiter
 // set is restored afterwards.
 // FUNCTION: VC1 0x004ba8c0
-KdBufferStream& KdBufferStream::ReadLine(KdString& out)
+__declspec(noinline) KdBufferStream& KdBufferStream::ReadLine(KdString& out)
 {
     // The set is saved as a range copy and cleared as a range fill (each
     // behind a first != last check), then restored by one struct assignment.
