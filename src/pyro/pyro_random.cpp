@@ -1,3 +1,4 @@
+#include "pyro/pyro_crt.h"
 #include "kdcore/native.h"
 #include "pyro/pyro_random.h"
 

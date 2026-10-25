@@ -1,3 +1,4 @@
+#include "pyro/pyro_crt.h"
 #include "pyro/pyro_emitter.h"
 
 #include "kd/display/pyro.h"
@@ -1666,7 +1667,7 @@ PyroEmitter::PyroEmitter(PyroEmitter* source)
     if (layerCount) {
         layers = new PyroLayer[layerCount];
         for (int i = 0; i < layerCount; ++i) {
-            memcpy(&layers[i], &source->layers[i], sizeof(PyroLayer));
+            layers[i] = source->layers[i]; // a rep movsd copy, not memcpy
             layers[i].emitter = this;
             layers[i].MarkInstance();
         }

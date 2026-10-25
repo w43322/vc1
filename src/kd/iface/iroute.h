@@ -43,6 +43,7 @@ struct KdRouteSample
 // Inferred names. A polyline route; the slots are those of the route class's
 // IRoute face (vftable 0x004d18e0, QI 0x004a9050 answers "IRoute" at +0x10).
 // SIZE 0x04
+// VTABLE: VC1 0x004d1868
 struct IRoute : IUnknown
 {
     virtual void AddPoint(const Vector2& point) = 0;                          // vtable+0x0c

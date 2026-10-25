@@ -1,3 +1,4 @@
+#include "pyro/pyro_crt.h"
 #include "pyro/pyro_image.h"
 
 #include <string.h>

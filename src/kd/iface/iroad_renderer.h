@@ -42,6 +42,7 @@ struct CellCoord
 // Inferred names, from the bodies of KdRoadRenderer (0x004aa3a0 QI's
 // "IRoadRenderer"); only "HighlightRoadCells" is a script name.
 // SIZE 0x04
+// VTABLE: VC1 0x004d16b0
 struct IRoadRenderer : IRenderable
 {
     virtual void SetGridMap(const KdPtr<IGridMap>& map) = 0;                    // vtable+0x18

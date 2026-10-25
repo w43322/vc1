@@ -18,6 +18,7 @@ struct RenderMask
 extern RenderMask g_defaultRenderMask;
 
 // SIZE 0x04
+// VTABLE: VC1 0x004cf990
 struct IRenderable : IUnknown
 {
     virtual int RenderMasked(void* graphics, void* unused); // vtable+0x0c

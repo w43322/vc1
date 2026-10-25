@@ -15,6 +15,7 @@ namespace vc1 {
 // script methods of KdTileObject (GetMember 0x004a1410 binds them through
 // vcall thunks).
 // SIZE 0x04
+// VTABLE: VC1 0x004d2078
 struct ITileObject : IRenderable
 {
     virtual int GetTile() = 0;                     // vtable+0x18 "GetTile"

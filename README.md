@@ -118,7 +118,7 @@ Single-function asm diff (from the repository root):
 
 `reccmp-verexp` is for DLL exports; this target is an EXE, so it is unused. CRT and libraries without source use `config/verified.csv`; vendored libraries use source annotations. Do not hide mismatches with `report: ignore-functions:`.
 
-The original EXE has no relocation table, so reccmp cannot auto-detect its strings. Literals referenced from its code or data tables are mapped either by `STRING` markers in source or by `address|string||` rows in `config/verified.csv`, which reccmp pairs with the recompiled literal by text. Unmapped strings show up as raw addresses in asm diffs.
+The original EXE has no relocation table, so reccmp cannot auto-detect its strings. Literals referenced from its code or data tables are mapped either by `STRING` markers in source or by `address|string||` rows in `config/verified.csv`, which reccmp pairs with the recompiled literal by text. Unmapped strings show up as raw addresses in asm diffs. Library and CRT globals without source get `global` rows the same way, and FPU constants are listed in `config/floats.csv` (`address|float|size`), the second `data-sources` entry.
 
 ### Markers
 

@@ -1,3 +1,4 @@
+#include "pyro/pyro_crt.h"
 #include "pyro/pyro_cfile.h"
 
 #include <errno.h>
