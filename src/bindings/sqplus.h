@@ -142,7 +142,7 @@ SquirrelObject CreateScriptMethod(Func func)
 {
     HSQUIRRELVM v = SquirrelVM::_VM;
     SQUserPointer up = sq_newuserdata(v, sizeof(func));
-    memcpy(up, &func, sizeof(func));
+    *static_cast<Func*>(up) = func;
     sq_newclosure(v, ScriptMethodCall<Callee, Func>::Dispatch, 1);
     SquirrelObject so;
     so.AttachToStackObject(-1);

@@ -64,7 +64,7 @@ public:
 template<typename Callee,typename Pointee,typename Func>
 inline void sq_pushdirectsmartinstanceclosure(HSQUIRRELVM v,const Callee & callee,const Pointee & pointee,Func func,SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(func));  // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   sq_newclosure(v,DirectCallSmartInstanceMemberFunction<Callee,Pointee,Func>::Dispatch,nupvalues+1);
 } // sq_pushdirectinstanceclosure
 

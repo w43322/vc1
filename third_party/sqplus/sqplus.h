@@ -1498,7 +1498,7 @@ SQObjectType sot = so.GetType();
 template<typename Func>
 inline void sq_pushdirectclosure(HSQUIRRELVM v,Func func,SQUnsignedInteger nupvalues) {
   SQUserPointer up = sq_newuserdata(v,sizeof(func)); // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   sq_newclosure(v,DirectCallFunction<Func>::Dispatch,nupvalues+1);
 #ifdef SQPLUS_ENABLE_AUTO_TYPEMASK
   sq_setparamscheck(v,0,sqTypeMask<Func>::Get());
@@ -1511,8 +1511,8 @@ template<typename Callee,typename Func>
 inline void sq_pushdirectclosure(HSQUIRRELVM v,const Callee & callee,Func func,SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(Callee*)+sizeof(func));  // Also pushed on stack.
   const SQUserPointer pCallee = (SQUserPointer)&callee;
-  memcpy(up,&pCallee,sizeof(Callee*));
-  memcpy(up + sizeof(Callee*),&func,sizeof(func));
+  *(SQUserPointer*)up = pCallee; // VC1: typed stores in the game
+  *(Func*)(up + sizeof(Callee*)) = func;
   sq_newclosure(v,DirectCallMemberFunction<Callee,Func>::Dispatch,nupvalues+1);
 #ifdef SQPLUS_ENABLE_AUTO_TYPEMASK
   sq_setparamscheck(v,0,sqTypeMask<Func>::Get());
@@ -1529,7 +1529,7 @@ inline void sq_pushdirectclosure(HSQUIRRELVM v,const Callee & callee,Func func,S
 template<typename Callee,typename Func>
 inline void sq_pushdirectinstanceclosure(HSQUIRRELVM v,const Callee & callee,Func func,SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(func));  // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   sq_newclosure(v,DirectCallInstanceMemberFunction<Callee,Func>::Dispatch,nupvalues+1);
 #ifdef SQPLUS_ENABLE_AUTO_TYPEMASK
   sq_setparamscheck(v,0,sqTypeMask<Func>::Get());
@@ -1541,7 +1541,7 @@ inline void sq_pushdirectinstanceclosure(HSQUIRRELVM v,const Callee & callee,Fun
 template<typename Callee,typename Func>
 inline void sq_pushdirectinstanceclosureglobal(HSQUIRRELVM v,const Callee & callee,Func func,SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(func));  // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   // Could check that 1st arg of Func is a Callee
   sq_newclosure(v,DirectCallInstanceGlobalFunction<Callee,Func>::Dispatch,nupvalues+1);
 #ifdef SQPLUS_ENABLE_AUTO_TYPEMASK
@@ -1560,7 +1560,7 @@ inline void sq_pushdirectinstanceclosureglobal(HSQUIRRELVM v,const Callee & call
 template<typename Callee,typename Func>
 inline void sq_pushdirectinstanceclosureglobalvarargs(HSQUIRRELVM v,const Callee & callee,Func func,SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(func));  // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   // Could check that 1st arg of Func is a Callee
   sq_newclosure(v,DirectCallInstanceGlobalFunctionVarArgs<Callee,Func>::Dispatch,nupvalues+1);
 #ifdef SQPLUS_ENABLE_AUTO_TYPEMASK
@@ -1573,7 +1573,7 @@ inline void sq_pushdirectinstanceclosureglobalvarargs(HSQUIRRELVM v,const Callee
 template<typename Callee>
 inline void sq_pushdirectinstanceclosurevarargs(HSQUIRRELVM v,const Callee & callee,int (Callee::*func)(HSQUIRRELVM),SQUnsignedInteger nupvalues) {
   unsigned char * up = (unsigned char *)sq_newuserdata(v,sizeof(func)); // Also pushed on stack.
-  memcpy(up,&func,sizeof(func));
+  *(Func*)up = func; // VC1: a typed store in the game, not memcpy
   typedef int (Callee::*FuncType)(HSQUIRRELVM);
   sq_newclosure(v,DirectCallInstanceMemberFunctionVarArgs<Callee, FuncType>::Dispatch,nupvalues+1);
 } // sq_pushdirectinstanceclosurevarargs
