@@ -1,4 +1,5 @@
 #include "kdcore/runtime.h"
+#include "kd/stream/file_reader.h"
 
 #include <squirrel.h>
 
@@ -43,18 +44,12 @@ KdEventQueue g_kdEventQueue;
 
 // GLOBAL: VC1 0x004ed4f8
 KdObject* g_kdObjects;
-// GLOBAL: VC1 0x004ed4f0
-KdObject* g_kdObjectIt0;
-// GLOBAL: VC1 0x004ed4e8
-KdObject* g_kdObjectIt1;
 // GLOBAL: VC1 0x004ed4e0
-KdObject* g_kdObjectIt2;
-// GLOBAL: VC1 0x004ed4e4
-void* g_kdPath0;
-// GLOBAL: VC1 0x004ed4ec
-void* g_kdPath1;
-// GLOBAL: VC1 0x004ed4f4
-void* g_kdPath2;
+KdFileHandle g_kdStdin;
+// GLOBAL: VC1 0x004ed4e8
+KdFileHandle g_kdStdout;
+// GLOBAL: VC1 0x004ed4f0
+KdFileHandle g_kdStderr;
 
 // GLOBAL: VC1 0x004ed504
 char g_resourceLocale[8];

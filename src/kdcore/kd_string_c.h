@@ -14,7 +14,12 @@ int MemCompare(const void* left, const void* right, unsigned size);
  * png_do_read_transformations format their messages through it. */
 int FormatBufferOpen(char* buf, const char* fmt, ...);
 
+/* The game's libpng logs through KdLog (src/kdcore/heap.cpp) instead of
+ * stderr: png_default_error (0x00448320) and png_default_warning. */
+void KdLog(const char* fmt, ...);
+
 #define memcmp MemCompare
+#define fprintf(stream, ...) KdLog(__VA_ARGS__)
 #define sprintf FormatBufferOpen
 
 #endif

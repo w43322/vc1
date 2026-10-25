@@ -63,12 +63,13 @@ extern KdCallback* g_kdCallbacks; // 0x004e95c8
 extern KdCallback g_kdDefaultCallback; // 0x004e918c
 
 extern KdObject* g_kdObjects;     // 0x004ed4f8
-extern KdObject* g_kdObjectIt0;   // 0x004ed4f0
-extern KdObject* g_kdObjectIt1;   // 0x004ed4e8
-extern KdObject* g_kdObjectIt2;   // 0x004ed4e0
-extern void* g_kdPath0;           // 0x004ed4e4
-extern void* g_kdPath1;           // 0x004ed4ec
-extern void* g_kdPath2;           // 0x004ed4f4
+// Inferred names. The KD standard streams: the first driver over the CRT's
+// stdin / stdout / stderr FILEs. sqstdio's stdin/stdout/stderr files are
+// these handles (sqstd_register_iolib 0x0048f990).
+struct KdFileHandle;
+extern KdFileHandle g_kdStdin;    // 0x004ed4e0
+extern KdFileHandle g_kdStdout;   // 0x004ed4e8
+extern KdFileHandle g_kdStderr;   // 0x004ed4f0
 extern char g_resourceLocale[8];  // 0x004ed504
 extern char g_scriptPrintBuf[0x400];  // 0x004ed9d0
 extern char g_windowsVersionText[0x80]; // 0x004eb050
@@ -190,7 +191,7 @@ extern unsigned g_kdLogTag; // 0x004cfa94, also the empty counted-string bytes
 // 0x00496a10; EBX=fmt, EDI=args
 void KdLogV(const char* fmt, va_list args);
 // 0x00496a40
-void KdLog(const char* fmt, ...);
+extern "C" void KdLog(const char* fmt, ...);
 extern const char* g_kdLogPrefix; // 0x004d062c
 // 0x004b7010
 void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args);

@@ -4,6 +4,7 @@
 #include "kd/iface/iid.h"
 #include "kd/iface/iresource_manager.h"
 #include "kdcore/native.h"
+#include "kd/stream/file_reader.h"
 #include "bindings/sqplus.h"
 
 #include <math.h>
@@ -407,8 +408,8 @@ unsigned KdConsole::Write(const void* buffer, unsigned size)
     const char* const end = p + size;
 
     if (g_kdEnableStdio) {
-        g_kdObjectIt1->write(g_kdObjectIt1, buffer, 1, size, reinterpret_cast<int>(g_kdPath1));
-        g_kdObjectIt1->flush(g_kdObjectIt1, reinterpret_cast<int>(g_kdPath1));
+        g_kdStdout.driver->write(g_kdStdout.driver, buffer, 1, size, g_kdStdout.native);
+        g_kdStdout.driver->flush(g_kdStdout.driver, g_kdStdout.native);
     }
     if (lines.items.size == 0) {
         lines.PushBack(KdString());
@@ -444,7 +445,7 @@ static void* ReadStdin(void* arg)
 
     while (g_kdConsolePrint) {
         char c;
-        if (g_kdObjectIt2->read(g_kdObjectIt2, &c, 1, 1, reinterpret_cast<int>(g_kdPath0)) == 0) {
+        if (g_kdStdin.driver->read(g_kdStdin.driver, &c, 1, 1, g_kdStdin.native) == 0) {
             break;
         }
         if (c == '\n' || c == '\r') {

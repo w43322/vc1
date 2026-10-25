@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include "kd/stream/file_reader.h"
+#include "kdcore/runtime.h"
 
 namespace vc1 {
 
@@ -113,5 +114,13 @@ inline int KdStdioEof(void* file)
 #define fflush(file) vc1::KdStdioFlush(file)
 #define fclose(file) vc1::KdStdioClose(file)
 #define feof(file) vc1::KdStdioEof(file)
+
+// sqstd_register_iolib (0x0048f990) wraps the KD standard stream handles.
+#undef stdin
+#undef stdout
+#undef stderr
+#define stdin (reinterpret_cast<FILE*>(&vc1::g_kdStdin))
+#define stdout (reinterpret_cast<FILE*>(&vc1::g_kdStdout))
+#define stderr (reinterpret_cast<FILE*>(&vc1::g_kdStderr))
 
 #endif

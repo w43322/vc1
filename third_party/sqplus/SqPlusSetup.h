@@ -144,7 +144,7 @@ typedef vc1::KdString SqPlusStdString;
 // "error: %s\n" through KdLog and carries on; the SqPlus.cpp sites then
 // return SQ_ERROR (getVar 0x4c2a3f, setVar 0x4c2b6d).
 namespace vc1 {
-void KdLog(const char* fmt, ...);
+extern "C" void KdLog(const char* fmt, ...);
 extern const char g_sqplusErrorFormat[];
 }
 #define SQPLUS_THROW(msg) vc1::KdLog(vc1::g_sqplusErrorFormat, (msg))

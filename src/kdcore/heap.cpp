@@ -391,7 +391,7 @@ void KdLogV(const char* fmt, va_list args)
 }
 
 // FUNCTION: VC1 0x00496a40
-void KdLog(const char* fmt, ...)
+extern "C" void KdLog(const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);

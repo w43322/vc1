@@ -156,7 +156,7 @@ const char* GetResourceLocale();
 int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
 extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...);
 void KdLogV(const char* fmt, va_list args);
-void KdLog(const char* fmt, ...);
+extern "C" void KdLog(const char* fmt, ...);
 void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args);
 void HostLog(const char** prefix, const char* fmt, ...);
 void HostLogWarning(const char** prefix, const char* fmt, ...);

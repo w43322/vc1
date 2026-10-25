@@ -1062,13 +1062,13 @@ void InitKdFilesystem()
     FILE* iob;
 
     CreateKdObject(KdConstruct, 0);
-    g_kdObjectIt0 = g_kdObjects;
-    g_kdObjectIt1 = g_kdObjects;
-    g_kdObjectIt2 = g_kdObjects;
+    g_kdStderr.driver = g_kdObjects;
+    g_kdStdout.driver = g_kdObjects;
+    g_kdStdin.driver = g_kdObjects;
     iob = __iob_func();
-    g_kdPath0 = iob;
-    g_kdPath1 = iob + 1;
-    g_kdPath2 = iob + 2;
+    g_kdStdin.native = reinterpret_cast<int>(iob);
+    g_kdStdout.native = reinterpret_cast<int>(iob + 1);
+    g_kdStderr.native = reinterpret_cast<int>(iob + 2);
     dir = DirOpen();
 
     {
