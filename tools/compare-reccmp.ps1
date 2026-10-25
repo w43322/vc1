@@ -5,7 +5,8 @@
 #   -Full           also echo every tool's full output
 #   -ResetBaseline  make this run the round baseline (VC1.base.json); do it
 #                   after a commit so "since baseline" covers the whole round
-param([switch]$Full, [switch]$ResetBaseline)
+#   -UpdateStatus   copy the progress SVG to docs/status.svg (shown in README)
+param([switch]$Full, [switch]$ResetBaseline, [switch]$UpdateStatus)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
@@ -82,6 +83,14 @@ try {
         ) -LogFile (Join-Path $reportDir 'VC1.diff.txt') -AllowFailure -ShowAll
     }
     Copy-Item -LiteralPath $json -Destination $prev -Force
+    if ($UpdateStatus) {
+        # reccmp's template sizes the title for short names like LEGO1.DLL;
+        # shrink it so "VirtualCity.Unwrapped.exe" fits the badge.
+        $svg = [IO.File]::ReadAllText((Join-Path $reportDir 'VC1.svg'))
+        $svg = $svg.Replace('font-size:12.7px', 'font-size:8.4px')
+        [IO.File]::WriteAllText((Join-Path $root 'docs/status.svg'), $svg, (New-Object Text.UTF8Encoding $false))
+        Write-Host '--- docs/status.svg updated'
+    }
 
     if ($ResetBaseline -or !(Test-Path -LiteralPath $base)) {
         Copy-Item -LiteralPath $json -Destination $base -Force
