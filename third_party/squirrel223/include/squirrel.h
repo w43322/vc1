@@ -150,7 +150,17 @@ namespace vc1 { extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...)
 #define scstrtol	strtol
 #define scatoi		atoi
 #define scstrtoul	strtoul
-#define scvsprintf	vsprintf
+// VC1: the game's vsprintf is an inlined _vsnprintf with no cap
+// (SQCompiler::Error 0x0040ff10, SQVM::Raise_Error 0x004b8030).
+#include <stdarg.h>
+#include <stdio.h>
+namespace vc1 {
+__forceinline int KdVsprintf(char* buf, const char* fmt, va_list args)
+{
+	return _vsnprintf(buf, 0xffffffff, fmt, args);
+}
+}
+#define scvsprintf	vc1::KdVsprintf
 // VC1: the game's string_find calls the host strstr (0x00482220).
 namespace vc1 { char* KdStrstr(const char* haystack, const char* needle); }
 #define scstrstr	vc1::KdStrstr
