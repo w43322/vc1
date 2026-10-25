@@ -198,8 +198,9 @@ struct ScriptMethodTable
     ScriptMethod* InsertSlot(ScriptMethod* pos);
     SquirrelObject& operator[](const char* const& name);
 
-    // GetMember body: copies the closure for name into *out.
-    unsigned char Find(const char* name, SquirrelObject* out)
+    // GetMember body: copies the closure for name into *out. No original
+    // address: inlined into every GetMember, which calls LowerBound.
+    __forceinline unsigned char Find(const char* name, SquirrelObject* out)
     {
         ScriptMethod* found = LowerBound(name);
         ScriptMethod* end = End();

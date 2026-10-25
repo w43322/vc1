@@ -674,7 +674,8 @@ void sq_settop(HSQUIRRELVM v, SQInteger newtop)
 		while(top++ < newtop) sq_pushnull(v);
 }
 
-void sq_pop(HSQUIRRELVM v, SQInteger nelemstopop)
+// VC1: the game calls sq_pop out of line at every call site (0x0048fee0).
+__declspec(noinline) void sq_pop(HSQUIRRELVM v, SQInteger nelemstopop)
 {
 	assert(v->_top >= nelemstopop);
 	v->Pop(nelemstopop);
