@@ -1,4 +1,5 @@
 #include "kd/build/terrain_builder.h"
+#include "kdcore/kd_memory.h"
 
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
@@ -388,7 +389,7 @@ void KdTerrainBuilder::RenderGrid(void* graphics)
     int x;
     int y;
 
-    memcpy(&saved, &target->GetTransform(), sizeof(saved));
+    KdMemcpy(&saved, &target->GetTransform(), sizeof(saved));
     {
         ICamera* const view = static_cast<ICamera*>(*target->GetCamera());
         const Matrix3& position = gridMap->GetPosition();

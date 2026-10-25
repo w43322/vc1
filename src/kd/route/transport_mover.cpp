@@ -1,4 +1,5 @@
 #include "kd/route/transport_mover.h"
+#include "kdcore/kd_memory.h"
 
 #include "kd/iface/iid.h"
 #include "kd/factory.h"
@@ -541,7 +542,7 @@ void KdTransportMover::InitPosition(const KdPtr<IPositionable>& transport)
     KdTransportRecord& record = records[index];
     const KdRouteSample sample = record.route->GetSampleAt(0.0f);
     Matrix3 position;
-    memcpy(&position, &record.transport->GetPosition(), sizeof(position));
+    KdMemcpy(&position, &record.transport->GetPosition(), sizeof(position));
     position._31 = sample.position.x;
     position._32 = sample.position.y;
     position._11 = sample.direction.x;
@@ -1041,7 +1042,7 @@ void KdTransportMover::UpdateRecord(KdTransportRecord& record, int dt)
         Matrix3 position;
         KdGridCell cell;
 
-        memcpy(&position, &record.transport->GetPosition(), sizeof(position));
+        KdMemcpy(&position, &record.transport->GetPosition(), sizeof(position));
         position._31 = sample.position.x;
         position._32 = sample.position.y;
         position._11 = sample.direction.x;

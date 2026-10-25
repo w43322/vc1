@@ -1,4 +1,5 @@
 #include "kd/build/building_builder.h"
+#include "kdcore/kd_memory.h"
 
 #include "kd/iface/igraphics.h"
 #include "kd/iface/iid.h"
@@ -247,7 +248,7 @@ void KdBuildingBuilder::RenderGrid(void* graphics)
     int x;
     int y;
 
-    memcpy(&saved, &target->GetTransform(), sizeof(saved));
+    KdMemcpy(&saved, &target->GetTransform(), sizeof(saved));
     {
         ICamera* const view = static_cast<ICamera*>(*target->GetCamera());
         const Matrix3& grid = gridMap->GetPosition();
@@ -279,7 +280,7 @@ int KdBuildingBuilder::Render(void* graphics)
         Matrix3 saved;
         int x;
 
-        memcpy(&saved, &target->GetTransform(), sizeof(saved));
+        KdMemcpy(&saved, &target->GetTransform(), sizeof(saved));
         {
             ICamera* const view = static_cast<ICamera*>(*target->GetCamera());
             const Matrix3& grid = gridMap->GetPosition();

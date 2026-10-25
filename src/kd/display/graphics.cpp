@@ -1,4 +1,5 @@
 #include "kd/display/graphics.h"
+#include "kdcore/kd_memory.h"
 #include "kd/display/display.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
@@ -202,7 +203,7 @@ void KdGraphics::DrawQuads(const KdPtr<ITexture>& texture, const void* quads, un
             target = static_cast<unsigned char*>(BeginQuadBatch(state.mode, native, &capacity));
             written = 0;
         }
-        memcpy(target, source, 0x60);
+        KdMemcpy(target, source, 0x60);
         source += 0x60;
         target += 0x60;
         written++;

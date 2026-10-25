@@ -1,4 +1,5 @@
 #include "kd/stream/file_reader.h"
+#include "kdcore/kd_memory.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -147,13 +148,21 @@ void KdBufferStream::ReadToken(KdString& out)
 // FUNCTION: VC1 0x004ba8c0
 KdBufferStream& KdBufferStream::ReadLine(KdString& out)
 {
-    unsigned saved[4];
+    // The set is saved as a range copy and cleared as a range fill (each
+    // behind a first != last check), then restored by one struct assignment.
+    struct DelimiterSet { char c[0x10]; } saved;
+    char* const first = delimiters;
+    char* const last = delimiters + sizeof(delimiters);
 
-    memcpy(saved, delimiters, sizeof(delimiters));
-    memset(delimiters, 0, sizeof(delimiters));
+    if (first != last) {
+        KdMemcpy(saved.c + (first - delimiters), first, static_cast<unsigned>(last - first));
+    }
+    if (first != last) {
+        memset(first, 0, last - first);
+    }
     delimiters[0] = '\n';
     ReadToken(out);
-    memcpy(delimiters, saved, sizeof(delimiters));
+    *reinterpret_cast<DelimiterSet*>(delimiters) = saved;
     return *this;
 }
 

@@ -4,6 +4,7 @@
 #include "vector2.h"
 #include "vector3.h"
 #include "memory/fixed_pool.h"
+#include "kdcore/kd_memory.h"
 
 namespace vc1 {
 
@@ -42,6 +43,11 @@ struct Matrix3
         : _11(a11), _12(a12), _13(a13), _21(a21), _22(a22), _23(a23),
           _31(a31), _32(a32), _33(a33)
     {
+    }
+    // Copies go through KdMemcpy (a CRT memcpy call in the original).
+    Matrix3(const Matrix3& other)
+    {
+        KdMemcpy(this, &other, sizeof(Matrix3));
     }
     Matrix3(const Vector2& x, const Vector2& y, const Vector2& origin);
     explicit Matrix3(const Vector2& origin);
