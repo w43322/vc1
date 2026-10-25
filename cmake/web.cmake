@@ -82,9 +82,7 @@ function(vc1_web_target target)
     -sEXIT_RUNTIME=1
     -sFORCE_FILESYSTEM=1
     -lidbfs.js
-    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain,addRunDependency,removeRunDependency"
-    "SHELL:--post-js ${VC1_WEB_DIR}/shell/fs_paths.js")
-  set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS "${VC1_WEB_DIR}/shell/fs_paths.js")
+    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain,addRunDependency,removeRunDependency")
   # The page plays the local game copy (git-ignored, never committed):
   # game.data / game.data.js preload VirtualCity.bar, the game's 7z archive
   # that the KD "bar" driver mounts from the working directory, at /game with

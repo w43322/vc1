@@ -70,11 +70,11 @@ The SDL3 build also compiles to WebAssembly with [Emscripten](https://emscripten
 ```powershell
 git clone https://github.com/emscripten-core/emsdk.git build\emsdk
 build\emsdk\emsdk install latest; build\emsdk\emsdk activate latest
-.	oolsuild-web.cmd           # build\webin\index.html, VirtualCity.js, VirtualCity.wasm
-python -m http.server -d build\webin 8000
+.\tools\build-web.cmd           # build\web\bin\index.html, VirtualCity.js, VirtualCity.wasm
+python -m http.server -d build\web\bin 8000
 ```
 
-The build packages the local game copy's `VirtualCity.bar` (the game's 7z archive, which it mounts from its working directory) beside the page as `build\webin\game.data`, git-ignored like everything in `build\`; it stops if `Virtual-City_Win_EN_Full\VirtualCity.bar` is missing. <http://localhost:8000/> then starts the game straight away. Saves are kept in the browser's IndexedDB. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
+The build packages the local game copy's `VirtualCity.bar` (the game's 7z archive, which it mounts from its working directory) beside the page as `build\web\bin\game.data`, git-ignored like everything in `build\`; it stops if `Virtual-City_Win_EN_Full\VirtualCity.bar` is missing. <http://localhost:8000/> then starts the game straight away. Saves are kept in the browser's IndexedDB. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
 
 ## Build and run
 
@@ -82,8 +82,8 @@ Three scripts at the root build a target and start it from the local game copy:
 
 | Script | Runs |
 | --- | --- |
-| `build-run-original.cmd` | The reference build (VC9, `buildc9in\VirtualCity.Unwrapped.exe`) |
-| `build-run-sdl3.cmd` | The SDL3 build (`build\sdl3in\VirtualCity.SDL3.exe`) |
+| `build-run-original.cmd` | The reference build (VC9, `build\vc9\bin\VirtualCity.Unwrapped.exe`) |
+| `build-run-sdl3.cmd` | The SDL3 build (`build\sdl3\bin\VirtualCity.SDL3.exe`) |
 | `build-run-web.cmd` | The web build, served at <http://localhost:8000/> until its window is closed |
 
 ## Requirements
