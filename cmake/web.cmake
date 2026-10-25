@@ -2,7 +2,7 @@
 # (tools/build-web.cmd). The recovered sources are unchanged; what the browser
 # needs beyond SDL3 lives in src/imports/web/: MSVC CRT names (force-included
 # vc1_web_crt.h and the include/ stand-ins), the entry point that calls
-# WinMain, and the page (shell/) that loads the player's game folder.
+# WinMain, and the page (shell/) that plays the packaged VirtualCity.bar.
 #
 # The game's main loop never returns, so the module is built with ASYNCIFY:
 # Present and Sleep yield to the browser (src/imports/web/web.cpp).
@@ -82,42 +82,42 @@ function(vc1_web_target target)
     -sEXIT_RUNTIME=1
     -sFORCE_FILESYSTEM=1
     -lidbfs.js
-    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain"
+    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain,addRunDependency,removeRunDependency"
     "SHELL:--post-js ${VC1_WEB_DIR}/shell/fs_paths.js")
   set_property(TARGET ${target} APPEND PROPERTY LINK_DEPENDS "${VC1_WEB_DIR}/shell/fs_paths.js")
-  # The local game copy (git-ignored, never committed) is packaged beside the
-  # page when present: game.data / game.data.js preload VirtualCity.bar, the
-  # game's 7z archive that the KD "bar" driver mounts from the working
-  # directory, at /game with the cursors and icon of the original
-  # executable. Without it the page asks the player for their game folder.
+  # The page plays the local game copy (git-ignored, never committed):
+  # game.data / game.data.js preload VirtualCity.bar, the game's 7z archive
+  # that the KD "bar" driver mounts from the working directory, at /game with
+  # the cursors and icon of the original executable.
   set(game "${CMAKE_SOURCE_DIR}/Virtual-City_Win_EN_Full")
-  if(EXISTS "${game}/VirtualCity.bar")
-    # emsdk_env sets EMSDK_PYTHON, the interpreter the Emscripten tools want.
-    if(DEFINED ENV{EMSDK_PYTHON})
-      set(Python3_EXECUTABLE "$ENV{EMSDK_PYTHON}")
-    else()
-      find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    endif()
-    set(resources "${CMAKE_BINARY_DIR}/platform-resources")
-    set(venv_python "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
-    set(packaged "${game}/VirtualCity.bar@/game/VirtualCity.bar")
-    if(EXISTS "${game}/VirtualCity.Unwrapped.exe" AND EXISTS "${venv_python}")
-      execute_process(COMMAND "${venv_python}" "${CMAKE_SOURCE_DIR}/tools/extract-sdl-resources.py"
-        "${game}/VirtualCity.Unwrapped.exe" "${resources}" RESULT_VARIABLE extracted)
-      if(extracted EQUAL 0)
-        list(APPEND packaged "${resources}@/game/.vc1/platform-resources")
-      endif()
-    endif()
-    set(data "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/game.data")
-    add_custom_command(OUTPUT "${data}" "${data}.js"
-      COMMAND "${Python3_EXECUTABLE}" "${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py" "${data}"
-        --preload ${packaged} "--js-output=${data}.js" --use-preload-cache --no-node
-        "--depfile=${CMAKE_BINARY_DIR}/game.data.d"
-      DEPFILE "${CMAKE_BINARY_DIR}/game.data.d"
-      COMMENT "Packaging the local game data for the page"
-      VERBATIM)
-    add_custom_target(vc1_web_data ALL DEPENDS "${data}" "${data}.js")
+  if(NOT EXISTS "${game}/VirtualCity.bar")
+    message(FATAL_ERROR "The web build packages ${game}/VirtualCity.bar; put the game copy there.")
   endif()
+  # emsdk_env sets EMSDK_PYTHON, the interpreter the Emscripten tools want.
+  if(DEFINED ENV{EMSDK_PYTHON})
+    set(Python3_EXECUTABLE "$ENV{EMSDK_PYTHON}")
+  else()
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  endif()
+  set(resources "${CMAKE_BINARY_DIR}/platform-resources")
+  set(venv_python "${CMAKE_SOURCE_DIR}/.venv/Scripts/python.exe")
+  set(packaged "${game}/VirtualCity.bar@/game/VirtualCity.bar")
+  if(EXISTS "${game}/VirtualCity.Unwrapped.exe" AND EXISTS "${venv_python}")
+    execute_process(COMMAND "${venv_python}" "${CMAKE_SOURCE_DIR}/tools/extract-sdl-resources.py"
+      "${game}/VirtualCity.Unwrapped.exe" "${resources}" RESULT_VARIABLE extracted)
+    if(extracted EQUAL 0)
+      list(APPEND packaged "${resources}@/game/.vc1/platform-resources")
+    endif()
+  endif()
+  set(data "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/game.data")
+  add_custom_command(OUTPUT "${data}" "${data}.js"
+    COMMAND "${Python3_EXECUTABLE}" "${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py" "${data}"
+      --preload ${packaged} "--js-output=${data}.js" --use-preload-cache --no-node
+      "--depfile=${CMAKE_BINARY_DIR}/game.data.d"
+    DEPFILE "${CMAKE_BINARY_DIR}/game.data.d"
+    COMMENT "Packaging the local game data for the page"
+    VERBATIM)
+  add_custom_target(vc1_web_data ALL DEPENDS "${data}" "${data}.js")
   # The page: index.html and loader.js start VirtualCity.js and the data.
   set(page)
   foreach(file index.html loader.js)

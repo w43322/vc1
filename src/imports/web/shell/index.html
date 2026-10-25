@@ -8,15 +8,12 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
   /* SDL makes the canvas fill the page once the game runs (user32.cpp). */
   #canvas { display: block; outline: none; }
-  /* Only for a build without packaged game data (loader.js). */
-  #pick { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    font: 16px system-ui, sans-serif; padding: 10px 20px; cursor: pointer; }
 </style>
 </head>
 <body>
 <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-<button id="pick" hidden>Choose the Virtual City game folder</button>
-<input id="folder" type="file" webkitdirectory directory multiple hidden>
 <script src="loader.js"></script>
+<script src="game.data.js"></script>
+<script src="VirtualCity.js"></script>
 </body>
 </html>

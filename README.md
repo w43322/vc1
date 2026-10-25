@@ -74,7 +74,7 @@ build\emsdk\emsdk install latest; build\emsdk\emsdk activate latest
 python -m http.server -d build\webin 8000
 ```
 
-When the local game copy is present, the build packages its `VirtualCity.bar` (the game's 7z archive, which the game mounts from its working directory) beside the page as `build\webin\game.data`, git-ignored like everything in `build\`, so <http://localhost:8000/> starts the game straight away. A build without it shows one button that asks for the player's game folder (the one with `VirtualCity.bar`) and keeps it in the browser's IndexedDB. Saves are kept in IndexedDB too. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
+The build packages the local game copy's `VirtualCity.bar` (the game's 7z archive, which it mounts from its working directory) beside the page as `build\webin\game.data`, git-ignored like everything in `build\`; it stops if `Virtual-City_Win_EN_Full\VirtualCity.bar` is missing. <http://localhost:8000/> then starts the game straight away. Saves are kept in the browser's IndexedDB. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
 
 ## Build and run
 
