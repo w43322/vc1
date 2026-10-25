@@ -205,7 +205,7 @@ public:
 
     const char* c_str() const { return reinterpret_cast<const char*>(begin); }
     char* data() { return reinterpret_cast<char*>(begin); }
-    void Assign(const KdString& source)
+    __forceinline void Assign(const KdString& source)
     {
         AssignCountedString(this, source.c_str(), source.size);
     }
@@ -221,7 +221,7 @@ public:
         return p < last ? static_cast<int>(p - text) : -1;
     }
     // Copy of [first, last), both clamped; last -1 means the end.
-    KdString Slice(unsigned first, unsigned last) const
+    __forceinline KdString Slice(unsigned first, unsigned last) const
     {
         const char* text = c_str();
         const char* stop = last == static_cast<unsigned>(-1)

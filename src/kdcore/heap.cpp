@@ -17,7 +17,8 @@ static int PointerInBumpArena(const void* pointer)
     return bytes >= g_kdEventQueue.arena && bytes < reinterpret_cast<const unsigned char*>(&g_kdEventQueue.head);
 }
 
-// kdFreeEvent, inlined everywhere: pool slots are marked free, others freed.
+// kdFreeEvent, inlined at its callers (the original also keeps an
+// out-of-line copy, src/app/out_of_line_copies.h): pool slots are marked free, others freed.
 static void ReleaseHeapNode(KdEvent* event)
 {
     if (PointerInBumpArena(event)) {

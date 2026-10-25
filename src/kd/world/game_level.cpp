@@ -42,7 +42,7 @@ static const double kHitTestRange = 350.0;
 
 // The group's IIdentifiable name, or g_kdEmptyIdentifier when it has none
 // (compared by IAbstract identity with g_kdNullSceneIdentifier).
-static inline const KdString& GroupName(IIdentifiable* ident)
+static __forceinline const KdString& GroupName(IIdentifiable* ident)
 {
     if (PtrEqual(ident, g_kdNullSceneIdentifier.ptr)) {
         return g_kdEmptyIdentifier;

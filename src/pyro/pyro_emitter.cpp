@@ -1699,7 +1699,7 @@ int PyroEmitter::RenderLimited(int a, int b)
 
 // ESI=this. New particles go to the head of the list.
 // FUNCTION: VC1 0x00453760
-PyroParticle* PyroLayer::NewParticle()
+__declspec(noinline) PyroParticle* PyroLayer::NewParticle()
 {
     PyroParticle* const particle = static_cast<PyroParticle*>(PyroParticleAlloc());
 
@@ -1748,7 +1748,7 @@ PyroEmitter::~PyroEmitter()
 // spawn the end-of-life sub-emitters (field1ac == 1) and are freed once the
 // children are at least 0.1 s old and empty.
 // FUNCTION: VC1 0x00453bc0
-void PyroLayer::Update(float now, float dt)
+__declspec(noinline) void PyroLayer::Update(float now, float dt)
 {
     const float t = emitter->GetConstant() * now;
     PyroParticle* particle = particles;

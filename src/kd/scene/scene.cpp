@@ -56,7 +56,7 @@ static inline bool IsSceneNull(IUnknown* object)
 
 // Release slot, then the system component name's iid face (counted), or 0.
 template <class T>
-static inline void QueryGroup(KdRef<T>& slot, const char** name, const char** iid)
+static __forceinline void QueryGroup(KdRef<T>& slot, const char** name, const char** iid)
 {
     void* unknown;
 
@@ -93,7 +93,7 @@ static inline void ResetGroup(KdRef<T>& slot, const char** iid)
 }
 
 // The group's IFunctionalGroup face (counted) appended to list.
-static inline void AppendFunctionalGroup(KdRefList* list, IUnknown* group)
+static __forceinline void AppendFunctionalGroup(KdRefList* list, IUnknown* group)
 {
     IUnknown* face = group
         ? static_cast<IUnknown*>(group->QueryInterface(&g_iidFunctionalGroup)) : 0;

@@ -93,4 +93,10 @@ SQUIRREL_API SQRESULT sqstd_register_stringlib(HSQUIRRELVM v);
 // FUNCTION: VC1 0x0048e600
 // _regexp_constructor
 
+// FUNCTION: VC1 0x004822a0
+// sqstd_rex_error
+
+// FUNCTION: VC1 0x0048d450
+// __strip_l
+
 #endif /*_SQSTD_STRING_H_*/

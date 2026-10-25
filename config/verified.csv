@@ -67,6 +67,7 @@ address|type|name|symbol
 0x0043126b|library|_strtod_l|__strtod_l
 0x0043138a|library|strtod|_strtod
 0x004313a1|library|strtoxl|?strtoxl@@YAKPAUlocaleinfo_struct@@PBDPAPBDHH@Z
+0x004315d0|library|_strtoi64|__strtoi64
 0x004315fb|library|strtol|_strtol
 0x00431627|library|xtoa|_xtoa@16
 0x0043166b|library|_itoa|__itoa
@@ -214,6 +215,7 @@ address|type|name|symbol
 0x00436f44|library|_NLG_Dispatch|__NLG_Dispatch
 0x00436f4c|library|_NLG_Call|__NLG_Call
 0x00436f4f|library|_rt_probe_read4@4|__rt_probe_read4@4
+0x00436f9a|library|_fcloseall|__fcloseall
 0x00437039|library|_initp_misc_initcrit|__initp_misc_initcrit
 0x00437048|library|__crtInitCritSecAndSpinCount|___crtInitCritSecAndSpinCount
 0x004370a8|library|_initp_misc_cfltcvt_tab|__initp_misc_cfltcvt_tab
@@ -325,6 +327,7 @@ address|type|name|symbol
 0x0043c5c6|library|_mbspbrk_l|__mbspbrk_l
 0x0043c693|library|_mbspbrk|__mbspbrk
 0x0043c6aa|library|_calloc_impl|__calloc_impl
+0x0043c7d0|library|_aullrem|__aullrem
 0x0043c8eb|library|_output_l|__output_l
 0x0043d483|library|wcslen|_wcslen
 0x0043d49d|library|_recalloc|__recalloc
@@ -359,6 +362,7 @@ address|type|name|symbol
 0x0043e6a2|library|findenv|_findenv
 0x0043e6f4|library|copy_environ|_copy_environ
 0x0043e74e|library|__crtsetenv|___crtsetenv
+0x0043e999|library|_fptrap|__fptrap
 0x0043e9a2|library|fastzero_I|_fastzero_I
 0x0043e9f9|library|_VEC_memzero|__VEC_memzero
 0x0043ea88|library|atol|_atol
@@ -505,6 +509,7 @@ address|type|name|symbol
 0x004c4720|library|exp|_exp
 0x004c475c|library|_CIexp|__CIexp
 0x004c4797|library|_exp_default|__exp_default
+0x004c47a1|library|_CIexp_default|__CIexp_default
 0x004c47b0|library|tan|_tan
 0x004c47f0|library|_CItan|__CItan
 0x004c482b|library|_CItan_default|__CItan_default

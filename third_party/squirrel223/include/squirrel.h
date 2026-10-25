@@ -714,4 +714,16 @@ SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
 // FUNCTION: VC1 0x004b7de0
 // sq_stackinfos
 
+// FUNCTION: VC1 0x004839e0
+// obj_delegate_weakref
+
+// FUNCTION: VC1 0x00484fe0
+// array_reverse
+
+// FUNCTION: VC1 0x00485030
+// obj_clear
+
+// FUNCTION: VC1 0x00486420
+// array_sort
+
 #endif /*_SQUIRREL_H_*/

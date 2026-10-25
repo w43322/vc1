@@ -356,4 +356,51 @@
 // SYNTHETIC: VC1 0x0041d5e0
 // ?AddRef@KdRenderTarget@vc1@@WM@AEIXZ
 
+// Compiler vcall thunks (??_9), identical across classes and folded into one
+// body in the original; one recompiled copy per original address.
+// SYNTHETIC: VC1 0x00405f30
+// ??_9ICamera@vc1@@$BCA@AE
+// SYNTHETIC: VC1 0x004178b0
+// ??_9ICamera@vc1@@$BBI@AE
+// SYNTHETIC: VC1 0x00417bb0
+// ??_9ICamera@vc1@@$BBM@AE
+// SYNTHETIC: VC1 0x00419660
+// ??_9KdGraphics@vc1@@$BGA@AE
+// SYNTHETIC: VC1 0x00419690
+// ??_9ITileObject@vc1@@$BDE@AE
+// SYNTHETIC: VC1 0x004196a0
+// ??_9KdGraphics@vc1@@$BEE@AE
+// SYNTHETIC: VC1 0x004196e0
+// ??_9KdGraphics@vc1@@$BGE@AE
+// SYNTHETIC: VC1 0x00419710
+// ??_9KdGraphics@vc1@@$BEI@AE
+// SYNTHETIC: VC1 0x0041b400
+// ??_9KdGraphics@vc1@@$BEM@AE
+// SYNTHETIC: VC1 0x0041b420
+// ??_9KdGraphics@vc1@@$BFA@AE
+// SYNTHETIC: VC1 0x0041b4b0
+// ??_9KdDisplayBase@vc1@@$BDI@AE
+// SYNTHETIC: VC1 0x0041be20
+// ??_9IGridMap@vc1@@$BBE@AE
+// SYNTHETIC: VC1 0x0041c390
+// ??_9IFunctionalGroup@vc1@@$BM@AE
+// SYNTHETIC: VC1 0x0041c820
+// ??_9KdGraphics@vc1@@$BDM@AE
+// SYNTHETIC: VC1 0x0041d230
+// ??_9IRoadRenderer@vc1@@$BDA@AE
+// SYNTHETIC: VC1 0x0041d240
+// ??_9KdGraphics@vc1@@$BEA@AE
+// SYNTHETIC: VC1 0x0041d260
+// ??_9KdGraphics@vc1@@$BFE@AE
+// SYNTHETIC: VC1 0x0041d270
+// ??_9ICamera@vc1@@$BCI@AE
+// SYNTHETIC: VC1 0x0041d290
+// ??_9KdGraphics@vc1@@$BFI@AE
+// SYNTHETIC: VC1 0x0041d2a0
+// ??_9KdGraphics@vc1@@$BGI@AE
+// SYNTHETIC: VC1 0x0041d2d0
+// ??_9ICamera@vc1@@$BCM@AE
+// SYNTHETIC: VC1 0x0042e2b0
+// ??_9ICamera@vc1@@$BCE@AE
+
 #endif

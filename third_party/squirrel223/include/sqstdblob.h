@@ -65,5 +65,14 @@ SQUIRREL_API SQRESULT sqstd_register_bloblib(HSQUIRRELVM v);
 // FUNCTION: VC1 0x0048f080
 // sqstd_createblob
 
+// FUNCTION: VC1 0x0048e710
+// _blob_releasehook
+
+// FUNCTION: VC1 0x0048e730
+// __swap_word
+
+// FUNCTION: VC1 0x0048e750
+// __swap_dword
+
 #endif /*_SQSTDBLOB_H_*/
 

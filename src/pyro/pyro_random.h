@@ -26,7 +26,7 @@ PyroRandom* PyroGetRandom();
 float PyroNoise(float from, float to);
 
 // [0, 1], in double as in the original.
-inline double PyroRandomUnit()
+__forceinline double PyroRandomUnit()
 {
     return PyroGetRandom()->Next() / 4294967295.0;
 }

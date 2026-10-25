@@ -23,8 +23,8 @@ struct Quaternion
     Quaternion(SQFloat ax, SQFloat ay, SQFloat az, SQFloat aw);
     // Axis/angle; script order Quaternion(angle, axis) (0x004be190).
     Quaternion(SQFloat angle, const Vector3& axis);
-    explicit Quaternion(const Matrix4& matrix) { FromMatrix(matrix); }
-    Quaternion(const Quaternion& a, const Quaternion& b, SQFloat t) { Slerp(a, b, t); }
+    __forceinline explicit Quaternion(const Matrix4& matrix) { FromMatrix(matrix); }
+    __forceinline Quaternion(const Quaternion& a, const Quaternion& b, SQFloat t) { Slerp(a, b, t); }
     // Inferred from ClassTypeCopyImpl<Quaternion>::copy (0x00428e00), which
     // copies w as a float first and then v as three dwords.
     Quaternion& operator=(const Quaternion& other)

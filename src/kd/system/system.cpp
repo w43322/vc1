@@ -630,7 +630,7 @@ void KdSystemBase::Update()
     }
 }
 
-static void BindNamed(IUnknown** slot, const char** factoryName, const char** iid)
+static __forceinline void BindNamed(IUnknown** slot, const char** factoryName, const char** iid)
 {
     void* unknown = 0;
     IUnknown* typed;
