@@ -233,6 +233,15 @@ private:
     KdString& operator=(const KdString&);
 };
 
+// Inferred. Concatenation: a copy of left with right appended (KdConsole::Render
+// copy-constructs the prompt, appends the input and frees the temporary).
+inline KdString operator+(const KdString& left, const KdString& right)
+{
+    KdString result(left);
+    result.Append(right.c_str(), right.size);
+    return result;
+}
+
 typedef char Vc1KdStringSizeCheck[sizeof(KdString) == 0x10 ? 1 : -1];
 
 // Inferred name. KdString array in a KdFactory buffer (no vftable of its

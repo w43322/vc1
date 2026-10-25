@@ -97,7 +97,7 @@ void DecodeUtf8(Utf8Cursor* cursor)
 
 // ESI=self, RET 4. Releases the old font, then holds source QI'd to IFont.
 // FUNCTION: VC1 0x00418090
-KdRef<IFont>* AssignFont(KdRef<IFont>* self, IUnknown* const* source)
+__declspec(noinline) KdRef<IFont>* AssignFont(KdRef<IFont>* self, IUnknown* const* source)
 {
     IFont* queried;
 

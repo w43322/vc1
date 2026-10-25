@@ -799,8 +799,7 @@ int KdConsole::Render(void* graphics)
 
     if (shown) {
         input.Assign(Complete(input, &selectionStart, &selectionLength));
-        KdString text = KdString(kPrompt);
-        text.Append(input.c_str(), input.size);
+        KdString text = KdString(kPrompt) + input;
         g->SetColor(0xff7fff00);
         g->DrawString(text.c_str(), static_cast<float>(view.x), static_cast<float>(y));
 
