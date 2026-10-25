@@ -1450,14 +1450,7 @@ bool SQVM::CallMetaMethod(SQDelegable *del,SQMetaMethod mm,SQInteger nparams,SQO
 	return false;
 }
 
-void SQVM::Remove(SQInteger n) {
-	n = (n >= 0)?n + _stackbase - 1:_top + n;
-	for(SQInteger i = n; i < _top; i++){
-		_stack[i] = _stack[i+1];
-	}
-	_stack[_top] = _null_;
-	_top--;
-}
+// VC1: SQVM::Remove is inline in sqvm.h.
 
 void SQVM::Pop() {
 	_stack[--_top] = _null_;

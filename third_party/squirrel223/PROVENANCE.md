@@ -18,5 +18,7 @@ instances by userpointer to reproduce the game's VM. `include/squirrel.h` maps
 `scstrstr` to the host's `vc1::KdStrstr` (original `0x00482220`), which
 `string_find` calls in the game, `scstrcmp` to `vc1::KdStrcmp` (`0x00499c90`, `ObjCmp`), and the float `%` in `SQVM::ARITH_OP`
 (`squirrel/sqvm.cpp`) calls `fmodf` (original `0x004999c0`). `squirrel/sqmem.cpp` is not built: the game's
-allocator is the size-class heap in `src/memory/fixed_pool.cpp`. Other recovery work should
+allocator is the size-class heap in `src/memory/fixed_pool.cpp`. `SQVM::Remove` is a
+`__forceinline` member in `squirrel/sqvm.h` (inlined at every caller in the game) and
+`sq_pop` is `__declspec(noinline)` (called at every site). Other recovery work should
 add mapping comments without rewriting upstream bodies; host forks live in `src/`.

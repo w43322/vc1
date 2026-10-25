@@ -127,7 +127,16 @@ public:
 	void Release(){ sq_delete(this,SQVM); } //does nothing
 ////////////////////////////////////////////////////////////////////////////
 	//stack functions for the api
-	void Remove(SQInteger n);
+	// VC1: inlined into every caller in the game (sq_remove 0x0048ff90 and the
+	// SqPlus instance constructors); the body moved here from sqvm.cpp.
+	__forceinline void Remove(SQInteger n) {
+		n = (n >= 0)?n + _stackbase - 1:_top + n;
+		for(SQInteger i = n; i < _top; i++){
+			_stack[i] = _stack[i+1];
+		}
+		_stack[_top] = _null_;
+		_top--;
+	}
 
 	bool IsFalse(SQObjectPtr &o);
 	
