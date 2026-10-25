@@ -154,7 +154,7 @@ const char* GetKdEnv(const char* name);
 const char* GetResourceLocale();
 
 int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...);
-void FormatBufferOpen(char* buf, const char* fmt, ...);
+extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...);
 void KdLogV(const char* fmt, va_list args);
 void KdLog(const char* fmt, ...);
 void HostLogV(const char** prefix, const char* tag, const char* fmt, va_list args);

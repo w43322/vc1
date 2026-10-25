@@ -141,7 +141,10 @@ typedef char SQChar;
 // VC1: ObjCmp calls the host strcmp (0x00499c90).
 namespace vc1 { int KdStrcmp(const char* a, const char* b); }
 #define	scstrcmp	vc1::KdStrcmp
-#define scsprintf	sprintf
+// VC1: the game's sprintf is the host FormatBufferOpen (0x004969f0), which
+// SQVM::ToString and sqstd_format call.
+namespace vc1 { extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...); }
+#define scsprintf	vc1::FormatBufferOpen
 #define scstrlen	strlen
 #define scstrtod	strtod
 #define scstrtol	strtol

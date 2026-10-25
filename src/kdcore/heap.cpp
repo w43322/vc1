@@ -362,14 +362,17 @@ int FormatBuffer(char* buf, unsigned cap, const char* fmt, ...)
     return written;
 }
 
-// EDX=buf, stack fmt then varargs. Cap is 0xffffffff.
+// EDX=buf, stack fmt then varargs. Cap is 0xffffffff: the game's sprintf,
+// also for Squirrel's scsprintf and libpng's sprintf, hence C linkage.
 // FUNCTION: VC1 0x004969f0
-void FormatBufferOpen(char* buf, const char* fmt, ...)
+extern "C" int FormatBufferOpen(char* buf, const char* fmt, ...)
 {
     va_list args;
+    int result;
     va_start(args, fmt);
-    _vsnprintf(buf, 0xffffffff, fmt, args);
+    result = _vsnprintf(buf, 0xffffffff, fmt, args);
     va_end(args);
+    return result;
 }
 
 // EBX=fmt, EDI=args. Sizes the message, formats it into an alloca buffer and

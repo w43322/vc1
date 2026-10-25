@@ -6,10 +6,15 @@
  * instead of the CRT: png_sig_cmp (0x00448530) tail-calls it and
  * png_read_info (0x004b9be0) inlines it for the 4-byte chunk names. */
 
+#include <stdio.h>
 #include <string.h>
 
 int MemCompare(const void* left, const void* right, unsigned size);
+/* The game's sprintf (0x004969f0, src/kdcore/heap.cpp): png_handle_zTXt and
+ * png_do_read_transformations format their messages through it. */
+int FormatBufferOpen(char* buf, const char* fmt, ...);
 
 #define memcmp MemCompare
+#define sprintf FormatBufferOpen
 
 #endif
