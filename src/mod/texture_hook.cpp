@@ -4,7 +4,7 @@
 // Not original code.
 #include "mod/mod_io.h"
 #include "mod/mods.h"
-#include "kdcore/native.h"
+#include "kd/display/d3d8_api.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,50 +16,39 @@ namespace {
 const unsigned kA8R8G8B8 = 0x15;
 const unsigned kX8R8G8B8 = 0x16;
 
-// D3DLOCKED_RECT.
-struct LockedRect
-{
-    int pitch;
-    unsigned char* bits;
-};
-
 }
 
-void ModTexture(const char* name, IUnknown* texture)
+void ModTexture(const char* name, IDirect3DTexture8* texture)
 {
-    typedef int (__stdcall *FnLevelDesc)(IUnknown* texture, unsigned level, unsigned* desc);
-    typedef int (__stdcall *FnLockRect)(IUnknown* texture, unsigned level, LockedRect* locked,
-        const RECT* rect, unsigned flags);
-    typedef int (__stdcall *FnUnlockRect)(IUnknown* texture, unsigned level);
     static bool ready = false;
-    void** const vtbl = *reinterpret_cast<void***>(texture);
-    unsigned desc[8];
-    LockedRect locked;
+    D3dSurfaceDesc desc;
+    D3dLockedRect locked;
 
     if (!ready) {
         ready = true;
         InitModHost();
     }
-    if (reinterpret_cast<FnLevelDesc>(vtbl[0xe])(texture, 0, desc) < 0 ||
-        (desc[0] != kA8R8G8B8 && desc[0] != kX8R8G8B8)) {
+    if (texture->GetLevelDesc(0, &desc) < 0 ||
+        (desc.format != kA8R8G8B8 && desc.format != kX8R8G8B8)) {
         return;
     }
-    const unsigned width = desc[6];
-    const unsigned height = desc[7];
+    const unsigned width = desc.width;
+    const unsigned height = desc.height;
     unsigned* pixels = static_cast<unsigned*>(malloc(width * height * 4));
-    if (!pixels || reinterpret_cast<FnLockRect>(vtbl[0x10])(texture, 0, &locked, 0, 0) < 0) {
+    if (!pixels || texture->LockRect(0, &locked, 0, 0) < 0) {
         free(pixels);
         return;
     }
+    unsigned char* const bits = static_cast<unsigned char*>(locked.bits);
     for (unsigned y = 0; y < height; ++y) {
-        memcpy(pixels + y * width, locked.bits + y * locked.pitch, width * 4);
+        memcpy(pixels + y * width, bits + y * locked.pitch, width * 4);
     }
     if (ApplyTextureMods(name, width, height, pixels)) {
         for (unsigned y = 0; y < height; ++y) {
-            memcpy(locked.bits + y * locked.pitch, pixels + y * width, width * 4);
+            memcpy(bits + y * locked.pitch, pixels + y * width, width * 4);
         }
     }
-    reinterpret_cast<FnUnlockRect>(vtbl[0x11])(texture, 0);
+    texture->UnlockRect(0);
     free(pixels);
 }
 

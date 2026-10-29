@@ -71,19 +71,20 @@ struct LARGE_INTEGER
     long long QuadPart;
 };
 
-struct RECT
+// The SDK's tags, which kd/display/d3d8_api.h forward-declares.
+typedef struct tagRECT
 {
     LONG left;
     LONG top;
     LONG right;
     LONG bottom;
-};
+} RECT;
 
-struct POINT
+typedef struct tagPOINT
 {
     LONG x;
     LONG y;
-};
+} POINT;
 
 // tagMSG matches SDL_system.h's own forward declaration.
 struct tagMSG

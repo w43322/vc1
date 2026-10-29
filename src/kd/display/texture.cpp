@@ -30,17 +30,14 @@ unsigned char KdRenderTexture::Reload(void* arg)
 // ESI=this, EAX=D3D texture (borrowed, not AddRef'd). Width/height from
 // GetLevelDesc(0) (texture vtable+0x38), 0 when it fails.
 // FUNCTION: VC1 0x0041d4e0
-KdRenderTexture::KdRenderTexture(IUnknown* texture)
+KdRenderTexture::KdRenderTexture(IDirect3DTexture8* texture)
 {
-    typedef int (__stdcall *FnLevelDesc)(IUnknown* texture, unsigned level, unsigned* desc);
-    unsigned desc[8];
+    D3dSurfaceDesc desc;
 
     native = texture;
-    width = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
-        native, 0, desc) < 0 ? 0 : desc[6];
+    width = native->GetLevelDesc(0, &desc) < 0 ? 0 : desc.width;
     readback = 0;
-    height = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
-        native, 0, desc) < 0 ? 0 : desc[7];
+    height = native->GetLevelDesc(0, &desc) < 0 ? 0 : desc.height;
 }
 
 // FUNCTION: VC1 0x0041d560
@@ -59,11 +56,10 @@ int KdRenderTexture::GetHeight()
 // FUNCTION: VC1 0x0045bc00
 void KdRenderTexture::Unlock()
 {
-    typedef int (__stdcall *FnUnlockRect)(IUnknown* surface);
 
     if (readback) {
-        reinterpret_cast<FnUnlockRect>((*reinterpret_cast<void***>(readback))[0xa])(readback);
-        D3dRelease(readback);
+        readback->UnlockRect();
+        readback->Release();
         readback = 0;
     }
 }
@@ -108,13 +104,6 @@ unsigned KdRenderTexture::AddRef()
     return value;
 }
 
-// D3DLOCKED_RECT.
-struct D3dLockedRect
-{
-    int pitch;   // 0x00
-    void* bits;  // 0x04
-};
-
 // STRING: VC1 0x004d68a4
 static const char kAlreadyLocked[] = "already locked";
 
@@ -124,16 +113,8 @@ static const char kAlreadyLocked[] = "already locked";
 // FUNCTION: VC1 0x0045be10
 void* KdRenderTexture::Lock(void* region, bool readOnly)
 {
-    typedef int (__stdcall *FnGetSurfaceLevel)(IUnknown* texture, unsigned level,
-        IUnknown** surface);
-    typedef int (__stdcall *FnCreateImageSurface)(IUnknown* device, unsigned width,
-        unsigned height, int format, IUnknown** surface);
-    typedef int (__stdcall *FnCopyRects)(IUnknown* device, IUnknown* source, const RECT* rects,
-        unsigned count, IUnknown* destination, const POINT* points);
-    typedef int (__stdcall *FnLockRect)(IUnknown* surface, D3dLockedRect* locked,
-        const RECT* rect, unsigned flags);
     const int* const rect = static_cast<const int*>(region);
-    IUnknown* surface;
+    IDirect3DSurface8* surface;
     RECT source;
     POINT origin;
     D3dLockedRect locked;
@@ -143,23 +124,19 @@ void* KdRenderTexture::Lock(void* region, bool readOnly)
         return 0;
     }
     surface = 0;
-    reinterpret_cast<FnGetSurfaceLevel>((*reinterpret_cast<void***>(native))[0xf])(
-        native, 0, &surface);
-    reinterpret_cast<FnCreateImageSurface>((*reinterpret_cast<void***>(g_d3dDevice))[0x1b])(
-        g_d3dDevice, rect[2], rect[3], g_displayMode[2], &readback);
+    native->GetSurfaceLevel(0, &surface);
+    g_d3dDevice->CreateImageSurface(rect[2], rect[3], g_displayMode[2], &readback);
     source.left = rect[0];
     source.top = rect[1];
     source.right = rect[0] + rect[2];
     source.bottom = rect[1] + rect[3];
     origin.x = 0;
     origin.y = 0;
-    reinterpret_cast<FnCopyRects>((*reinterpret_cast<void***>(g_d3dDevice))[0x1c])(
-        g_d3dDevice, surface, &source, 1, readback, &origin);
-    D3dRelease(surface);
+    g_d3dDevice->CopyRects(surface, &source, 1, readback, &origin);
+    surface->Release();
     locked.pitch = 0;
     locked.bits = 0;
-    reinterpret_cast<FnLockRect>((*reinterpret_cast<void***>(readback))[9])(
-        readback, &locked, 0, (readOnly ? 0x10 : 0) | 0x8800);
+    readback->LockRect(&locked, 0, (readOnly ? 0x10 : 0) | 0x8800);
     return locked.bits;
 }
 
@@ -186,13 +163,11 @@ unsigned char KdTexture::SetMember(void* a, void* b)
     return 0;
 }
 
-// Calls native texture vtable+0x44(native,0). this=ITexture.
+// IDirect3DTexture8::UnlockRect (vtable+0x44) of level 0. this=ITexture.
 // FUNCTION: VC1 0x0045c010
 void KdTexture::Unlock()
 {
-    typedef void (__stdcall *Fn)(IUnknown* object, int arg);
-    void** vtbl = *reinterpret_cast<void***>(native);
-    reinterpret_cast<Fn>(vtbl[0x11])(native, 0);
+    native->UnlockRect(0);
 }
 
 // this = ILoadable. RET 4.
@@ -342,8 +317,7 @@ unsigned char KdTexture::GetMember(const char* name, SquirrelObject* out)
 // FUNCTION: VC1 0x0045c570
 unsigned char KdTexture::Load(const char* name)
 {
-    typedef int (__stdcall *FnLevelDesc)(IUnknown* texture, unsigned level, unsigned* desc);
-    unsigned desc[8];
+    D3dSurfaceDesc desc;
 
     if (native) {
         ReleaseTrackedTexture(native);
@@ -352,10 +326,8 @@ unsigned char KdTexture::Load(const char* name)
     if (!native) {
         return 0;
     }
-    width = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
-        native, 0, desc) < 0 ? 0 : desc[6];
-    height = reinterpret_cast<FnLevelDesc>((*reinterpret_cast<void***>(native))[0xe])(
-        native, 0, desc) < 0 ? 0 : desc[7];
+    width = native->GetLevelDesc(0, &desc) < 0 ? 0 : desc.width;
+    height = native->GetLevelDesc(0, &desc) < 0 ? 0 : desc.height;
     // STRING: VC1 0x004d6804
     HostLog(&g_kdNameTexture, "Loaded %s (size: %ix%i)", name, width, height);
     return 1;

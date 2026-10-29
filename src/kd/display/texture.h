@@ -6,6 +6,7 @@
 #include "kd/iface/iscript_object.h"
 #include "kd/iface/itexture.h"
 #include "kd/iface/iabstract.h"
+#include "kd/display/d3d8_api.h"
 
 namespace vc1 {
 
@@ -57,9 +58,9 @@ class KdRenderTexture : public ITexture,
 public:
     unsigned width;     // 0x10
     unsigned height;    // 0x14
-    IUnknown* readback; // 0x18  surface held by Lock
+    IDirect3DSurface8* readback; // 0x18  surface held by Lock
 
-    explicit KdRenderTexture(IUnknown* texture);
+    explicit KdRenderTexture(IDirect3DTexture8* texture);
     void* QueryInterface(const char** iid); // vtable+0x00
     unsigned AddRef();                      // vtable+0x04
     unsigned Release();                     // vtable+0x08

@@ -4,6 +4,7 @@
 #include "kd/iface/irender_target.h"
 #include "kd/iface/iabstract.h"
 #include "kd/iface/itexture.h"
+#include "kd/display/d3d8_api.h"
 
 namespace vc1 {
 
@@ -46,7 +47,7 @@ struct KdRenderTargetNode
 {
     unsigned width;      // 0x00
     unsigned height;     // 0x04
-    IUnknown* texture;   // 0x08
+    IDirect3DTexture8* texture; // 0x08
     KdRenderTargetNode* next; // 0x0c
 };
 

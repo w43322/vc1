@@ -11,6 +11,7 @@
 #include "kd/display/graphics.h"
 #include "kd/display/render_target.h"
 #include "kd/display/texture.h"
+#include "kd/display/d3d8_api.h"
 #include "bindings/matrix3.h"
 
 namespace vc1 {
@@ -18,7 +19,7 @@ namespace vc1 {
 class KdDisplay;
 
 extern IAbstract* g_kdDisplay;
-extern IUnknown* g_d3dDevice;
+extern IDirect3DDevice8* g_d3dDevice;
 extern KdRef<IUnknown> g_displayScene;
 extern int* g_displayMode;
 extern const char* g_kdNameRenderTarget;
@@ -42,14 +43,14 @@ struct BatchVertex
 struct BatchQuad
 {
     BatchVertex vertices[4]; // 0x00
-    IUnknown* texture;       // 0x60  D3D texture, 0 for solid fills
+    IDirect3DTexture8* texture; // 0x60  0 for solid fills
     unsigned flags;          // 0x64  GraphicsState::mode
 };
 
 extern int g_batchCount; // display.cpp
 
 void PushQuad(const BatchQuad* quad);
-void* BeginQuadBatch(unsigned flags, IUnknown* texture, int* capacity);
+void* BeginQuadBatch(unsigned flags, IDirect3DTexture8* texture, int* capacity);
 void BatchLine(float x0, float y0, float x1, float y1, float z, unsigned color);
 void DisplayD3dSetClip(int x, int y, int width, int height);
 
@@ -58,7 +59,7 @@ void DisplayD3dSetClip(int x, int y, int width, int height);
 // SIZE 0x10
 struct TrackedTexture
 {
-    IUnknown* texture;     // 0x00
+    IDirect3DTexture8* texture; // 0x00
     int width;             // 0x04
     int height;            // 0x08
     TrackedTexture* next;  // 0x0c
@@ -66,18 +67,11 @@ struct TrackedTexture
 
 extern TrackedTexture* g_d3dChain2;
 
-void ReleaseTrackedTexture(IUnknown* texture);
+void ReleaseTrackedTexture(IDirect3DTexture8* texture);
 
-// D3D8 objects are COM: methods are __stdcall with this pushed, unlike the
-// __thiscall vc1::IUnknown they are stored as.
-inline unsigned long D3dRelease(IUnknown* object)
-{
-    typedef unsigned long (__stdcall *FnRelease)(IUnknown* object);
-    return reinterpret_cast<FnRelease>((*reinterpret_cast<void***>(object))[2])(object);
-}
-IUnknown* LoadTextureFile(const char* name);
-void* LockTextureRect(IUnknown* texture, int x, int y, bool readOnly, int width, int height);
-IUnknown* CreateManagedTexture(unsigned width, unsigned height);
+IDirect3DTexture8* LoadTextureFile(const char* name);
+void* LockTextureRect(IDirect3DTexture8* texture, int x, int y, bool readOnly, int width, int height);
+IDirect3DTexture8* CreateManagedTexture(unsigned width, unsigned height);
 
 // Inferred name. Pyro device texture: holds the KD texture CreateImageTexture filled.
 // SIZE 0x08

@@ -188,7 +188,7 @@ void KdGraphics::DrawString(const char* text, float x, float y)
 // FUNCTION: VC1 0x0045c910
 void KdGraphics::DrawQuads(const KdPtr<ITexture>& texture, const void* quads, unsigned count)
 {
-    IUnknown* const native = texture.ptr ? texture.ptr->native : 0;
+    IDirect3DTexture8* const native = texture.ptr ? texture.ptr->native : 0;
     const unsigned char* source = static_cast<const unsigned char*>(quads);
     unsigned char* target = 0;
     int capacity = 0;
@@ -232,11 +232,8 @@ Matrix3& KdGraphics::GetTransform()
 // FUNCTION: VC1 0x0045c9d0
 void KdGraphics::Clear(unsigned color)
 {
-    typedef int (__stdcall *FnClear)(IUnknown* device, unsigned count, void* rects,
-        unsigned flags, unsigned value, float z, unsigned stencil);
 
-    reinterpret_cast<FnClear>((*reinterpret_cast<void***>(g_d3dDevice))[0x24])(
-        g_d3dDevice, 0, 0, 1, color, 1.0f, 0);
+    g_d3dDevice->Clear(0, 0, 1, color, 1.0f, 0);
 }
 
 // RET 4. AddRef new, Release old, store at +0x40.

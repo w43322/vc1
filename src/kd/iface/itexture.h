@@ -5,12 +5,14 @@
 
 namespace vc1 {
 
+struct IDirect3DTexture8; // kd/display/d3d8_api.h
+
 // Default vftable written by ITexture(); KdTexture replaces it.
 // SIZE 0x08. native is the D3D texture at ITexture+0x04 (KdTexture+0x10).
 // VTABLE: VC1 0x004d681c
 struct ITexture : IUnknown
 {
-    IUnknown* native; // 0x04
+    IDirect3DTexture8* native; // 0x04
 
     ITexture()
         : native(0)
