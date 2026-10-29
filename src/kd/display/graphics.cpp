@@ -3,6 +3,7 @@
 #include "kd/display/display.h"
 #include "bindings/component.h"
 #include "bindings/sqplus.h"
+#include "kd/iface/icamera.h"
 #include "kd/iface/icomponent_faces.h"
 
 // <windows.h> (via kdcore/runtime.h) maps DrawText to DrawTextA.
@@ -474,7 +475,6 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
 {
     IUnknown* face;
     IUnknown* ident;
-    typedef void (__thiscall *FnBindView)(IUnknown* object, IUnknown** ident, Rect* view);
 
     view = *rect;
     {
@@ -501,7 +501,8 @@ unsigned char KdGraphics::SetView(const Rect* rect, IUnknown* const* newCamera)
                 ident->AddRef();
             }
         }
-        reinterpret_cast<FnBindView>((*reinterpret_cast<void***>(camera))[5])(camera, &ident, &view);
+        static_cast<ICamera*>(camera)->BindView(
+            *reinterpret_cast<const KdPtr<IAbstract>*>(&ident), view);
         if (ident) {
             ident->Release();
         }

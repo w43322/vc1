@@ -7,6 +7,7 @@
 #include "kd/iface/idisplay.h"
 #include "kd/iface/iupdateable.h"
 #include "kd/iface/igraphics.h"
+#include "kd/iface/iidentifiable.h"
 #include "kd/iface/iresource_manager.h"
 #include "kd/iface/iinput_handler.h"
 #include "bindings/matrix3.h"
@@ -557,13 +558,11 @@ static void SystemKeyCallback(const KdEvent* event)
 // FUNCTION: VC1 0x004621e0
 int KdSystemBase::Render(void* graphics)
 {
-    typedef void (__thiscall *FnClear)(IUnknown* graphics, unsigned color);
     IUnknown* target = *static_cast<IUnknown**>(graphics);
     IRenderable* renderable;
 
     if (clearColor != 0xffffff) {
-        reinterpret_cast<FnClear>((*reinterpret_cast<void***>(target))[0xf])(
-            target, clearColor);
+        static_cast<IGraphics*>(target)->Clear(clearColor);
     }
     if (renderGroup) {
         renderable = static_cast<IRenderable*>(renderGroup->QueryInterface(&g_iidRenderable));
@@ -899,7 +898,6 @@ static unsigned char IsRealService(IUnknown* object)
 // FUNCTION: VC1 0x004631b0
 void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& object)
 {
-    typedef void (__thiscall *FnSetName)(IUnknown* object, const void* name);
     void** out = reinterpret_cast<void**>(const_cast<IAbstract**>(&object.ptr));
     IUnknown* ident;
     unsigned char flag;
@@ -941,7 +939,7 @@ void KdSystemBase::RegisterObject(const KdString& name, const KdPtr<IAbstract>& 
         else {
             ident = 0;
         }
-        reinterpret_cast<FnSetName>((*reinterpret_cast<void***>(ident))[4])(ident, &name);
+        static_cast<IIdentifiable*>(ident)->SetName(name);
         ident->Release();
     }
     updateGroup->Add(*reinterpret_cast<const KdPtr<IAbstract>*>(out));

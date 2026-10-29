@@ -1,6 +1,6 @@
 // The web build's page logic. game.data.js (cmake/web.cmake) preloads the
 // local VirtualCity.bar and the original cursors at /game; saves
-// (%APPDATA%) persist in IndexedDB. Then main (WinMain) starts.
+// (%APPDATA%) persist in IndexedDB. Then main (WinMain) runs.
 'use strict';
 
 var GAME = '/game';  // the working directory: VirtualCity.bar
@@ -41,7 +41,7 @@ var Module = {
     // Saves are written as the game goes; keep IndexedDB current.
     setInterval(saveSync, 5000);
     document.getElementById('canvas').focus();
-    Module.callMain([]);
+    // main (WinMain) runs next.
   },
   onExit: saveSync,
   print: function (text) {

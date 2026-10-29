@@ -1,6 +1,7 @@
 #include "kd/component_group.h"
 
 #include "kd/iface/iabstract.h"
+#include "kd/iface/igroup_member.h"
 #include "kd/iface/iid.h"
 #include "kd/iface/ishutdownable.h"
 
@@ -33,7 +34,6 @@ int KdComponentGroup::Shutdown()
     IUnknown* object;
     IUnknown* member;
     IShutdownable* face;
-    typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
     ClearCollected();
 
@@ -46,8 +46,7 @@ int KdComponentGroup::Shutdown()
             member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
             if (member) {
                 member->AddRef();
-                reinterpret_cast<FnSetGroup>((*reinterpret_cast<void***>(member))[4])(
-                    member, &g_groupNotify.ptr);
+                static_cast<IGroupMember*>(member)->SetGroup(g_groupNotify.AsPtr());
             }
         }
         if (object) {
@@ -249,7 +248,6 @@ KdPtr<IUnknown> KdComponentGroup::UnregisterObject(const KdString& name)
     unsigned char* end;
     IUnknown* object;
     IUnknown* member;
-    typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
     pos = LookupCountedRecord(&records.items, key);
     end = reinterpret_cast<unsigned char*>(records.items.begin) + records.items.size;
@@ -263,8 +261,7 @@ KdPtr<IUnknown> KdComponentGroup::UnregisterObject(const KdString& name)
             member = static_cast<IUnknown*>(object->QueryInterface(&g_iidGroupMember));
             if (member) {
                 member->AddRef();
-                reinterpret_cast<FnSetGroup>((*reinterpret_cast<void***>(member))[4])(
-                    member, &g_groupNotify.ptr);
+                static_cast<IGroupMember*>(member)->SetGroup(g_groupNotify.AsPtr());
             }
             object->AddRef();
         }
@@ -291,7 +288,6 @@ void KdComponentGroup::RegisterObject(const KdString& name, const KdPtr<IAbstrac
     IUnknown* object;
     IUnknown* member;
     void* ident;
-    typedef void (__thiscall *FnSetGroup)(IUnknown* object, void* group);
 
     slot = InsertCountedSlot(key, &records.items);
     object = value.ptr;
@@ -317,7 +313,8 @@ void KdComponentGroup::RegisterObject(const KdString& name, const KdPtr<IAbstrac
             static_cast<IUnknown*>(ident)->AddRef();
         }
     }
-    reinterpret_cast<FnSetGroup>((*reinterpret_cast<void***>(member))[4])(member, &ident);
+    static_cast<IGroupMember*>(member)->SetGroup(
+        *reinterpret_cast<const KdPtr<IUnknown>*>(&ident));
     if (ident) {
         static_cast<IUnknown*>(ident)->Release();
     }

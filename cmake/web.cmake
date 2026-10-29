@@ -9,13 +9,16 @@
 set(VC1_WEB_DIR "${CMAKE_SOURCE_DIR}/src/imports/web")
 
 # clang in MSVC-extension mode reads the VC9-style sources (__declspec,
-# __forceinline, __int64, #pragma function); __stdcall has no meaning on wasm.
-set(VC1_WEB_COMMON_FLAGS "-fms-extensions -fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -Wno-ignored-attributes -Wno-microsoft -Wno-unused-value -Wno-deprecated-declarations -Wno-pragma-pack -Wno-register")
+# __forceinline, __int64, #pragma function). Like VC9 it neither assumes
+# strict aliasing, signed overflow or non-null dereferenced pointers, which
+# the recovered code relies on. __stdcall means nothing on wasm (thousands of
+# ignored-attribute warnings), and jpgd's "register" is an error in C++17.
+set(VC1_WEB_COMMON_FLAGS "-fms-extensions -fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -Wno-ignored-attributes -Wno-register")
 set(CMAKE_C_FLAGS "${VC1_WEB_COMMON_FLAGS}")
 # VC9 parses templates only when they are instantiated (SqPlus, Squirrel).
 set(CMAKE_CXX_FLAGS "${VC1_WEB_COMMON_FLAGS} -fno-rtti -fdelayed-template-parsing")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -DNDEBUG")
 # The link runs binaryen at -O0 and adds -O2 after Asyncify instead: an
 # optimizing link runs --post-emscripten after --fpcast-emu, and that pass
 # turns the invoke_* calls of setjmp functions (libpng, Squirrel) into direct
@@ -23,7 +26,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -gline-tables-only -DNDEBUG")
 # wasm-ld keeps -O2: it merges identical string literals across objects as
 # MSVC's string pooling does, and the KD factory compares interned name
 # pointers.
-set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-O0 -sASSERTIONS=0 -sBINARYEN_EXTRA_PASSES=-O2 -Wl,-O2 -gsource-map")
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-O0 -sASSERTIONS=0 -sBINARYEN_EXTRA_PASSES=-O2 -Wl,-O2")
 
 # The library cmake files give MSVC per-source options (/FI, /TP, /wd...,
 # /Zc:forScope-). Translate them for clang once every source is known.
@@ -68,21 +71,17 @@ function(vc1_web_target target)
     "SHELL:-include ${VC1_WEB_DIR}/include/vc1_web_crt.h")
   set_target_properties(${target} PROPERTIES SUFFIX ".js")
   target_link_options(${target} PRIVATE
-    --profiling-funcs
     # The recovered code calls vtable slots and driver hooks through cast
     # function types, as the original does; wasm checks indirect call types.
     -sEMULATE_FUNCTION_POINTER_CASTS=1
     -sASYNCIFY=1
     -sASYNCIFY_STACK_SIZE=1048576
     -sSTACK_SIZE=2097152
-    -sINITIAL_MEMORY=268435456
     -sALLOW_MEMORY_GROWTH=1
-    -sENVIRONMENT=web
-    -sINVOKE_RUN=0
     -sEXIT_RUNTIME=1
     -sFORCE_FILESYSTEM=1
     -lidbfs.js
-    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,callMain,addRunDependency,removeRunDependency")
+    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV")
   # The page plays the local game copy (git-ignored, never committed):
   # game.data / game.data.js preload VirtualCity.bar, the game's 7z archive
   # that the KD "bar" driver mounts from the working directory, at /game with

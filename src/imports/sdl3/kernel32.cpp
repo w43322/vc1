@@ -2,6 +2,10 @@
 // modules, the clock, locale and directory listing.
 #include "sdl3.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -374,15 +378,28 @@ void WINAPI Sleep(DWORD milliseconds)
     SDL_Delay(milliseconds);
 }
 
+// In the browser SDL's counter falls back to gettimeofday (Emscripten has no
+// CLOCK_MONOTONIC_RAW): microseconds since 1970, whose milliseconds overflow
+// the game's 32-bit getSystemTime and go negative for weeks at a time
+// (animated buttons then index frame -3). The browser's clock counts from
+// page load, as Windows' counts from boot.
 BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER* counter)
 {
+#ifdef __EMSCRIPTEN__
+    counter->QuadPart = static_cast<long long>(emscripten_get_now() * 1000.0);
+#else
     counter->QuadPart = static_cast<long long>(SDL_GetPerformanceCounter());
+#endif
     return TRUE;
 }
 
 BOOL WINAPI QueryPerformanceFrequency(LARGE_INTEGER* frequency)
 {
+#ifdef __EMSCRIPTEN__
+    frequency->QuadPart = 1000000;
+#else
     frequency->QuadPart = static_cast<long long>(SDL_GetPerformanceFrequency());
+#endif
     return TRUE;
 }
 
