@@ -106,15 +106,24 @@ function(vc1_web_target target)
       list(APPEND packaged "${resources}@/game/.vc1/platform-resources")
     endif()
   endif()
-  set(data "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/game.data")
-  add_custom_command(OUTPUT "${data}" "${data}.js"
+  # game.data is built outside the page and split into parts static hosts
+  # accept (tools/split-web-data.py); loader.js joins them.
+  set(data "${CMAKE_BINARY_DIR}/game.data")
+  set(page_data "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/game.data")
+  add_custom_command(OUTPUT "${data}" "${page_data}.js"
     COMMAND "${Python3_EXECUTABLE}" "${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py" "${data}"
-      --preload ${packaged} "--js-output=${data}.js" --use-preload-cache --no-node
+      --preload ${packaged} "--js-output=${page_data}.js" --use-preload-cache --no-node
       "--depfile=${CMAKE_BINARY_DIR}/game.data.d"
     DEPFILE "${CMAKE_BINARY_DIR}/game.data.d"
     COMMENT "Packaging the local game data for the page"
     VERBATIM)
-  add_custom_target(vc1_web_data ALL DEPENDS "${data}" "${data}.js")
+  add_custom_command(OUTPUT "${page_data}.json"
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tools/split-web-data.py" "${data}"
+      "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
+    DEPENDS "${data}" "${CMAKE_SOURCE_DIR}/tools/split-web-data.py"
+    COMMENT "Splitting the game data into parts"
+    VERBATIM)
+  add_custom_target(vc1_web_data ALL DEPENDS "${page_data}.js" "${page_data}.json")
   # The page: index.html and loader.js start VirtualCity.js and the data.
   set(page)
   foreach(file index.html loader.js)

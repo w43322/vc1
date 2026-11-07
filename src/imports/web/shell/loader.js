@@ -16,6 +16,32 @@ function passBrowserKeys(event) {
 window.addEventListener('keydown', passBrowserKeys, true);
 window.addEventListener('keyup', passBrowserKeys, true);
 
+// game.data comes in parts (tools/split-web-data.py, listed in
+// game.data.json) so static hosts with a file size limit take it. The
+// package loader of game.data.js fetches "game.data" only when its
+// IndexedDB copy is missing or stale; this answers with the joined parts.
+var fetchFile = window.fetch.bind(window);
+window.fetch = function (resource, options) {
+  if (resource !== 'game.data') {
+    return fetchFile(resource, options);
+  }
+  return fetchFile('game.data.json').then(function (response) {
+    return response.json();
+  }).then(function (names) {
+    var parts = names.map(function (name) {
+      return fetchFile(name).then(function (response) {
+        if (!response.ok) {
+          throw new Error(response.status + ': ' + response.url);
+        }
+        return response.arrayBuffer();
+      });
+    });
+    return Promise.all(parts);
+  }).then(function (buffers) {
+    return new Response(new Blob(buffers));
+  });
+};
+
 function saveSync() {
   FS.syncfs(false, function () {});
 }
