@@ -381,12 +381,15 @@ void WINAPI Sleep(DWORD milliseconds)
 // In the browser SDL's counter falls back to gettimeofday (Emscripten has no
 // CLOCK_MONOTONIC_RAW): microseconds since 1970, whose milliseconds overflow
 // the game's 32-bit getSystemTime and go negative for weeks at a time
-// (animated buttons then index frame -3). The browser's clock counts from
-// page load, as Windows' counts from boot.
+// (animated buttons then index frame -3). Counted from the first call
+// instead, as Windows' counter counts from boot: emscripten_get_now counts
+// from page load, but in a pthreads build from 1970 too (one clock for every
+// thread).
 BOOL WINAPI QueryPerformanceCounter(LARGE_INTEGER* counter)
 {
 #ifdef __EMSCRIPTEN__
-    counter->QuadPart = static_cast<long long>(emscripten_get_now() * 1000.0);
+    static const double start = emscripten_get_now();
+    counter->QuadPart = static_cast<long long>((emscripten_get_now() - start) * 1000.0);
 #else
     counter->QuadPart = static_cast<long long>(SDL_GetPerformanceCounter());
 #endif
