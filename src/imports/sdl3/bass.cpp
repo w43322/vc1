@@ -136,55 +136,6 @@ void FreeChannel(unsigned handle)
     channels.erase(found);
 }
 
-// A BASS user file (the game's KD file) as an SDL stream.
-struct UserFile
-{
-    BassFileProcs procs;
-    void* user;
-    Sint64 position;
-};
-
-Sint64 SDLCALL FileSize(void* data)
-{
-    UserFile* file = static_cast<UserFile*>(data);
-    return file->procs.length(file->user);
-}
-
-Sint64 SDLCALL FileSeek(void* data, Sint64 offset, SDL_IOWhence whence)
-{
-    UserFile* file = static_cast<UserFile*>(data);
-    Sint64 base = 0;
-    if (whence == SDL_IO_SEEK_CUR) {
-        base = file->position;
-    }
-    else if (whence == SDL_IO_SEEK_END) {
-        base = FileSize(data);
-    }
-    const Sint64 next = base + offset;
-    if (next < 0 || !file->procs.seek(next, file->user)) {
-        return -1;
-    }
-    file->position = next;
-    return next;
-}
-
-size_t SDLCALL FileRead(void* data, void* buffer, size_t size, SDL_IOStatus* status)
-{
-    UserFile* file = static_cast<UserFile*>(data);
-    const size_t read = file->procs.read(buffer, static_cast<BassDword>(size), file->user);
-    file->position += read;
-    *status = read < size ? SDL_IO_STATUS_EOF : SDL_IO_STATUS_READY;
-    return read;
-}
-
-bool SDLCALL FileClose(void* data)
-{
-    UserFile* file = static_cast<UserFile*>(data);
-    file->procs.close(file->user);
-    delete file;
-    return true;
-}
-
 // 16-bit PCM bytes, the unit of the BASS position functions.
 BassQword FrameBytes(const Channel& channel)
 {
@@ -450,9 +401,8 @@ BassDword __stdcall BASS_StreamCreateFileUser(BassDword system, BassDword flags,
     const BassFileProcs* procs, void* user)
 {
     (void)system;
-#ifdef __EMSCRIPTEN__
-    // The web mixing thread must not call into the game (web/audio.cpp): the
-    // stream is read into memory first and decoded from there.
+    // The game's KD file is read into memory and decoded from there, so the
+    // mixing thread (SDL's, or web/audio.cpp's) never calls into the game.
     SDL_IOStream* io = SDL_IOFromDynamicMem();
     if (!io) {
         procs->close(user);
@@ -467,23 +417,6 @@ BassDword __stdcall BASS_StreamCreateFileUser(BassDword system, BassDword flags,
     }
     procs->close(user);
     SDL_SeekIO(io, 0, SDL_IO_SEEK_SET);
-#else
-    UserFile* file = new UserFile();
-    file->procs = *procs;
-    file->user = user;
-    file->position = 0;
-    SDL_IOStreamInterface stream;
-    SDL_INIT_INTERFACE(&stream);
-    stream.size = FileSize;
-    stream.seek = FileSeek;
-    stream.read = FileRead;
-    stream.close = FileClose;
-    SDL_IOStream* io = SDL_OpenIO(&stream, file);
-    if (!io) {
-        FileClose(file);
-        return 0;
-    }
-#endif
     MIX_Audio* audio = MIX_LoadAudio_IO(mixer, io, false, true);
     if (!audio) {
         lastError = -1;
