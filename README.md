@@ -76,7 +76,7 @@ python -m http.server -d build\web\bin 8000
 
 The build packages the local game copy's `VirtualCity.bar` (the game's 7z archive, which it mounts from its working directory) beside the page as `build\web\bin\game.data.0`, `.1`, ... (parts of at most 20 MiB, listed in `game.data.json`, so hosts with a file size limit take them), git-ignored like everything in `build\`; it stops if `Virtual-City_Win_EN_Full\VirtualCity.bar` is missing. <http://localhost:8000/> then starts the game straight away. Saves are kept in the browser's IndexedDB. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
 
-`build\web\bin` is a static site. `tools\deploy-web.cmd` publishes it to Cloudflare Pages (project `VC1_PAGES_PROJECT`, default `virtual-city`) with wrangler through the emsdk's Node; wrangler signs in with `CLOUDFLARE_API_TOKEN` when it is set, else in the browser.
+`build\web\bin` is a static site. `tools\deploy-web.cmd` publishes it to Cloudflare Pages (project `VC1_PAGES_PROJECT`, default `virtual-city`) with wrangler through the emsdk's Node; wrangler signs in with `CLOUDFLARE_API_TOKEN`, else the first line of a git-ignored `cloudflare-token.txt` at the repository root, else in the browser. The token needs the account permissions Cloudflare Pages: Edit and Account Settings: Read.
 
 ## Build and run
 
