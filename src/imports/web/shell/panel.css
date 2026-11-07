@@ -1,0 +1,61 @@
+/* The control panel (panel.js): a drawer over the right of the game. */
+.vc1-open {
+  position: fixed; top: 8px; right: 8px; z-index: 10;
+  width: 32px; height: 32px; padding: 0; border: 0; border-radius: 16px;
+  font-size: 18px; line-height: 32px; cursor: pointer;
+  color: #fff; background: rgba(0, 0, 0, 0.35); opacity: 0.4;
+}
+.vc1-open:hover { opacity: 1; }
+
+.vc1-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 20;
+  width: min(440px, 100vw); box-sizing: border-box;
+  display: flex; flex-direction: column;
+  font: 13px/1.4 system-ui, sans-serif; color: #e6e6e6;
+  background: rgba(24, 26, 30, 0.96); box-shadow: -4px 0 16px rgba(0, 0, 0, 0.5);
+}
+.vc1-panel[hidden] { display: none; }
+.vc1-panel button {
+  font: inherit; color: inherit; cursor: pointer;
+  padding: 4px 10px; border: 1px solid #4a4f58; border-radius: 4px; background: #2e3239;
+}
+.vc1-panel button:hover:not(:disabled) { background: #3a3f48; }
+.vc1-panel button:disabled { opacity: 0.45; cursor: default; }
+.vc1-panel button.vc1-on { background: #3d5a80; border-color: #5b7fb0; }
+.vc1-panel input[type=text], .vc1-panel input[type=number], .vc1-panel textarea {
+  font: inherit; color: inherit; box-sizing: border-box;
+  padding: 3px 6px; border: 1px solid #4a4f58; border-radius: 4px; background: #15171a;
+}
+.vc1-panel input[type=number] { width: 110px; }
+.vc1-panel h3 { margin: 14px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #9aa3ad; }
+
+.vc1-tabs { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid #3a3f48; }
+.vc1-tabs button:last-child { margin-left: auto; }
+.vc1-pages { flex: 1; overflow: auto; padding: 8px 12px; }
+.vc1-pages section { display: flex; flex-direction: column; min-height: 100%; }
+.vc1-pages section[hidden] { display: none; }
+.vc1-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.vc1-grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.vc1-file { padding: 4px 0; border-bottom: 1px solid #2e3239; }
+.vc1-value { min-width: 40px; color: #9aa3ad; }
+.vc1-note { margin: 6px 0; color: #9aa3ad; font-size: 12px; }
+.vc1-status { min-height: 18px; padding: 4px 12px; border-top: 1px solid #3a3f48; color: #9fd49f; }
+.vc1-status.vc1-error { color: #ff8a80; }
+
+.vc1-editor details { margin-left: 12px; }
+.vc1-editor > details { margin-left: 0; }
+.vc1-editor summary { cursor: pointer; padding: 2px 0; }
+.vc1-leaf { display: flex; align-items: center; gap: 8px; margin: 2px 0 2px 26px; }
+.vc1-leaf span { flex: 0 0 40%; overflow: hidden; text-overflow: ellipsis; }
+.vc1-leaf input[type=text], .vc1-leaf input[type=number] { flex: 1; min-width: 0; }
+.vc1-leaf i { color: #9aa3ad; }
+.vc1-text { width: 100%; height: 260px; font-family: ui-monospace, Consolas, monospace !important; font-size: 12px !important; }
+
+.vc1-log {
+  flex: 1; min-height: 200px; overflow: auto; padding: 6px; border-radius: 4px; background: #101214;
+  font: 12px/1.35 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-word;
+}
+.vc1-log-warning { color: #ffd479; }
+.vc1-log-error { color: #ff8a80; }
+.vc1-log-input { color: #8ab4f8; }
+.vc1-log-result { color: #c3e88d; }

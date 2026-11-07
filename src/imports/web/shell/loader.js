@@ -4,7 +4,7 @@
 'use strict';
 
 var GAME = '/game';  // the working directory: VirtualCity.bar
-var SAVE = '/save';  // %APPDATA%: profiles and settings
+var SAVE = '/save';  // %APPDATA%: profiles and settings, mods/
 
 // F12 and the devtools shortcuts belong to the browser: SDL would take them
 // as game keys and cancel them. This capture listener runs before SDL's.
@@ -52,6 +52,8 @@ var Module = {
     FS.mkdir(SAVE);
     FS.mount(IDBFS, {}, SAVE);
     ENV.APPDATA = SAVE;
+    // The texture mods (src/mod/) the panel's Mods tab installs.
+    ENV.VC1_MODS = SAVE + '/mods';
     Module.addRunDependency('vc1-saves');
     FS.syncfs(true, function (error) {
       if (error) {

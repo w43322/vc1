@@ -21,7 +21,7 @@ if(VC1_WEB)
   # The browser: the CRT slots, the entry point and the page's file system
   # come from src/imports/web/ (cmake/web.cmake).
   set(VC1_IMPORTS_DIR src/imports/web)
-  list(APPEND VC1_IMPORT_SOURCES src/imports/web/web.cpp)
+  list(APPEND VC1_IMPORT_SOURCES src/imports/web/web.cpp src/imports/web/bridge.cpp)
 else()
   list(APPEND VC1_IMPORT_LIBRARIES legacy_stdio_definitions)
 endif()

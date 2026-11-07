@@ -14,6 +14,8 @@ struct ModHost {
 };
 void InitMods(const char* directory, const ModHost& host);
 void ShutdownMods();
+// Whether a mod replaces part of this texture: only those are read back.
+bool TextureModsApply(const char* name);
 bool ApplyTextureMods(const char* name, unsigned width, unsigned height, unsigned* pixels);
 }
 #endif

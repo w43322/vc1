@@ -5,7 +5,7 @@
 # WinMain, and the page (shell/) that plays the packaged VirtualCity.bar.
 #
 # The game's main loop never returns, so the module is built with ASYNCIFY:
-# Present and Sleep yield to the browser (src/imports/web/web.cpp).
+# Present and Sleep yield to the browser (src/imports/web/web.cpp, bridge.cpp).
 set(VC1_WEB_DIR "${CMAKE_SOURCE_DIR}/src/imports/web")
 
 # clang in MSVC-extension mode reads the VC9-style sources (__declspec,
@@ -81,7 +81,7 @@ function(vc1_web_target target)
     -sEXIT_RUNTIME=1
     -sFORCE_FILESYSTEM=1
     -lidbfs.js
-    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV")
+    "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,ccall")
   # The page plays the local game copy (git-ignored, never committed):
   # game.data / game.data.js preload VirtualCity.bar, the game's 7z archive
   # that the KD "bar" driver mounts from the working directory, at /game with
@@ -124,9 +124,10 @@ function(vc1_web_target target)
     COMMENT "Splitting the game data into parts"
     VERBATIM)
   add_custom_target(vc1_web_data ALL DEPENDS "${page_data}.js" "${page_data}.json")
-  # The page: index.html and loader.js start VirtualCity.js and the data.
+  # The page: index.html and loader.js start VirtualCity.js and the data;
+  # panel.js / panel.css are the control panel (F10).
   set(page)
-  foreach(file index.html loader.js)
+  foreach(file index.html loader.js panel.js panel.css)
     add_custom_command(OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${file}"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_WEB_DIR}/shell/${file}"
         "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${file}"

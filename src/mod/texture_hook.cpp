@@ -28,6 +28,9 @@ void ModTexture(const char* name, IDirect3DTexture8* texture)
         ready = true;
         InitModHost();
     }
+    if (!TextureModsApply(name)) {
+        return;
+    }
     if (texture->GetLevelDesc(0, &desc) < 0 ||
         (desc.format != kA8R8G8B8 && desc.format != kX8R8G8B8)) {
         return;

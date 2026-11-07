@@ -1,10 +1,12 @@
-// Host services for the texture mod core (mods.cpp): files through the CRT,
-// PNG through the game's libpng 1.0.2, tile names through the live Squirrel
-// Tiles / TileImages tables, messages through HostLog. Not original code.
+// Host services for the texture mod core (mods.cpp): mod files through the
+// CRT, game resources through the KD file layer, PNG through the game's
+// libpng 1.0.2, tile names through the live Squirrel Tiles / TileImages
+// tables, messages through HostLog. Not original code.
 #include "mod/mod_io.h"
 #include "mod/mods.h"
 #include "kdcore/native.h"
 #include "kdcore/platform.h"
+#include "kd/stream/file_reader.h"
 
 #include <squirrel.h>
 #include "sqplus/SquirrelVM.h"
@@ -21,11 +23,38 @@ namespace {
 
 const char* kModsName = "Mods";
 
+// Game resources (res/Tiles.bin) through the KD file layer, which also finds
+// them inside VirtualCity.bar.
+bool ReadGameFile(const char* name, unsigned char** bytes, unsigned* length)
+{
+    KdFileHandle* const file = static_cast<KdFileHandle*>(OpenKdFile(name, "rb"));
+    if (!file) {
+        return false;
+    }
+    KdObject* const driver = file->driver;
+    driver->seek(driver, file->native, 0, SEEK_END);
+    const long long size = driver->tell(driver, file->native);
+    driver->seek(driver, file->native, 0, SEEK_SET);
+    bool ok = size >= 0 && size <= 16 * 1024 * 1024;
+    if (ok) {
+        *bytes = static_cast<unsigned char*>(malloc(size ? static_cast<size_t>(size) : 1));
+        ok = *bytes && driver->read(driver, *bytes, 1, static_cast<int>(size), file->native) == size;
+        if (!ok) {
+            free(*bytes);
+        }
+        *length = static_cast<unsigned>(size);
+    }
+    driver->close(driver, file->native);
+    free(file);
+    return ok;
+}
+
+// Mod files by path; anything else is a game resource.
 bool ReadFile(const char* name, unsigned char** bytes, unsigned* length)
 {
     FILE* file = fopen(name, "rb");
     if (!file) {
-        return false;
+        return ReadGameFile(name, bytes, length);
     }
     fseek(file, 0, SEEK_END);
     const long size = ftell(file);

@@ -10,8 +10,6 @@ option(VC1_USE_SDL3 "Build the SDL3 backend (Windows x86, modern MSVC)" OFF)
 if(EMSCRIPTEN)
   set(VC1_WEB ON)
   set(VC1_USE_SDL3 ON CACHE BOOL "" FORCE)
-  # The page has no mods/ folder beside the module.
-  set(VC1_MODS OFF CACHE BOOL "Texture mods from mods/ beside the executable" FORCE)
 else()
   set(VC1_WEB OFF)
 endif()
@@ -230,7 +228,8 @@ if(VC1_USE_SDL3 AND NOT VC1_WEB)
 endif()
 
 target_link_libraries(${VC1_TARGET} ${VC1_IMPORT_LIBRARIES})
-if(VC1_MODS)
+# The web page keeps its mods in IndexedDB (the panel's Mods tab).
+if(VC1_MODS AND NOT VC1_WEB)
   # Texture mods live in the local, git-ignored mods/ folder. Seed the
   # activation list once so rebuilding never re-enables a disabled mod, and
   # refresh every mod folder beside the executable on each build.

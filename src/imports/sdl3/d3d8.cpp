@@ -10,7 +10,7 @@
 #include <cstring>
 
 #ifdef __EMSCRIPTEN__
-#include <emscripten.h>
+#include "../web/bridge.h"
 #endif
 
 namespace vc1 {
@@ -213,14 +213,6 @@ void Identity(float* m)
     }
 }
 
-#ifdef __EMSCRIPTEN__
-// The browser shows one frame per animation frame. Waiting for the next one
-// paces the game like the original's vsync (SDL only yields with a zero
-// timeout) and leaves the page's thread time for input and the devtools.
-EM_ASYNC_JS(void, WaitForAnimationFrame, (), {
-    await new Promise(function (resolve) { requestAnimationFrame(function () { resolve(); }); });
-});
-#endif
 
 // Row vector times view times projection, then the viewport. D3D samples
 // pixel centers at integer coordinates and SDL at +0.5.
@@ -652,7 +644,11 @@ D3dResult __stdcall SdlDevice::Present(const tagRECT*, const tagRECT*, HWND__*, 
     SDL_RenderTexture(g_sdlRenderer, backBuffer->texture, 0, 0);
     SDL_RenderPresent(g_sdlRenderer);
 #ifdef __EMSCRIPTEN__
-    WaitForAnimationFrame();
+    // The browser shows one frame per animation frame. Waiting for the next
+    // one paces the game like the original's vsync (SDL only yields with a
+    // zero timeout) and leaves the page's thread time for input, the
+    // devtools and the panel's scripts.
+    vc1_web_frame();
 #endif
     SDL_SetRenderTarget(g_sdlRenderer, target ? target->texture : 0);
     return kOk;

@@ -225,17 +225,30 @@ void InitMods(const char* directory,const ModHost& host) {
         Log("Enabled "+folder+" "+version->second.text);
     }
 }
+// Resolves the patch once the VM knows its tile; false while it cannot apply.
+static bool Ready(Patch& patch) {
+    if(patch.failed) return false;
+    if(!patch.resolved) {
+        int tile;
+        // Splash textures can load before Tiles.nut has populated the VM.
+        if(!s_host.tileId(patch.tile.c_str(),&tile)) return false;
+        patch.resolved=true;
+        if(!Resolve(patch)) {patch.failed=true;Log("Unsupported or missing tile: "+patch.tile);return false;}
+    }
+    return true;
+}
+bool TextureModsApply(const char* name) {
+    std::string path=Path(name);
+    for(size_t i=0;i<s_patches.size();++i) {
+        Patch& patch=s_patches[i];if(!Ready(patch)) continue;
+        for(size_t n=0;n<patch.fragments.size();++n) if(patch.fragments[n].atlas==path) return true;
+    }
+    return false;
+}
 bool ApplyTextureMods(const char* name,unsigned width,unsigned height,unsigned* pixels) {
     bool changed=false;std::string path=Path(name);
     for(size_t i=0;i<s_patches.size();++i) {
-        Patch& patch=s_patches[i];if(patch.failed) continue;
-        if(!patch.resolved) {
-            int tile;
-            // Splash textures can load before Tiles.nut has populated the VM.
-            if(!s_host.tileId(patch.tile.c_str(),&tile)) continue;
-            patch.resolved=true;
-            if(!Resolve(patch)) {patch.failed=true;Log("Unsupported or missing tile: "+patch.tile);continue;}
-        }
+        Patch& patch=s_patches[i];if(!Ready(patch)) continue;
         bool applies=false,valid=true;
         for(size_t n=0;n<patch.fragments.size();++n) {
             const Fragment& f=patch.fragments[n];if(f.atlas!=path) continue;

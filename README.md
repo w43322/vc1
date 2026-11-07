@@ -76,6 +76,16 @@ python -m http.server -d build\web\bin 8000
 
 The build packages the local game copy's `VirtualCity.bar` (the game's 7z archive, which it mounts from its working directory) beside the page as `build\web\bin\game.data.0`, `.1`, ... (parts of at most 20 MiB, listed in `game.data.json`, so hosts with a file size limit take them), git-ignored like everything in `build\`; it stops if `Virtual-City_Win_EN_Full\VirtualCity.bar` is missing. <http://localhost:8000/> then starts the game straight away. Saves are kept in the browser's IndexedDB. The page-side code is in `src/imports/web/`; networking (wininet and sockets) is off, as in the SDL3 build. F12 opens the browser's devtools.
 
+F10 (or the corner button) opens the control panel (`src/imports/web/shell/panel.js`). It runs Squirrel in the game between frames through `src/imports/web/bridge.cpp`:
+
+| Tab | Does |
+| --- | --- |
+| Game | Reload (saving the profiles first), pause, mute, game speed, fullscreen |
+| Saves | Save now (the game itself saves only after a level and on quit), back up, import, delete, and edit `ProfileInfo_0.nut` as a tree of values or as script text |
+| Cheats | The game's own `G5CHTR` cheats as buttons: money, complete level, rain, clouds, debug overlay, unlock all levels, test level |
+| Console | The game's log with filters, and Squirrel lines run in the game (the engine has a console component, but the game never creates it) |
+| Mods | Texture mods (see Mods) from a folder or a .zip, kept in IndexedDB at `/save/mods`; enable, order, delete |
+
 `build\web\bin` is a static site. `tools\deploy-web.cmd` publishes it to Cloudflare Pages (project `VC1_PAGES_PROJECT`, default `virtual-city`) with wrangler through the emsdk's Node; wrangler signs in with `CLOUDFLARE_API_TOKEN`, else the first line of a git-ignored `cloudflare-token.txt` at the repository root, else in the browser. The token needs the account permissions Cloudflare Pages: Edit and Account Settings: Read.
 
 ## Build and run
@@ -117,7 +127,7 @@ Third-party code is vendored under `third_party/`: Squirrel 2.2.3, SqPlus, libpn
 
 ## Mods
 
-The SDL3 build can replace game artwork with PNGs. A mod is a folder in the git-ignored `mods/` directory with a `mod.json`:
+The SDL3 and web builds can replace game artwork with PNGs. A mod is a folder in the git-ignored `mods/` directory (on the web, added in the control panel's Mods tab) with a `mod.json`:
 
 ```json
 {"id":"advisor","version":"4.0","tiles":{"SCORING_FULL_GIRL_01":"textures/advisor.png"}}
