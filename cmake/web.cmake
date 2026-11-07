@@ -13,7 +13,9 @@ set(VC1_WEB_DIR "${CMAKE_SOURCE_DIR}/src/imports/web")
 # strict aliasing, signed overflow or non-null dereferenced pointers, which
 # the recovered code relies on. __stdcall means nothing on wasm (thousands of
 # ignored-attribute warnings), and jpgd's "register" is an error in C++17.
-set(VC1_WEB_COMMON_FLAGS "-fms-extensions -fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -Wno-ignored-attributes -Wno-register")
+# -pthread everywhere, SDL included: the sound mixes on a thread of its own
+# (src/imports/web/audio.cpp); the game's own threads stay stubbed (web.cpp).
+set(VC1_WEB_COMMON_FLAGS "-fms-extensions -fno-strict-aliasing -fwrapv -fno-delete-null-pointer-checks -Wno-ignored-attributes -Wno-register -pthread")
 set(CMAKE_C_FLAGS "${VC1_WEB_COMMON_FLAGS}")
 # VC9 parses templates only when they are instantiated (SqPlus, Squirrel).
 set(CMAKE_CXX_FLAGS "${VC1_WEB_COMMON_FLAGS} -fno-rtti -fdelayed-template-parsing")
@@ -79,6 +81,10 @@ function(vc1_web_target target)
     -sSTACK_SIZE=2097152
     -sALLOW_MEMORY_GROWTH=1
     -sEXIT_RUNTIME=1
+    -pthread
+    # The sound thread's worker starts with the page, not when the blocked
+    # main loop would let a new one load.
+    -sPTHREAD_POOL_SIZE=1
     -sFORCE_FILESYSTEM=1
     -lidbfs.js
     "-sEXPORTED_RUNTIME_METHODS=FS,IDBFS,ENV,ccall")
@@ -125,9 +131,11 @@ function(vc1_web_target target)
     VERBATIM)
   add_custom_target(vc1_web_data ALL DEPENDS "${page_data}.js" "${page_data}.json")
   # The page: index.html and loader.js start VirtualCity.js and the data;
-  # panel.js / panel.css are the control panel (F10).
+  # panel.js / panel.css are the control panel (F10). _headers gives the
+  # page the cross-origin isolation that shared memory (threads) needs on
+  # Cloudflare Pages; tools/serve-web.py sends the same headers locally.
   set(page)
-  foreach(file index.html loader.js panel.js panel.css)
+  foreach(file index.html loader.js panel.js panel.css _headers)
     add_custom_command(OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${file}"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${VC1_WEB_DIR}/shell/${file}"
         "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${file}"

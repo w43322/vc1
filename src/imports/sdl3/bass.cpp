@@ -9,6 +9,10 @@
 
 #include <SDL3_mixer/SDL_mixer.h>
 
+#ifdef __EMSCRIPTEN__
+#include "../web/audio.h"
+#endif
+
 #include <algorithm>
 #include <map>
 #include <vector>
@@ -216,7 +220,12 @@ int __stdcall BASS_Init(int device, BassDword freq, BassDword flags, void* windo
         lastError = -1;
         return 0;
     }
+#ifdef __EMSCRIPTEN__
+    // Mixed on a thread of its own, as BASS does (web/audio.cpp).
+    mixer = vc1_web_audio_open();
+#else
     mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, 0);
+#endif
     outputPaused = false;
     lastError = mixer ? 0 : -1;
     return mixer != 0;
@@ -231,6 +240,9 @@ int __stdcall BASS_Free()
         MIX_DestroyAudio(i->second.audio);
     }
     samples.clear();
+#ifdef __EMSCRIPTEN__
+    vc1_web_audio_close();
+#endif
     if (mixer) {
         MIX_DestroyMixer(mixer);
     }
@@ -438,6 +450,24 @@ BassDword __stdcall BASS_StreamCreateFileUser(BassDword system, BassDword flags,
     const BassFileProcs* procs, void* user)
 {
     (void)system;
+#ifdef __EMSCRIPTEN__
+    // The web mixing thread must not call into the game (web/audio.cpp): the
+    // stream is read into memory first and decoded from there.
+    SDL_IOStream* io = SDL_IOFromDynamicMem();
+    if (!io) {
+        procs->close(user);
+        return 0;
+    }
+    char buffer[65536];
+    for (;;) {
+        const BassDword read = procs->read(buffer, sizeof(buffer), user);
+        if (read == 0 || read > sizeof(buffer) || SDL_WriteIO(io, buffer, read) != read) {
+            break;
+        }
+    }
+    procs->close(user);
+    SDL_SeekIO(io, 0, SDL_IO_SEEK_SET);
+#else
     UserFile* file = new UserFile();
     file->procs = *procs;
     file->user = user;
@@ -453,6 +483,7 @@ BassDword __stdcall BASS_StreamCreateFileUser(BassDword system, BassDword flags,
         FileClose(file);
         return 0;
     }
+#endif
     MIX_Audio* audio = MIX_LoadAudio_IO(mixer, io, false, true);
     if (!audio) {
         lastError = -1;

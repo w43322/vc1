@@ -11,4 +11,5 @@ set "PYTHON=python"
 if exist "%ROOT%.venv\Scripts\python.exe" set "PYTHON=%ROOT%.venv\Scripts\python.exe"
 rem Open the page once the server below is listening.
 start "" /B cmd /c "ping -n 3 127.0.0.1 >nul & explorer http://localhost:%VC1_WEB_PORT%/"
-"%PYTHON%" -m http.server %VC1_WEB_PORT% --bind 127.0.0.1 --directory "%ROOT%build\web\bin"
+rem tools\serve-web.py: http.server with the headers the sound thread needs.
+"%PYTHON%" "%ROOT%tools\serve-web.py" %VC1_WEB_PORT%

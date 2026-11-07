@@ -167,6 +167,8 @@
   var muted = false;
 
   function updateAudio() {
+    // audio.cpp resumes the output on the first click or key unless held.
+    Module.vc1AudioHeld = paused || muted;
     audioContexts.forEach(function (context) {
       if (paused || muted) {
         context.suspend();

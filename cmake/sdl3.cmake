@@ -13,6 +13,9 @@ if(NOT TARGET SDL3::SDL3)
   if(VC1_WEB)
     set(SDL_SHARED OFF CACHE BOOL "" FORCE)
     set(SDL_STATIC ON CACHE BOOL "" FORCE)
+    # Real mutexes for the mixer, which a thread of its own mixes
+    # (src/imports/web/audio.cpp).
+    set(SDL_PTHREADS ON CACHE BOOL "" FORCE)
   else()
     set(SDL_SHARED ON CACHE BOOL "" FORCE)
     set(SDL_STATIC OFF CACHE BOOL "" FORCE)
